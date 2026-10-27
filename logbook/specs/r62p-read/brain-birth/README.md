@@ -79,11 +79,56 @@ newborn inherits move it when it is alone. So the slowness comes from the world 
   its constant drive in the held bench came from the senses it was given. Starting each child at its own recorded height
   is the second check.
 
+## The checks: no glide, the depth matched, and no surface
+
+The checks ran the same day (`--swim --passive --birth-height`; `bench-checks.txt`, `brain-birth-checks.tsv`,
+`ids-y0.tsv`):
+- a passive control, the same bodies with the brain off;
+- each child and its parent started at the child's recorded first-frame root height, `y0`, with the probe's top clamp
+  lifted from -2 m to -0.05 m for this run alone;
+- each body's buoyancy, its vertical drift in its first 10 s, and its length.
+
+The run took 57 s on one core. A separate read gives each newborn's height in the world over its first minute
+(`scripts/reads/newborn-height-read.py`, `newborn-height.txt`).
+
+**Glide is ruled out.** With the brain off, every child and every parent stays exactly where it was placed, with no
+sideways or vertical drift. The own-brain speed alone is the brain's swimming.
+
+**Depth is ruled out.** Started at their own recorded height, the children swim alone at the same speeds:
+
+| Group, in the world | Children | Median early speed alone, own brain (m/s) | Same, minus passive | Slow alone |
+|---|---|---|---|---|
+| standstill | 117 | 0.141 | 0.141 | 6.8% under 0.03 m/s on net speed |
+| slow | 76 | 0.129 | 0.129 | 17.1% |
+| moving | 200 | 0.138 | 0.138 | 7.0% |
+
+| Children, own brain over passive | Slow alone | Not slow alone |
+|---|---|---|
+| slow in the world | 10 | 183 |
+| moving in the world | 2 | 198 |
+
+**The surface is ruled out.** Every newborn here is neutrally buoyant: its net vertical force at rest is 0, because its
+volume, a median of 0.076 m³, is under the world's neutral body volume of 0.25 m³, below which the tissue's excess
+density is scaled to nothing (D064, `Fluid.cs`). Nothing pushes a newborn up against the surface. The newborns are
+about 0.96 m long, and their roots sit 1.6 to 3.6 m down. Even with the whole length pointing straight up, only 8.5% of
+the standstill children could reach y = 0, against 6.5% of the movers.
+
+**In the world, a standstill newborn holds its height like the passive body.** 92% of them move under 1 cm between
+their first two frames, against 37% of the movers (`newborn-height.txt`). They also sit shallower, at a median root
+height of -2.5 m against -4.3 m. A neutral body with no stroke stays where it is put, which is what the passive control
+does alone. My reading is that in the world the standstill newborn's drive is switched off or blocked, while alone the
+same brain and body swim (inference).
+
+One line of `bench-checks.txt`'s header is stale: it still says Swim clamps the start to [-40, -2] m. For this run the
+top was -0.05 m (`Program.ConfigureForBench`, `_startTop`), and no row's note reports a clamp.
+
 ## What comes next
 
-The two checks above go together: a passive control and a start at the child's recorded height. If the slow children
-still move alone once glide is taken out and the depth matches, the cause is in the world's other inputs: contact with
-the parent or with leaves at birth, the current, or the smells and light a newborn senses there (inference).
+What differs between the world and still water alone is what a newborn senses and touches. That means the chemical and
+energy senses (a constant 0.5 here), the smell of leaves, light by depth, the current of 0.02 m/s, and contact with its
+parent or with leaves at birth (inference). A brain whose drive is a loop through the body can be held at a fixed point
+by a sense that saturates a unit on that loop (inference). The cheapest next read sweeps those senses in the same
+bench, with each child at its own height.
 
 ## Sources
 
@@ -97,4 +142,8 @@ the parent or with leaves at birth, the current, or the smells and light a newbo
 | the stroke is a loop through the body | inference, not measured |
 | early speeds and the 2x2 alone | `bench-swim.txt`, `brain-birth-swim.tsv` |
 | the world's root heights | `logbook/specs/r62p-read/newborn-followup/newborn-followup.txt` |
-| glide may carry part of the speed alone | inference, from the 0.06 Hz frequency; not measured |
+| glide may carry part of the speed alone | inference, from the 0.06 Hz frequency; ruled out by the passive control |
+| passive bodies hold still; buoyancy 0; lengths | `bench-checks.txt`, `brain-birth-checks.tsv` |
+| speeds at the recorded height; the second 2x2 | `bench-checks.txt` |
+| heights in the world | `newborn-height.txt` |
+| a world sense holds the drive at a fixed point | inference, not measured |

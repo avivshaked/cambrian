@@ -1,0 +1,28 @@
+newborn-height-read: ids scratch/brain-birth/ids.tsv, frames scratch/newborn-ledger/full/grazer-frames.tsv, near-surface band 1.00 m (root y > -1.00)
+
+== standstill: 117 children with frames (of 117)
+  root y at the first frame, q1 / median / q3: -3.57 / -2.50 / -1.63 m
+  root y at age  10 s (n  117):           -3.57 / -2.56 / -1.63 m
+  root y at age  20 s (n   73):           -3.71 / -2.71 / -1.54 m
+  root y at age  30 s (n   24):           -3.71 / -2.66 / -1.34 m
+  root y at age  60 s (n    7):           -3.92 / -1.36 / -0.50 m
+  within 1.00 m of the surface at the first frame: 11 of 117 (0.094)
+  first two frames: median dy 0.0000 m; rise 0.026, sink 0.060, hold 0.915 (of 117)
+
+== slow: 76 children with frames (of 76)
+  root y at the first frame, q1 / median / q3: -4.22 / -2.76 / -1.44 m
+  root y at age  10 s (n   76):           -4.27 / -2.76 / -1.45 m
+  root y at age  20 s (n   44):           -4.57 / -2.80 / -1.48 m
+  root y at age  30 s (n   26):           -4.54 / -2.90 / -1.20 m
+  root y at age  60 s (n   14):           -5.24 / -3.24 / -1.75 m
+  within 1.00 m of the surface at the first frame: 12 of 76 (0.158)
+  first two frames: median dy 0.0000 m; rise 0.145, sink 0.263, hold 0.592 (of 76)
+
+== moving: 200 children with frames (of 200)
+  root y at the first frame, q1 / median / q3: -5.74 / -4.27 / -2.63 m
+  root y at age  10 s (n  200):           -5.82 / -4.33 / -2.74 m
+  root y at age  20 s (n  127):           -5.87 / -4.38 / -2.99 m
+  root y at age  30 s (n   94):           -5.90 / -4.47 / -2.71 m
+  root y at age  60 s (n   81):           -5.65 / -4.33 / -2.74 m
+  within 1.00 m of the surface at the first frame: 15 of 200 (0.075)
+  first two frames: median dy -0.0040 m; rise 0.245, sink 0.385, hold 0.370 (of 200)
