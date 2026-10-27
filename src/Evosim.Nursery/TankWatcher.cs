@@ -164,6 +164,20 @@ namespace Evosim.Nursery
         /// <summary>The charged units the world's mouths have taken from corpses, ever. Cumulative.</summary>
         public double UnitsEaten => _world.UnitsEaten;
 
+        /// <summary>
+        /// D236's schedule of the switching leaf tank: every opening so far and each leaf's opening; null in a tank whose patches do not switch
+        /// (or that has none). Set by the episode before the first call; the watcher reads it and nothing here writes it.
+        /// </summary>
+        public LeafSchedule Schedule => _schedule;
+
+        private LeafSchedule _schedule;
+
+        /// <summary>The episode hands the probe its schedule here, once, before the watcher's first call. Internal, so the probe has no setter.</summary>
+        internal void AttachSchedule(LeafSchedule schedule) => _schedule = schedule;
+
+        /// <summary>The bodies now lying as remains (contact eating, D220). A count.</summary>
+        public int RemainsCount => _world.Remains.Count;
+
         /// <summary>The corpses a mouth has emptied, ever. Cumulative.</summary>
         public long CorpsesEmptied => _world.CorpsesEaten;
 
@@ -190,6 +204,17 @@ namespace Evosim.Nursery
 
         /// <summary>The joules the body's mouths have kept over its life, net of the waste (<c>Organism.MouthJoules</c>); NaN where the slot landed nothing.</summary>
         public double MouthJoules(int member) => _focal[member]?.MouthJoules ?? double.NaN;
+
+        /// <summary>
+        /// The cumulative count a member's "eaten" is the change of, as the tank reads it: the joules kept from food that came from leaves under
+        /// contact eating, else <see cref="MouthJoules"/>. A number; NaN where the slot landed nothing.
+        /// </summary>
+        public double EatenJoules(int member)
+        {
+            Organism o = _focal[member];
+            if (o == null) return double.NaN;
+            return _world.Config.ContactEating ? o.FoodFromLeavesJoules : o.MouthJoules;
+        }
 
         /// <summary>
         /// The last economy step's ledger of the body: income, the four spends and what it exuded. Zero where the slot landed nothing. A body

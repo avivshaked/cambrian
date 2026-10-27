@@ -117,6 +117,22 @@ namespace Evosim.Core
         private float _tissueEnergyPerCubicMetre = 500f;
 
         /// <summary>
+        /// D241: a cell type's metabolic clock, in seconds: the time its standing cost takes to spend its
+        /// own tissue's worth, <see cref="TissueEnergyPerCubicMetre"/> over
+        /// <see cref="UpkeepWattsPerCubicMetre"/>. The farm's header states the climb's T in units of the
+        /// consumer's, so a reader can say whether a time to adulthood is simple in world seconds or in the
+        /// body's own time. Infinite for a type that costs nothing to hold, which the registry does not
+        /// admit.
+        /// </summary>
+        public static double MetabolicClockSeconds(CellType type)
+        {
+            if (type == null) throw new System.ArgumentNullException(nameof(type));
+            return type.UpkeepWattsPerCubicMetre > 0f
+                ? (double)type.TissueEnergyPerCubicMetre / type.UpkeepWattsPerCubicMetre
+                : double.PositiveInfinity;
+        }
+
+        /// <summary>
         /// The most <see cref="MorphNode.Attack"/> a node of this type may carry — D106 item 3,
         /// <c>logbook/specs/mouth-spec.md</c> rule 2. Health per second per square metre.
         /// </summary>

@@ -744,7 +744,7 @@ namespace Evosim.Core
         private Phenotype AtTheSameFraction(Phenotype adult, float fraction) =>
             fraction >= 1f
                 ? adult
-                : adult.Scaled((float)Math.Pow(fraction, 1d / 3d), Config.Shapes);
+                : adult.ScaledFor(Config, (float)Math.Pow(fraction, 1d / 3d));
 
         /// <summary>This creature's counts, allocated at the genome's own minimum if it has none.</summary>
         private static int[] CountsOf(Organism creature)

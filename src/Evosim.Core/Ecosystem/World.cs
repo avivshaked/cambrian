@@ -1311,6 +1311,12 @@ namespace Evosim.Core
         /// </summary>
         public double FounderJoulesCapped { get; private set; }
 
+        /// <summary>
+        /// D241: the tissue joules <see cref="MakeAdult"/> has given, booked as income in both books as a founder's start
+        /// is. Zero in any world nothing calls it in.
+        /// </summary>
+        public double AdultGiftJoules { get; private set; }
+
         /// <summary>Mean <see cref="Genome.AdultScale"/> over the living — rule 9. NaN when empty.</summary>
         /// <remarks>
         /// <b>The three dials and the body scale, computed on demand rather than tracked.</b> They
@@ -1583,6 +1589,7 @@ namespace Evosim.Core
             ValidateSeasons(config.Light);
             ValidateFounding(config);
             ValidateAgeing(config);
+            ValidateGrowthClimb(config);
             _tricklePool = ValidateTricklePool(config, tricklePool);
             _tricklePoolWeights = ValidateTricklePoolWeights(_tricklePool, tricklePoolWeights, out _tricklePoolCumulative);
 
@@ -2383,7 +2390,7 @@ namespace Evosim.Core
                 // this world's registry, and D111's refusal of an offset nothing prices. A pool
                 // genome is named deliberately, as an inoculant is, so a body the world cannot
                 // admit is a mistake in the launcher and not a founder to count as refused.
-                IReadOnlyList<string> issues = genome.Validate(config.CellTypes, priced);
+                IReadOnlyList<string> issues = genome.Validate(config.CellTypes, priced, config.Shapes);
                 if (issues.Count > 0)
                 {
                     throw new ArgumentException(
@@ -2594,6 +2601,40 @@ namespace Evosim.Core
                     "with AgeHazardBaseSeconds at 0. Each of them works on the ageing hazard " +
                     "(D128), and a header naming a rule the world does not run would describe " +
                     "a world the run did not have.",
+                    nameof(config));
+            }
+        }
+
+        /// <summary>
+        /// D241: the growth climb's two refusals. T is a time to adulthood, finite and at least 0 (0
+        /// is today's growth); with T above 0 the gene's range has to hold its start, which is how
+        /// <see cref="Admit"/> judges every genome that carries the gene.
+        /// </summary>
+        private static void ValidateGrowthClimb(RunConfig config)
+        {
+            float t = config.GrowthAdultSeconds;
+            if (t < 0f || float.IsNaN(t) || float.IsInfinity(t))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant($"GrowthAdultSeconds is {t}; it is the time to ") +
+                    "adulthood in world seconds, finite and at least 0 (0 is growth without the " +
+                    "climb, D241).",
+                    nameof(config));
+            }
+
+            if (t == 0f) return;
+
+            float min = config.GrowthReserveMinSeconds;
+            float start = config.GrowthReserveStartSeconds;
+            float max = config.GrowthReserveMaxSeconds;
+            if (!(min > 0f && min <= start && start <= max) || float.IsInfinity(max))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant($"GrowthAdultSeconds is {t} and the growth reserve's ") +
+                    FormattableString.Invariant($"range is [{min}, {max}] with a start of {start}. ") +
+                    "The gene steps on its logarithm inside a finite range that holds its start, so " +
+                    "0 < GrowthReserveMinSeconds <= GrowthReserveStartSeconds <= " +
+                    "GrowthReserveMaxSeconds (D241).",
                     nameof(config));
             }
         }
@@ -3314,7 +3355,7 @@ namespace Evosim.Core
             // reserve and a creature below its adult size almost never clears the breeding gate.
             // Before the fields' own transport passes for the reason feeding is: what a body draws
             // this step comes out of the water as it stood when the step began.
-            Grow();
+            Grow(seconds);
             WorldPhaseProbe.Mark(WorldPhaseProbe.Grow);
 
             // D061. After Metabolise, so this step's feeding and shading were priced at each
@@ -4936,12 +4977,21 @@ namespace Evosim.Core
         /// a transfer.
         /// </para>
         /// <para>
-        /// <b>Growth is not a rate, which is why this takes no step length.</b> A body invests
-        /// everything above the floor every time this runs, so how fast it reaches its adult size
+        /// <b>Growth is not a rate, which is why this takes no step length</b>, with
+        /// <see cref="RunConfig.GrowthAdultSeconds"/> at 0. A body invests everything above the
+        /// floor every time this runs, so how fast it reaches its adult size
         /// is set by what it can earn and what the water will sell it, not by a growth constant
         /// nobody would know how to choose. The consequence is that the step length does change
         /// how many bites the same growth is taken in, and that is the honest situation: rule 5
         /// gave the world an appetite, not a schedule.
+        /// </para>
+        /// <para>
+        /// <b>D241: with <see cref="RunConfig.GrowthAdultSeconds"/> above 0 growth is a climb, and
+        /// it does take the step's world seconds.</b> <paramref name="seconds"/> is
+        /// <see cref="Step"/>'s own, the world seconds of one metabolic step, whatever the
+        /// physics did inside it, so the climb is the same at any pace factor. Each juvenile is
+        /// then offered the rate law's allowance (<see cref="ClimbInvestment"/>); at 0 the climb is
+        /// never entered and the pass is the one above, statement for statement.
         /// </para>
         /// <para>
         /// <b>Nothing here draws from an <see cref="Rng"/>.</b> Growth is arithmetic on a body and
@@ -4949,9 +4999,17 @@ namespace Evosim.Core
         /// through exactly the trajectory it would have without this pass.
         /// </para>
         /// </remarks>
-        private void Grow()
+        private void Grow(float seconds)
         {
             float reserveFloor = Config.GrowthReserveFloor;
+
+            // D241. The climb's one factor for the step: exp(-dt / tau). Tau is the same for every
+            // body (one T), so it is taken once and not once a juvenile. Off, nothing here is read
+            // and no exponential is taken.
+            bool climb = Config.GrowthAdultSeconds > 0f;
+            double climbDecay = climb
+                ? Math.Exp(-(double)seconds / ((double)Config.GrowthAdultSeconds / ClimbTimeConstants))
+                : 0d;
 
             // The juveniles first, in living order. They are the newest bodies and sit at the
             // list's tail, so slabs over the whole list would leave one thread most of the work.
@@ -4968,14 +5026,85 @@ namespace Evosim.Core
             // grow in any order, on any thread, to the same bits.
             Parallelism.ForRanges(_juveniles.Count, (from, to) =>
             {
-                for (int j = from; j < to; j++) GrowOne(_living[_juveniles[j]], reserveFloor);
+                for (int j = from; j < to; j++) GrowOne(_living[_juveniles[j]], reserveFloor, climb, climbDecay);
             });
         }
 
         // The juveniles' indices into _living, Grow's own scratch.
         private readonly List<int> _juveniles = new List<int>();
 
-        private void GrowOne(Organism creature, float reserveFloor)
+        /// <summary>
+        /// D241: the number of time constants a body takes to climb from 0.65 of its adult's tissue to
+        /// 0.95 of it, <c>ln((1 - 0.65^(1/4)) / (1 - 0.95^(1/4)))</c>, about 2.081. With
+        /// <c>r = (m/M)^(1/4)</c>, 1 - r falls exponentially at the rate law's time constant, so
+        /// <c>tau = T / ClimbTimeConstants</c> makes <see cref="RunConfig.GrowthAdultSeconds"/> the
+        /// time a body born at 0.65 takes to reach 0.95 at the law's full rate.
+        /// </summary>
+        private static readonly double ClimbTimeConstants =
+            Math.Log((1d - Math.Pow(0.65d, 0.25d)) / (1d - Math.Pow(0.95d, 0.25d)));
+
+        /// <summary>The fraction of its adult's tissue at which the climb takes the rest in one step (D241).</summary>
+        private const double ClimbSnapFraction = 0.95d;
+
+        /// <summary>
+        /// D241: what a body may invest in one step, in joules: the smaller of the rate law's allowance
+        /// and what the reserve can spare above the gene's <c>keep</c>, capped by what is left of the
+        /// adult. A body that cannot spare anything above <c>keep</c> gets 0 or less and does not grow.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The law, and its exact step.</b> West, Brown and Enquist's ontogenetic growth,
+        /// <c>dm/dt = a m^(3/4) (1 - (m/M)^(1/4))</c>, with <c>m</c> the body's tissue joules and
+        /// <c>M</c> its adult's. With <c>r = (m/M)^(1/4)</c> it is <c>dr/dt = (a / 4 M^(1/4)) (1 - r)</c>,
+        /// so <c>1 - r</c> falls exponentially with the time constant <c>tau = T / 2.081</c>
+        /// (<see cref="ClimbTimeConstants"/>). Taken exactly rather than by Euler, a step of length
+        /// <c>dt</c> lands on <c>r' = 1 - (1 - r) exp(-dt / tau)</c>, so the allowance
+        /// <c>M r'^4 - m</c> matches the closed form at any step length. It is computed in double,
+        /// from the intact tissue the caller measured (D219); <paramref name="decay"/> is
+        /// <c>exp(-dt / tau)</c>, taken once a step.
+        /// </para>
+        /// <para>
+        /// <b>The snap.</b> The law approaches the adult without reaching it. A step that would carry
+        /// the body to <see cref="ClimbSnapFraction"/> of the adult (<c>r'^4 &gt;= 0.95</c>) is
+        /// allowed everything that remains, so adulthood is reached at T and not merely 95 % of the
+        /// way; the reserve above <c>keep</c> still has to pay for it.
+        /// </para>
+        /// <para>
+        /// <b>keep.</b> <c>max(GrowthReserveFloor x m, G x StandingWatts)</c>: the tissue floor of
+        /// rule 5, and the creature's own gene in seconds of its standing cost. Every genome admitted
+        /// at T above 0 carries the gene (<see cref="Admit"/>).
+        /// </para>
+        /// </remarks>
+        private double ClimbInvestment(
+            Organism creature, double adultTissue, double tissueNow, double remaining,
+            float reserveFloor, double decay)
+        {
+            float? gene = creature.Genome.GrowthReserveSeconds;
+            if (!gene.HasValue)
+            {
+                throw new InvalidOperationException(
+                    "Organism " + creature.Id.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                    " carries no growth-reserve gene in a world with GrowthAdultSeconds above 0. " +
+                    "Admission gives every body one (D241).");
+            }
+
+            double r = Math.Pow(Math.Max(tissueNow, 0d) / adultTissue, 0.25d);
+            double rNext = 1d - (1d - r) * decay;
+            double rNext4 = rNext * rNext * rNext * rNext;
+
+            double allowance = rNext4 >= ClimbSnapFraction
+                ? remaining
+                : adultTissue * rNext4 - tissueNow;
+
+            double keep = Math.Max(
+                (double)reserveFloor * tissueNow,
+                (double)gene.Value * creature.StandingWatts);
+
+            double invest = Math.Min(allowance, creature.Energy - keep);
+            return Math.Min(invest, remaining);
+        }
+
+        private void GrowOne(Organism creature, float reserveFloor, bool climb, double climbDecay)
         {
             double adultTissue = creature.AdultTissueJoules;
 
@@ -4990,19 +5119,35 @@ namespace Evosim.Core
             // What the reserve can spare. The floor is a fraction of the body this creature
             // already has, so a large body keeps a large buffer and a newborn keeps a small
             // one — the same proportion of the same thing at every size.
-            double target = creature.Energy - (double)reserveFloor * tissueNow;
-            if (target > remaining) target = remaining;
+            //
+            // D241: with GrowthAdultSeconds above 0 the amount is the climb's instead (ClimbInvestment),
+            // and from the line after this the arithmetic is the same.
+            double target;
+            if (climb)
+            {
+                target = ClimbInvestment(creature, adultTissue, tissueNow, remaining, reserveFloor, climbDecay);
+            }
+            else
+            {
+                target = creature.Energy - (double)reserveFloor * tissueNow;
+                if (target > remaining) target = remaining;
+            }
+
             if (!(target > 0d)) return;
 
             double fraction = (tissueNow + target) / adultTissue;
             if (fraction > 1d) fraction = 1d;
 
+            // D241. The snap takes the whole remainder, and tissueNow + (adultTissue - tissueNow) can land one
+            // ulp under the adult; the body is then adult, exactly, and not a juvenile a hair short of it.
+            if (climb && target >= remaining) fraction = 1d;
+
             // The cube root, because the fraction is a volume and the parts are scaled by a
             // length. Phenotype.Scaled says why the adult is the thing scaled from.
             Phenotype grown = fraction >= 1d
                 ? creature.AdultPhenotype
-                : creature.AdultPhenotype.Scaled(
-                    (float)Math.Pow(fraction, 1d / 3d), Config.Shapes);
+                : creature.AdultPhenotype.ScaledFor(
+                    Config, (float)Math.Pow(fraction, 1d / 3d));
 
             double actual = fraction >= 1d ? adultTissue : Metabolism.TissueJoules(grown, Config);
             double spend = actual - creature.TissueJoules;
@@ -5035,6 +5180,66 @@ namespace Evosim.Core
             // grew must be measured as the mouth it now is.
             creature.StandingWatts = Metabolism.StandingWatts(grown, Config, creature.Age);
             creature.AbsorptiveVolume = AbsorptiveVolumeOf(grown);
+        }
+
+        /// <summary>
+        /// D241: puts a living body at its adult size at once, with no growth step and no joule moved
+        /// through its reserve. For a caller that places a body meaning "grown", as the nursery's tanks
+        /// do; under the climb, paying such a body its owed tissue as reserve would buy a climb of up to
+        /// 1.58 T, not a grown body.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What it writes is what a growth step's last line writes for an adult</b>: the tissue
+        /// account, the phenotype (the adult itself, not a copy), the body fraction, and the two cached
+        /// readings. The tissue is a gift, booked as income in the energy audit and the matter identity as
+        /// a founder's start is, and counted in <see cref="AdultGiftJoules"/>.
+        /// </para>
+        /// <para>
+        /// Refused for a body that is not among the living, and for one whose plan has changed since it
+        /// was admitted (a bite or the module rule), since its adult is then not the body the plan
+        /// describes. Under D219 the account is the adult's uneaten tissue, as a growth step's is.
+        /// </para>
+        /// </remarks>
+        public void MakeAdult(Organism creature)
+        {
+            if (creature == null) throw new ArgumentNullException(nameof(creature));
+
+            if (!_living.Contains(creature))
+            {
+                throw new InvalidOperationException(
+                    "Organism " + creature.Id.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                    " is not among the living, so it cannot be made adult (D241).");
+            }
+
+            if (creature.PlanRevision != 0)
+            {
+                throw new InvalidOperationException(
+                    "Organism " + creature.Id.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                    " has a plan changed since its admission, so its adult is not the body its plan " +
+                    "describes and it cannot be made adult (D241).");
+            }
+
+            Phenotype adult = creature.AdultPhenotype;
+            double account = creature.AdultTissueJoules;
+            if (Config.ContactEating && creature.PartHealth != null)
+            {
+                account = UneatenTissue(adult, creature.PartHealth);
+            }
+
+            // The gift is created, as a founder's start is (Admit's leg 9), so both books take it as
+            // income: the energy audit and the matter identity close over it, and the record can say
+            // how much the placements gave.
+            double gift = account - creature.TissueJoules;
+            EnergyIn += gift;
+            MatterInfluxedTotal += gift / Config.JoulesPerUnit;
+            AdultGiftJoules += gift;
+
+            creature.TissueJoules = account;
+            creature.Phenotype = adult;
+            creature.BodyFraction = 1f;
+            creature.StandingWatts = Metabolism.StandingWatts(adult, Config, creature.Age);
+            creature.AbsorptiveVolume = AbsorptiveVolumeOf(adult);
         }
 
         /// <summary>Volume of <see cref="CellTypeIds.Absorptive"/> tissue in a body, m³.</summary>
@@ -5211,7 +5416,15 @@ namespace Evosim.Core
             // Nothing else about the death changes, and the lineage row is the same row. Guarded
             // on the knob rather than written as a general path, so at 0 the deposit below runs
             // exactly as it always has and every world on file replays.
-            if (Config.ContactEating)
+            if (cause == DeathCause.Withered)
+            {
+                // WitherForTank: the nursery's switching tank withers a leaf. Burnt as BurnUnbitten burns, whatever the
+                // config says of corpses and remains: no corpse is founded, no remains are cut, and nothing is left to eat.
+                // A plant's held units go to the spent field below, as any death without a corpse sends them.
+                BurnUnbitten(creature, remains);
+                creature.TissueJoules = 0d;
+            }
+            else if (Config.ContactEating)
             {
                 // D219, D220: no corpse is founded. The body itself becomes remains, keeping its tissue account and
                 // taking its reserve and gestation account as one store (choice 4). A diverged body's geometry cannot
@@ -5355,6 +5568,40 @@ namespace Evosim.Core
 
             Diverged++;
             Bury(creature, index, DeathCause.Diverged);
+        }
+
+        /// <summary>
+        /// Withers a living body: the nursery's switching leaf tank (D236) ends a leaf that nothing killed, leaving no food.
+        /// <b>No world calls this.</b> <see cref="Step"/> never does, and the farm has no use for it; only the nursery's switching
+        /// tank (<c>leaves.patches.switching</c>) calls it, between steps.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The body's tissue, reserve and gestation account are burnt as <see cref="BurnUnbitten"/> burns them: booked as
+        /// <see cref="EnergyOut"/>, the units to the spent field where the body lies and into <see cref="BurntTotal"/>, and a plant's held
+        /// units sent to the spent field as a death without a corpse sends them. It founds no corpse and no remains whatever
+        /// <see cref="RunConfig.ContactEating"/> says, takes the body out of the living, counts the death and writes the lineage row with
+        /// <see cref="DeathCause.Withered"/>. <see cref="Diverged"/> is not counted: nothing failed.
+        /// </para>
+        /// <para>
+        /// Called from outside <see cref="Step"/>, between steps, as <see cref="KillDiverged"/> is, and for the same reason it is safe: it
+        /// touches no <see cref="Rng"/> stream and takes no branch any other creature's step depends on. A solver learns the body has
+        /// gone as it learns of any death, from <see cref="Deaths"/> changing.
+        /// </para>
+        /// </remarks>
+        public void WitherForTank(Organism creature)
+        {
+            if (creature == null) throw new ArgumentNullException(nameof(creature));
+
+            int index = _living.IndexOf(creature);
+            if (index < 0)
+            {
+                throw new ArgumentException(
+                    $"Creature {creature.Id} is not living in this world, so there is nothing to wither.",
+                    nameof(creature));
+            }
+
+            Bury(creature, index, DeathCause.Withered);
         }
 
         /// <summary>
@@ -5728,6 +5975,15 @@ namespace Evosim.Core
             // (AdmitFounder), so the cap is asked of the gate this check applies.
             if (BirthsHeld) { surplus = 0d; return false; }
 
+            // D241: with the climb on, a body breeds only once adult. Growth no longer takes the
+            // reserve down to the floor each step, so the gate alone would let a juvenile whose
+            // intake beats its allowance breed small. Off, nothing here is read.
+            if (Config.GrowthAdultSeconds > 0f && parent.BodyFraction < 1f)
+            {
+                surplus = 0d;
+                return false;
+            }
+
             double gate = parent.BreedingGate(Config);
             double funds = parent.Gestates ? parent.GestationJoules : parent.Energy;
 
@@ -5834,7 +6090,9 @@ namespace Evosim.Core
                 parent.Genome, new Rng(seed), Config.Mutation, Config.CellTypes, Config.Genome,
                 Config.SensorPool(),
                 buoyancyOffsetPriced: Config.BuoyancyOffsetWattsPerCubicMetre > 0f,
-                log: _mutationLog);
+                log: _mutationLog, shapes: Config.Shapes,
+                growthReserveMin: Config.GrowthReserveMinSeconds,
+                growthReserveMax: Config.GrowthReserveMaxSeconds);
 
             // D146: a central genome numbers any edge the mutation copied or made, so no two parts
             // share a path id, before the body that the brain is wired against is developed.
@@ -5909,7 +6167,7 @@ namespace Evosim.Core
 
             Phenotype newborn = stillborn || fraction >= 1d
                 ? body
-                : body.Scaled((float)Math.Pow(fraction, 1d / 3d), Config.Shapes);
+                : body.ScaledFor(Config, (float)Math.Pow(fraction, 1d / 3d));
 
             double tissue = stillborn || fraction >= 1d
                 ? adultTissue
@@ -7057,7 +7315,7 @@ namespace Evosim.Core
             }
             else
             {
-                newborn = adult.Scaled((float)Math.Pow(wanted, 1d / 3d), Config.Shapes);
+                newborn = adult.ScaledFor(Config, (float)Math.Pow(wanted, 1d / 3d));
                 tissue = Metabolism.TissueJoules(newborn, Config);
                 birthFraction = adultTissue > 0d ? (float)(tissue / adultTissue) : 1f;
             }
@@ -7152,6 +7410,43 @@ namespace Evosim.Core
             Float3? landing = null, double capCut = 0d,
             int immigrantFromWorld = -1, long immigrantFromId = -1)
         {
+            // D241. The single door for the growth-reserve gene, asked before anything else so that
+            // a refusal leaves the world as it was. In a world with the climb a body whose genome
+            // carries no gene gets one, on a clone: a pool genome is shared between founders and the
+            // caller's genome is never written to. A gene outside the world's range, or any gene in a
+            // world without the climb, is refused by name. Resume does not come through here; a
+            // checkpoint's genomes already carry what they carried.
+            bool climbing = Config.GrowthAdultSeconds > 0f;
+            if (climbing)
+            {
+                if (!genome.GrowthReserveSeconds.HasValue)
+                {
+                    genome = genome.Clone();
+                    genome.GrowthReserveSeconds = Config.GrowthReserveStartSeconds;
+                }
+                else
+                {
+                    float gene = genome.GrowthReserveSeconds.Value;
+                    if (!(gene >= Config.GrowthReserveMinSeconds && gene <= Config.GrowthReserveMaxSeconds))
+                    {
+                        throw new InvalidOperationException(
+                            FormattableString.Invariant(
+                                $"Genome carries GrowthReserveSeconds {gene}, outside this world's range ") +
+                            FormattableString.Invariant(
+                                $"[{Config.GrowthReserveMinSeconds}, {Config.GrowthReserveMaxSeconds}] ") +
+                            "(GrowthReserveMinSeconds, GrowthReserveMaxSeconds; D241).");
+                    }
+                }
+            }
+            else if (genome.GrowthReserveSeconds.HasValue)
+            {
+                throw new InvalidOperationException(
+                    FormattableString.Invariant(
+                        $"Genome carries GrowthReserveSeconds {genome.GrowthReserveSeconds.Value}, but ") +
+                    "this world has no climb (GrowthAdultSeconds is 0), so nothing would read the gene " +
+                    "and it would be recorded on no row (D241).");
+            }
+
             // The owner's ruling of 2026-09-19: a body that would grow into itself is not born.
             // Asked here rather than at each of the three call sites so that a founder and an
             // inoculant are held to it exactly as a child is — Admit is the one door all three
@@ -7324,7 +7619,8 @@ namespace Evosim.Core
                 landingSnow, landingSnowColumn, landingMatter, landingMatterColumn,
                 capCut, landingCorpse, landingCorpseMean,
                 LifespanRecorded ? genome.LifespanScale : float.NaN,
-                immigrantFromWorld, immigrantFromId));
+                immigrantFromWorld, immigrantFromId,
+                climbing ? genome.GrowthReserveSeconds.Value : float.NaN));
 
             // Record format 2's genome file, beside the lineage row and under the same guarantee:
             // exactly one per id assigned. A reference, not a copy, and nothing is read or drawn,

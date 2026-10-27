@@ -574,6 +574,8 @@ namespace Evosim.Nursery
                 Say(FormattableString.Invariant($"  leaves: {_o.LeafCount} a tank, drawn from the {_leafPool.Leaves.Count} of {_o.LeafPool}; the water starts with {_o.LeafSpent} spent units/m3"));
             if (LeafPatchesSet != null)
                 Say(FormattableString.Invariant($"  in {_o.LeafPatchCount} patches of {_o.LeafPatchRadius} m radius on a ring of {_o.LeafPatchRing} m, the ring turned each episode (D182)"));
+            if (LeafSwitchingSet is Recipe.SwitchingSetting sw)
+                Say(FormattableString.Invariant($"  the patches switch (D236): every {sw.PeriodSeconds} s, a fed disc regrows {sw.RegrowAfterSeconds} s after a leaf leaves the living, withers over {sw.WitherOverSeconds} s, and the other disc is fed anew at least {sw.MinimumTurnDegrees} degrees round the ring"));
 
             // A pool body source with no search: the genomes an exam wrote (tank-*-genomes.tsv, the
             // body's index, a tab, the genome), benched as they are, in place of drawing founders.
@@ -734,7 +736,10 @@ namespace Evosim.Nursery
                     Genome mutant = Mutator.Mutate(
                         parent, new Rng(rng.NextUInt() | ((ulong)rng.NextUInt() << 32)), _config.Mutation,
                         _config.CellTypes, _config.Genome, _config.SensorPool(),
-                        buoyancyOffsetPriced: _config.BuoyancyOffsetWattsPerCubicMetre > 0f);
+                        buoyancyOffsetPriced: _config.BuoyancyOffsetWattsPerCubicMetre > 0f,
+                        shapes: _config.Shapes,
+                        growthReserveMin: _config.GrowthReserveMinSeconds,
+                        growthReserveMax: _config.GrowthReserveMaxSeconds);
                     if (mutant.Nodes.Count != parent.Nodes.Count) continue;
                     Envelope.Take(g, mutant);
                     took = true;
@@ -755,7 +760,10 @@ namespace Evosim.Nursery
                 Genome mutant = Mutator.Mutate(
                     parent, new Rng(rng.NextUInt() | ((ulong)rng.NextUInt() << 32)), _config.Mutation,
                     _config.CellTypes, _config.Genome, pool,
-                    buoyancyOffsetPriced: _config.BuoyancyOffsetWattsPerCubicMetre > 0f);
+                    buoyancyOffsetPriced: _config.BuoyancyOffsetWattsPerCubicMetre > 0f,
+                    shapes: _config.Shapes,
+                    growthReserveMin: _config.GrowthReserveMinSeconds,
+                    growthReserveMax: _config.GrowthReserveMaxSeconds);
                 if (mutant.Nodes.Count != parent.Nodes.Count) continue;
                 return Graft(parent, mutant);
             }

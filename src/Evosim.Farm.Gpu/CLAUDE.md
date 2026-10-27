@@ -59,8 +59,10 @@ The root file's rules still apply. The entries below were moved word for word, s
   load and never a number. `run.json` names it as `threadPoolSpinLimit`, and the header's engine line ends
   `spin N`. Compare a pace only with runs at the same spin.
 - **`GpuMeanTests` crashes the CPU accelerator with "Index out of range" when the test process is pinned to 4
-  logical processors** (found 2026-10-19; the same at `df2bf3b8`, so no recent change caused it). Run it unpinned
-  or on more processors; 8 is untested (`logbook/specs/plants-keep-matter-build.md` on `r62-base`).
+  or to 8 logical processors** (found 2026-10-19; the same at `df2bf3b8`, so no recent change caused it; 8 crashes
+  too, 2026-10-26). The crash takes the whole test host down, so a pinned full Farm suite aborts part way and
+  reports only the tests before it: run the suite with `--filter 'FullyQualifiedName!~GpuMeanTests'`, and
+  `GpuMeanTests` alone unpinned when it matters (`logbook/specs/plants-keep-matter-build.md` on `r62-base`).
 - **A founded card run meets code a resume never reaches, so it is checked on its own** (r58t1,
   2026-10-10; fixed in `c8762e9e` on `r58-runner`). Every card sitting before then was a resume, whose bodies
   are attached before the first block. A founded world steps blocks with no body, and the scent's fill on

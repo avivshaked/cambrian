@@ -1,0 +1,30 @@
+== round 62 grazer health (D215): born share at 12000,24000; own-kill share per 3000 s from 12000 to 24000 s
+   The own-kill share is a PROXY, an upper bound on the grazers' intake from their own kills: the corpse joules
+   grazers' kills founded (kept at 1 - waste) over every mouth's kept intake. The record does not say which corpse
+   a mouth ate. Accepted for test 3's trend in round 62 (the coordinator, 2026-10-23); its level is not a measurement.
+
+r62p-w9-6201  (read to 24000 s; joulesPerUnit 100, intakeWasteFraction 0.2)
+   second  living  founded   born born share
+    12000       9        9      0      0.000
+    24000      13       12      1      0.077
+  contact eating (D219-D221): part 2 is the kept intake bitten off the living over all kept intake
+            bin    living J      kept J   share    graz-s
+   12000-15000        16673       17854   0.934     31187
+   15000-18000        42809       51954   0.824     59713
+   18000-21000        22286       26674   0.835     38992
+   21000-24000        23298       28107   0.829     38266
+  test 3 (D222): the living share in 21000-24000 s is 0.829, holds at 0.5
+  trend, reported and not required: the share falls, 0.934 in 12000-15000 s to 0.829 in 21000-24000 s
+
+r62p-t16-6201  (read to 24000 s; joulesPerUnit 100, intakeWasteFraction 0.2)
+   second  living  founded   born born share
+    12000      15        8      7      0.467
+    24000     117       16    101      0.863
+  contact eating (D219-D221): part 2 is the kept intake bitten off the living over all kept intake
+            bin    living J      kept J   share    graz-s
+   12000-15000       166815      186924   0.892    104828
+   15000-18000       276571      318064   0.870    196476
+   18000-21000       323246      366510   0.882    200978
+   21000-24000       573304      655364   0.875    368873
+  test 3 (D222): the living share in 21000-24000 s is 0.875, holds at 0.5
+  trend, reported and not required: the share falls, 0.892 in 12000-15000 s to 0.875 in 21000-24000 s

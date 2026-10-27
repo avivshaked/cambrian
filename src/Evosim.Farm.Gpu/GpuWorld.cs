@@ -70,6 +70,13 @@ namespace Evosim.Farm.Gpu
         public AnchoringCell AnchorCell;
         public double GripDecay, GripThreshold, GripLag;
 
+        // ---- D239's pace factor: the water the kernels sample is the world's, and the solver steps
+        // physics seconds, so the water's velocity is divided by k and its acceleration by k squared
+        // where it is stored, and the instants are taken at the clock's step in world seconds. At a
+        // factor of 1 the kernels divide nothing and the clock steps by dt itself.
+        public bool Paced;
+        public double Pace, PaceSquared, ClockDt;
+
         // ---- the solver's scalars
         public double Dt, Density, DragK, AddedMass, FluidAccel, Gravity, WorldDepth, Damping, SpinBudget;
         public double RestoringDensity, TissueDensity, TissueExcess, NeutralVolume;
@@ -156,6 +163,11 @@ namespace Evosim.Farm.Gpu
 
             Dt = s.StepSeconds;
             DtF = (float)s.StepSeconds;
+
+            Paced = s.PaceFactor != 1.0;
+            Pace = s.PaceFactor;
+            PaceSquared = s.PaceFactor * s.PaceFactor;
+            ClockDt = s.ClockStepSeconds;
             Density = s.Density;
             DragK = 0.5 * s.Density * s.DragCoefficient;
             TissueExcess = s.TissueExcessDensity;

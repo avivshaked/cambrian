@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Evosim.Core
@@ -103,7 +104,7 @@ namespace Evosim.Core
 
         /// <summary>Total surface area for the given half-extents, m².</summary>
         /// <remarks>
-        /// Derived from <see cref="AddPanels"/> rather than from a second, analytic formula per
+        /// Derived from <see cref="AddPanels(Float3, int, List{DragPanel})"/> rather than from a second, analytic formula per
         /// shape. Two independent expressions of the same quantity is how they come to disagree,
         /// and the disagreement would be silent — a capsule whose panels already summed to 79% of
         /// its true area shipped exactly that way (logbook/0009). This cannot drift, because it
@@ -120,6 +121,82 @@ namespace Evosim.Core
             float total = 0f;
             for (int i = 0; i < panels.Count; i++) total += panels[i].Area;
             return total;
+        }
+
+        // ---------------------------------------------------------------- the part's form (D233)
+
+        /// <summary>
+        /// Whether this shape reads a <see cref="PartForm"/> beside the half-extents. False for box,
+        /// sphere and capsule, which carry <see cref="PartForm.None"/>.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Genome.Validate"/> reads it: a node of a shape that takes a form must carry one
+        /// inside the form's ranges, and a node of any other shape must carry
+        /// <see cref="PartForm.None"/>, so a form never sits unread on a part that cannot use it.
+        /// </remarks>
+        public virtual bool TakesForm => false;
+
+        /// <summary>Volume in m³ of a part with this form. The form-less <see cref="Volume(Float3)"/> for a shape that takes none.</summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The four form overloads are what the developer and the solver call</b>, so a family shape
+        /// has its genes at every call. A shape that takes no form inherits these: they refuse any
+        /// form but <see cref="PartForm.None"/> and otherwise call the form-less method, so a named shape
+        /// gives the same bits either way and a stray form on a box is an error and not a box.
+        /// </para>
+        /// </remarks>
+        public virtual float Volume(Float3 halfExtents, PartForm form)
+        {
+            RefuseForm(form);
+            return Volume(halfExtents);
+        }
+
+        /// <summary>Where a child attaches on a part with this form. See <see cref="Volume(Float3, PartForm)"/>.</summary>
+        public virtual Float3 SurfacePoint(Float3 anchor, Float3 halfExtents, PartForm form)
+        {
+            RefuseForm(form);
+            return SurfacePoint(anchor, halfExtents);
+        }
+
+        /// <summary>Whether a point is inside a part with this form. See <see cref="Volume(Float3, PartForm)"/>.</summary>
+        public virtual bool ContainsPoint(Float3 local, Float3 halfExtents, PartForm form)
+        {
+            RefuseForm(form);
+            return ContainsPoint(local, halfExtents);
+        }
+
+        /// <summary>The surface of a part with this form, as panels. See <see cref="Volume(Float3, PartForm)"/>.</summary>
+        public virtual void AddPanels(Float3 halfExtents, int resolution, PartForm form, List<DragPanel> into)
+        {
+            RefuseForm(form);
+            AddPanels(halfExtents, resolution, into);
+        }
+
+        /// <summary>Total surface area of a part with this form, m². The sum of <see cref="AddPanels(Float3, int, PartForm, List{DragPanel})"/>.</summary>
+        /// <remarks>
+        /// The same sum as <see cref="SurfaceArea(Float3, int)"/>, over the form overload's panels, and
+        /// for the same reason: one expression of the quantity and not two. Allocating, and called once
+        /// per part; a family part reads its area from its <see cref="FamilyGeometry"/>.
+        /// </remarks>
+        public float SurfaceArea(Float3 halfExtents, PartForm form, int resolution = 4)
+        {
+            var panels = new List<DragPanel>();
+            AddPanels(halfExtents, resolution < 1 ? 1 : resolution, form, panels);
+
+            float total = 0f;
+            for (int i = 0; i < panels.Count; i++) total += panels[i].Area;
+            return total;
+        }
+
+        /// <summary>Throws unless <paramref name="form"/> is <see cref="PartForm.None"/>: the guard of a shape that takes none.</summary>
+        protected void RefuseForm(PartForm form)
+        {
+            if (!form.IsNone)
+            {
+                throw new ArgumentException(
+                    $"Shape '{Id}' takes no form, but was given {form}. Only a shape whose " +
+                    "TakesForm is true reads one.", nameof(form));
+            }
         }
 
         /// <summary>Everything about this shape that changes behaviour, for the config hash (§7).</summary>

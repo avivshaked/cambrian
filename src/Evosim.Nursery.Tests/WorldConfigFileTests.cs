@@ -1,0 +1,55 @@
+using System;
+using System.IO;
+using Evosim.Core;
+using Evosim.Nursery;
+using Xunit;
+
+namespace Evosim.Nursery.Tests
+{
+    /// <summary>
+    /// The world configs under rounds/nursery/configs/ that this build reads (README.md there): each loads, each is named by the hash Core computes
+    /// for it and records that hash, and the tunables the round-62 build and integration-1 added stand at their defaults, so the move left each
+    /// world as it was.
+    /// </summary>
+    public class WorldConfigFileTests
+    {
+        private static readonly string Configs = Path.Combine(Recipe.RepoRootAbove(AppContext.BaseDirectory), "rounds", "nursery", "configs");
+
+        /// <summary>Each new file and the file it was made from (the pace build's move of integration-1's files, kept beside it).</summary>
+        [Theory]
+        [InlineData("613ca725c30288c0", "b2885199f9213276")]
+        [InlineData("ba387b3293d820e0", "cd9cc88c0054cf90")]
+        [InlineData("9d9aca71c61bd36c", "9fa947462638667c")]
+        public void ARound62ConfigLoadsAndIsNamedByItsHash(string name, string parent)
+        {
+            string text = File.ReadAllText(Path.Combine(Configs, name + ".json"));
+            RunConfig c = RunConfigJson.Read(text, out string mismatch);
+            Assert.Null(mismatch);
+            Assert.Equal(name, c.Hash());
+            Assert.True(File.Exists(Path.Combine(Configs, parent + ".json")), "the parent file is kept");
+
+            // The tunables the build added since round 60 stand at their defaults, so the world is the parent's.
+            var d = new RunConfig();
+            Assert.Equal(d.ReefShape, c.ReefShape);
+            Assert.Equal(1f, c.PaceFactor);
+            Assert.False(c.Development.ReflectMirroredAnchors);
+            Assert.False(c.Development.ScaleLengthensOnce);
+            Assert.False(c.PlantsKeepMatter);
+            Assert.False(c.PlantsKeepOwnFirst);
+            Assert.Equal(0f, c.CorpseHalfLifeSeconds);
+            Assert.False(c.Fluid.ShapedAddedMass);
+            Assert.Equal(1f, c.BiteDamageScale);
+            Assert.False(c.BiteTakesStore);
+            Assert.False(c.KillSwallowsBody);
+            Assert.False(c.ContactEating);
+            Assert.False(c.IntakeReachFromMouth);
+            Assert.Equal(1f, c.IntakeScale);
+            Assert.False(c.DragLimitAtEveryStep);
+            Assert.False(c.DragLimitByWeldedBody);
+            Assert.Equal(ContactShapeForm.Spheres, c.ContactShape);
+            Assert.True(c.MatterBurialDesertPerSecond < 0f);
+            Assert.False(c.ReadAcrossSeams);
+            Assert.Empty(c.SeedOverrides);
+        }
+    }
+}

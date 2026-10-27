@@ -1,0 +1,16 @@
+A: D:\Projects\experiments\evolution-simulator\scratch\growth-identity\on\r62gon-kg-g32\2026-10-26-214614-d6e59d2b
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.741 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit de79b51c71 dirty False dynamics 29144991d414 farm f9719a88c1ab config d6e59d2bb4b5b31c
+  pace     600 s of 600 in 3.6755321116666666 min, 2.720694499786456 x real time, status ended (budget), diverged 0
+B: D:\Projects\experiments\evolution-simulator\scratch\growth-identity\on\r62gon-kg-g64\2026-10-26-215202-d6e59d2b
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 64, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 23566.0267 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit de79b51c71 dirty False dynamics 29144991d414 farm f9719a88c1ab config d6e59d2bb4b5b31c
+  pace     600 s of 600 in 3.6874330933333335 min, 2.7119136122305307 x real time, status ended (budget), diverged 0
+split A  physics 50%, world 47%, harness 2%, writers 1%
+split B  physics 50%, world 47%, harness 2%, writers 1%
+stats    identical on all 60 shared samples to t=600 (wall clocks left out)
+digest   identical on all 601 shared rows to step 60000
+lineage  byte-equal (1582 lines)
+positions not in both runs

@@ -323,6 +323,14 @@ namespace Evosim.Core
         /// </summary>
         public float LifespanScale { get; }
 
+        /// <summary>
+        /// Birth only - the growth-reserve gene the body was born with (D241,
+        /// <see cref="Genome.GrowthReserveSeconds"/>), in seconds, in a world with the climb
+        /// (<see cref="RunConfig.GrowthAdultSeconds"/> above 0); NaN on every other row. The row's
+        /// <c>grs</c>, so a reader can follow the gene through the lineage.
+        /// </summary>
+        public float GrowthReserveSeconds { get; }
+
         /// <summary>Death only — why the creature left the population.</summary>
         public DeathCause Cause { get; }
 
@@ -480,8 +488,9 @@ namespace Evosim.Core
             float lifespan = float.NaN,
             int immigrantFromWorld = -1, long immigrantFromId = -1,
             double intakeOwnKill = 0d, double intakeOtherKill = 0d, double intakeCarrion = 0d,
-            double biteKept = 0d, double remainsJoules = 0d)
+            double biteKept = 0d, double remainsJoules = 0d, float growthReserve = float.NaN)
         {
+            GrowthReserveSeconds = growthReserve;
             RemainsJoules = remainsJoules;
             BiteKeptJoules = biteKept;
             IntakeOwnKillJoules = intakeOwnKill;
@@ -549,7 +558,8 @@ namespace Evosim.Core
             double capCutJoules = 0d,
             float landingCorpse = float.NaN, float landingCorpseMean = float.NaN,
             float lifespan = float.NaN,
-            int immigrantFromWorld = -1, long immigrantFromId = -1) =>
+            int immigrantFromWorld = -1, long immigrantFromId = -1,
+            float growthReserve = float.NaN) =>
             new LineageEvent(
                 LineageEventKind.Birth, elapsedSeconds, id, parentId, birthKind, generationDepth,
                 speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch,
@@ -567,7 +577,8 @@ namespace Evosim.Core
                 landingCorpse: landingCorpse, landingCorpseMean: landingCorpseMean,
                 lifespan: lifespan,
                 immigrantFromWorld: birthKind == BirthKind.Immigration ? immigrantFromWorld : -1,
-                immigrantFromId: birthKind == BirthKind.Immigration ? immigrantFromId : -1);
+                immigrantFromId: birthKind == BirthKind.Immigration ? immigrantFromId : -1,
+                growthReserve: growthReserve);
 
         /// <summary>
         /// One death. <paramref name="gestationJoules"/> and <paramref name="reserveJoules"/> are
@@ -687,6 +698,7 @@ namespace Evosim.Core
                 case DeathCause.Diverged: return "diverged";
                 case DeathCause.Eaten: return "eaten";
                 case DeathCause.Aged: return "aged";
+                case DeathCause.Withered: return "withered";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(cause), cause, "New DeathCause, new lineage.jsonl code — add one " +
@@ -809,6 +821,14 @@ namespace Evosim.Core
                 if (BirthKind == Evosim.Core.BirthKind.Immigration)
                 {
                     w.Field("from", ImmigrantFromWorld).Field("fid", ImmigrantFromId);
+                }
+
+                // D241's gene, on every birth row of a world with the climb and on none of any other,
+                // so every row of a world without it is byte for byte what it was. Appended at the end
+                // for the reason every field above is.
+                if (!float.IsNaN(GrowthReserveSeconds))
+                {
+                    w.Field("grs", GrowthReserveSeconds);
                 }
             }
             else if (Kind == LineageEventKind.Kill)

@@ -2,10 +2,12 @@
 (patches_founders in leaf-recipes.py), which has no run of its own. Each draw's deal is the one --restep computes: a request whose
 members are no tank of the deal is checked (--check, which steps nothing), and the refusal names the deal.
 
-    python scripts/reads/founders-batch.py <dotnet> <dll> <worktree root> <recipe, relative to it> <recipe hash> <out dir> [--brains own,brainless,knockout]
+    python scripts/reads/founders-batch.py <dotnet> <dll> <worktree root> <recipe, relative to it> <recipe hash> <out dir> [--brains own,brainless,knockout] [--lineage <file>]
 
 The pool is the recipe's own (bodies.pool), already in the worktree. Writes <out>/req/, <out>/jobs.txt as patch-batch.py does, and
-<out>/brains.json, the label of each exam control by its index, for patch-read.py.
+<out>/brains.json, the label of each exam control by its index, for patch-read.py. With --lineage, a map from pool line to founder
+lineage (inocula/r59-direction-blades/lineage.json for the curriculum's twenty) is checked to name every line of the pool, and copied
+to <out>/lineage.json, where scripts/reads/nursery-travel-read.py reads it.
 """
 import argparse
 import json
@@ -21,6 +23,7 @@ ap.add_argument('recipe')
 ap.add_argument('hash')
 ap.add_argument('out')
 ap.add_argument('--brains', default='own,brainless,knockout')
+ap.add_argument('--lineage')
 a = ap.parse_args()
 
 rec = json.load(open(os.path.join(a.wt, a.recipe), encoding='utf-8'))
@@ -31,6 +34,15 @@ wanted = [b.strip() for b in a.brains.split(',') if b.strip()]
 os.makedirs(os.path.join(a.out, 'req'), exist_ok=True)
 with open(os.path.join(a.out, 'brains.json'), 'w', encoding='utf-8', newline='\n') as f:
     json.dump(labels, f)
+if a.lineage:
+    with open(os.path.join(a.wt, rec['bodies']['pool']), encoding='utf-8') as f:
+        count = sum(1 for l in f if l.strip())
+    lineage = json.load(open(a.lineage, encoding='utf-8'))
+    if sorted(lineage, key=int) != [str(i) for i in range(count)]:
+        raise SystemExit('%s does not name exactly the %d lines of %s' % (a.lineage, count, rec['bodies']['pool']))
+    with open(os.path.join(a.out, 'lineage.json'), 'w', encoding='utf-8', newline='\n') as f:
+        json.dump(lineage, f, indent=1)
+        f.write('\n')
 
 
 def base(episode, tank):

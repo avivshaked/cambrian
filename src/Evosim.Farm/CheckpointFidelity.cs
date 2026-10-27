@@ -299,7 +299,7 @@ namespace Evosim.Farm
         /// <summary>A header for a world founded here: the physics step from the config's dt.</summary>
         private static CheckpointHeader FoundingHeader(RunConfig config, ulong seed)
         {
-            float dt = EnvBinding.ResolvePhysicsStep(config.PhysicsStepSeconds, out int perMetabolic);
+            float dt = EnvBinding.ResolvePhysicsStep(config.PhysicsStepSeconds, config.PaceFactor, out int perMetabolic);
 
             return new CheckpointHeader
             {
@@ -444,7 +444,7 @@ namespace Evosim.Farm
             // step the module rule's, so the count is zero after the first of either.
             int limit = 2 * (int)Math.Ceiling(
                             Math.Max(world.World.Config.GrowthStepSeconds, Simulation.MetabolicStepSeconds) /
-                            world.Sim.PhysicsDt) + 2 * world.Sim.StepsPerMetabolicStep;
+                            world.Sim.WorldSecondsPerStep) + 2 * world.Sim.StepsPerMetabolicStep;
 
             int steps = 0;
 

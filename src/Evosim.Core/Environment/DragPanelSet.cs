@@ -60,6 +60,35 @@ namespace Evosim.Core
 
             shape.AddPanels(halfExtents, panelsPerAxis < 1 ? 1 : panelsPerAxis, panels);
 
+            return From(panels);
+        }
+
+        /// <summary>
+        /// Builds the panels for one developed part, at the size it has now — D233. Call once, at build
+        /// and at a resize; never on the step path.
+        /// </summary>
+        /// <remarks>
+        /// A part of a shape that takes a form reads the panels its <see cref="FamilyGeometry"/>
+        /// measured once and scales them (<see cref="PhenotypePart.AddFamilyPanels"/>), so a resize
+        /// measures no surface. Any other part asks its shape for panels at its half-extents, as the
+        /// overload above does. Both go through the same filter of panels with no area.
+        /// </remarks>
+        public static DragPanelSet For(
+            PartShape shape, PhenotypePart part, int panelsPerAxis, List<DragPanel> scratch = null)
+        {
+            List<DragPanel> panels = scratch ?? new List<DragPanel>(64);
+            panels.Clear();
+
+            int resolution = panelsPerAxis < 1 ? 1 : panelsPerAxis;
+
+            if (part.Family != null) part.AddFamilyPanels(resolution, panels);
+            else shape.AddPanels(part.HalfExtents, resolution, panels);
+
+            return From(panels);
+        }
+
+        private static DragPanelSet From(List<DragPanel> panels)
+        {
             // Panels with no area contribute nothing and would be tested every step forever.
             // Dropped here, once, rather than branched around a few billion times.
             int kept = 0;

@@ -1,0 +1,29 @@
+== round 62 grazer screen by season: end 24000 s, upkeep 0.908 W
+
+r62kg-6201
+  half-year               leafD  aged starv eatn | kills by g g>leaf | eaten fromK  e-fK | kept W/g share | g mean g end  fnd bred
+  summer 0-2750             902   529   373    0 |     0    0      0 |     0     0     0 | - - |    0.0     0    0    0
+  winter 2750-5750         2860  1795  1048   17 |    24   24     18 |     0     0     0 |    0.202  0.22 |    6.7    13   34    4
+  summer 5750-8750         3814  3184   502  128 |   190  190    146 |     0     0     0 |    0.599  0.66 |    9.6    18   38   30
+  winter 8750-11750        6716  4789  1789  138 |   179  179    158 |     0     0     0 |    0.416  0.46 |   12.7    10   35   24
+  summer 11750-14750       5943  5223   596  124 |   165  165    157 |     0     0     0 |    0.418  0.46 |   10.7    13   34   20
+  winter 14750-17750       9081  7494  1306  281 |   344  343    303 |     0     0     0 |    0.598  0.66 |   14.1     6   40   65
+  summer 17750-20750      10183  9274   797  112 |   148  148    127 |     0     0     0 |    0.349  0.38 |    9.8    10   40   21
+  winter 20750-23750      14585 12239  2045  301 |   345  345    325 |     0     0     0 |    0.651  0.72 |   12.7    13   41   47
+  summer 23750-24000       1162  1066    62   34 |    40   40     40 |     0     0     0 |    0.606  0.67 |   13.3    15    3    5
+  all summer    12000 s: leaf deaths 22004 (aged 19276), kills by grazers 543 (of leaves 470), corpses eaten 0 (from kills 0), grazers born 115 founded, 76 bred
+  all winter    12000 s: leaf deaths 33242 (aged 26317), kills by grazers 891 (of leaves 804), corpses eaten 0 (from kills 0), grazers born 150 founded, 140 bred
+
+r62kg-6202
+  half-year               leafD  aged starv eatn | kills by g g>leaf | eaten fromK  e-fK | kept W/g share | g mean g end  fnd bred
+  summer 0-2750            1498   987   511    0 |     0    0      0 |     0     0     0 | - - |    0.0     0    0    0
+  winter 2750-5750         3865  2427  1404   34 |    55   55     35 |     0     0     0 |    0.466  0.51 |    9.8    15   42   20
+  summer 5750-8750         3412  2678   695   39 |    58   58     42 |     0     0     0 |    0.288  0.32 |   10.0    15   40   15
+  winter 8750-11750        5700  3487  2094  119 |   136  136    130 |     0     0     0 |    0.394  0.43 |   15.2    20   51   22
+  summer 11750-14750       4451  3443   774  234 |   351  351    272 |     0     0     0 |    0.532  0.59 |   15.6    14   40   46
+  winter 14750-17750       6687  5151  1350  186 |   263  263    220 |     0     0     0 |    0.627  0.69 |   11.1    11   37   52
+  summer 17750-20750       7338  6026  1008  304 |   372  372    339 |     0     0     0 |    0.642  0.71 |   13.3    14   46   78
+  winter 20750-23750      10011  7826  1854  331 |   510  510    393 |     0     0     0 |    0.648  0.71 |   15.3    15   44   78
+  summer 23750-24000        743   660    64   19 |    35   35     25 |     0     0     0 |    0.366  0.40 |   15.7    17    5    5
+  all summer    12000 s: leaf deaths 17442 (aged 13794), kills by grazers 816 (of leaves 678), corpses eaten 0 (from kills 0), grazers born 131 founded, 144 bred
+  all winter    12000 s: leaf deaths 26263 (aged 18891), kills by grazers 964 (of leaves 778), corpses eaten 0 (from kills 0), grazers born 174 founded, 172 bred

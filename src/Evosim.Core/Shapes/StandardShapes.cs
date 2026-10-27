@@ -9,6 +9,14 @@ namespace Evosim.Core
         public const string Box = "box";
         public const string Sphere = "sphere";
         public const string Capsule = "capsule";
+
+        /// <summary>
+        /// D233's tapered superellipsoid, the one shape that takes a <see cref="PartForm"/>. In
+        /// <see cref="PartShapeRegistry.Catalogue"/> but not in <see cref="PartShapeRegistry.Standard"/>:
+        /// a world allows it by naming it in <see cref="RunConfig.ShapeIds"/>, and a genome that holds
+        /// a part of it is written in format 13 or 14 with the part's form.
+        /// </summary>
+        public const string Superellipsoid = "superellipsoid";
     }
 
     /// <summary>

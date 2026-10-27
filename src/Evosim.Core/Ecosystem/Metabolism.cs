@@ -732,6 +732,13 @@ namespace Evosim.Core
         /// The denominator of §5A.2's ratio, and the most useful single number about a body:
         /// divided into a creature's reserve it gives the seconds it can survive earning nothing,
         /// which is what <see cref="SensorChannel.Energy"/> reports (§4.4).
+        /// <para>
+        /// D241: the idle share of this bill is the joint cell's <c>IdleWattsPerNewtonMetre</c> times
+        /// each part's <see cref="PhenotypePart.Power"/>, read from the part as it stands. So a juvenile
+        /// made by <see cref="Phenotype.ScaledFor"/> with <see cref="RunConfig.JuvenileStrengthScales"/>
+        /// on pays the idle bill of its scaled Power (the cube of its length ratio) and nothing here
+        /// needs to know; with the switch off it pays its adult's.
+        /// </para>
         /// </remarks>
         /// <param name="phenotype">The developed body, at whatever size it is now.</param>
         /// <param name="config">Supplies cell types, shapes and the neural cost rates.</param>

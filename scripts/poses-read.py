@@ -48,7 +48,7 @@ INDEX_ENTRY_BYTES = 16
 PAYLOAD_PREFIX = {1: 12, 2: 16, 3: 16, 4: 16}
 BODY_FIXED = {1: 37, 2: 38, 3: 46, 4: 50}
 
-FLAG_BITS = 1 | 2 | 4
+FLAG_BITS = 1 | 2 | 4 | 8   # absorptive, jointed, photosynthetic, and remains (D220; PoseStream.RemainsBit)
 STREAM_NAMES = ('poses.bin', 'film.poses.bin')
 
 
@@ -254,7 +254,7 @@ def read_frame(f, offset, payload_bytes, version=None):
         if version >= 2:
             flags = records[at + 36]
             if flags & ~FLAG_BITS:
-                raise Refusal('a body at frame %d carries flags %d, outside the three guild bits'
+                raise Refusal('a body at frame %d carries flags %d, outside the four flag bits'
                               % (offset, flags))
             if version >= 3:
                 # Version 3 (2026-09-25): the seconds of reserve and the funds over the breeding gate.
@@ -303,12 +303,12 @@ def frac(fraction):
 
 
 def guild(flags):
-    """The flags as three letters: absorptive, jointed, photosynthetic, or ??? when unrecorded."""
+    """The flags as letters: absorptive, jointed, photosynthetic, then r for remains (D220), or ??? when unrecorded."""
     if flags is None:
         return '???'
 
     return ''.join(letter if flags & bit else '-'
-                   for bit, letter in ((1, 'a'), (2, 'j'), (4, 'p')))
+                   for bit, letter in ((1, 'a'), (2, 'j'), (4, 'p'))) + ('r' if flags & 8 else '')
 
 
 def main():

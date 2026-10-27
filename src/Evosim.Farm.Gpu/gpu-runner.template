@@ -995,6 +995,7 @@ namespace __NS__
                 Anchoring = w.AnchorCell != null ? 1 : 0,
                 GripDecay = w.GripDecay, GripThreshold = w.GripThreshold, GripLag = w.GripLag,
 
+                Paced = w.Paced ? 1 : 0, Pace = (Real)w.Pace, PaceSquared = (Real)w.PaceSquared,
                 DtD = w.Dt, PoseOmega = w.PoseOmega,
                 PushOmega = (Real)w.PushOmega, LimbPush = (Real)w.LimbPush,
                 NegSkin = (Real)w.NegSkin, NegSpin = (Real)w.NegSpin,
@@ -1666,7 +1667,9 @@ namespace __NS__
             _base.LeafNz = leaf == null ? 1 : leaf.CellsZ;
             _base.LeafCell = leaf == null ? 1f : leaf.CellSizeMetres;
 
-            double dt = world.Config.StepSeconds;
+            // D239: the instants are the world's clock, which steps by dt over the pace factor (dt itself
+            // at a factor of 1), exactly as DynamicsWorld.BackendAdvanceClock advances it.
+            double dt = world.Config.ClockStepSeconds;
             double seconds = world.ElapsedSeconds;
             for (int k = 0; k < steps; k++)
             {

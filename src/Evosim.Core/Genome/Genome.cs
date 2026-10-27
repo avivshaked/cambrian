@@ -92,6 +92,24 @@ namespace Evosim.Core
         public float LifespanScale { get; set; } = 1f;
 
         /// <summary>
+        /// D241: the reserve a juvenile must hold before it grows, in seconds of its own standing
+        /// cost, or null when the genome does not carry the gene.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Carried only when present.</b> In a world without the climb
+        /// (<see cref="RunConfig.GrowthAdultSeconds"/> 0) no genome has it, and the genome's text
+        /// keeps its format byte for byte (<see cref="GenomeJson.FormatFor"/>). In a climb world
+        /// <c>World.Admit</c> gives a genome without it
+        /// <see cref="RunConfig.GrowthReserveStartSeconds"/>, on a clone, and nothing fills it in
+        /// at load. The rate law reads it as <c>keep = max(floor x tissue, G x standing watts)</c>
+        /// (<c>World.GrowOne</c>). The world's range is judged at admission; here only a value that
+        /// is not a positive finite number is refused.
+        /// </para>
+        /// </remarks>
+        public float? GrowthReserveSeconds { get; set; }
+
+        /// <summary>
         /// D146: the creature's one brain, or null for the per-part neurons of the old model.
         /// A genome that carries one carries no neurons on its nodes and none in
         /// <see cref="GlobalBrain"/> (<see cref="Validate"/>).
@@ -147,6 +165,7 @@ namespace Evosim.Core
                 Reproduction = Reproduction.Clone(),
                 AdultScale = AdultScale,
                 LifespanScale = LifespanScale,
+                GrowthReserveSeconds = GrowthReserveSeconds,
                 Brain = Brain?.Clone(),
                 NextEdgeId = NextEdgeId,
             };
@@ -176,10 +195,17 @@ namespace Evosim.Core
         /// above 0). False refuses any nonzero offset; null asks only the range, which is the
         /// question a genome on its own can answer (development, a file being read).
         /// </param>
+        /// <param name="shapes">
+        /// Registry to resolve <see cref="MorphNode.ShapeId"/> against, and to ask whether the shape
+        /// takes a <see cref="MorphNode.Form"/>. Defaults to <see cref="PartShapeRegistry.Standard"/>,
+        /// which holds no shape that takes one.
+        /// </param>
         public IReadOnlyList<string> Validate(
-            CellTypeRegistry cellTypes = null, bool? buoyancyOffsetPriced = null)
+            CellTypeRegistry cellTypes = null, bool? buoyancyOffsetPriced = null,
+            PartShapeRegistry shapes = null)
         {
             var issues = new List<string>();
+            PartShapeRegistry shapeTable = shapes ?? PartShapeRegistry.Standard;
 
             if (Nodes.Count == 0)
             {
@@ -269,6 +295,18 @@ namespace Evosim.Core
                     "world's ageing base, so nothing at or below zero describes a life.");
             }
 
+            // D241. The world's range [min, max] is the config's and is judged at admission; a
+            // gene that is not a positive finite number has no logarithm to step.
+            if (GrowthReserveSeconds.HasValue &&
+                (float.IsNaN(GrowthReserveSeconds.Value) || float.IsInfinity(GrowthReserveSeconds.Value) ||
+                 GrowthReserveSeconds.Value <= 0f))
+            {
+                issues.Add(
+                    $"Growth reserve {GrowthReserveSeconds.Value} must be finite and positive. It is " +
+                    "seconds of the body's own standing cost held back while it grows, and it steps " +
+                    "on its logarithm.");
+            }
+
             for (int n = 0; n < Nodes.Count; n++)
             {
                 MorphNode node = Nodes[n];
@@ -306,11 +344,32 @@ namespace Evosim.Core
                 // here rather than trusted as a convention: a genome whose stomach is also its
                 // elbow would develop, run and be scored, and nothing downstream could tell it
                 // was never meant to be legal.
-                if (!PartShapeRegistry.Standard.Contains(node.ShapeId))
+                if (!shapeTable.Contains(node.ShapeId))
                 {
                     issues.Add(
                         $"Node {n}: unknown shape '{node.ShapeId}'. " +
-                        $"Registered: {string.Join(", ", PartShapeRegistry.Standard.Ids())}.");
+                        $"Registered: {string.Join(", ", shapeTable.Ids())}.");
+                }
+                else if (shapeTable.Resolve(node.ShapeId).TakesForm)
+                {
+                    // D233. A family part is never measured without its genes, and a genome that
+                    // loaded with them defaulted would be a different creature wearing this one's
+                    // identity (§9), so a missing form is refused, not read as some default.
+                    if (!node.Form.InRange)
+                    {
+                        issues.Add(
+                            $"Node {n}: shape '{node.ShapeId}' takes a form, but the node's is " +
+                            (node.Form.IsNone ? "none" : node.Form.ToString()) +
+                            $". Profile must lie in [{PartForm.ProfileMin}, {PartForm.ProfileMax}], " +
+                            $"section in [{PartForm.SectionMin}, {PartForm.SectionMax}] and " +
+                            $"taper in [{PartForm.TaperMin}, {PartForm.TaperMax}].");
+                    }
+                }
+                else if (!node.Form.IsNone)
+                {
+                    issues.Add(
+                        $"Node {n}: form {node.Form} on a '{node.ShapeId}' part. That shape takes " +
+                        "no form, so nothing would read it.");
                 }
 
                 CellTypeRegistry registry = cellTypes ?? CellTypeRegistry.Standard;

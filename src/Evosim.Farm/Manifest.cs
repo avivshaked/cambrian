@@ -51,6 +51,13 @@ namespace Evosim.Farm
         public float PhysicsStepSeconds = EnvBinding.DefaultPhysicsStepSeconds;
         public float MetabolicStepSeconds = EnvBinding.MetabolicStepSeconds;
 
+        /// <summary>
+        /// D239's pace factor k: seconds of physics a world second holds. 1 is every run before it,
+        /// and is not written to run.json, so a run at 1 keeps the bytes it always had.
+        /// <see cref="MetabolicStepSeconds"/> is in world seconds whatever this is.
+        /// </summary>
+        public float PaceFactor = 1f;
+
         /// <summary>What version of the solver ran, beside the hash that actually identifies it.</summary>
         public string EngineVersion;
 
@@ -360,7 +367,7 @@ namespace Evosim.Farm
         /// </remarks>
         public static RunManifest Build(
             EnvSettings settings, string configHash, string inoculumHash,
-            float physicsStepSeconds, int stepsPerMetabolicStep, int threads)
+            float physicsStepSeconds, int stepsPerMetabolicStep, int threads, float paceFactor = 1f)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
 
@@ -401,7 +408,13 @@ namespace Evosim.Farm
                 InoculatePath = settings.InoculatePath,
                 InoculumHash = inoculumHash,
                 PhysicsStepSeconds = physicsStepSeconds,
-                MetabolicStepSeconds = stepsPerMetabolicStep * physicsStepSeconds,
+
+                // World seconds: at a pace factor above 1 the steps in a metabolic step hold more
+                // physics seconds than the 0.5 s of world they stand for.
+                MetabolicStepSeconds = paceFactor == 1f
+                    ? stepsPerMetabolicStep * physicsStepSeconds
+                    : EnvBinding.MetabolicStepSeconds,
+                PaceFactor = paceFactor,
                 EngineVersion = EngineVersion(),
                 Threads = threads,
                 ProgramPath = programPath,
@@ -553,6 +566,10 @@ namespace Evosim.Farm
             w.Field("engineVersion", m.EngineVersion);
             w.Field("physicsDtSeconds", m.PhysicsStepSeconds);
             w.Field("metabolicStepSeconds", m.MetabolicStepSeconds);
+
+            // D239, only above 1, so every run at the recorded pace keeps its run.json bytes. A reader
+            // that finds no field reads 1.
+            if (m.PaceFactor != 1f) w.Field("paceFactor", m.PaceFactor);
 
             // Where physicsJobWorkers and jobWorkerMaximum stood. The count is recorded for the
             // same reason theirs was — a reader has to know what produced the pace — but it is not

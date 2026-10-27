@@ -18,7 +18,8 @@ namespace Evosim.Dynamics
     /// <c>Organism.Phenotype = AdultPhenotype.Scaled(f^(1/3))</c> — a fresh copy of the adult
     /// with every length (half-extents, position, both anchors) multiplied by one scalar, every
     /// volume and surface re-measured by the part's own shape, and the plan, the cell types, the
-    /// joints, the limits, the power, the lift and the neurons carried across untouched. The
+    /// joints, the limits, the lift and the neurons carried across untouched, and the power too unless
+    /// the world scales it with the body (<c>RunConfig.JuvenileStrengthScales</c>, D241). The
     /// developer is never re-run, so a part cannot appear or disappear as a body grows, and the
     /// part count and the joint types are invariants of the creature's whole life. This method
     /// consumes that scaled phenotype; it never scales anything itself.
@@ -131,9 +132,12 @@ namespace Evosim.Dynamics
             if (LinkCoreHalf != null) WriteLinkCores();
             if (StrokeAssemblyParts != null) WriteStrokeAssembly();   // D231: the strips follow the new sizes
 
-            // Torque per unit of signal is read from Power, which growth does not scale — so this
-            // is the identity today. It is called anyway, because "what a fresh build would
-            // produce" is the acceptance, not "what happens to be invariant this month".
+            // Torque per unit of signal is read from Power, which growth scales only when the world
+            // asks for it (RunConfig.JuvenileStrengthScales, D241: Phenotype.ScaledFor) — so this is
+            // the identity with the switch off, and with it on it rewrites every joint's torque per
+            // unit of signal from the Power the scaled phenotype now carries. It is called either way,
+            // because "what a fresh build would produce" is the acceptance, not "what happens to be
+            // invariant this month".
             Drive.Refresh();
 
             // The root stays where it is and everything else follows the new anchors outward.
@@ -223,7 +227,7 @@ namespace Evosim.Dynamics
                 // PhysX recomputes a link's tensor from its collider whenever the mass is written,
                 // so an inflated mass inflates the tensor in proportion. The same is done here,
                 // from an analytic tensor rather than from the engine's — see the report.
-                Vec3 diag = InertiaOf(shape, part.HalfExtents, plain) * (effective / plain);
+                Vec3 diag = InertiaOf(shape, part, plain) * (effective / plain);
                 Vec3.Write(InertiaLocal, 3 * i, diag);
                 SmallestInertia[i] = System.Math.Min(diag.X, System.Math.Min(diag.Y, diag.Z));
 
@@ -244,7 +248,7 @@ namespace Evosim.Dynamics
                 QuatD.Write(JointFrame, 4 * i, frame);
                 QuatD.Write(RestFrame, 4 * i, rest);
 
-                panelSets[i] = DragPanelSet.For(shape, part.HalfExtents, config.PanelsPerAxis, scratch);
+                panelSets[i] = DragPanelSet.For(shape, part, config.PanelsPerAxis, scratch);
                 panels += panelSets[i].Count;
             }
 
@@ -395,6 +399,13 @@ namespace Evosim.Dynamics
 
             for (int i = 0; i < Links; i++)
             {
+                // D233: a family link's reach follows the size through its part's scale, as its core does.
+                if (HasHullCore(i))
+                {
+                    _linkReach[i] = FamilyReach(Phenotype.Parts[i]);
+                    continue;
+                }
+
                 Float3 h = Phenotype.Parts[i].HalfExtents;
                 _linkReach[i] = System.Math.Sqrt(
                     (double)h.X * h.X + (double)h.Y * h.Y + (double)h.Z * h.Z);

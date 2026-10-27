@@ -365,15 +365,21 @@ namespace Evosim.Farm
                 ? CheckpointReader.ReadHeader(checkpoint)
                 : FoundingHeader(runDirectory, config, manifest, manifestText, options.FromSeconds);
 
-            float physicsDt = EnvBinding.ResolvePhysicsStep(header.PhysicsStepSeconds, out int stepsPerMetabolic);
+            float physicsDt = EnvBinding.ResolvePhysicsStep(header.PhysicsStepSeconds, config.PaceFactor, out int stepsPerMetabolic);
 
-            if (1d / options.FramesPerSecond < physicsDt - 1e-12)
+            // D239. A frame is taken at a physics step and filmed at a world second, so the step that
+            // limits the rate is the physics step in world seconds: dt itself at a pace factor of 1.
+            double worldStepSeconds = config.PaceFactor == 1f ? physicsDt : physicsDt / (double)config.PaceFactor;
+
+            if (1d / options.FramesPerSecond < worldStepSeconds - 1e-12)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(options), options.FramesPerSecond,
                     "A frame is taken at a physics step, and this run's step is " +
-                    physicsDt.ToString("R", CultureInfo.InvariantCulture) + " s, so the rate can be " +
-                    "at most " + (1d / physicsDt).ToString("0.##", CultureInfo.InvariantCulture) +
+                    (config.PaceFactor == 1f
+                        ? physicsDt.ToString("R", CultureInfo.InvariantCulture)
+                        : worldStepSeconds.ToString("R", CultureInfo.InvariantCulture)) + " s, so the rate can be " +
+                    "at most " + (1d / worldStepSeconds).ToString("0.##", CultureInfo.InvariantCulture) +
                     " frames a second. Above it two nominal seconds would share one step.");
             }
 
@@ -393,7 +399,7 @@ namespace Evosim.Farm
             // The config's hash is refused as a resume refuses it; the three source hashes are
             // named and the rows below decide (the faithful rule, in the remarks).
             RunManifest build = Manifest.Build(
-                settings, config.Hash(), null, physicsDt, stepsPerMetabolic, threads);
+                settings, config.Hash(), null, physicsDt, stepsPerMetabolic, threads, config.PaceFactor);
 
             SourceComparison sources = CompareSources(
                 header, config.Hash(), build.CoreHash, build.DynamicsHash, build.FarmHash);
@@ -404,7 +410,8 @@ namespace Evosim.Farm
             SortedList<double, RunRow> runRows = ReadRunRows(runDirectory, header.Seconds - Eps);
             if (runRows.Count > 0) result.LastRunRowSeconds = runRows.Keys[runRows.Count - 1];
 
-            float metabolicSeconds = stepsPerMetabolic * physicsDt; // Metabolise's own float
+            // Metabolise's own float: world seconds, which at a pace factor above 1 is the metabolic step itself.
+            float metabolicSeconds = config.PaceFactor == 1f ? stepsPerMetabolic * physicsDt : EnvBinding.MetabolicStepSeconds;
             int reportEvery = header.ReportEvery > 0
                 ? header.ReportEvery
                 : InferReportEvery(runRows, metabolicSeconds);
@@ -569,7 +576,9 @@ namespace Evosim.Farm
             result.WallSeconds = wall.Elapsed.TotalSeconds;
 
             Decide(result, options);
-            film.WriteVerdict(result, options, header, physicsDt);
+            // The verdict's physicsDt is what a reader steps its clock by, so world seconds a step (D239); the same
+            // number as the physics step at a pace factor of 1.
+            film.WriteVerdict(result, options, header, config.PaceFactor == 1f ? physicsDt : (float)worldStepSeconds);
 
             return result;
         }
@@ -699,7 +708,7 @@ namespace Evosim.Farm
             Match seed = Regex.Match(manifestText, "\"seed\"\\s*:\\s*(\\d+)");
             if (!seed.Success) throw new InvalidDataException("No seed in " + runDirectory + "/run.json.");
 
-            float dt = EnvBinding.ResolvePhysicsStep(config.PhysicsStepSeconds, out int perMetabolic);
+            float dt = EnvBinding.ResolvePhysicsStep(config.PhysicsStepSeconds, config.PaceFactor, out int perMetabolic);
             JsonNode hashes = manifest["source"];
 
             return new CheckpointHeader

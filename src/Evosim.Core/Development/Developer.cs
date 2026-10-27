@@ -32,9 +32,11 @@ namespace Evosim.Core
         /// <param name="limits">Guard rails. Defaults to <see cref="DevelopmentLimits.Default"/>.</param>
         /// <param name="rootTransform">Where to place the root. Defaults to the origin.</param>
         /// <param name="shapes">
-        /// Geometry each node's shape id resolves against. Defaults to
-        /// <see cref="PartShapeRegistry.Standard"/>. A run using custom shapes must pass its own,
-        /// or its genomes will fail to resolve rather than silently developing as boxes.
+        /// Geometry each node's shape id resolves against, and the list the genome is validated
+        /// against. Defaults to <see cref="PartShapeRegistry.Catalogue"/>, which answers geometry for
+        /// every shape the build knows (D233). A run passes its own world list,
+        /// <see cref="RunConfig.Shapes"/>, so that a genome holding a shape the world does not allow
+        /// is refused rather than developed.
         /// </param>
         /// <param name="moduleCounts">
         /// How many times each <see cref="ModuleGrowth.Indeterminate"/> node may occur along one
@@ -65,9 +67,9 @@ namespace Evosim.Core
             CellTypeRegistry cellTypes = null)
         {
             if (genome == null) throw new ArgumentNullException(nameof(genome));
-            shapes = shapes ?? PartShapeRegistry.Standard;
+            shapes = shapes ?? PartShapeRegistry.Catalogue;
 
-            IReadOnlyList<string> issues = genome.Validate(cellTypes);
+            IReadOnlyList<string> issues = genome.Validate(cellTypes, shapes: shapes);
             if (issues.Count > 0)
             {
                 throw new ArgumentException(
@@ -182,7 +184,7 @@ namespace Evosim.Core
             // treat as half the size — three systems disagreeing with the limit that admitted
             // the part.
             PartShape shape = shapes.Resolve(node.ShapeId);
-            float volume = shape.Volume(halfExtents);
+            float volume = shape.Volume(halfExtents, node.Form);
 
             // Both tails, one counter. A part is dropped for being unrepresentably small (§4.5's
             // extinction by shrinking) or unrepresentably large (DevelopmentLimits.MaxPartVolume),
@@ -231,6 +233,11 @@ namespace Evosim.Core
                 }
             }
 
+            // D233. A family part measures its surface once, here, at the size it is built at, and
+            // its area, its exposure and its drag all read that one set of panels (scaled, in a
+            // grown copy). A named part measures its area from the shape, as it always did.
+            FamilyGeometry family = FamilyGeometry.For(shape, node.Form, halfExtents);
+
             PhenotypePart part = phenotype.Add(new PhenotypePart
             {
                 ParentIndex = parentPartIndex,
@@ -246,8 +253,10 @@ namespace Evosim.Core
                 ReflectedDrive = limits.ReflectMirroredAnchors && mirrored,
                 CellTypeId = node.CellTypeId,
                 ShapeId = node.ShapeId,
+                Form = node.Form,
+                Family = family,
                 Volume = volume,
-                SurfaceArea = shape.SurfaceArea(halfExtents),
+                SurfaceArea = family != null ? family.ReferenceSurfaceArea : shape.SurfaceArea(halfExtents),
                 JointType = jointType,
                 JointLimits = jointLimits,
                 Power = jointType == JointType.Fixed ? 0f : node.Power,
@@ -336,9 +345,9 @@ namespace Evosim.Core
                 // box that is a point on a face, as before; for a sphere or capsule it is a
                 // point on the curve. Scaling by half-extents instead would attach children to a
                 // bounding box that is not there, leaving a visible gap on every round part.
-                Float3 anchorOnParent = shape.SurfacePoint(edge.ParentAnchor, halfExtents);
+                Float3 anchorOnParent = shape.SurfacePoint(edge.ParentAnchor, halfExtents, node.Form);
                 Float3 anchorOnChild = shapes.Resolve(childNode.ShapeId)
-                    .SurfacePoint(edge.ChildAnchor, childHalfExtents);
+                    .SurfacePoint(edge.ChildAnchor, childHalfExtents, childNode.Form);
 
                 int mirrorOrdinal = -1;
 

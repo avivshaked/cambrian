@@ -43,7 +43,7 @@ namespace Evosim.Core
         /// Drag force and torque on one part, in world space. Torque is about the part centre.
         /// </summary>
         /// <param name="panels">
-        /// The part's panels, built once by <see cref="DragPanelSet.For"/> at development.
+        /// The part's panels, built once by <see cref="DragPanelSet.For(PartShape, PhenotypePart, int, System.Collections.Generic.List{DragPanel})"/> at development.
         /// </param>
         /// <param name="rotation">Orientation in world space.</param>
         /// <param name="velocity">Velocity of the part's centre.</param>

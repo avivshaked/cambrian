@@ -167,6 +167,25 @@ namespace Evosim.Farm
         public float PhysicsDt { get; }
         public int StepsPerMetabolicStep { get; }
 
+        /// <summary>
+        /// D239's pace factor k, the config's: seconds of physics in one world second. 1 is every
+        /// world recorded before it, and then nothing below is multiplied or divided by it.
+        /// </summary>
+        public float PaceFactor { get; }
+
+        /// <summary>
+        /// Seconds of world one physics step stands for: <see cref="PhysicsDt"/>, or that over the
+        /// pace factor above 1. The solver's clock advances by this.
+        /// </summary>
+        public float WorldSecondsPerStep { get; }
+
+        /// <summary>
+        /// Seconds of world one metabolic step stands for, which is what <c>World.Step</c> is handed:
+        /// steps times dt at a pace factor of 1, as it always was, and the 0.5 s metabolic step
+        /// itself above 1, where the steps hold 0.5·k seconds of physics.
+        /// </summary>
+        public float WorldSecondsPerMetabolicStep { get; }
+
         /// <summary>Physics steps taken.</summary>
         public long Steps { get; private set; }
 
@@ -190,6 +209,16 @@ namespace Evosim.Farm
         /// </summary>
         public long ModuleRebuilds { get; private set; }
         public double MaxResizeJumpMetres { get; private set; }
+
+        /// <summary>
+        /// A test-only read (D241's growth physics tests): called with a body's solver just before and just
+        /// after <see cref="Creature.Resize(Phenotype, float)"/> at a growth step. Null in a run, and then the
+        /// growth step is what it always was.
+        /// </summary>
+        internal Action<Creature> BeforeResize;
+
+        /// <summary>See <see cref="BeforeResize"/>.</summary>
+        internal Action<Creature> AfterResize;
         public double MaxResizeStepMetres { get; private set; }
         public double MaxJointMassRatio { get; private set; }
         public long BodiesOverMassRatio10 { get; private set; }
@@ -241,6 +270,36 @@ namespace Evosim.Farm
             StepsPerMetabolicStep = stepsPerMetabolicStep;
 
             RunConfig config = world.Config;
+
+            // D239. The factor is the world's, read here so no caller can hand the harness one that
+            // differs from the config the hash names. Above 1 the steps of a metabolic step must hold
+            // 0.5·k seconds of physics, or the economy and the physics would part.
+            PaceFactor = config.PaceFactor;
+
+            if (PaceFactor == 1f)
+            {
+                WorldSecondsPerStep = physicsDt;
+                WorldSecondsPerMetabolicStep = stepsPerMetabolicStep * physicsDt;
+            }
+            else
+            {
+                float held = stepsPerMetabolicStep * physicsDt;
+                float wanted = MetabolicStepSeconds * PaceFactor;
+
+                if (Math.Abs(held - wanted) > 1e-3f * PaceFactor)
+                {
+                    throw new ArgumentException(
+                        "At a pace factor of " + PaceFactor.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                        " a metabolic step holds " + wanted.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                        " s of physics, and " + stepsPerMetabolicStep.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                        " steps of " + physicsDt.ToString(System.Globalization.CultureInfo.InvariantCulture) + " s hold " +
+                        held.ToString(System.Globalization.CultureInfo.InvariantCulture) + " s.",
+                        nameof(stepsPerMetabolicStep));
+                }
+
+                WorldSecondsPerStep = physicsDt / PaceFactor;
+                WorldSecondsPerMetabolicStep = MetabolicStepSeconds;
+            }
 
             // The solver's own view of the world. Through FromWorld with the world in hand, which
             // is the reconciled factory: without the world the current is null and the round runs

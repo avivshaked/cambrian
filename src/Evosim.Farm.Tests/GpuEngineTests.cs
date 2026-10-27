@@ -460,9 +460,43 @@ namespace Evosim.Farm.Tests
                 }
             }
 
+            // The world's own counters, then each body's checkpointed state, so the message names which part.
+            string counters = Counter("Steps", cpu.Steps, gpu.Steps) ?? Counter("OverlapPairs", cpu.OverlapPairs, gpu.OverlapPairs) ??
+                              Counter("OverlapPairsJointed", cpu.OverlapPairsJointed, gpu.OverlapPairsJointed) ??
+                              Counter("OverlapPairsHeld", cpu.OverlapPairsHeld, gpu.OverlapPairsHeld) ??
+                              Counter("OverlapBodies", cpu.OverlapBodies, gpu.OverlapBodies) ??
+                              Counter("BedOrGlassBodies", cpu.BedOrGlassBodies, gpu.BedOrGlassBodies) ??
+                              Counter("OverlapPairsThisStep", cpu.OverlapPairsThisStep, gpu.OverlapPairsThisStep) ??
+                              Counter("OverlapPairsJointedThisStep", cpu.OverlapPairsJointedThisStep, gpu.OverlapPairsJointedThisStep) ??
+                              Counter("OverlapPairsHeldThisStep", cpu.OverlapPairsHeldThisStep, gpu.OverlapPairsHeldThisStep) ??
+                              Counter("OverlapBodiesThisStep", cpu.OverlapBodiesThisStep, gpu.OverlapBodiesThisStep) ??
+                              Counter("BedOrGlassBodiesThisStep", cpu.BedOrGlassBodiesThisStep, gpu.BedOrGlassBodiesThisStep);
+            if (counters != null) return "the world's " + counters;
+
+            for (int i = 0; i < cpu.Creatures.Count; i++)
+            {
+                byte[] sa = BodyState(cpu.Creatures[i]), sb = BodyState(gpu.Creatures[i]);
+                int at = 0;
+                while (at < sa.Length && at < sb.Length && sa[at] == sb[at]) at++;
+                if (at < sa.Length || at < sb.Length)
+                {
+                    return "body " + cpu.Creatures[i].Id + "'s checkpointed state, first at byte " + at + " of " + sa.Length + "/" +
+                           sb.Length + " (a field outside the list above)";
+                }
+            }
+
             return "the world's counters or a checkpointed field outside the list above " +
                    "(census " + cpu.OverlapPairs + "/" + gpu.OverlapPairs + ", clock " +
                    cpu.ElapsedSeconds.ToString("R") + "/" + gpu.ElapsedSeconds.ToString("R") + ")";
+        }
+
+        private static string Counter(string name, long a, long b) => a == b ? null : name + " " + a + " against " + b;
+
+        private static byte[] BodyState(Creature c)
+        {
+            using var stream = new MemoryStream();
+            using (var w = new CanonicalWriter(stream)) c.WriteState(w, cardBlock: false);
+            return stream.ToArray();
         }
 
         private static string Compare(double[] a, double[] b, string name)
@@ -558,6 +592,27 @@ namespace Evosim.Farm.Tests
 
             copy.ContactShape = ContactShapeForm.Spheres;
             Refused(() => GpuBackend.Check(built, copy), "contact shape");
+        }
+
+        /// <summary>
+        /// D239: the kernels divide the water by the pace factor, so a backend built for one factor steps no world of
+        /// another, and the refusal names it.
+        /// </summary>
+        [Fact]
+        public void ABackendBuiltForOnePaceFactorRefusesToStepAnother()
+        {
+            (_, SolverConfig built) = GpuTank.Build(reefs: false);
+            var copy = (SolverConfig)typeof(object)
+                .GetMethod("MemberwiseClone", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .Invoke(built, null);
+
+            GpuBackend.Check(built, copy);
+
+            copy.PaceFactor = 3.0;
+            Refused(() => GpuBackend.Check(built, copy), "pace factor");
+
+            built.PaceFactor = 3.0;
+            GpuBackend.Check(built, copy);
         }
 
         /// <summary>
@@ -901,6 +956,61 @@ namespace Evosim.Farm.Tests
             Assert.Equal(0, backend.RefusedForClass);
             Assert.Equal(0L, backend.OverflowTotal);
             _out.WriteLine("pairs " + gpu.OverlapPairs + ", bed or glass " + gpu.BedOrGlassBodies);
+        }
+
+        /// <summary>
+        /// D239: at a pace factor of 3 the kernels divide the current's velocity by k and its acceleration by k squared
+        /// where the host does, and the block's clock is the world's (dt over k). Each is the solver's to the bit after
+        /// every block, and the world is first shown to part from the same world at k = 1, so a factor that never
+        /// reached the kernel cannot pass as a match.
+        /// </summary>
+        [Fact]
+        public void DoubleOnTheCpuAcceleratorIsTheSolverAtAPaceFactorOfThree()
+        {
+            var paced = new Dictionary<string, string> { { "EVOSIM_PACE_FACTOR", "3" } };
+
+            (DynamicsWorld plain, World core0) = Pair(true, false);
+            (DynamicsWorld cpu, World coreA) = Pair(true, false, paced);
+            (DynamicsWorld gpu, World coreB) = Pair(true, false, paced);
+
+            Assert.Equal(1.0, plain.Config.PaceFactor);
+            Assert.Equal(3.0, cpu.Config.PaceFactor);
+
+            Populate(plain, core0, 6, 11UL, 1);
+            Populate(cpu, coreA, 6, 11UL, 1);
+            Populate(gpu, coreB, 6, 11UL, 1);
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            AssertSame(cpu, gpu, "before the first block");
+
+            for (int block = 0; block < 4; block++)
+            {
+                plain.StepBlock(25);
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, "at k = 3, after block " + block);
+            }
+
+            // The world clock is dt over k a step on both engines: 100 steps of 0.02 s at k = 3, the step as the
+            // config holds it (a float's 0.02 widened, not the decimal), so the sum is 0.6666666518, not 2/3.
+            Assert.Equal(100 * cpu.Config.StepSeconds / 3.0, cpu.ElapsedSeconds, 9);
+            Assert.Equal(cpu.ElapsedSeconds, gpu.ElapsedSeconds, 12);
+
+            bool parted = false;
+            for (int i = 0; i < cpu.Creatures.Count && !parted; i++)
+            {
+                double[] a = plain.Creatures[i].Position, b = cpu.Creatures[i].Position;
+                for (int k = 0; k < a.Length && !parted; k++)
+                {
+                    parted = BitConverter.DoubleToInt64Bits(a[k]) != BitConverter.DoubleToInt64Bits(b[k]);
+                }
+            }
+
+            Assert.True(parted, "the world at k = 3 stepped as the one at k = 1");
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
         }
 
         /// <summary>

@@ -849,7 +849,11 @@ namespace Evosim.Core
                     o.Biter.BiteKeptJoules += toReserve;
 
                     if (o.Bitten.IsRemains) BiteKeptFromRemainsJoules += toReserve;
-                    else if (o.Bitten.HasPhotosyntheticTissue) BiteKeptFromLeavesJoules += toReserve;
+                    else if (o.Bitten.HasPhotosyntheticTissue)
+                    {
+                        BiteKeptFromLeavesJoules += toReserve;
+                        o.Biter.FoodFromLeavesJoules += toReserve;
+                    }
                     else BiteKeptFromOthersJoules += toReserve;
                 }
             }

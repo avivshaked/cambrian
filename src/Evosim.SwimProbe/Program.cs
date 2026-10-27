@@ -62,6 +62,18 @@ namespace Evosim.SwimProbe
                     case "--water": _uniformWater = double.Parse(args[++i], Inv); break;
                     case "--push": push = double.Parse(args[++i], Inv); break;
                     case "--config": configPath = args[++i]; break;
+
+                    // D239: the physics step the probe steps at, seconds, in place of the fixed 0.01, so a stroke's
+                    // waveform can be traced at a coarser step. Steps above 0.01 engage the drive and drag limiters.
+                    case "--dt":
+                        _dt = double.Parse(args[++i], Inv);
+                        if (!(_dt > 0.0 && _dt <= 0.5))
+                        {
+                            Console.Error.WriteLine("--dt must be in (0, 0.5] seconds, and is " + _dt.ToString("R", Inv));
+                            return 2;
+                        }
+
+                        break;
                     case "--fin-bench": finBench = true; break;
                     case "--assembly-bench": assemblyBench = true; break;
                     case "--fin-push": finPush = double.Parse(args[++i], Inv); break;
@@ -84,7 +96,7 @@ namespace Evosim.SwimProbe
             _solver.CreatureContact = false;    // alone: nobody to touch
             if (!double.IsNaN(constSense)) _solver.ConstantChemicalAndEnergy = (float)constSense;
             if (!double.IsNaN(push)) _solver.LimbPushCoefficient = push;   // propose-foraging.md: the limb push, set on the bench
-            Console.WriteLine(FormattableString.Invariant($"  limb push {_solver.LimbPushCoefficient}"));
+            Console.WriteLine(FormattableString.Invariant($"  limb push {_solver.LimbPushCoefficient}, physics step {_dt} s"));
             Console.WriteLine($"  sensor constant {_solver.ConstantChemicalAndEnergy}, uniform water {_uniformWater} m/s along x");
             if (clean)
             {

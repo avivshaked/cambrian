@@ -1,0 +1,32 @@
+r62gr2-g1-6201
+  born 3000-6000: n 109 (bred 74), mouthed kids/body 0.94, bred ones 0.49
+  born 6000-9000: n 267 (bred 226), mouthed kids/body 0.94, bred ones 0.80
+  born 9000-12000: n 224 (bred 191), mouthed kids/body 0.73, bred ones 0.61
+  born 12000-15000: n 356 (bred 322), mouthed kids/body 1.06, bred ones 0.87
+  born 15000-18000: n 342 (bred 302), mouthed kids/body 0.72, bred ones 0.57
+  born 18000-21000: n 585 (bred 543), mouthed kids/body 1.11, bred ones 1.00
+  born 21000-24000: n 683 (bred 641), mouthed kids/body 0.74, bred ones 0.65
+r62gr2-g60-6201
+  born 3000-6000: n 102 (bred 67), mouthed kids/body 0.85, bred ones 0.36
+  born 6000-9000: n 375 (bred 334), mouthed kids/body 0.98, bred ones 0.92
+  born 9000-12000: n 162 (bred 129), mouthed kids/body 0.59, bred ones 0.54
+  born 12000-15000: n 365 (bred 331), mouthed kids/body 1.12, bred ones 0.82
+  born 15000-18000: n 415 (bred 375), mouthed kids/body 0.89, bred ones 0.74
+  born 18000-21000: n 814 (bred 772), mouthed kids/body 1.10, bred ones 1.03
+  born 21000-24000: n 711 (bred 669), mouthed kids/body 0.64, bred ones 0.63
+r62gr-t60-6202
+  born 3000-6000: n 130 (bred 86), mouthed kids/body 0.92, bred ones 0.47
+  born 6000-9000: n 397 (bred 353), mouthed kids/body 1.06, bred ones 0.89
+  born 9000-12000: n 333 (bred 287), mouthed kids/body 0.73, bred ones 0.52
+  born 12000-15000: n 559 (bred 517), mouthed kids/body 1.12, bred ones 1.10
+  born 15000-18000: n 856 (bred 821), mouthed kids/body 0.98, bred ones 0.95
+  born 18000-21000: n 1861 (bred 1814), mouthed kids/body 1.05, bred ones 1.02
+  born 21000-24000: n 1574 (bred 1527), mouthed kids/body 0.76, bred ones 0.70
+r62gr-t120-6202
+  born 3000-6000: n 154 (bred 110), mouthed kids/body 0.92, bred ones 0.53
+  born 6000-9000: n 393 (bred 349), mouthed kids/body 0.97, bred ones 0.84
+  born 9000-12000: n 305 (bred 259), mouthed kids/body 0.77, bred ones 0.52
+  born 12000-15000: n 267 (bred 225), mouthed kids/body 1.01, bred ones 0.86
+  born 15000-18000: n 548 (bred 513), mouthed kids/body 1.01, bred ones 1.02
+  born 18000-21000: n 1016 (bred 969), mouthed kids/body 1.00, bred ones 0.96
+  born 21000-24000: n 1442 (bred 1395), mouthed kids/body 0.85, bred ones 0.83

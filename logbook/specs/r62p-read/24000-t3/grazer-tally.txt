@@ -1,0 +1,21 @@
+run runs/r62p-t3-6201/2026-10-26-034325-a9cd635c//, to 24000 s
+
+bred grazers: born 2565, died 2507; causes {'starved': 2070, 'aged': 172, 'eaten': 265}
+  age at death s: median 26.5, quartiles 19.5 / 86.5
+  never kept a meal (bk 0): 1712 of 2507
+  bk of those that ate, J: median 494.98, max 3456.3
+  reserve at death J: median 0.000
+  kept intake over the dead's lives: 661442 J over 424752 s = 1.557 W (the living are left out, so long lives are under-counted)
+  the median-lived one: 26 s, kept 51.7 J
+  dead within 60 s: 1791, of them never ate 1665
+
+founder grazers: born 267, died 256; causes {'aged': 66, 'starved': 156, 'eaten': 34}
+  age at death s: median 526.8, quartiles 440.0 / 828.0
+  never kept a meal (bk 0): 96 of 256
+  bk of those that ate, J: median 1026.27, max 2962.0
+  reserve at death J: median 0.000
+  kept intake over the dead's lives: 181948 J over 172720 s = 1.053 W (the living are left out, so long lives are under-counted)
+  the median-lived one: 527 s, kept 1249.6 J
+  dead within 60 s: 1, of them never ate 0
+
+whole-body kills by grazers, by victim guild: {'leaf': 6977, 'grazer': 299, 'absorber': 7}

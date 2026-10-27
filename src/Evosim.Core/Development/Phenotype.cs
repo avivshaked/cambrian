@@ -369,8 +369,14 @@ namespace Evosim.Core
         /// </param>
         /// <param name="shapes">
         /// Geometry to re-measure the scaled parts with. Defaults to
-        /// <see cref="PartShapeRegistry.Standard"/>; a run using custom shapes must pass its own,
-        /// exactly as <see cref="Developer.Develop"/> demands.
+        /// <see cref="PartShapeRegistry.Catalogue"/>, which answers geometry for every shape the build
+        /// knows (D233); a run passes its own world list, exactly as <see cref="Developer.Develop"/> does.
+        /// </param>
+        /// <param name="scalePower">
+        /// D241: scale each part's <see cref="PhenotypePart.Power"/> by the cube of
+        /// <paramref name="linear"/>, so a juvenile's joints are as strong as its muscle is. False, the
+        /// default, copies the adult's Power across, which is every recorded world. A world's callers go
+        /// through <see cref="ScaledFor"/>, which reads <see cref="RunConfig.JuvenileStrengthScales"/>.
         /// </param>
         /// <remarks>
         /// <para>
@@ -378,7 +384,10 @@ namespace Evosim.Core
         /// arithmetic.</b> Half-extents, position and both anchors are lengths and scale by
         /// <paramref name="linear"/>; volume and surface are re-measured by the part's own shape
         /// rather than multiplied by a power, so a shape whose volume is not a simple cube of its
-        /// extents stays honest. Nothing else about a part changes: a growing creature keeps its
+        /// extents stays honest. The one exception is a family part's surface (D233): it has no closed
+        /// formula and costs a measurement of thousands of points, so the copy shares the adult's
+        /// <see cref="FamilyGeometry"/> and takes the area as its reference times the square of the
+        /// length ratio, which is exact for a uniform scaling. Nothing else about a part changes: a growing creature keeps its
         /// plan, its cell types, its joints and its neurons, and only its size moves.
         /// </para>
         /// <para>
@@ -396,7 +405,7 @@ namespace Evosim.Core
         /// the plan, which is a fact about the genome and not about how grown the creature is.
         /// </para>
         /// </remarks>
-        public Phenotype Scaled(float linear, PartShapeRegistry shapes = null)
+        public Phenotype Scaled(float linear, PartShapeRegistry shapes = null, bool scalePower = false)
         {
             if (!(linear > 0f) || float.IsInfinity(linear))
             {
@@ -418,7 +427,7 @@ namespace Evosim.Core
             // arithmetic on the same extents.
             if (linear == 1f) return this;
 
-            shapes = shapes ?? PartShapeRegistry.Standard;
+            shapes = shapes ?? PartShapeRegistry.Catalogue;
 
             var scaled = new Phenotype
             {
@@ -453,6 +462,7 @@ namespace Evosim.Core
                 PhenotypePart part = _parts[i];
                 Float3 halfExtents = part.HalfExtents * linear;
                 PartShape shape = shapes.Resolve(part.ShapeId);
+                float familyScale = part.Family != null ? part.FamilyScale * linear : 1f;
 
                 scaled.Add(new PhenotypePart
                 {
@@ -470,17 +480,31 @@ namespace Evosim.Core
                     ReflectedDrive = part.ReflectedDrive,
                     CellTypeId = part.CellTypeId,
                     ShapeId = part.ShapeId,
-                    Volume = shape.Volume(halfExtents),
-                    SurfaceArea = shape.SurfaceArea(halfExtents),
+
+                    // D233. A family part shares its geometry with the adult it was scaled from and
+                    // reads its panels through a scale, so growth measures no surface: the area is
+                    // the reference area times the square of the length ratio, and nothing is built.
+                    // Volume is the shape's, at the size and with the form, as a named part's is.
+                    Form = part.Form,
+                    Family = part.Family,
+                    FamilyScale = familyScale,
+                    Volume = shape.Volume(halfExtents, part.Form),
+                    SurfaceArea = part.Family != null
+                        ? part.Family.ReferenceSurfaceArea * (familyScale * familyScale)
+                        : shape.SurfaceArea(halfExtents),
                     JointType = part.JointType,
                     JointLimits = part.JointLimits,
 
-                    // Torque capacity and lift are not lengths and are not scaled. Power is what
-                    // the genome says a link can push with and lift is kg/m³ of displaced water,
-                    // so both already mean the same thing at any size — and both are billed per
-                    // step, so a half-grown body pays its adult's bill for them. Whether that is
-                    // the world we want is a question for a round, not for a copy constructor.
-                    Power = part.Power,
+                    // Lift is kg/m³ of displaced water, so it means the same thing at any size, and
+                    // it is billed per step, so a half-grown body pays its adult's bill for it.
+                    // Power is the genome's peak torque of a link. With scalePower off (every
+                    // recorded world) it is copied across, so a juvenile has its adult's torque on
+                    // smaller limbs, and pays its adult's idle bill for it. With scalePower on
+                    // (D241, RunConfig.JuvenileStrengthScales) it scales as muscle does: force with
+                    // cross-section (L²) and moment arm with L, so torque with L³, which is the mass
+                    // fraction. The idle bill reads Power, so it falls with it. Whether that is the
+                    // world we want is a question for a round, not for a copy constructor.
+                    Power = scalePower ? part.Power * linear * linear * linear : part.Power,
                     Drive = part.Drive,
                     Lift = part.Lift,
 
@@ -504,6 +528,19 @@ namespace Evosim.Core
             }
 
             return scaled;
+        }
+
+        /// <summary>
+        /// <see cref="Scaled"/> as the world's rules ask for it: the shapes are the config's, and each
+        /// part's Power scales with the cube of the length ratio when
+        /// <see cref="RunConfig.JuvenileStrengthScales"/> is on (D241). Every caller in the world and the
+        /// farm goes through this, so a body is made one way at birth, at a growth step, at a checkpoint
+        /// and in the harness.
+        /// </summary>
+        public Phenotype ScaledFor(RunConfig config, float linear)
+        {
+            if (config == null) throw new System.ArgumentNullException(nameof(config));
+            return Scaled(linear, config.Shapes, config.JuvenileStrengthScales);
         }
 
         /// <summary>
@@ -597,6 +634,9 @@ namespace Evosim.Core
                     ReflectedDrive = part.ReflectedDrive,
                     CellTypeId = part.CellTypeId,
                     ShapeId = part.ShapeId,
+                    Form = part.Form,
+                    Family = part.Family,
+                    FamilyScale = part.FamilyScale,
                     Volume = part.Volume,
                     SurfaceArea = part.SurfaceArea,
                     JointType = part.JointType,
@@ -753,6 +793,9 @@ namespace Evosim.Core
                     ReflectedDrive = part.ReflectedDrive,
                     CellTypeId = part.CellTypeId,
                     ShapeId = part.ShapeId,
+                    Form = part.Form,
+                    Family = part.Family,
+                    FamilyScale = part.FamilyScale,
                     Volume = part.Volume,
                     SurfaceArea = part.SurfaceArea,
                     JointType = asRoot ? JointType.Fixed : part.JointType,

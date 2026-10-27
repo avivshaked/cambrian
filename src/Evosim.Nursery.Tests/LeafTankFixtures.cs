@@ -72,14 +72,14 @@ namespace Evosim.Nursery.Tests
         /// A bench recipe (no search; the exam's own brain alone, two episodes) on the config and the pool; <paramref name="leaves"/> is the
         /// section's JSON or null to leave the section out. <paramref name="carrion"/> corpses of 40 J each lie on the bed (none by default).
         /// </summary>
-        public static string RecipeJson(string config, string hash, string pool, int tankSize, string leaves = null, double seconds = 2, int carrion = 0) =>
+        public static string RecipeJson(string config, string hash, string pool, int tankSize, string leaves = null, double seconds = 2, int carrion = 0, double? purseSeconds = null) =>
             "{\n" +
             "  \"format\": 1, \"name\": \"leaf-test\", \"description\": \"\", \"seed\": \"0x1\",\n" +
             "  \"world\": {\"config\": \"" + config + "\", \"configHash\": \"" + hash + "\", \"overrides\": {}},\n" +
             "  \"bodies\": {\"source\": \"pool\", \"founders\": 0, \"trunk\": null, \"pool\": \"" + pool + "\", \"keep\": null},\n" +
             "  \"setup\": {\"seconds\": " + seconds.ToString("R", CultureInfo.InvariantCulture) + ", \"dt\": 0.01, \"tankSize\": " + tankSize +
             ", \"floorClosed\": true, \"birthsHeld\": true, \"snow\": null, \"carrion\": {\"count\": " + carrion + ", \"joules\": 40}, \"start\": {\"aboveBed\": 0.5}," +
-            " \"purse\": {\"rule\": \"grown\", \"seconds\": null}},\n" +
+            " \"purse\": {\"rule\": \"grown\", \"seconds\": " + (purseSeconds.HasValue ? purseSeconds.Value.ToString("R", CultureInfo.InvariantCulture) : "null") + "}},\n" +
             (leaves == null ? "" : "  \"leaves\": " + leaves + ",\n") +
             "  \"search\": null,\n" +
             "  \"reward\": {\"class\": \"Net\", \"parameters\": {}},\n" +

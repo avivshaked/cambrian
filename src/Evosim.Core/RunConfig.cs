@@ -74,13 +74,109 @@ namespace Evosim.Core
         [Tunable("development")]
         public float SelfOverlapDepthFraction { get; set; }
 
-        /// <summary>The geometries available to parts — §4.1.</summary>
+        /// <summary>
+        /// The ids of the shapes this world allows, in order — §4.1, D233. The default is box, sphere
+        /// and capsule, which is every world recorded before the family.
+        /// </summary>
         /// <remarks>
-        /// Ordered, and the order is hashed: shape mutation picks by an RNG draw, so a registry
-        /// rebuilt in a different order yields different shapes from the same seed.
+        /// <para>
+        /// <b>The list is what the file and the hash carry; <see cref="Shapes"/> is built from it.</b>
+        /// It was once a registry assigned in code, which reached the hash and never reached
+        /// <c>config.json</c>, so a world with a custom list saved and reloaded as the standard three
+        /// with a hash that no longer matched. An id is looked up in
+        /// <see cref="PartShapeRegistry.Catalogue"/>; an unknown or repeated id is refused when
+        /// <see cref="Shapes"/> is first read, which a load does at once to check the stored hash.
+        /// </para>
+        /// <para>
+        /// Ordered, and the order is hashed: shape mutation picks by an RNG draw, so a list rebuilt in
+        /// a different order yields different shapes from the same seed. Naming
+        /// <see cref="Evosim.Core.ShapeIds.Superellipsoid"/> here is what lets the family into a world.
+        /// </para>
+        /// </remarks>
+        [Tunable("development")]
+        public string[] ShapeIds
+        {
+            get => _shapeIds;
+            set => _shapeIds = value ?? throw new ArgumentNullException(
+                nameof(ShapeIds), "A run needs at least one shape id.");
+        }
+
+        private string[] _shapeIds = { Evosim.Core.ShapeIds.Box, Evosim.Core.ShapeIds.Sphere, Evosim.Core.ShapeIds.Capsule };
+
+        /// <summary>
+        /// The geometries available to parts, built from <see cref="ShapeIds"/> against
+        /// <see cref="PartShapeRegistry.Catalogue"/> — §4.1, D233.
+        /// </summary>
+        /// <remarks>
+        /// Get-only, so the list a world allows has one source. The registry is cached with a copy of
+        /// the ids it was built from, in one immutable object swapped in whole, and rebuilt when the
+        /// contents of <see cref="ShapeIds"/> differ, so a reader on another thread sees either the
+        /// old pair or the new and never half of each. Throws on an unknown id, naming the known ones,
+        /// and on a repeated one.
         /// </remarks>
         [TunableRegistry]
-        public PartShapeRegistry Shapes { get; set; } = PartShapeRegistry.Standard;
+        public PartShapeRegistry Shapes
+        {
+            get
+            {
+                string[] ids = _shapeIds;
+                ShapeList built = _shapeList;
+                if (built != null && built.Matches(ids)) return built.Registry;
+
+                built = ShapeList.Build(ids);
+                _shapeList = built;
+                return built.Registry;
+            }
+        }
+
+        private volatile ShapeList _shapeList;
+
+        /// <summary>The ids a registry was built from, with the registry: one object, never edited.</summary>
+        private sealed class ShapeList
+        {
+            private readonly string[] _ids;
+            public readonly PartShapeRegistry Registry;
+
+            private ShapeList(string[] ids, PartShapeRegistry registry)
+            {
+                _ids = ids;
+                Registry = registry;
+            }
+
+            public bool Matches(string[] ids)
+            {
+                if (ids == null || ids.Length != _ids.Length) return false;
+                for (int i = 0; i < ids.Length; i++)
+                {
+                    if (!string.Equals(ids[i], _ids[i], StringComparison.Ordinal)) return false;
+                }
+                return true;
+            }
+
+            public static ShapeList Build(string[] ids)
+            {
+                if (ids == null || ids.Length == 0)
+                {
+                    throw new ArgumentException("A run needs at least one shape id.", nameof(ShapeIds));
+                }
+
+                var shapes = new PartShape[ids.Length];
+                for (int i = 0; i < ids.Length; i++)
+                {
+                    if (!PartShapeRegistry.Catalogue.Contains(ids[i]))
+                    {
+                        throw new ArgumentException(
+                            $"Unknown shape id '{ids[i]}' in ShapeIds. Known: {PartShapeRegistry.Catalogue}.",
+                            nameof(ShapeIds));
+                    }
+
+                    shapes[i] = PartShapeRegistry.Catalogue.Resolve(ids[i]);
+                }
+
+                // The registry refuses a repeated id, with the id in its message.
+                return new ShapeList((string[])ids.Clone(), new PartShapeRegistry(shapes));
+            }
+        }
 
         /// <summary>How often each variation operator fires — §4.5.</summary>
         [TunableGroup]
@@ -522,8 +618,8 @@ namespace Evosim.Core
 
         /// <summary>
         /// The metabolic step the trickle's bound is read against — the 0.5 s both engines step
-        /// the world at (<c>DividesTheMetabolicStep</c>'s constant, stated again rather than
-        /// shared because that one is local to its method).
+        /// the world at (the metabolic step <c>EnvBinding.ResolvePhysicsStep</c> divides, stated
+        /// again rather than shared).
         /// </summary>
         private const float MetabolicStepForTheTrickle = 0.5f;
 
@@ -1303,6 +1399,75 @@ namespace Evosim.Core
         /// </summary>
         [Tunable("growth", Unit = "s")]
         public float ModuleDropAfterSeconds { get; set; }
+
+        // ------------------------------------------------------------------ D241: growth as a climb
+        //
+        // logbook/specs/growth-runway-design.md. Four knobs and the mutation chance of
+        // MutationRates.GrowthReserveChance. At GrowthAdultSeconds 0 the branch is never entered and
+        // every recorded world runs as it did: growth invests everything above the floor each step.
+
+        /// <summary>
+        /// D241: the time T a body born at 0.65 of its adult's tissue takes to reach 0.95 of it,
+        /// growing at the rate law's full rate, in world seconds. <b>0 is off: today's growth.</b>
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// With T above 0, <c>World.GrowOne</c> invests each step the smallest of the rate law's
+        /// allowance, what the reserve can spare above <c>keep</c>, and what is left of the adult.
+        /// The law is West, Brown and Enquist's ontogenetic growth model, dm/dt = a m^3/4 (1 -
+        /// (m/M)^1/4), whose closed form makes 1 - r fall exponentially, with r = (m/M)^1/4, at the
+        /// time constant tau = T / ln((1 - 0.65^1/4)/(1 - 0.95^1/4)), about T / 2.081. One T for every
+        /// body, in world seconds, whatever the pace factor: growth ticks on metabolic steps.
+        /// Reaching 0.95 takes the rest of the adult in the same step, if the reserve pays for it.
+        /// </para>
+        /// <para>
+        /// With T above 0 a body also breeds only once adult (<c>BodyFraction</c> 1), and every
+        /// admitted genome carries <see cref="Genome.GrowthReserveSeconds"/>. With T = 0 a genome
+        /// that carries the gene is refused at admission. Negative or non-finite T is refused at
+        /// construction. The owner's ruling of 2026-10-26 (D241); ⚠ the number is screened before
+        /// it is used (the pre-registered groups of the design).
+        /// </para>
+        /// </remarks>
+        [Tunable("growth", Unit = "s")]
+        public float GrowthAdultSeconds { get; set; }
+
+        /// <summary>
+        /// D241: the value <c>World.Admit</c> gives the growth-reserve gene of a genome that carries
+        /// none, at T above 0, in seconds of the body's own standing cost. Inert at T = 0.
+        /// </summary>
+        [Tunable("growth", Unit = "s")]
+        public float GrowthReserveStartSeconds { get; set; } = 30f;
+
+        /// <summary>
+        /// D241: the lower end of the growth-reserve gene's range, in seconds. A logarithm needs a
+        /// positive floor, and 1 s is effectively none: the tissue floor
+        /// (<see cref="GrowthReserveFloor"/>) binds below it. Inert at T = 0.
+        /// </summary>
+        [Tunable("growth", Unit = "s")]
+        public float GrowthReserveMinSeconds { get; set; } = 1f;
+
+        /// <summary>
+        /// D241: the upper end of the growth-reserve gene's range, in seconds. Inert at T = 0.
+        /// </summary>
+        [Tunable("growth", Unit = "s")]
+        public float GrowthReserveMaxSeconds { get; set; } = 300f;
+
+        /// <summary>
+        /// D241: a scaled body's joint torque (<see cref="PhenotypePart.Power"/>) scales as muscle does,
+        /// not as the adult's. <b>False is off: a juvenile has its adult's torque on smaller limbs.</b>
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Muscle force goes with cross-section (L²) and the moment arm with L, so torque goes with L³,
+        /// which is the mass fraction. With the switch on, <see cref="Phenotype.ScaledFor"/> multiplies
+        /// each part's Power by the cube of the length ratio, at birth, at every growth step, on a
+        /// checkpoint's rebuild and in the harness. The idle bill reads Power, so a juvenile's standing
+        /// cost falls with it. It acts whenever a body is scaled, so it is independent of
+        /// <see cref="GrowthAdultSeconds"/>. The coordinator's accepted plan of 2026-10-26.
+        /// </para>
+        /// </remarks>
+        [Tunable("growth")]
+        public bool JuvenileStrengthScales { get; set; }
 
         // ------------------------------------------------------------------ D106 item 3: the mouth
         //
@@ -3888,7 +4053,8 @@ namespace Evosim.Core
 
         /// <summary>
         /// The physics timestep the run integrated at, seconds — DESIGN.md §6.2's queued item,
-        /// closed. Must divide the 0.5 s metabolic step exactly.
+        /// closed. Must divide 0.5 s times <see cref="PaceFactor"/> exactly, which at the factor's
+        /// default of 1 is the 0.5 s metabolic step.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -3915,20 +4081,63 @@ namespace Evosim.Core
         /// search cannot nudge; <c>RunConfigTests.NudgeFloat</c> halves and doubles for it.
         /// <c>EVOSIM_DT</c> in the header, where it prints as <c>dt=</c>.
         /// </para>
+        /// <para>
+        /// <b>The exact division is checked where the factor is known.</b> The legal set is
+        /// 0.5·k/n, and a setter cannot see <see cref="PaceFactor"/>, which may be assigned after
+        /// it. So this setter refuses only a step that is not a positive finite number, and
+        /// <c>EnvBinding.ResolvePhysicsStep</c> refuses one that does not divide 0.5·k, by name,
+        /// at every launch, resume and window. At k = 1 that is the rule above, unchanged.
+        /// </para>
         /// </remarks>
         [Tunable("physics", Unit = "s")]
         public float PhysicsStepSeconds
         {
             get => _physicsStepSeconds;
-            set => _physicsStepSeconds = DividesTheMetabolicStep(value)
+            set => _physicsStepSeconds = IsAPhysicsStep(value)
                 ? value
                 : throw new ArgumentOutOfRangeException(
                     nameof(PhysicsStepSeconds), value,
-                    "Must be in (0, 0.5] and divide the 0.5 s metabolic step exactly: 0.01, " +
-                    "0.02, 0.025, 0.05, 0.1, 0.125, 0.25 or 0.5.");
+                    "Must be a positive finite number of seconds that divides 0.5 s times the pace " +
+                    "factor exactly: at a factor of 1, one of 0.01, 0.02, 0.025, 0.05, 0.1, 0.125, " +
+                    "0.25 or 0.5.");
         }
 
         private float _physicsStepSeconds = 0.01f;
+
+        /// <summary>
+        /// The pace factor k, D239: how many seconds of physics one world second holds. 1 is every
+        /// world recorded before it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Core keeps world seconds and does not read this.</b> <c>World.Step(0.5f)</c> still
+        /// advances the world by half a world second, and every rate here (upkeep, the mouth,
+        /// healing, growth, gestation, the age hazard, the remains window) keeps its meaning per
+        /// world second. The factor is read by the farm: it sets how many physics steps a
+        /// metabolic step holds (0.5·k / <see cref="PhysicsStepSeconds"/>), puts the solver's
+        /// clock and the water it samples into world time, and so makes a swimmer stroke k times
+        /// as often, and a leaf sink k times as far, in a world second, with no force changed.
+        /// </para>
+        /// <para>
+        /// <b>Refused rather than clamped</b>: below 1, or not a finite number, because a factor
+        /// under 1 would need a physics step that does not exist at the metabolic clock and a
+        /// non-finite one is no clock. In the config so that the hash tells two paces apart, and a
+        /// checkpoint cannot be resumed at another one. <c>EVOSIM_PACE_FACTOR</c>.
+        /// </para>
+        /// </remarks>
+        [Tunable("physics")]
+        public float PaceFactor
+        {
+            get => _paceFactor;
+            set => _paceFactor = value >= 1f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(PaceFactor), value,
+                    "The pace factor is a finite number of at least 1: one world second holds that " +
+                    "many seconds of physics, and a factor below 1 would slow the physics against the economy.");
+        }
+
+        private float _paceFactor = 1f;
 
         /// <summary>
         /// Whether the drive impulse limiter applies at every step rather than only above dt 0.01
@@ -4334,20 +4543,12 @@ namespace Evosim.Core
         }
 
         /// <summary>
-        /// The rule <c>Ecosystem.ConfigurePhysicsStep</c> enforces, stated once here so the two
-        /// cannot drift — same bound, same tolerance.
+        /// The part of <c>Ecosystem.ConfigurePhysicsStep</c>'s rule that does not depend on the
+        /// pace factor: a positive finite number. That the step divides 0.5·k exactly, with the
+        /// same tolerance as before, is <c>EnvBinding.ResolvePhysicsStep</c>'s, which knows k.
         /// </summary>
-        private static bool DividesTheMetabolicStep(float dt)
-        {
-            const float metabolicStepSeconds = 0.5f;
-
-            if (!(dt > 0f) || dt > metabolicStepSeconds) return false;
-
-            float steps = metabolicStepSeconds / dt;
-            int rounded = (int)Math.Round(steps);
-
-            return rounded >= 1 && Math.Abs(steps - rounded) <= 1e-4f;
-        }
+        private static bool IsAPhysicsStep(float dt) =>
+            dt > 0f && !float.IsInfinity(dt) && !float.IsNaN(dt);
 
         /// <summary>
         /// A stable digest of everything above — the <c>configHash</c> of §7.

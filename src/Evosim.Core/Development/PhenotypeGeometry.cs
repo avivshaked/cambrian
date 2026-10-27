@@ -10,10 +10,10 @@ namespace Evosim.Core
     {
         /// <summary>
         /// Shapes used when a caller does not supply a registry. Not a default in the
-        /// configuration sense — geometry questions have one right answer per shape id, and a
-        /// run using custom shapes must pass its own registry so the answer stays right.
+        /// configuration sense — geometry questions have one right answer per shape id, so the
+        /// catalogue of every shape the build knows (D233) answers them all.
         /// </summary>
-        private static PartShapeRegistry Shapes => PartShapeRegistry.Standard;
+        private static PartShapeRegistry Shapes => PartShapeRegistry.Catalogue;
 
         public static bool ContainsPoint(this PhenotypePart part, Float3 point) =>
             part.ContainsPoint(point, Shapes);
@@ -30,7 +30,7 @@ namespace Evosim.Core
             // Into the part's own frame, where the shape is axis-aligned.
             Float3 local = part.Rotation.Conjugate.Rotate(point - part.Position);
 
-            return shapes.Resolve(part.ShapeId).ContainsPoint(local, part.HalfExtents);
+            return shapes.Resolve(part.ShapeId).ContainsPoint(local, part.HalfExtents, part.Form);
         }
 
         /// <summary>
