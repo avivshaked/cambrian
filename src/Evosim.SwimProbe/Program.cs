@@ -41,6 +41,10 @@ namespace Evosim.SwimProbe
             string configPath = null;   // a config the build reads, when the run's own predates a tunable
             bool finBench = false;      // D229's fin-law bench: no run, two bodies of equal volume, the law off and on
             double finPush = 0.3, finOmega = 2.0, finStroke = 0.8, finHertz = 1.0;
+            bool brainBirth = false;    // the brain-at-birth bench: held bodies, child and parent brains, fresh or carried
+            bool secondsGiven = false;  // --seconds defaults to 120 here and to 60 for the brain-at-birth bench
+            double parentWarm = 60, kick = 0.05, eps = 0.05;
+            ulong seed = 1;
 
             for (int i = 0; i < args.Length; i++)
             {
@@ -54,7 +58,7 @@ namespace Evosim.SwimProbe
                     case "--top": top = int.Parse(args[++i], Inv); break;
                     case "--random": random = int.Parse(args[++i], Inv); break;
                     case "--threads": par = int.Parse(args[++i], Inv); break;
-                    case "--seconds": seconds = double.Parse(args[++i], Inv); break;
+                    case "--seconds": seconds = double.Parse(args[++i], Inv); secondsGiven = true; break;
                     case "--clean": clean = true; break;
                     case "--ids": idsFile = args[++i]; break;
                     case "--const": constSense = double.Parse(args[++i], Inv); break;
@@ -73,6 +77,11 @@ namespace Evosim.SwimProbe
                         }
 
                         break;
+                    case "--brain-birth": brainBirth = true; break;
+                    case "--parent-warm": parentWarm = double.Parse(args[++i], Inv); break;
+                    case "--kick": kick = double.Parse(args[++i], Inv); break;
+                    case "--eps": eps = double.Parse(args[++i], Inv); break;
+                    case "--seed": seed = ulong.Parse(args[++i], Inv); break;
                     case "--fin-bench": finBench = true; break;
                     case "--fin-push": finPush = double.Parse(args[++i], Inv); break;
                     case "--fin-omega": finOmega = double.Parse(args[++i], Inv); break;
@@ -83,6 +92,12 @@ namespace Evosim.SwimProbe
             }
 
             if (finBench) return FinBench.Run(seconds, finPush, finOmega, finStroke, finHertz, outDir);
+
+            if (brainBirth)
+            {
+                return BrainBirth.Run(
+                    run, idsFile, outDir, secondsGiven ? seconds : 60.0, parentWarm, kick, seed, eps, configPath, _dt, par);
+            }
 
             Directory.CreateDirectory(outDir);
             _config = RunConfigJson.Read(File.ReadAllText(configPath ?? Path.Combine(run, "config.json")), out string mismatch);
