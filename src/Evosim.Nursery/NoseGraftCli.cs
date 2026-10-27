@@ -15,8 +15,8 @@ namespace Evosim.Nursery
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Nothing is swum.</b> The tool reads the config and the pool, grafts each genome where the founders of D178 take one (on the root's top
-    /// face toward its front, pointing up), and writes three files into <c>--out</c>: the config, named by its hash as
+    /// <b>Nothing is swum.</b> The tool reads the config and the pool, grafts each genome on its root (by default where the first graft stood, on
+    /// the top face toward the front, pointing up; <c>--anchor</c>, <c>--axis</c>, <c>--area</c> and <c>--slenderness</c> name another), and writes three files into <c>--out</c>: the config, named by its hash as
     /// <c>rounds/nursery/configs/</c> names its files; the pool, named by the first 16 hex digits of its SHA-256 as <c>rounds/nursery/pools/</c>
     /// names its files, each body's index kept; and <c>graft.tsv</c>, one row a genome saying what the graft moved. A genome the graft refuses
     /// stops the tool with nothing written, so a pool is grafted whole or not at all.
@@ -28,7 +28,8 @@ namespace Evosim.Nursery
     /// </remarks>
     public static class NoseGraftCli
     {
-        public const string Usage = "usage: Evosim.Nursery --graft-nose <pool.tsv> --config <config.json> --out <dir>";
+        public const string Usage = "usage: Evosim.Nursery --graft-nose <pool.tsv> --config <config.json> --out <dir> " +
+            "[--anchor x,y,z] [--axis x,y,z] [--area m2] [--slenderness s]";
 
         /// <summary>Where the nose stands on the root, in its normalised box coordinates, and the way it points.</summary>
         public static readonly Float3 Anchor = new Float3(0f, 1f, -0.7f), Axis = new Float3(0f, 1f, 0f);
@@ -39,7 +40,7 @@ namespace Evosim.Nursery
 
         public static int Run(string[] args, TextWriter stdout, TextWriter stderr)
         {
-            string pool = null, config = null, outDir = null;
+            string pool = null, config = null, outDir = null, anchorArg = null, axisArg = null, areaArg = null, slenderArg = null;
             for (int i = 0; i < args.Length; i++)
             {
                 if (i + 1 >= args.Length) { stderr.WriteLine(Usage); return 2; }
@@ -48,6 +49,10 @@ namespace Evosim.Nursery
                     case "--graft-nose": if (pool != null) goto twice; pool = args[++i]; break;
                     case "--config": if (config != null) goto twice; config = args[++i]; break;
                     case "--out": if (outDir != null) goto twice; outDir = args[++i]; break;
+                    case "--anchor": if (anchorArg != null) goto twice; anchorArg = args[++i]; break;
+                    case "--axis": if (axisArg != null) goto twice; axisArg = args[++i]; break;
+                    case "--area": if (areaArg != null) goto twice; areaArg = args[++i]; break;
+                    case "--slenderness": if (slenderArg != null) goto twice; slenderArg = args[++i]; break;
                     default: stderr.WriteLine("unknown " + args[i] + "\n" + Usage); return 2;
                 }
 
@@ -63,6 +68,12 @@ namespace Evosim.Nursery
             var report = new StringBuilder("line\tbody\tnoseArea\tlinksMoved\tlinksMade\tdirectionLinksReframed\n");
             try
             {
+                // Unnamed, each is what the first graft (entry 23) used: the top face toward the front, up, the reference area, 3 to 1.
+                Float3 anchor = anchorArg == null ? Anchor : Vector(anchorArg, "--anchor");
+                Float3 axis = axisArg == null ? Axis : Vector(axisArg, "--axis");
+                float area = areaArg == null ? 0f : float.Parse(areaArg, NumberStyles.Float, Inv);
+                float slenderness = slenderArg == null ? 0f : float.Parse(slenderArg, NumberStyles.Float, Inv);
+
                 RunConfig world = RunConfigJson.Read(File.ReadAllText(config));
                 if (world.CellTypes.Contains(CellTypeIds.Nose)) throw new InvalidDataException($"{config}'s table already lists the nose");
                 world.CellTypes = world.CellTypes.Appending(new NoseCell());
@@ -83,7 +94,7 @@ namespace Evosim.Nursery
                     NoseGraftResult graft;
                     try
                     {
-                        graft = NoseGraft.Graft(genome, world.CellTypes, genome.RootIndex, Anchor, Axis, 0f, world.Development, world.Shapes);
+                        graft = NoseGraft.Graft(genome, world.CellTypes, genome.RootIndex, anchor, axis, area, world.Development, world.Shapes, slenderness);
                     }
                     catch (Exception e) when (e is ArgumentException || e is InvalidOperationException)
                     {
@@ -117,6 +128,14 @@ namespace Evosim.Nursery
             stdout.WriteLine($"pool {poolName}.tsv: {pool}, every genome grafted");
             stdout.Write(report.ToString());
             return 0;
+        }
+
+        private static Float3 Vector(string text, string option)
+        {
+            string[] parts = text.Split(',');
+            if (parts.Length != 3) throw new FormatException($"{option} takes x,y,z, not {text}");
+            return new Float3(
+                float.Parse(parts[0], NumberStyles.Float, Inv), float.Parse(parts[1], NumberStyles.Float, Inv), float.Parse(parts[2], NumberStyles.Float, Inv));
         }
     }
 }

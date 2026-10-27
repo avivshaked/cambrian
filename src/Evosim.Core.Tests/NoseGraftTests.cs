@@ -84,38 +84,70 @@ namespace Evosim.Core.Tests
         [Fact]
         public void TheNoseStandsOnTheHostsFaceAndItsAnchorIsOnTheHostsSurface()
         {
-            const float tolerance = 1e-5f;
+            foreach ((string name, Genome genome) in Founders())
+                AssertStandsOn(name, Graft(genome).Genome, 1, 1f);
+        }
+
+        /// <summary>The short nose of the second graft film: 6 by 6 by 9 cm, on the root's front face above the mouth, pointing the way the body swims.</summary>
+        private static readonly Float3 Front = new Float3(0f, 0.6f, -1f), Forward = new Float3(0f, 0f, -1f);
+        private const float SnoutArea = 0.0288f, SnoutSlenderness = 1.5f;
+
+        [Fact]
+        public void TheShortSnoutStandsOnTheFrontFaceAboveTheMouthAtItsSize()
+        {
             foreach ((string name, Genome genome) in Founders())
             {
-                Phenotype body = Developer.Develop(Graft(genome).Genome, cellTypes: Table);
-                PhenotypePart host = body.Parts[0], nose = body.Parts[body.Parts.Count - 1];
-                Assert.Equal(ShapeIds.Box, host.ShapeId);
-                Assert.Equal(ShapeIds.Box, nose.ShapeId);
-                Assert.Equal(0, nose.ParentIndex);
+                NoseGraftResult graft = NoseGraft.Graft(genome, Table, genome.RootIndex, Front, Forward, SnoutArea, slenderness: SnoutSlenderness);
+                PhenotypePart nose = AssertStandsOn(name, graft.Genome, 2, -1f);
+                Assert.InRange(nose.HalfExtents.X, 0.0299f, 0.0301f);
+                Assert.InRange(nose.HalfExtents.Y, 0.0299f, 0.0301f);
+                Assert.InRange(nose.HalfExtents.Z, 0.0449f, 0.0451f);
 
-                // The anchor, in the host's frame, is on the top face and inside its edges.
-                Float3 h = host.HalfExtents, a = nose.ParentAnchorLocal;
-                Assert.InRange(a.Y, h.Y - tolerance, h.Y + tolerance);
-                Assert.InRange(Math.Abs(a.X), 0f, h.X + tolerance);
-                Assert.InRange(Math.Abs(a.Z), 0f, h.Z + tolerance);
-
-                // Both sides of the joint name the same point in the world.
-                Float3 fromHost = host.Position + host.Rotation.Rotate(nose.ParentAnchorLocal);
-                Float3 fromNose = nose.Position + nose.Rotation.Rotate(nose.ChildAnchorLocal);
-                Assert.True(Float3.Dot(fromHost - fromNose, fromHost - fromNose) < tolerance * tolerance,
-                    $"{name}: the joint is at {fromHost} on the host and {fromNose} on the nose");
-
-                // The nose, unturned in the host's frame, stands on that face with its whole footprint on it.
-                Quat turn = host.Rotation.Conjugate * nose.Rotation;
-                Float3 up = turn.Rotate(new Float3(0f, 1f, 0f));
-                Assert.True(up.Y > 1f - tolerance, $"{name}: the nose points along {up} in the host's frame");
-                Float3 c = host.Rotation.Conjugate.Rotate(nose.Position - host.Position);
-                Float3 n = nose.HalfExtents;
-                Assert.InRange(c.Y - n.Y, h.Y - tolerance, h.Y + tolerance);
-                Assert.True(Math.Abs(c.X) + n.X <= h.X + tolerance && Math.Abs(c.Z) + n.Z <= h.Z + tolerance,
-                    $"{name}: the nose's footprint at ({c.X}, {c.Z}) ± ({n.X}, {n.Z}) leaves the face ± ({h.X}, {h.Z})");
-                _out.WriteLine($"{name}: host {h}, nose centre {c} in the host's frame, half-extents {n}");
+                // Clear of the mouth, which a box root takes at its front face's centre.
+                Phenotype body = Developer.Develop(graft.Genome, cellTypes: Table);
+                Float3 mouth = MouthPoint.Local(body, 0);
+                Assert.Equal(-body.Parts[0].HalfExtents.Z, mouth.Z);
+                Float3 c = body.Parts[0].Rotation.Conjugate.Rotate(nose.Position - body.Parts[0].Position);
+                Assert.True(c.Y - nose.HalfExtents.Y > mouth.Y, $"{name}: the snout's underside at {c.Y - nose.HalfExtents.Y} covers the mouth at {mouth.Y}");
             }
+        }
+
+        /// <summary>
+        /// The nose touches its host on the face <paramref name="along"/> and <paramref name="sign"/> name: the anchor on that face within its
+        /// edges, both sides of the joint at one world point, the nose unturned in the host's frame, its base on the face and its whole
+        /// footprint inside it.
+        /// </summary>
+        private PhenotypePart AssertStandsOn(string name, Genome grafted, int along, float sign)
+        {
+            const float tolerance = 1e-5f;
+            Phenotype body = Developer.Develop(grafted, cellTypes: Table);
+            PhenotypePart host = body.Parts[0], nose = body.Parts[body.Parts.Count - 1];
+            Assert.Equal(ShapeIds.Box, host.ShapeId);
+            Assert.Equal(ShapeIds.Box, nose.ShapeId);
+            Assert.Equal(0, nose.ParentIndex);
+
+            Float3 h = host.HalfExtents, a = nose.ParentAnchorLocal, n = nose.HalfExtents;
+            Float3 c = host.Rotation.Conjugate.Rotate(nose.Position - host.Position);
+            Float3 outward = host.Rotation.Conjugate.Rotate(nose.Rotation.Rotate(nose.ChildAnchorLocal * -1f));
+            Assert.InRange(sign * a[along], h[along] - tolerance, h[along] + tolerance);
+            Assert.InRange(sign * c[along] - n[along], h[along] - tolerance, h[along] + tolerance);
+            Assert.True(sign * outward[along] > 0f, $"{name}: the nose points along {outward} in the host's frame");
+            for (int i = 0; i < 3; i++)
+            {
+                if (i == along) continue;
+                Assert.InRange(Math.Abs(a[i]), 0f, h[i] + tolerance);
+                Assert.True(Math.Abs(c[i]) + n[i] <= h[i] + tolerance,
+                    $"{name}: the nose's footprint on axis {i}, {c[i]} ± {n[i]}, leaves the face's ± {h[i]}");
+                Assert.True(Math.Abs(outward[i]) < tolerance, $"{name}: the nose leans along axis {i}: {outward}");
+            }
+
+            // Both sides of the joint name the same point in the world.
+            Float3 fromHost = host.Position + host.Rotation.Rotate(nose.ParentAnchorLocal);
+            Float3 fromNose = nose.Position + nose.Rotation.Rotate(nose.ChildAnchorLocal);
+            Assert.True(Float3.Dot(fromHost - fromNose, fromHost - fromNose) < tolerance * tolerance,
+                $"{name}: the joint is at {fromHost} on the host and {fromNose} on the nose");
+            _out.WriteLine($"{name}: host {h}, nose centre {c} in the host's frame, half-extents {n}");
+            return nose;
         }
 
         [Fact]

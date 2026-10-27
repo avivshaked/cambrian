@@ -63,7 +63,7 @@ namespace Evosim.Core
     /// </remarks>
     public static class NoseGraft
     {
-        /// <summary>The nose's length over its width.</summary>
+        /// <summary>The nose's length over its width, unless the caller names another.</summary>
         public const float Slenderness = 3f;
 
         /// <param name="genome">A genome with a central brain (D146). Not changed.</param>
@@ -74,6 +74,7 @@ namespace Evosim.Core
         /// <param name="area">The developed nose's surface area, m². Zero or less is the table's reference area.</param>
         /// <param name="limits">The world's development limits. Null is the default.</param>
         /// <param name="shapes">The world's shapes. Null is the standard table.</param>
+        /// <param name="slenderness">The nose's length over its width. Zero or less is <see cref="Slenderness"/>.</param>
         public static NoseGraftResult Graft(
             Genome genome,
             CellTypeRegistry cellTypes,
@@ -82,8 +83,10 @@ namespace Evosim.Core
             Float3 axis,
             float area = 0f,
             DevelopmentLimits limits = null,
-            PartShapeRegistry shapes = null)
+            PartShapeRegistry shapes = null,
+            float slenderness = 0f)
         {
+            if (!(slenderness > 0f)) slenderness = Slenderness;
             if (genome == null) throw new ArgumentNullException(nameof(genome));
             if (cellTypes == null || !(cellTypes.Contains(CellTypeIds.Nose) && cellTypes.Resolve(CellTypeIds.Nose) is NoseCell nose))
                 throw new ArgumentException("The table does not list the nose, so a nose would not develop in it.", nameof(cellTypes));
@@ -125,12 +128,12 @@ namespace Evosim.Core
 
             Genome grafted = genome.Clone();
 
-            // The width that gives the area for a box w by w by Slenderness·w (half-extents),
+            // The width that gives the area for a box w by w by slenderness·w (half-extents),
             // before the adult scale. Development's scales are then corrected for by measuring.
-            float halfWidth = (float)Math.Sqrt(area / (8.0 * (1.0 + 2.0 * Slenderness)));
+            float halfWidth = (float)Math.Sqrt(area / (8.0 * (1.0 + 2.0 * slenderness)));
             var noseNode = new MorphNode
             {
-                Dimensions = Along(along, halfWidth, halfWidth * Slenderness),
+                Dimensions = Along(along, halfWidth, halfWidth * slenderness),
                 CellTypeId = CellTypeIds.Nose,
                 ShapeId = ShapeIds.Box,
                 JointType = JointType.Fixed,
