@@ -11,7 +11,7 @@ namespace Evosim.Nursery.Tests
     internal static class RestepFixtures
     {
         public static readonly string Root = Recipe.RepoRootAbove(AppContext.BaseDirectory);
-        public static readonly string Brain2 = Path.Combine(Root, "rounds", "nursery", "brain2-w8.json");
+        public static readonly string Brain2 = Path.Combine(Root, "rounds", "nursery", "brain2-w9.json");
 
         /// <summary>The bodies of the pilot's six exam genomes, in pool order.</summary>
         public static readonly int[] PilotBodies = { 0, 1, 3, 4, 8, 10 };
@@ -85,7 +85,7 @@ namespace Evosim.Nursery.Tests
 
         /// <summary>The pilot's draw 0 under a control, as a request on <paramref name="pool"/>.</summary>
         public static string PilotRequest(string pool, int brain = 0, string extra = "") =>
-            RequestJson("rounds/nursery/brain2-w8.json", RecipeHashOfBrain2(), pool, PilotTank0, brain, extra);
+            RequestJson("rounds/nursery/brain2-w9.json", RecipeHashOfBrain2(), pool, PilotTank0, brain, extra);
 
         public static string WriteRequest(string dir, string json, string name = "request.json")
         {

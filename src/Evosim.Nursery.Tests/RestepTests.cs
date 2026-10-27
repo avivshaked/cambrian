@@ -51,7 +51,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal(0, code);
             Assert.Equal("", stderr);
             Assert.Contains("episode seed " + RestepFixtures.PilotSeed0 + "\n", stdout);
-            Assert.Contains("episode config hash 1cea30702d4a20c3\n", stdout);   // brain2-w8's (brain2-w7's was be80a0d1eadbfa1d)
+            Assert.Contains("episode config hash 78091b3deb236e74\n", stdout);   // brain2-w9's (brain2-w8's was 1cea30702d4a20c3, brain2-w7's was be80a0d1eadbfa1d)
             Assert.Contains("control 0: own (own)\n", stdout);
             Assert.Contains("generation 0, episode 0, run seed 1, salt 422608528232\n", stdout);
             Assert.Contains("seconds 600, dt 0.01, sample rate 10 per second (every 10 steps)\n", stdout);
@@ -97,7 +97,7 @@ namespace Evosim.Nursery.Tests
         public void AWrongRecipeHashIsRefusedNamingBothHashes()
         {
             string pool = Pool();
-            string json = RestepFixtures.RequestJson("rounds/nursery/brain2-w8.json", new string('0', 64), pool, RestepFixtures.PilotTank0);
+            string json = RestepFixtures.RequestJson("rounds/nursery/brain2-w9.json", new string('0', 64), pool, RestepFixtures.PilotTank0);
             (int code, string stdout, string stderr) = Check(json);
             Assert.Equal(2, code);
             Assert.Equal("", stdout);
@@ -109,21 +109,21 @@ namespace Evosim.Nursery.Tests
         public void MembersOutOfRangeAreRefused()
         {
             string pool = Pool();
-            (int code, _, string stderr) = Check(RestepFixtures.RequestJson("rounds/nursery/brain2-w8.json", RestepFixtures.RecipeHashOfBrain2(), pool, new[] { 1, 6 }));
+            (int code, _, string stderr) = Check(RestepFixtures.RequestJson("rounds/nursery/brain2-w9.json", RestepFixtures.RecipeHashOfBrain2(), pool, new[] { 1, 6 }));
             Assert.Equal(2, code);
             Assert.Contains("pool index 6", stderr);
             Assert.Contains("holds 6 genomes", stderr);
 
-            (int negative, _, string e2) = Check(RestepFixtures.RequestJson("rounds/nursery/brain2-w8.json", RestepFixtures.RecipeHashOfBrain2(), pool, new[] { 1, -1 }));
+            (int negative, _, string e2) = Check(RestepFixtures.RequestJson("rounds/nursery/brain2-w9.json", RestepFixtures.RecipeHashOfBrain2(), pool, new[] { 1, -1 }));
             Assert.Equal(2, negative);
             Assert.Contains("0 or more", e2);
 
-            (int twice, _, string e3) = Check(RestepFixtures.RequestJson("rounds/nursery/brain2-w8.json", RestepFixtures.RecipeHashOfBrain2(), pool, new[] { 1, 1 }));
+            (int twice, _, string e3) = Check(RestepFixtures.RequestJson("rounds/nursery/brain2-w9.json", RestepFixtures.RecipeHashOfBrain2(), pool, new[] { 1, 1 }));
             Assert.Equal(2, twice);
             Assert.Contains("twice", e3);
 
             // A tank holds at most the recipe's tank size (8).
-            (int tooMany, _, string e4) = Check(RestepFixtures.RequestJson("rounds/nursery/brain2-w8.json", RestepFixtures.RecipeHashOfBrain2(), pool, Enumerable.Range(0, 9).ToArray()));
+            (int tooMany, _, string e4) = Check(RestepFixtures.RequestJson("rounds/nursery/brain2-w9.json", RestepFixtures.RecipeHashOfBrain2(), pool, Enumerable.Range(0, 9).ToArray()));
             Assert.Equal(2, tooMany);
             Assert.True(e4.Contains("tanks hold 8") || e4.Contains("pool index"), e4);
         }
@@ -180,8 +180,8 @@ namespace Evosim.Nursery.Tests
         }
 
         [Theory]
-        [InlineData("\"recipe\": \"rounds/nursery/brain2-w8.json\"", "\"recipe\": \"../brain2.json\"", "leaves the repository")]
-        [InlineData("\"recipe\": \"rounds/nursery/brain2-w8.json\"", "\"recipe\": \"C:/brain2.json\"", "relative to the repository root")]
+        [InlineData("\"recipe\": \"rounds/nursery/brain2-w9.json\"", "\"recipe\": \"../brain2.json\"", "leaves the repository")]
+        [InlineData("\"recipe\": \"rounds/nursery/brain2-w9.json\"", "\"recipe\": \"C:/brain2.json\"", "relative to the repository root")]
         [InlineData("\"salt\": \"0x62656e6368\"", "\"salt\": 422608528232", "salt is a string")]
         [InlineData("\"episode\": 0", "\"episode\": 1000", "episode must be 0 to 999")]
         [InlineData("\"seed\": \"0x1\"", "\"seed\": \"one\"", "seed is a string holding a whole number")]
@@ -201,7 +201,7 @@ namespace Evosim.Nursery.Tests
         [Fact]
         public void APoolOutsideTheRepositoryIsRefused()
         {
-            string json = RestepFixtures.RequestJson("rounds/nursery/brain2-w8.json", RestepFixtures.RecipeHashOfBrain2(), "../../elsewhere.tsv", RestepFixtures.PilotTank0);
+            string json = RestepFixtures.RequestJson("rounds/nursery/brain2-w9.json", RestepFixtures.RecipeHashOfBrain2(), "../../elsewhere.tsv", RestepFixtures.PilotTank0);
             (int code, _, string stderr) = Check(json);
             Assert.Equal(2, code);
             Assert.Contains("leaves the repository", stderr);
@@ -226,7 +226,7 @@ namespace Evosim.Nursery.Tests
         private string WriteRecipe(string name, string setupJson)
         {
             string path = Path.Combine(_dir, name + ".json");
-            File.WriteAllText(path, "{\"base\": \"rounds/nursery/brain2-w8.json\", \"name\": \"" + name + "\", \"setup\": " + setupJson + "}");
+            File.WriteAllText(path, "{\"base\": \"rounds/nursery/brain2-w9.json\", \"name\": \"" + name + "\", \"setup\": " + setupJson + "}");
             return path;
         }
 
@@ -235,7 +235,7 @@ namespace Evosim.Nursery.Tests
         {
             string pool = Pool(), hash = RestepFixtures.RecipeHashOfBrain2();
             string R(string seed = "0x1", string salt = "0x62656e6368", int generation = 0, int episode = 0, int[] members = null, int tank = 0, int brain = 0) =>
-                RestepFixtures.RequestJson("rounds/nursery/brain2-w8.json", hash, pool, members ?? RestepFixtures.PilotTank0, brain, "", seed, salt, generation, episode, tank);
+                RestepFixtures.RequestJson("rounds/nursery/brain2-w9.json", hash, pool, members ?? RestepFixtures.PilotTank0, brain, "", seed, salt, generation, episode, tank);
 
             // The control: the pilot's own request, and the deal of its second episode, which is another tank of six in another order.
             int[] second = RestepFixtures.Deal(6, 8, 1, 0);
@@ -300,14 +300,14 @@ namespace Evosim.Nursery.Tests
             RestepPlan plan = Restep.Load(good, RestepFixtures.Root, _dir);
             Assert.Equal(RestepFixtures.PilotSeed0, plan.EpisodeSeed.ToString());
 
-            RestepRequest bad = RestepRequest.Parse(RestepFixtures.RequestJson("rounds/nursery/brain2-w8.json", new string('0', 64), pool, RestepFixtures.PilotTank0));
+            RestepRequest bad = RestepRequest.Parse(RestepFixtures.RequestJson("rounds/nursery/brain2-w9.json", new string('0', 64), pool, RestepFixtures.PilotTank0));
             Assert.Throws<InvalidDataException>(() => Restep.Load(bad, RestepFixtures.Root, _dir));
             var refused = Assert.Throws<InvalidOperationException>(() => Restep.Swim(plan, null));
             Assert.Contains("not the one loaded last", refused.Message);
 
             // A load that fails on the run's numbers, after the recipe and the pool have been read, clears it as well.
             RestepPlan again = Restep.Load(good, RestepFixtures.Root, _dir);
-            RestepRequest wrongTank = RestepRequest.Parse(RestepFixtures.RequestJson("rounds/nursery/brain2-w8.json", RestepFixtures.RecipeHashOfBrain2(), pool, RestepFixtures.PilotTank0.Reverse().ToArray()));
+            RestepRequest wrongTank = RestepRequest.Parse(RestepFixtures.RequestJson("rounds/nursery/brain2-w9.json", RestepFixtures.RecipeHashOfBrain2(), pool, RestepFixtures.PilotTank0.Reverse().ToArray()));
             Assert.Throws<InvalidDataException>(() => Restep.Load(wrongTank, RestepFixtures.Root, _dir));
             Assert.Throws<InvalidOperationException>(() => Restep.Swim(again, null));
         }
@@ -352,15 +352,15 @@ namespace Evosim.Nursery.Tests
                 try
                 {
                     // The same file by its real path is taken, so that the refusal below is the link's and not the file's.
-                    (int ok, _, string e0) = Check(RestepFixtures.RequestJson("rounds/nursery/brain2-w8.json", hash, RestepFixtures.Relative(Path.Combine(real, "pool.tsv")), RestepFixtures.PilotTank0));
+                    (int ok, _, string e0) = Check(RestepFixtures.RequestJson("rounds/nursery/brain2-w9.json", hash, RestepFixtures.Relative(Path.Combine(real, "pool.tsv")), RestepFixtures.PilotTank0));
                     Assert.True(ok == 0, e0);
 
-                    (int viaPool, _, string e1) = Check(RestepFixtures.RequestJson("rounds/nursery/brain2-w8.json", hash, RestepFixtures.Relative(Path.Combine(via, "pool.tsv")), RestepFixtures.PilotTank0));
+                    (int viaPool, _, string e1) = Check(RestepFixtures.RequestJson("rounds/nursery/brain2-w9.json", hash, RestepFixtures.Relative(Path.Combine(via, "pool.tsv")), RestepFixtures.PilotTank0));
                     Assert.Equal(2, viaPool);
                     Assert.Contains("pool", e1);
                     Assert.Contains("passes through via, which is a reparse point", e1);
 
-                    (int viaRecipe, _, string e2) = Check(RestepFixtures.RequestJson(RestepFixtures.Relative(Path.Combine(viaRecipes, "brain2-w8.json")), hash, pool, RestepFixtures.PilotTank0));
+                    (int viaRecipe, _, string e2) = Check(RestepFixtures.RequestJson(RestepFixtures.Relative(Path.Combine(viaRecipes, "brain2-w9.json")), hash, pool, RestepFixtures.PilotTank0));
                     Assert.Equal(2, viaRecipe);
                     Assert.Contains("recipe", e2);
                     Assert.Contains("passes through via-recipes, which is a reparse point", e2);
@@ -520,6 +520,10 @@ namespace Evosim.Nursery.Tests
             // D236 piece 4: what the tank calls eaten (the leaves' joules under contact eating, else the mouth's), as a number. It reads one
             // of two cumulative counters of a body; it hands out no organism and writes nothing.
             "EatenJoules",
+            // D240: world time between economy steps, as a number (PhysicsSeconds itself at a pace factor of 1). A getter over the solver's step count.
+            "ClockSeconds",
+            // D241: the adult's tissue, the body fraction and the adult's standing watts, as numbers, to read a body placed grown under the climb.
+            "AdultTissue", "BodyFraction", "AdultStandingWatts",
         };
 
         [Fact]

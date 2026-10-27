@@ -139,15 +139,22 @@ namespace Evosim.Nursery
         /// <summary>The slots of the tank: one per genome handed in, whether or not its body landed.</summary>
         public int MemberCount => _focal.Length;
 
-        /// <summary>Physics steps taken. A frame's time is this times <see cref="PhysicsDt"/>.</summary>
+        /// <summary>Physics steps taken. The physics clock is this times <see cref="PhysicsDt"/>; the tank's time is <see cref="ClockSeconds"/>.</summary>
         public long Steps => _sim.Steps;
 
         public float PhysicsDt => _sim.PhysicsDt;
 
         public int StepsPerMetabolicStep => _sim.StepsPerMetabolicStep;
 
-        /// <summary>Physics steps times the step: the clock the poses are on.</summary>
+        /// <summary>Physics steps times the step: the physics clock, which is world time only at a pace factor of 1 (D239); see <see cref="ClockSeconds"/>.</summary>
         public double PhysicsSeconds => _sim.Steps * (double)_sim.PhysicsDt;
+
+        /// <summary>
+        /// World time between economy steps, s (D240): the clock the poses, the economy and the switching schedule's openings share.
+        /// <b>At a pace factor of 1 it is <see cref="PhysicsSeconds"/> itself, the same expression</b>, so its bits are the ones that clock always had;
+        /// above 1 it is physics steps times the step over the factor, in double. The watchers take their times from it.
+        /// </summary>
+        public double ClockSeconds => _sim.PaceFactor == 1f ? _sim.Steps * (double)_sim.PhysicsDt : _sim.Steps * (double)_sim.PhysicsDt / _sim.PaceFactor;
 
         /// <summary>The economy's clock, which moves once a metabolic step.</summary>
         public double EconomySeconds => _world.ElapsedSeconds;
@@ -199,6 +206,17 @@ namespace Evosim.Nursery
         public double Reserve(int member) => _focal[member]?.Energy ?? double.NaN;
 
         public double Tissue(int member) => _focal[member]?.TissueJoules ?? double.NaN;
+
+        /// <summary>
+        /// The tissue joules of the body's adult, its body fraction (1 once it is the adult) and the adult's standing watts at age 0; NaN where the slot
+        /// landed nothing. Reads the growth climb's (D241) placement: a body placed grown holds the first and has the second.
+        /// </summary>
+        public double AdultTissue(int member) => _focal[member]?.AdultTissueJoules ?? double.NaN;
+
+        public double BodyFraction(int member) => _focal[member]?.BodyFraction ?? double.NaN;
+
+        public double AdultStandingWatts(int member) =>
+            _focal[member] == null ? double.NaN : Metabolism.StandingWatts(_focal[member].AdultPhenotype, _world.Config);
 
         public double Gestation(int member) => _focal[member]?.GestationJoules ?? double.NaN;
 
@@ -277,7 +295,10 @@ namespace Evosim.Nursery
             return true;
         }
 
-        /// <summary>The root link's world angular velocity, rad/s, as the last step left it: what the episode's <c>turn</c> reads. False where the solver holds no body.</summary>
+        /// <summary>
+        /// The root link's world angular velocity in the solver's units, rad a physics second, as the last step left it: what the episode's <c>turn</c>
+        /// reads, which reports it in rad a world second (k times this at a pace factor k, D240). False where the solver holds no body.
+        /// </summary>
         public bool TryRootSpin(int member, out double wx, out double wy, out double wz)
         {
             wx = wy = wz = double.NaN;

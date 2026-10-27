@@ -1,0 +1,114 @@
+{
+  "format": 1,
+  "name": "leaf-direction-patches-s2-w9",
+  "description": "leaf-direction-patches-s2-w9 is leaf-direction-patches-s2-w8 on main's world config format after integration branch 2 (D243, D248; development.shapeIds, fluid.strokePushesAssembly, growth.growthAdultSeconds, growth.growthReserveMaxSeconds, growth.growthReserveMinSeconds, growth.growthReserveStartSeconds, growth.juvenileStrengthScales, mutation.formChance and mutation.growthReserveChance, each at the default that leaves the world as it was): its world config is 9d9aca71c61bd36c's successor 11819c680236db49. Every other setting as leaf-direction-patches-s2-w8, whose description was: leaf-direction-patches-s2-w8 is leaf-direction-patches-s2-w7 on the pace build's world config format (physics.paceFactor, D239, at 1, which leaves the world as it was): its world config is 9fa947462638667c's successor 9d9aca71c61bd36c. Every other setting as leaf-direction-patches-s2-w7, whose description was: leaf-direction-patches-s2 on integration-1's world config format (mouth.killSwallowsBody, D232, at false, which leaves the world as it was): leaf-direction-patches-s2-w5's config with mouth.killSwallowsBody (D232) that integration-1 added, at false, and the 45 tunables the round-62 build added, the 27 coral keys (D194's branching coral; coral.reefShape at Mushroom and its dials at their defaults), development.reflectMirroredAnchors (D228), development.scaleLengthensOnce (D199), feeding.plantsKeepMatter (D206), feeding.plantsKeepOwnFirst (D207), field.corpseHalfLifeSeconds (D212), fluid.shapedAddedMass (D229), mouth.biteDamageScale (D226), mouth.biteTakesStore (D224), mouth.contactEating (D219, D220), mouth.intakeReachFromMouth (D214), mouth.intakeScale, mouth.remainsWindowSeconds (D220), physics.dragLimitAtEveryStep (D196, D199), physics.dragLimitByWeldedBody (D199), world.contactShape (D228), world.matterBurialDesertPerSecond (D190), world.readAcrossSeams (D204) and world.seedOverrides (D192), at their defaults, which leave the world as leaf-direction-patches-s2-w5's. Every other setting as leaf-direction-patches-s2-w5, whose description was: leaf-direction-patches-s2 on round 60's world config format: its world config is e6bdb9c74cb48742's with world.matterIslandGlassMarginMetres (D185) at 0, which leaves the tank as it was, and every other setting is leaf-direction-patches-s2's, whose description was: D182's patchy tank (laid out as D184 approved): leaf-direction-return in a tank of 3,400 m2 in place of 400 m2, its 31 leaves in 3 equal patches of 6 m radius whose centres lie 120 degrees apart on a ring of 21 m about the axis, the ring turned by an angle each episode draws, so 24 m of bare water lies between patches and 6 m between each patch and the glass. The bred bodies start anywhere in the tank. The score (EnergyReturn), the prices, the founders and their brains, the body search, the stop on eaten and the exam are leaf-direction-return's. A repeat on recipe seed 0x2 in place of 0x1, nothing else changed.",
+  "seed": "0x2",
+  "world": {
+    "config": "rounds/nursery/configs/11819c680236db49.json",
+    "configHash": "11819c680236db49",
+    "overrides": {
+      "AgeHazardBaseSeconds": 0,
+      "AgeRepairExponent": 0,
+      "AgeingPerBirth": 0,
+      "AgeingPerWound": 0,
+      "BedShoreDepthMetres": 0,
+      "BedShoreFadeMetres": 0,
+      "BedTiltMetres": 0,
+      "Fluid.SpinDragCoefficient": 0.5,
+      "Fluid.TurningDrag": "Spin",
+      "FoundingTricklePerSecond": 0,
+      "FoundingTricklePoolCount": 0,
+      "FoundingTricklePoolHash": "",
+      "FoundingTricklePoolShare": 0,
+      "InitialMatterPerCubicMetre": 0,
+      "LeafScent": "Direction",
+      "LeafScentRangeMetres": 6,
+      "MatterBudgetUnits": 0,
+      "MatterIslandWavelengthMetres": 0,
+      "ReefCover": 0,
+      "UnbittenDeathsLeaveNoCorpse": true,
+      "WorldAreaSquareMetres": 3400
+    }
+  },
+  "bodies": {
+    "source": "pool",
+    "founders": 0,
+    "trunk": null,
+    "pool": "rounds/nursery/pools/410a70db44a4b20a.tsv",
+    "keep": null,
+    "brains": "kept"
+  },
+  "setup": {
+    "seconds": 1800,
+    "dt": 0.01,
+    "tankSize": 8,
+    "floorClosed": true,
+    "birthsHeld": true,
+    "snow": null,
+    "carrion": {
+      "count": 0,
+      "joules": 40
+    },
+    "start": {
+      "aboveBed": 11.5
+    },
+    "purse": {
+      "rule": "grown",
+      "seconds": 3830
+    }
+  },
+  "leaves": {
+    "pool": "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz",
+    "count": 31,
+    "spentUnitsPerCubicMetre": 0.004237,
+    "patches": {
+      "count": 3,
+      "radius": 6,
+      "ring": 21
+    }
+  },
+  "search": {
+    "population": 48,
+    "draws": 8,
+    "generations": 60,
+    "elites": 8,
+    "tournament": 3,
+    "perBody": true,
+    "evolve": "kind",
+    "evolveEnvelope": false,
+    "crossover": null,
+    "stop": {
+      "measure": "eaten",
+      "window": 5,
+      "gain": 0.05,
+      "over": 10,
+      "floor": 20
+    }
+  },
+  "reward": {
+    "class": "EnergyReturn",
+    "parameters": {
+      "chargeDeathToEnd": true
+    }
+  },
+  "exam": {
+    "episodes": 32,
+    "salt": "0x62656e6368",
+    "controls": [
+      {
+        "kind": "own"
+      },
+      {
+        "kind": "brainless"
+      },
+      {
+        "kind": "knockout",
+        "channels": [
+          "LeafScent",
+          "LeafScentDirection"
+        ]
+      }
+    ],
+    "pool": "tops"
+  }
+}

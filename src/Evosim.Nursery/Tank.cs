@@ -177,7 +177,9 @@ namespace Evosim.Nursery
 
             var world = new World(EpisodeConfig(arena.Text), seed);
             world.BirthsHeld = true;
-            int stepsPerMetabolic = (int)Math.Round(Simulation.MetabolicStepSeconds / _o.Dt);
+            // D240: a metabolic step holds 0.5·k physics seconds at the world's pace factor k, so its steps are 0.5·k / dt. At k = 1 this is the
+            // count the line always made (0.5 over dt, rounded); a dt that does not divide 0.5·k is refused at the recipe's read, and here again.
+            EnvBinding.ResolvePhysicsStep(_o.Dt, world.Config.PaceFactor, out int stepsPerMetabolic);
             var sim = new Simulation(world, seed, _o.Dt, stepsPerMetabolic, 1, null);
             try
             {
@@ -249,6 +251,9 @@ namespace Evosim.Nursery
                     // top, uncapped, so that a body that eats nothing lives that long once grown.
                     // A founder pays its growth out of the reserve on its first step, and an
                     // endowment alone starves a growing body inside a minute.
+                    // Under the growth climb (D241) the owed tissue as reserve would buy a climb of up to 1.58 T, not a grown body, so the body is
+                    // made adult outright: nothing is owed below, and the purse is the purse seconds of the adult's standing watts alone.
+                    if (world.Config.GrowthAdultSeconds > 0f) world.MakeAdult(o);
                     double adultTissue = Metabolism.TissueJoules(o.AdultPhenotype, arena.Config);
                     double seconds = !double.IsNaN(_o.PurseSeconds) ? _o.PurseSeconds : arena.Config.FounderEndowmentSeconds;
                     double target = Math.Max(0d, adultTissue - o.TissueJoules) + seconds * Metabolism.StandingWatts(o.AdultPhenotype, arena.Config);
@@ -394,6 +399,7 @@ namespace Evosim.Nursery
 
                         // The rocking on the same half second: the root's angular speed, read off the solver's own state (the root
                         // link's world spin, which the integrator holds and the step left). A read of an array: nothing is built.
+                        // The spin is the solver's, in radians a physics second; the mean is turned into radians a world second at the end (D240).
                         if (sim.TryPose(o.Id, out Evosim.Dynamics.Creature solver))
                         {
                             double wx = solver.Spin[0], wy = solver.Spin[1], wz = solver.Spin[2];
@@ -427,6 +433,9 @@ namespace Evosim.Nursery
                     result[i].Net = end - result[i].Start;
                     result[i].Fresh = steps[i] > 0 ? result[i].Fresh / steps[i] : double.NaN;
                     result[i].Turn = turnSteps[i] > 0 ? result[i].Turn / turnSteps[i] : double.NaN;
+                    // D240: radians a world second, as every rate the nursery reports, on the switching schedule's clock. A world second holds k
+                    // of physics, so the solver's mean is multiplied by k; at k = 1 nothing is, and the number is the one it always was.
+                    if (sim.PaceFactor != 1f) result[i].Turn *= sim.PaceFactor;
                     // What the mouth kept. The count is added to only while the body lives, so a body that died holds what it had eaten.
                     result[i].Eaten = EatenCount(o, contactEating) - startMouth[i];
                     if (_tankTrace && i == 0)
@@ -913,7 +922,7 @@ namespace Evosim.Nursery
                     rows.WriteLine(w.ToString());
                 }
             Say($"  the exam's pool (D172): {tops.Count} tops and the last generation's elites, {pool.Count} genomes once each");
-            return TankBench(pool.Select(e => (GenomeJson.Read(e.Text), e.Body)).ToList(), "exam", pool.Select(e => e.Id).ToArray());
+            return TankBench(pool.Select(e => (GrowthStart.Give(GenomeJson.Read(e.Text), _config), e.Body)).ToList(), "exam", pool.Select(e => e.Id).ToArray());
         }
 
         // ------------------------------------------------------------------ the bench
