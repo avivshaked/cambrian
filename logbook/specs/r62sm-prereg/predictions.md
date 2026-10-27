@@ -1,10 +1,10 @@
 # The structural mutation screen: how often a child's body plan should change
 
-*Pre-registration, DRAFT of 2026-10-27, the speed agent. The owner approved, on 2026-10-27, screening the structural
-mutation rate on the card before choosing a lower rate or fitting the brain to the new body at birth. The mutation
-rates are the owner's, and this screen only measures them. G's start is filled in from growth group 2's read
-(`logbook/specs/r62gr2-read/24000/`) before the commit that launches it. The build, the identity sitting and the
-launcher come after it. Every number below that is not a measurement is a guess or derived, and says so.*
+*Pre-registration, 2026-10-27, the speed agent. Committed on `main` before the screen launches, merged into branch
+`struct`, and launched from `scratch/wt-struct` on the coordinator's card go, after the build's identity sitting has
+passed. The owner approved, on 2026-10-27, screening the structural mutation rate on the card before choosing a lower
+rate or fitting the brain to the new body at birth. The mutation rates are the owner's, and this screen only measures
+them. Every number below that is not a measurement is a guess or derived, and says so.*
 
 ## What it asks
 
@@ -37,13 +37,22 @@ The change share treats the structural operators as one Poisson draw a birth, at
 parent's body plan, and no rate reaches them (derived). If the screen confirms this, the rate is a small lever, and
 fitting the brain at birth is the larger one.
 
+The slow-newborn read (`logbook/specs/r62p-read/slow-newborn/`) measured that floor in `r62p-t3`: 193 of 997
+same-plan newborns slow, 0.194. It found no cause among the parent, the size of the brain change, size, reserve and
+birth place. Most of them sit in a standstill mode under 0.01 m a second and die by about 30 s. The size of the brain
+change is flat across its quartiles, so the screen does not scale the brain's weight rate.
+
 ## The worlds
 
 Four worlds on seed 6201, 24,000 world seconds each, in one card group. The base is the screen's winning settings:
 - `r62p-t16`'s world (`rounds/env-r62p-t16.ps1`: the limb push at 4.8, the work price at 0.03125, the newborn reserve
   at 0.5, the kill gut);
 - growth as a climb in T = 60 s with the juvenile-strength switch off (group 1's winner, `logbook/specs/r62gr-read/24000/`);
-- G's start at the value growth group 2's rule picks, in [1, 300] s, mutating at 0.08 a birth.
+- G starting at 30 s, the value growth group 2's rule kept (`logbook/specs/r62gr2-read/24000/`), in [1, 300] s,
+  mutating at 0.08 a birth.
+
+Their settings are `rounds/env-r62sm-s100.ps1`, `-s50`, `-s25` and `-s10`, and the launcher is
+`rounds/launch-r62sm.ps1`.
 
 The arms scale every structural mutation chance by one factor S:
 
@@ -72,8 +81,9 @@ Four sources of structural change stay at today's rates in every arm, and the re
 - `CellTypeChance`, 0.001, whose bud adds a node;
 - `ModuleGeneMutationChance`, 0 in this world;
 - a node's removal when its size shrinks below `NodeExtinctionHalfExtent`, which has no chance of its own;
-- an edge's child retargeted by the scalar step. The brain's weights, the scalars, the drive, the limits and the whole-creature dials keep
-today's rates in every arm. So the screen moves the body plan's rate alone. Today's arm is a new world, since no
+- an edge's child retargeted by the scalar step.
+
+The brain's weights, the scalars, the drive, the limits and the whole-creature dials keep today's rates in every arm. So the screen moves the body plan's rate alone. Today's arm is a new world, since no
 recorded world has t16 and the climb together.
 
 ## The build
@@ -87,9 +97,16 @@ settings there, so no pace-and-growth integration is needed. One addition, in `E
 - a test that the bindings unset leave every recorded config hash unchanged.
 
 Core does not change, because the chances are already `RunConfig.Mutation`'s hashed fields. The farm's hash does
-change, so an identity sitting runs before the launch. It replays `r62gr-t60-6201` with the bindings unset on the new
-build, to 3,000 s on the card, against growth group 1's own run, using `rounds/identity-growth-on.ps1`'s comparison.
-A Sonnet agent builds it and runs the filtered tests, and the speed agent reviews it.
+change, so an identity sitting runs before the launch (`rounds/identity-struct.ps1`). It is one card group of two
+worlds for 600 s:
+- `r62sid-t60-6201` replays `r62gr-t60-6201` with the bindings unset. It passes if `scripts/reads/gpu-accept.py`
+  finds it identical to growth group 1's own run on the prefix, and its config hash is `6dbb0315`.
+- `r62sid-s10-6201` runs the tenth-rate arm. It passes if its `config.json` carries the scaled chances and the world
+  steps to 600 s.
+
+The build is branch `struct` (`scratch/wt-struct`, commit `37341da0`). A Sonnet agent wrote the bindings and tests,
+and the speed agent reviewed them and ran the farm's non-slow suite: 455 of 455 pass, without `GpuMeanTests`, whose
+crash on a pinned host is known (`src/Evosim.Farm.Gpu/CLAUDE.md`).
 
 ## The tests and the deciding numbers
 
