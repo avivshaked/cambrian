@@ -9669,3 +9669,51 @@ in any condition set for the world.
 - Landing `growth` without the bindings. It is tested too, but a later rate screen or round would need the bindings re-landed.
 
 **Why.** Main had no source commit since growth's crowd fixture (`88d20602`), so the merged tree's source is `struct`'s, checked by an empty source diff. Its hashes (farm `ae99d3c2`, core `361aa924`, dynamics `29144991`) and its fixture (`runs/cefix-s4/2026-10-26-203434-b2f9267b`) are those already tested. The landing therefore costs no machine time.
+
+### D244
+**D222 amended for runs aimed at grazers: at least 30 grazers first, and no window judged on fewer** · 2026-10-27
+
+**Status:** ruled by the owner on the evening of 2026-10-27, on the coordinator's recommendation (option a). It amends D222's reading for runs aimed at grazers only, from `r62cf` on.
+
+**Decision.**
+- The first check of a run aimed at grazers is that it holds at least 30 grazers. A run that never does fails, whatever its tests say, since a grazer run without grazers answers nothing.
+- A window holding fewer than 30 grazers is not judged. Tests 1 to 3 and the pass rule apply to the windows that hold at least 30.
+- 30 is the floor, and the owner allowed that more may be needed. Each read reports the verdict at 40 beside it as a sensitivity.
+- The strict reading, every window judged, is still reported beside it.
+- Runs that are not aimed at grazers keep D222 as it stands.
+
+**Rejected.**
+- Skipping the first 12,000 s. A fixed start would keep judging a thin window later in a run, and would throw away a healthy early one.
+- Keeping the test as it was. Every test-2 miss in the growth groups and in `r62sm` came in one early window holding 9 to 17 grazers, where a couple of deaths decide the verdict.
+
+**Why.** The owner judged a window of 15 grazers not worth measuring. The floor makes a verdict depend on a sample that can show something, and the first check makes a grazer run that never reaches that sample a failure rather than a pass by default.
+
+### D245
+**The energy sense reads the reserve as S / (S + k), with k = 30 s, built with fat** · 2026-10-27
+
+**Status:** ruled by the owner on the evening of 2026-10-27, on the coordinator's recommendation. It replaces the energy sense's squash. It lands with fat's build (`proposals/propose-fat.md`), and no world before that build changes.
+
+**Decision.**
+- The energy channel reads `S / (S + k)`, where S is the reserve in seconds of standing cost and k is a tunable half-scale. It replaces `tanh(S / EnergyFullScaleSeconds)`.
+- k ships at 30 s. The sense then reads 0.33 at 15 s, 0.6 at 45 s, 0.9 at 300 s, and still a little under 1 at 3,000 s.
+- It is the chemical sense's squash (`ChemicalHalfScaleJoulesPerCubicMetre`), for the same reason: the quantity spans decades.
+
+**Rejected.**
+- Keeping the tanh with a smaller scale. A scale small enough for a newborn saturates a fat body, and fat is the next build.
+- A log squash. It gives much the same resolution; the half-scale form matches the chemical sense and needs no ceiling.
+
+**Why.** The 3,000 s scale was borrowed from the world's old lifetime and never measured. A grazer now lives a median of 68 s and a newborn holds about 15 s, so every young body's energy sense read about 0.005. In the brain-birth bench (`logbook/specs/r62p-read/brain-birth/`) that reading cost every newborn about a third of its speed. The owner judged a sense that cannot tell 15 s from 45 s to be wrong. Fat widens the reserve's range, so the form has to keep resolution across decades.
+
+**Cost.** It is a world rule. A new tunable refuses every config written before it, and every seed is a new realisation.
+
+### D246
+**The newborns that stand still are left to selection; the theatre's limb becomes a paddle and its water murkier** · 2026-10-27
+
+**Status:** ruled by the owner on the evening of 2026-10-27.
+
+**Decision.**
+- **No world change for the newborns that stand still.** The brain-birth read found their brains drive weakly, with nothing holding them, and the carrion scent was the one sense that split them from the movers on the bench (inference). The owner judged that if they survive it is fine, since that is what selection is for. The chase stopped there. The senses recorder (`t3-senses`, `acc0bf12`) stays an uncompiled branch.
+- **The theatre's limb becomes a paddle.** Both fin webs read as a flat card through the rod. The owner's alternative replaces them: the limb is drawn round and continuous with the body at its root, flattening and widening to a paddle edge at its free end, inside the same collider (`PADDLE_LIMB`). D242's rule, that the outline stays on the colliders, holds.
+- **The film's water is `ABSORB` 0.6**, up from 0.3, on the coordinator's recommendation. The owner could hardly tell the two apart on the triage sheet.
+
+**Why.** The world's rules should push creatures to evolve, not rescue each lineage that does badly. A paddle drawn inside the collider shows the swimming surface D229's fin law already simulates, without drawing tissue the world does not have.
