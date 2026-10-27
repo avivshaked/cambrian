@@ -98,7 +98,31 @@ fat's screen, which waited on it, can be planned (inference: the scheduling is t
 its grazers almost never travel between oases, and a crossing costs about three times a grazer's median life. Making a
 crossing pay is what fat is for.
 
-The pictures, one wide frame per world at 12,000 s and 24,000 s, are asked of b0 and are not yet seen.
+## What the pictures show
+
+b0 took one wide frame per world at 12,000 s and 24,000 s, and the coordinator checked them
+([`scratch/owner/r62cf-wide-frames/`](../../../../scratch/owner/r62cf-wide-frames/)). Every world has the same three
+groves, and the tank's left fifth is empty. At 12,000 s a layer of leaves lies just under the surface over each grove,
+with clear water between. By 24,000 s the layers are two to three times denser and have spread sideways. In 6203 and
+6204 the second and third groves' layers meet, while 6202 keeps a gap. Mouthed bodies cluster over one grove. Below the
+leaf band the water is near-empty apart from the reef.
+
+**The positions agree, and put a number on the gap** (`groves.txt`: bodies per 10 m of x at every depth). The first
+grove spans about x 50 to 110 m, the second 140 to 180 m and the third 200 to 260 m. Take the leaves in the bin from x
+190 m, between the second and third groves, as a share of the second grove's peak bin. At 12,000 s that share is 6 to
+12%. At 24,000 s it is 26% in 6202, 35% in 6203 and 44% in 6204. So the gap fills in all three worlds, most in 6204 and
+least in 6202, as the frames show. The gap between the first and second groves (the bin from x 120 m) stays open in all
+three, at 3 to 5% of the first grove's peak at 24,000 s. The bodies rise 2.8 to 3 times from 12,000 s to 24,000 s, and nearly all are
+leaves. In 6202, 143 of the 168 mouthed bodies at 24,000 s sit over the middle grove. In 6204 the 65 split 25, 19 and
+19 over the three groves, so the positions do not show the cluster over the right grove that the frame does. At
+12,000 s, 10 of 6204's 26 mouthed bodies sat in one bin over the right grove, at x 210 m.
+
+**The three oases are growing towards two** (inference). The second and third groves are filling in
+towards one canopy while the first stays apart. That works against the ocean aim's open water between oases. A grazer
+crossing between the second and third groves would cross less open water at 24,000 s than at 12,000 s.
+
+`cols` and `x sd` could not have shown this. They are whole-box numbers, and `x sd` barely moves (71 to 78 m at
+24,000 s).
 
 ## Sources
 
@@ -118,3 +142,6 @@ The pictures, one wide frame per world at 12,000 s and 24,000 s, are asked of b0
 | alive, cols, x sd | `cols.txt`, read from each world's `runs/<world>.md` |
 | the mark measures the seed difference | inference |
 | few grazers live to cross | inference, from median life against median crossing |
+| the frames | b0's wide frames, checked by the coordinator, in `scratch/owner/r62cf-wide-frames/` |
+| bodies per 10 m of x, the gaps, mouthed bodies by grove | `groves.txt`, from `scripts/reads/r62cf-groves.py` over each world's `positions.jsonl.gz` |
+| the groves grow towards two | inference, from the trough counts |
