@@ -66,6 +66,13 @@ namespace Evosim.SwimProbe
     /// over the last 1 s is under 1e-5.
     /// </para>
     /// <para>
+    /// <b>The mask and the bracket.</b> Every run reads each child's <c>Brain.SensorMask</c> on the body the bench builds
+    /// and writes the channels it reads to the <c>reads</c> column (joined with '+'), with a table of the share of
+    /// children per group that read each channel. <c>--bracket LIST</c> (with <c>--swim</c>) then moves one sense at a
+    /// time (chem@v, scent@v, leaf@v), each arm the child alone with its energy sense from its recorded reserve; see
+    /// <see cref="RunExtras"/>, <see cref="UniformField"/> and the header the run prints.
+    /// </para>
+    /// <para>
     /// Deterministic: rows are written in the ids file's order and nothing depends on the thread count or the clock.
     /// </para>
     /// </summary>
@@ -88,7 +95,7 @@ namespace Evosim.SwimProbe
         public static int Run(
             string run, string idsFile, string outDir, double seconds, double parentWarm, double kick, ulong seed,
             double eps, string configPath, double dt, int threads, bool swim = false, bool passive = false,
-            bool birthHeight = false, string senseSweep = null, double current = double.NaN)
+            bool birthHeight = false, string senseSweep = null, double current = double.NaN, string bracket = null)
         {
             if (run == null || idsFile == null || outDir == null)
             {
@@ -126,6 +133,31 @@ namespace Evosim.SwimProbe
                 return 2;
             }
 
+            // --bracket: a comma-separated list of values in [0, 1], read with --swim only (Program.Main refuses it
+            // otherwise). Each is a value the sense reads (chem@v: the Chemical constant; scent@v and leaf@v: the
+            // squashed scent, which only reaches [0, 1]), so a value outside that range has no arm to run.
+            var bracketValues = new List<double>();
+            if (swim && bracket != null)
+            {
+                foreach (string part in bracket.Split(','))
+                {
+                    if (!double.TryParse(part.Trim(), NumberStyles.Float, Inv, out double value) ||
+                        double.IsNaN(value) || value < 0.0 || value > 1.0)
+                    {
+                        Console.Error.WriteLine("--bracket needs a comma-separated list of numbers in [0, 1], for example 0,0.25,0.5,0.75,1; got " + bracket);
+                        return 2;
+                    }
+
+                    if (bracketValues.Contains(value))
+                    {
+                        Console.Error.WriteLine("--bracket lists " + F(value) + " twice");
+                        return 2;
+                    }
+
+                    bracketValues.Add(value);
+                }
+            }
+
             Directory.CreateDirectory(outDir);
 
             RunConfig config = RunConfigJson.Read(
@@ -147,6 +179,7 @@ namespace Evosim.SwimProbe
                 BirthHeight = swim && birthHeight,
                 SweepValues = sweepValues,
                 Current = swim ? current : double.NaN,
+                BracketValues = bracketValues,
             };
 
             // --swim: Program.Swim reads the probe's statics, which Main has not set on this path. Set them from this
@@ -182,6 +215,12 @@ namespace Evosim.SwimProbe
             // rows with an S0 (the ids file's optional first-frame seconds of reserve); the reserve phase runs if any
             int haveReserve = 0;
             if (swim) foreach (IdRow row in rows) if (!double.IsNaN(row.S0)) haveReserve++;
+
+            if (cx.BracketValues.Count > 0 && haveReserve == 0)
+            {
+                Console.Error.WriteLine("--bracket needs an ids file with an S0 column (every arm's energy sense is the child's recorded reserve); none of the rows has one");
+                return 2;
+            }
 
             if (swim)
             {
@@ -232,6 +271,15 @@ namespace Evosim.SwimProbe
                         $"  current: childSwimCurrent is childSwim run through the probe's own step loop (Variant.BrainLoop, with the bend array and Anchor.Apply as DynamicsWorld.StepOne has them) with a uniform water speed of {cx.Current} m/s along x: Program.Swim sets Creature.Water[3 i] each step, Fluid.Apply turns it into RelativeVelocity (Fluid.cs:85-86), and CreatureSenses.Sample reads that in each part's frame as the flow sense (CreatureSenses.cs:292-301). The body is dragged along. Its early column is the absolute root displacement over 0 to 10 s; earlyRelWater is the same with {cx.Current} m/s times the elapsed time taken off the x displacement. childSwimLoop0 is the same loop in still water, run first as the current's control"));
                 }
 
+                if (cx.BracketValues.Count > 0)
+                {
+                    Console.WriteLine(
+                        "  bracket: one sense at a time, for v in " + string.Join(", ", cx.BracketValues.Select(v => F(v, "0.######"))) +
+                        ". Every arm is the child alone at its start height, fresh at its birth size, with its energy sense from its recorded reserve (a fixed stand-in with the row's S0, as childSwimReserve; a row without S0 is skipped with a note). chem@v: SolverConfig.ConstantChemicalAndEnergy = v, which with Senses.Reserve set moves Chemical alone (CreatureSenses.cs:399-402 against :407-408); the solver is built as the sweep builds it and put back after. scent@v and leaf@v: a ScentField of one cell (1 m cube, so At reads that cell everywhere and GradientAt reads 0), its cell set with CopyCellsFrom to the s that makes the sensed value s / (s + k) equal v, k being " +
+                        F(Math.Max(1e-6, cx.Solver.ScentHalfScaleJoules), "0.######") + " J for scent (ScentHalfScaleJoules) and " +
+                        F(Math.Max(1e-6, cx.Solver.LeafScentHalfScaleSquareMetres), "0.######") + " m2 for leaf (LeafScentHalfScaleSquareMetres): s = k v / (1 - v). The squash never reaches 1, so v = 1 sets s = 1e30, which the float sum s + k leaves at s and the division reads as exactly 1. v = 0 sets no field (the channel reads 0, as in every other arm). The field is built inside each swim, so no thread shares one. A uniform leaf field has no gradient, so LeafScentDirection reads 0 in every leaf arm. Each arm's note gives the asked and the sensed value. An arm is run for a channel only if some child's brain reads it, and all children swim it; the tables give the readers apart");
+                }
+
                 Console.WriteLine(
                     "  columns after early: totalMass kg (effective, added mass folded in) and totalVolume m3 of the Creature; excessDensity kg/m3, the tissue excess density Fluid.Apply uses for the body (TissueExcessDensity x ExcessDensityFactor); netBuoyancy N, up positive, the vertical force of one Fluid.Apply on the body at its start, at rest in still water; dyFirst10 m, the root's vertical displacement over 0 to 10 s, up positive; bodyLength m, the probe's measure on the body as built");
             }
@@ -255,7 +303,9 @@ namespace Evosim.SwimProbe
                 return 3;
             }
 
-            if (swim && (cx.SweepValues.Count > 0 || haveReserve > 0 || cx.HasCurrent))
+            if (cx.BracketValues.Count > 0) ChooseBracketArms(cx, results);
+
+            if (swim && (cx.SweepValues.Count > 0 || haveReserve > 0 || cx.HasCurrent || cx.BracketArms.Count > 0))
             {
                 try
                 {
@@ -273,9 +323,11 @@ namespace Evosim.SwimProbe
             }
 
             WriteTables(outDir, rows, results, cx.Current);
+            SummariseReads(rows, results);
             Summarise(rows, results);
             if (swim) SummariseSwim(rows, results);
             if (swim) SummariseExtras(cx, rows, results);
+            if (swim) SummariseBracket(cx, rows, results);
             return 0;
         }
 
@@ -350,6 +402,141 @@ namespace Evosim.SwimProbe
                     }
                 }
             }
+
+            // --bracket: one sense at a time, in the order ChooseBracketArms set (chem, scent, leaf; values as listed).
+            // A chem arm swaps the static solver for one built with the constant, as the sweep does, and puts the
+            // bench's own back; a scent or leaf arm builds its field inside each swim.
+            foreach (BracketArm arm in cx.BracketArms)
+            {
+                try
+                {
+                    if (arm.Kind == BracketKind.Chem)
+                    {
+                        Program.ConfigureForBench(cx.Config, BenchSolver(cx.Config, cx.Dt, (float)arm.Value), cx.Dt, startTop);
+                    }
+
+                    Parallel.For(0, rows.Count, options, k =>
+                    {
+                        results[k].Extra.Add(BracketChildSwim(cx, rows[k], arm, genomeRows, birthFractions));
+                    });
+                }
+                finally
+                {
+                    if (arm.Kind == BracketKind.Chem) Program.ConfigureForBench(cx.Config, cx.Solver, cx.Dt, startTop);
+                }
+            }
+        }
+
+        // ================================================================ the bracket
+
+        private enum BracketKind { Chem, Scent, Leaf }
+
+        private sealed class BracketArm
+        {
+            public BracketKind Kind;
+            public double Value;
+            public string Name;   // chem@v, scent@v or leaf@v
+        }
+
+        private static string KindWord(BracketKind kind) =>
+            kind == BracketKind.Chem ? "chem" : kind == BracketKind.Scent ? "scent" : "leaf";
+
+        private static SensorChannel ChannelOf(BracketKind kind) =>
+            kind == BracketKind.Chem ? SensorChannel.Chemical
+            : kind == BracketKind.Scent ? SensorChannel.Scent
+            : SensorChannel.LeafScent;
+
+        private static bool IsBracketName(string name) =>
+            name.StartsWith("chem@", StringComparison.Ordinal) || name.StartsWith("scent@", StringComparison.Ordinal) ||
+            name.StartsWith("leaf@", StringComparison.Ordinal);
+
+        private static bool ReadsChannel(RowResult r, SensorChannel channel) =>
+            r.HasMask && Brain.MaskReads(r.Mask, channel);
+
+        /// <summary>
+        /// Decides which channels get arms: a channel is run only if at least one child's brain reads it. Prints which
+        /// were run (with the number of children that read it) and which were skipped for that reason.
+        /// </summary>
+        private static void ChooseBracketArms(Context cx, RowResult[] results)
+        {
+            foreach (BracketKind kind in new[] { BracketKind.Chem, BracketKind.Scent, BracketKind.Leaf })
+            {
+                SensorChannel channel = ChannelOf(kind);
+                int readers = 0, built = 0;
+                foreach (RowResult r in results)
+                {
+                    if (r.HasMask) built++;
+                    if (ReadsChannel(r, channel)) readers++;
+                }
+
+                if (readers == 0)
+                {
+                    Console.WriteLine($"  bracket: {KindWord(kind)} arms skipped, no child's brain reads {channel} ({built} children with a brain built)");
+                    continue;
+                }
+
+                Console.WriteLine($"  bracket: {KindWord(kind)} arms run, {readers} of {built} children's brains read {channel}");
+                foreach (double v in cx.BracketValues)
+                {
+                    cx.BracketArms.Add(new BracketArm { Kind = kind, Value = v, Name = KindWord(kind) + "@" + F(v, "0.######") });
+                }
+            }
+        }
+
+        /// <summary>
+        /// A uniform smell field that makes a part sense <paramref name="asked"/>: one cell, so <c>At</c> reads it
+        /// everywhere and <c>GradientAt</c> reads 0, its value s set with <c>CopyCellsFrom</c> so that the sensed
+        /// s / (s + k) is the asked value (CreatureSenses.cs:286-287 and :336-338, in float as there). Null at 0 (no
+        /// field: the channel reads 0). Built inside each swim, so no thread shares one.
+        /// </summary>
+        private static ScentField UniformField(double asked, double halfScale, out float cell, out float sensed)
+        {
+            cell = 0f;
+            sensed = 0f;
+            if (!(asked > 0.0)) return null;
+
+            float k = (float)Math.Max(1e-6, halfScale);
+            // 1 is not reachable by s / (s + k) for a finite s, but in float 1e30f + k is 1e30f and the quotient is 1.
+            float s = asked >= 1.0 ? 1e30f : (float)((double)k * asked / (1.0 - asked));
+            if (!(s > 0f) || float.IsInfinity(s)) return null;
+
+            var field = new ScentField(1f, 1f, 1f, 1f, 1f);
+            field.CopyCellsFrom(new[] { s });
+            cell = s;
+            sensed = s / (s + k);
+            return field;
+        }
+
+        /// <summary>One row's child swim in a bracket arm: the child alone at its start height, energy sense from its S0.</summary>
+        private static VariantResult BracketChildSwim(
+            Context cx, IdRow row, BracketArm arm, Dictionary<long, string> genomeRows, Dictionary<long, float> birthFractions)
+        {
+            if (double.IsNaN(row.S0)) return Skip(arm.Name, "skip: the ids file has no S0 for this row");
+            if (!genomeRows.TryGetValue(row.Id, out string childRow)) return Skip(arm.Name, "skip: the child's genome is not in genomes.jsonl.gz");
+
+            float seconds = (float)row.S0;
+            ScentField scent = null, leaf = null;
+            string asked;
+            if (arm.Kind == BracketKind.Chem)
+            {
+                asked = "chem asked " + F(arm.Value, "0.######") + ", sensed " + F((float)arm.Value, "0.######");
+            }
+            else
+            {
+                double half = arm.Kind == BracketKind.Scent ? cx.Solver.ScentHalfScaleJoules : cx.Solver.LeafScentHalfScaleSquareMetres;
+                ScentField field = UniformField(arm.Value, half, out float cell, out float sensed);
+                if (arm.Kind == BracketKind.Scent) scent = field; else leaf = field;
+                string fieldNote = field == null ? ", no field" : ", cell " + F(cell, "0.######");
+                asked = KindWord(arm.Kind) + " asked " + F(arm.Value, "0.######") + ", sensed " + F(sensed, "0.######") + fieldNote;
+            }
+
+            string note = FormattableString.Invariant($"S0 {seconds:0.###} s, energy sense {EnergySense(cx, seconds):0.####}; {asked}");
+            float fraction = birthFractions.TryGetValue(row.Id, out float bf) ? bf : 1f;
+            string bfNote = float.IsNaN(fraction) ? "" : FormattableString.Invariant($"bf {fraction:0.####}");
+            double start = StartOf(cx, row, out string startNote);
+            return SwimOne(
+                cx, arm.Name, childRow, fraction, JoinNote(JoinNote(bfNote, startNote), note), false, start, false,
+                new FixedReserve(seconds), scent, leaf);
         }
 
         /// <summary>The energy sense a reserve of <paramref name="seconds"/> gives: CreatureSenses.Squash, mirrored for the note.</summary>
@@ -390,6 +577,8 @@ namespace Evosim.SwimProbe
             public bool Swim, Passive, BirthHeight;
             public List<double> SweepValues = new List<double>();   // --sense-sweep, in the order given
             public double Current = double.NaN;                     // --current, m/s along x; NaN when not asked for
+            public List<double> BracketValues = new List<double>(); // --bracket, in the order given
+            public List<BracketArm> BracketArms = new List<BracketArm>();   // the arms ChooseBracketArms decided to run
             public bool HasCurrent => !double.IsNaN(Current);
         }
 
@@ -449,6 +638,11 @@ namespace Evosim.SwimProbe
             // childSwimReserve (when the ids file has an S0 column), then childSwimCurrent (--current). Written by
             // the one thread that holds the row in a phase, and phases do not overlap.
             public List<VariantResult> Extra = new List<VariantResult>();
+
+            // The child's brain's SensorMask (Brain.SensorMask), read on the body the bench builds; HasMask is false when
+            // the child's body could not be built. The same on every row of the child.
+            public bool HasMask;
+            public int Mask;
         }
 
         private const string ReserveName = "childSwimReserve", CurrentName = "childSwimCurrent", LoopName = "childSwimLoop0";
@@ -510,6 +704,12 @@ namespace Evosim.SwimProbe
             {
                 try { childHeld = Build(cx, childRow, fraction); }
                 catch (Exception ex) when (!(ex is FatalBench)) { childWhy = "skip: " + Describe(ex); }
+            }
+
+            if (childHeld != null)
+            {
+                result.HasMask = true;
+                result.Mask = childHeld.Body.Brain.SensorMask;
             }
 
             // parent: the parent's brain, fresh
@@ -612,12 +812,12 @@ namespace Evosim.SwimProbe
 
         private static VariantResult SwimOne(
             Context cx, string name, string genomeRow, float fraction, string note, bool passive, double start,
-            bool loop = false, IReserveSource reserve = null)
+            bool loop = false, IReserveSource reserve = null, ScentField scent = null, ScentField leafScent = null)
         {
             try
             {
                 Program.SwimAloneResult swum = Program.SwimAlone(
-                    DevelopBody(cx, genomeRow, fraction), cx.Steps, passive, start, loop, reserve);
+                    DevelopBody(cx, genomeRow, fraction), cx.Steps, passive, start, loop, reserve, scent, leafScent);
                 string why = swum.NoJoints ? "no actuated degree of freedom" : swum.Lost ? "lost: the body went non-finite" : "";
                 if (Math.Abs(swum.StartUsed - start) > 1e-9)
                 {
@@ -955,10 +1155,12 @@ namespace Evosim.SwimProbe
             // The swim columns come after note, so every earlier column keeps its place. They are blank for the four
             // held variants, and the held measures are "-" for the two swim variants. earlyRelWater is last: blank
             // except on childSwimCurrent rows, where early is the absolute root speed over 0 to 10 s and earlyRelWater
-            // is the same with the water's own drift (current x elapsed time, along x) taken off.
+            // is the same with the water's own drift (current x elapsed time, along x) taken off. reads comes after it: the
+            // child's brain's SensorMask as the names of the channels read, joined with '+' ("none" when it reads nothing,
+            // "-" when the child's body could not be built), the same on every row of that child.
             main.Append("id\tparent\tgroup\tvariant\tdof\tactive\tmaxP2P\tmedianHz\tsilent\tsettled\tnote");
             main.Append("\tnetSpeed\tpathSpeed\thorizontal\tdominantHz\tdominantAmp\tearly");
-            main.Append("\ttotalMass\ttotalVolume\texcessDensity\tnetBuoyancy\tdyFirst10\tbodyLength\tearlyRelWater\n");
+            main.Append("\ttotalMass\ttotalVolume\texcessDensity\tnetBuoyancy\tdyFirst10\tbodyLength\tearlyRelWater\treads\n");
             const string NoSwim = "\t\t\t\t\t\t\t\t\t\t\t\t\t";   // thirteen empty swim columns (six swim, six size and buoyancy, earlyRelWater)
 
             var channels = new StringBuilder();
@@ -967,6 +1169,7 @@ namespace Evosim.SwimProbe
             for (int k = 0; k < rows.Count; k++)
             {
                 IdRow row = rows[k];
+                string reads = ReadsOf(results[k]);
                 foreach (VariantResult v in results[k].Variants)
                 {
                     main.Append(row.Id.ToString(Inv)).Append('\t').Append(row.Parent.ToString(Inv)).Append('\t')
@@ -974,7 +1177,7 @@ namespace Evosim.SwimProbe
 
                     if (v.Skipped)
                     {
-                        main.Append("-\t-\t-\t-\t-\t-\t").Append(v.Note).Append(NoSwim).Append('\n');
+                        main.Append("-\t-\t-\t-\t-\t-\t").Append(v.Note).Append(NoSwim).Append('\t').Append(reads).Append('\n');
                         continue;
                     }
 
@@ -983,7 +1186,7 @@ namespace Evosim.SwimProbe
                     main.Append(s.Dof.ToString(Inv)).Append('\t').Append(s.ActiveCount.ToString(Inv)).Append('\t')
                         .Append(F(s.MaxP2P)).Append('\t').Append(F(s.MedianHz, "0.###")).Append('\t')
                         .Append(s.Silent ? "1" : "0").Append('\t').Append(s.Settled ? "1" : "0").Append('\t')
-                        .Append(note).Append(NoSwim).Append('\n');
+                        .Append(note).Append(NoSwim).Append('\t').Append(reads).Append('\n');
 
                     for (int d = 0; d < s.Dof; d++)
                     {
@@ -1004,7 +1207,7 @@ namespace Evosim.SwimProbe
 
                     if (v.Skipped)
                     {
-                        main.Append("-\t-\t-\t-\t-\t-\t").Append(v.Note).Append(NoSwim).Append('\n');
+                        main.Append("-\t-\t-\t-\t-\t-\t").Append(v.Note).Append(NoSwim).Append('\t').Append(reads).Append('\n');
                         continue;
                     }
 
@@ -1029,7 +1232,7 @@ namespace Evosim.SwimProbe
                         .Append(sized ? F(w.BodyLength, "0.#####") : "").Append('\t')
                         .Append(has && v.Name == CurrentName && !double.IsNaN(EarlyRelWater(w, current))
                             ? F(EarlyRelWater(w, current), "0.#####")
-                            : "").Append('\n');
+                            : "").Append('\t').Append(reads).Append('\n');
                 }
             }
 
@@ -1044,6 +1247,75 @@ namespace Evosim.SwimProbe
             File.WriteAllText(Path.Combine(outDir, "brain-birth-channels.tsv"), channels.ToString(), utf8);
             Console.WriteLine("  wrote brain-birth.tsv (" + (rows.Count * perRow).ToString(Inv) +
                               " rows) and brain-birth-channels.tsv, per channel mean, range, RMS and rate");
+        }
+
+        /// <summary>
+        /// The names of the channels the child's brain reads, joined with '+' in channel order: "none" when it reads
+        /// nothing, "-" when the child's body could not be built.
+        /// </summary>
+        private static string ReadsOf(RowResult r)
+        {
+            if (!r.HasMask) return "-";
+            var names = new List<string>();
+            foreach (SensorChannel channel in Enum.GetValues(typeof(SensorChannel)))
+            {
+                if (Brain.MaskReads(r.Mask, channel)) names.Add(channel.ToString());
+            }
+
+            return names.Count == 0 ? "none" : string.Join("+", names);
+        }
+
+        private static List<string> GroupsOf(List<IdRow> rows)
+        {
+            var groups = new List<string> { "standstill", "slow", "moving" };
+            foreach (IdRow row in rows) if (!groups.Contains(row.Group)) groups.Add(row.Group);
+            return groups;
+        }
+
+        /// <summary>
+        /// The mask table: for each SensorChannel, and per group, how many of the children whose brain was built have a
+        /// brain that reads it (<c>Brain.SensorMask</c> on the body the bench builds).
+        /// </summary>
+        private static void SummariseReads(List<IdRow> rows, RowResult[] results)
+        {
+            if (rows.Count == 0) return;
+
+            var groups = new List<string>();
+            var members = new List<List<int>>();
+            foreach (string group in GroupsOf(rows))
+            {
+                var m = new List<int>();
+                for (int k = 0; k < rows.Count; k++) if (rows[k].Group == group && results[k].HasMask) m.Add(k);
+                bool any = false;
+                for (int k = 0; k < rows.Count; k++) if (rows[k].Group == group) any = true;
+                if (!any) continue;
+                groups.Add(group);
+                members.Add(m);
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("== channels the children's brains read (Brain.SensorMask on the body the bench builds; of the children whose body was built, how many have a neuron wired to the channel)");
+            var header = new StringBuilder("  channel               ");
+            for (int g = 0; g < groups.Count; g++)
+            {
+                string label = groups[g] + " (n " + members[g].Count.ToString(Inv) + ")";
+                header.Append(label.PadRight(26));
+            }
+            Console.WriteLine(header.ToString());
+
+            foreach (SensorChannel channel in Enum.GetValues(typeof(SensorChannel)))
+            {
+                var line = new StringBuilder($"  {channel,-20}  ");
+                for (int g = 0; g < groups.Count; g++)
+                {
+                    int reading = 0;
+                    foreach (int k in members[g]) if (Brain.MaskReads(results[k].Mask, channel)) reading++;
+                    string cell = reading.ToString(Inv) + " " + Pct(reading, members[g].Count);
+                    line.Append(cell.PadRight(26));
+                }
+
+                Console.WriteLine(line.ToString());
+            }
         }
 
         private static void Summarise(List<IdRow> rows, RowResult[] results)
@@ -1288,8 +1560,10 @@ namespace Evosim.SwimProbe
         {
             if (rows.Count == 0 || results[0].Extra.Count == 0) return;
 
+            // The bracket's arms (chem@v, scent@v, leaf@v) have tables and 2x2s of their own in SummariseBracket.
             var names = new List<string> { BaseName };
-            foreach (VariantResult v in results[0].Extra) names.Add(v.Name);
+            foreach (VariantResult v in results[0].Extra) if (!IsBracketName(v.Name)) names.Add(v.Name);
+            if (names.Count == 1) return;
 
             double baseConst = cx.Solver.ConstantChemicalAndEnergy;
             var groups = new List<string> { "standstill", "slow", "moving" };
@@ -1339,6 +1613,7 @@ namespace Evosim.SwimProbe
             foreach (string name in names)
             {
                 if (name == BaseName) continue;
+                if (IsBracketName(name)) continue;
                 if (name == CurrentName)
                 {
                     TwoByTwo(rows, results, name, cx.Current, FormattableString.Invariant($"{name}, early relative to the water ({cx.Current} m/s along x)"));
@@ -1346,6 +1621,83 @@ namespace Evosim.SwimProbe
                 }
                 else TwoByTwo(rows, results, name, double.NaN, name);
             }
+        }
+
+        /// <summary>
+        /// The bracket's tables: for each channel run, rows are the values and the columns, per group, are n (swims with
+        /// a number), the median early and the share with early (netSpeed where early is blank) under
+        /// <see cref="SlowSpeed"/>. Printed for all children, and again for the children whose brain reads the channel,
+        /// where an effect can show. Then the existing 2x2 for each arm: slow in the world against slow alone.
+        /// </summary>
+        private static void SummariseBracket(Context cx, List<IdRow> rows, RowResult[] results)
+        {
+            if (rows.Count == 0 || cx.BracketArms.Count == 0) return;
+
+            var groups = new List<string>();
+            foreach (string group in GroupsOf(rows))
+            {
+                bool any = false;
+                for (int k = 0; k < rows.Count; k++) if (rows[k].Group == group) any = true;
+                if (any) groups.Add(group);
+            }
+
+            foreach (BracketKind kind in new[] { BracketKind.Chem, BracketKind.Scent, BracketKind.Leaf })
+            {
+                var arms = cx.BracketArms.Where(a => a.Kind == kind).ToList();
+                if (arms.Count == 0) continue;
+                SensorChannel channel = ChannelOf(kind);
+
+                foreach (bool readersOnly in new[] { false, true })
+                {
+                    Console.WriteLine();
+                    Console.WriteLine(
+                        $"== bracket {KindWord(kind)}@v, {channel} at v (every arm's energy sense from S0), " +
+                        (readersOnly ? "only the children whose brain reads " + channel : "all children"));
+
+                    var members = new List<List<int>>();
+                    var top = new StringBuilder("  arm           ");
+                    var sub = new StringBuilder("                ");
+                    foreach (string group in groups)
+                    {
+                        var m = new List<int>();
+                        for (int k = 0; k < rows.Count; k++)
+                        {
+                            if (rows[k].Group == group && (!readersOnly || ReadsChannel(results[k], channel))) m.Add(k);
+                        }
+
+                        members.Add(m);
+                        top.Append((group + " (children " + m.Count.ToString(Inv) + ")").PadRight(33));
+                        sub.Append("n".PadLeft(5) + " " + "median early".PadLeft(13) + " " + ("early<" + F(SlowSpeed)).PadLeft(11) + "  ");
+                    }
+
+                    Console.WriteLine(top.ToString());
+                    Console.WriteLine(sub.ToString());
+
+                    foreach (BracketArm arm in arms)
+                    {
+                        var line = new StringBuilder("  " + arm.Name.PadRight(14));
+                        foreach (List<int> m in members)
+                        {
+                            var early = new List<double>();
+                            int n = 0, slow = 0;
+                            foreach (int k in m)
+                            {
+                                VariantResult r = Pick(results[k], arm.Name);
+                                if (!HasSwimNumber(r)) continue;
+                                n++;
+                                if (!double.IsNaN(r.Swim.Early)) early.Add(r.Swim.Early);
+                                if (Alone(r, double.NaN, out _) < SlowSpeed) slow++;
+                            }
+
+                            line.Append(n.ToString(Inv).PadLeft(5) + " " + F(Median(early), "0.#####").PadLeft(13) + " " + Pct(slow, n).PadLeft(11) + "  ");
+                        }
+
+                        Console.WriteLine(line.ToString());
+                    }
+                }
+            }
+
+            foreach (BracketArm arm in cx.BracketArms) TwoByTwo(rows, results, arm.Name, double.NaN, arm.Name);
         }
 
         /// <summary>The existing 2x2's form, for one named variant: in the world (standstill or slow, against moving) by alone (slow, or not).</summary>

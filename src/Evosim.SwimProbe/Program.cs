@@ -51,6 +51,7 @@ namespace Evosim.SwimProbe
             bool birthHeight = false;   // --brain-birth --swim only: start each body at its row's y0, not at -20 m
             string senseSweep = null;   // --brain-birth --swim only: constants for ConstantChemicalAndEnergy, comma-separated
             double current = double.NaN;   // --brain-birth --swim only: a uniform water speed along x, m/s
+            string bracket = null;      // --brain-birth --swim only: values for one sense at a time (chem@v, scent@v, leaf@v), comma-separated
             bool secondsGiven = false;  // --seconds defaults to 120 here and to 60 for the brain-at-birth bench
             double parentWarm = 60, kick = 0.05, eps = 0.05;
             ulong seed = 1;
@@ -92,6 +93,7 @@ namespace Evosim.SwimProbe
                     case "--birth-height": birthHeight = true; break;
                     case "--sense-sweep": senseSweep = args[++i]; break;
                     case "--current": current = double.Parse(args[++i], Inv); break;
+                    case "--bracket": bracket = args[++i]; break;
                     case "--parent-warm": parentWarm = double.Parse(args[++i], Inv); break;
                     case "--kick": kick = double.Parse(args[++i], Inv); break;
                     case "--eps": eps = double.Parse(args[++i], Inv); break;
@@ -119,9 +121,9 @@ namespace Evosim.SwimProbe
                 return 2;
             }
 
-            if ((senseSweep != null || !double.IsNaN(current)) && !(brainBirth && swim))
+            if ((senseSweep != null || !double.IsNaN(current) || bracket != null) && !(brainBirth && swim))
             {
-                Console.Error.WriteLine("--sense-sweep and --current are read only with --brain-birth --swim");
+                Console.Error.WriteLine("--sense-sweep, --current and --bracket are read only with --brain-birth --swim");
                 return 2;
             }
 
@@ -129,7 +131,7 @@ namespace Evosim.SwimProbe
             {
                 return BrainBirth.Run(
                     run, idsFile, outDir, secondsGiven ? seconds : 60.0, parentWarm, kick, seed, eps, configPath, _dt, par, swim,
-                    passive, birthHeight, senseSweep, current);
+                    passive, birthHeight, senseSweep, current, bracket);
             }
 
             Directory.CreateDirectory(outDir);
@@ -447,6 +449,10 @@ namespace Evosim.SwimProbe
             // The bench's childSwimReserve hook: the energy sense reads this stand-in's SecondsOfReserve through the
             // same path the world's Organism takes (CreatureSenses.Sample). Null for every other swim, so unchanged.
             if (rec.Reserve != null) body.Senses.Reserve = rec.Reserve;
+            // The bench's --bracket scent and leaf-scent arms: a uniform field, built per call, read through the same
+            // CreatureSenses.Sample path as the world's own fields. Null for every other swim, so unchanged.
+            if (rec.Scent != null) body.Senses.Scent = rec.Scent;
+            if (rec.LeafScent != null) body.Senses.LeafScent = rec.LeafScent;
             double y0 = Math.Max(-40.0, Math.Min(_startTop, rec.StartHeight));
             body.PlaceAsDeveloped(new Vec3(0, y0, 0), rec.Adult);
 
@@ -722,7 +728,7 @@ namespace Evosim.SwimProbe
         /// </summary>
         internal static SwimAloneResult SwimAlone(
             Phenotype adult, int steps, bool passive = false, double startHeight = -20.0, bool loop = false,
-            IReserveSource reserve = null)
+            IReserveSource reserve = null, ScentField scent = null, ScentField leafScent = null)
         {
             var probe = new Creature(0, adult, _solver, _config.Shapes);
             var outcome = new SwimAloneResult { Dof = probe.Dof };
@@ -769,6 +775,8 @@ namespace Evosim.SwimProbe
             rec.LimitLo = (double[])probe.LimitLo.Clone();
             rec.LimitHi = (double[])probe.LimitHi.Clone();
             rec.StartHeight = startHeight;
+            rec.Scent = scent;           // the --bracket fields, likewise set per call
+            rec.LeafScent = leafScent;
             rec.Reserve = reserve;   // the hook: Swim sets it on the Creature it builds, per call, so threads do not share it
 
             // loop: the probe's own step loop (Variant.BrainLoop) in place of DynamicsWorld.Step, which is the only variant
@@ -870,6 +878,7 @@ namespace Evosim.SwimProbe
             public string JointTypes;
             public double StartHeight;
             public IReserveSource Reserve;   // the bench's childSwimReserve: set on Senses.Reserve in Swim; null otherwise
+            public ScentField Scent, LeafScent;   // the bench's --bracket scent@v and leaf@v: uniform fields set on Senses in Swim; null otherwise
             public double Length, Mass;
             public int PoseSamples;
             public double[] PoseSd;
