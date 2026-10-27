@@ -16,7 +16,8 @@ order), maxAbsDq and rmsDq (over those coordinates), rootMove (the root's 3D dis
 metres, x and z the short way round the torus), parentDist1 (root to root at t1, metres, nan when
 the parent is not in that frame), nearestDist1 and nearestId (the nearest other body's root at t1),
 nWithin1m (other bodies within 1 m of the root at t1), parentMaxAbsDq, parentRmsDq and
-parentRootMove (the parent's own change between the same t1 and t2, nan when the parent is missing
+nearestRemains1 and remainsWithin10m (the nearest remains, flag 8, at t1, and how many lie within
+10 m, the carrion scent's range in r62p-t3), parentRootMove (the parent's own change between the same t1 and t2, nan when the parent is missing
 from either frame or its joint count differs between them).
 
 Units. The joint coordinates are the stream's own: the solver's coordinates in its order, which
@@ -271,6 +272,7 @@ def main():
                     'parentDist1': s['parentDist1'], 'nearestDist1': s['nearestDist1'],
                     'nearestId': s['nearestId'], 'nWithin1m': s['nWithin1m'],
                     'parentMaxAbsDq': pmx, 'parentRmsDq': prms, 'parentRootMove': proot,
+                    'nearestRemains1': s['nearestRemains1'], 'remainsWithin10m': s['remainsWithin10m'],
                 }
 
             # First frames: an id not yet seen.
@@ -278,6 +280,7 @@ def main():
             if fresh:
                 others = [(b['id'], b['p']) for b in bodies
                           if args.remains or not (b['flags'] and b['flags'] & 8)]
+                remains = [b['p'] for b in bodies if b['flags'] and b['flags'] & 8]
                 for ident in fresh:
                     body = by_id[ident]
                     c = wanted[ident]
@@ -294,7 +297,10 @@ def main():
                         if d <= 1.0:
                             within += 1
                     parent1 = by_id.get(c['parent']) if c['parent'] is not None else None
+                    rd = [space.dist(body['p'], rp) for rp in remains]
                     state[ident] = {
+                        'nearestRemains1': min(rd) if rd else NAN,
+                        'remainsWithin10m': sum(1 for d in rd if d <= 10.0),
                         't1': t, 'q1': list(body['q']), 'p1': body['p'],
                         'parent1': parent1,
                         'parentDist1': space.dist(body['p'], parent1['p']) if parent1 is not None else NAN,
@@ -309,7 +315,7 @@ def main():
     # ------------------------------------------------------------------ the TSV
     cols = ['id', 'parent', 'group', 't1', 't2', 'nJoints', 'dq', 'maxAbsDq', 'rmsDq', 'rootMove',
             'parentDist1', 'nearestDist1', 'nearestId', 'nWithin1m',
-            'parentMaxAbsDq', 'parentRmsDq', 'parentRootMove']
+            'parentMaxAbsDq', 'parentRmsDq', 'parentRootMove', 'nearestRemains1', 'remainsWithin10m']
 
     with open(args.out, 'w', encoding='utf-8', newline='') as out:
         out.write('\t'.join(cols) + '\n')
@@ -319,7 +325,7 @@ def main():
             if r is None:
                 cells = [str(c['id']), '' if c['parent'] is None else str(c['parent']), c['group'],
                          fmt(t1 if t1 is not None else NAN, 3), 'nan', 'nan', 'nan', 'nan', 'nan', 'nan',
-                         'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan']
+                         'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan']
             else:
                 cells = [str(c['id']), '' if c['parent'] is None else str(c['parent']), c['group'],
                          fmt(r['t1'], 3), fmt(r['t2'], 3), str(r['nJoints']),
@@ -329,7 +335,8 @@ def main():
                          fmt(r['parentDist1'], LEN_DECIMALS), fmt(r['nearestDist1'], LEN_DECIMALS),
                          str(r['nearestId']), str(r['nWithin1m']),
                          fmt(r['parentMaxAbsDq'], DQ_DECIMALS), fmt(r['parentRmsDq'], DQ_DECIMALS),
-                         fmt(r['parentRootMove'], LEN_DECIMALS)]
+                         fmt(r['parentRootMove'], LEN_DECIMALS),
+                         fmt(r['nearestRemains1'], LEN_DECIMALS), str(r['remainsWithin10m'])]
             out.write('\t'.join(cells) + '\n')
 
     # ------------------------------------------------------------------ the summary
@@ -377,6 +384,11 @@ def main():
             print('  parent within 1 m: %s of those with a parent in frame 1 (%s of all with two frames)'
                   % (pct(sum(1 for v in pd if v <= 1.0), len(pd)),
                      pct(sum(1 for v in pd if v <= 1.0), len(rows))))
+            nr = finite(r['nearestRemains1'] for _, r in rows)
+            print('  nearestRemains1 median %s m; any remains within 10 m (the carrion scent range): %s; '
+                  'median count within 10 m %s'
+                  % (sci(quantile(nr, 0.5)), pct(sum(1 for _, r in rows if r['remainsWithin10m'] >= 1), len(rows)),
+                     sci(quantile(sorted(float(r['remainsWithin10m']) for _, r in rows), 0.5))))
             pm = finite(r['parentMaxAbsDq'] for _, r in rows)
             print('  parentMaxAbsDq median %s; parents under 1e-4: %s (of %d with a parent compared)'
                   % (sci(quantile(pm, 0.5)), pct(sum(1 for v in pm if v < 1e-4), len(pm)), len(pm)))

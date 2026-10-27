@@ -204,14 +204,60 @@ So the standstill newborn drives weakly rather than being held. That puts the ca
 senses in the world and not alone (inference). A joint pinned at its limit by a saturated drive would hold still, and
 at most 18 children do.
 
+## One sense at a time: the carrion scent stops the slow genomes more often
+
+The bracket ran the same evening (`--bracket 0,0.25,0.5,0.75,1`; `bench-bracket.txt`, `brain-birth-bracket.tsv`). It
+took 3.3 minutes on one core, built from `d26be972`. Every arm puts the child alone at its recorded height with its
+energy sense from its recorded reserve, and moves one sense:
+- `chem@v` sets the chemical sense at v;
+- `scent@v` sets the carrion scent at v, through a uniform field of one cell;
+- `leaf@v` would set the leaf scent.
+
+The bench first reads which channels each child's brain is wired to (`Brain.SensorMask`). Every one of the 393 reads
+the same set: joints, contact, up, damage, chemical, energy, flow, depth, scent, the drive envelope and the leaf
+scent's direction. One standstill child and 12 movers also read the bed. None reads the leaf scent's strength, so the
+leaf arm did not run. None reads Photo either.
+
+| Arm | Median early speed alone, slow in the world | Movers | Slow in the world, slow alone | Movers, slow alone |
+|---|---|---|---|---|
+| chem@0 | 0.077 | 0.100 | 25 of 193 | 6 of 200 |
+| chem@0.5, the reserve arm | 0.080 | 0.098 | 31 of 193 | 10 of 200 |
+| chem@1 | 0.072 | 0.084 | 51 of 193 | 20 of 200 |
+| scent@0.25 | 0.065 | 0.087 | 40 of 193 | 13 of 200 |
+| scent@0.5 | 0.051 | 0.073 | 62 of 193 | 25 of 200 |
+| scent@0.75 | 0.032 | 0.063 | 91 of 193 | 42 of 200 |
+| scent@1 | 0.015 | 0.052 | 119 of 193 | 63 of 200 |
+
+The first two columns are in m/s. The slow-in-the-world speeds are the standstill and slow groups' medians, which lie
+within 0.006 m/s of each other in every arm.
+
+**The chemical sense slows both groups alike.** The slow-alone count rises with the value in both groups, and their
+ratio stays about 3 to 1, as it does at the bench's own settings.
+
+**The carrion scent is the first sense that pulls the groups apart.** At full scent the children that were slow in the
+world nearly stop alone, at a median of 0.013 m/s for the standstill group, while the movers keep a median of
+0.052 m/s. 62% of the slow-in-the-world children stop, against 32% of the movers. That is the only arm in which a
+majority of them stop. It is not a clean split: a third of the movers stop too.
+
+**Every newborn is born among the dead.** The pose stream marks remains, and every child in every group has remains
+within 10 m at its first frame, which is the carrion scent's range in t3. The median is 47 to 50 of them, and the
+nearest lies about 2.1 m away. So the scent a newborn reads in the world is probably well above 0 in every group
+(inference: the stream carries no corpse's joules, so the scent's value is not known). The groups are born into the
+same smell. On this reading, the standstill comes from genomes whose brains answer a strong carrion scent by stopping,
+and the scent is strong wherever newborns are born (inference).
+
+**Photo is a sense ruled but not built.** D154 (2026-10-06) ruled a light sense on `SensorChannel.Photo`, put in the
+pool by a `SenseLight` setting. No such setting exists in `src/`, `CreatureSenses.Read` has no case for Photo, and
+t3's pool does not offer it. So no genome here reads light, and a genome that did would read 0. This is recorded, not
+fixed.
+
 ## What comes next
 
-None of the senses the bench can set reproduces the world's standstill. The energy sense, the chemical sense, depth and
-the current are each ruled out as the cause, alone, and the pose stream rules out contact with other bodies. What is
-left is what a newborn senses in the world and not alone: the smell of leaves, light, the world's chemical field in
-place of a constant, and several of these together. Telling them apart needs either the senses each newborn read in
-the world, which nothing records, or a film window at a finer frame rate that shows the form of the weak drive
-(inference: neither is designed yet).
+The carrion scent reproduces part of the world's split, and the other senses the bench can set reproduce none of it. Two
+things are not known: the scent each newborn actually read, and whether the leaf scent's direction, which every brain
+reads and the bench cannot set, adds to it. The senses a newborn read in the world are recorded nowhere. A reader-only
+option on the farm's film window could record them, with the drive each brain put out, over each newborn's first
+seconds (inference: designed, not built).
 
 ## Sources
 
@@ -238,3 +284,8 @@ the world, which nothing records, or a film window at a finer frame rate that sh
 | joint change, root move and distances in the world | `newborn-joints.txt`, `newborn-joints.tsv` |
 | the torus's size | `newborn-joints.txt`'s world line, derived from `config.json` as `World.cs` derives it |
 | the drive is weak, not held; the cause is a sense | inference, from the joint change and the distances |
+| channels each brain reads; the bracket's speeds and 2x2s | `bench-bracket.txt`, `brain-birth-bracket.tsv` |
+| remains within 10 m at the first frame | `newborn-joints.txt`, `newborn-joints.tsv` (`nearestRemains1`, `remainsWithin10m`) |
+| the scent's range and half scale in t3 | the run's `config.json`: `scentRangeMetres` 10, `scentHalfScaleJoules` 20 |
+| the world's scent is high for every newborn; genomes that stop on it | inference, not measured |
+| Photo ruled and not built | D154; no `SenseLight` in `src/`; `CreatureSenses.Read` |
