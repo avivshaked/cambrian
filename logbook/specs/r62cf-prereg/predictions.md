@@ -46,16 +46,23 @@ step is derived from the physics step and the pace factor alone (`SolverConfig.C
 
 **D222's three tests per world at 24,000 s**, by `scripts/reads/screen-read-24000.ps1 -Gene`, as in the screens.
 
-**Two readings are reported, side by side, and neither is primary.** The owner has not ruled on the amendment
-behind reading (b). Until they do, the read gives both, and the verdict on the settings is the owner's.
-- **(a) Strict, D222 as it stands.** The settings are confirmed when every new world passes all three tests. Any miss
-  means they are not confirmed, and that goes to the owner with the read.
-- **(b) The small-window reading, pending the owner's ruling on the D222 amendment the coordinator has put to them.**
-  It counts as a pass a test-2 miss in a summer-start window that holds fewer grazers than a threshold. The
-  threshold of 20 is a proposal, not a ruling. Misses in windows that small have come before: growth group 2 failed at
-  9 to 17 grazers (`logbook/specs/r62gr2-read/24000/`), and `r62sm-s100-6201` at 15. Reading (b) decides nothing
-  unless the owner adopts the amendment. Under it, a miss in a larger window, or a miss of test 1 or 3, still means
-  the settings are not confirmed.
+**The primary reading is D222 as the owner amended it at about 18:10 UTC on 2026-10-27 (D244),** for runs aimed at
+grazers. Misses in small windows had
+come before: growth group 2 failed at 9 to 17 grazers (`logbook/specs/r62gr2-read/24000/`), and `r62sm-s100-6201` at
+15. The amended reading, per world:
+- **The floor comes first.** The world must reach at least 30 grazers alive. Its count is the largest `g end` in
+  `scripts/reads/r62g-windows.py`'s 500 s windows, the grazers alive at a window's end. A world that never reaches 30
+  fails outright, whatever its tests say.
+- **A small window is not judged.** A summer-start window whose mean count, `g mean`, is under 30 is left out of
+  test 2, neither passed nor failed. Test 2 is judged on the summer-start windows that hold 30 or more. A world with no
+  such window has no test-2 verdict, and the read says so.
+- **Tests 1 and 3 stand as D222 has them.**
+- The settings are confirmed when every new world clears the floor and passes every test judged.
+- **The same reading at 40 is reported beside it, as a sensitivity.** The owner set 30 as the floor and said the bar
+  could be higher. The verdict at 40 informs and decides nothing.
+
+**The strict reading, D222 as it stood before the amendment, is reported second.** Under it, every summer-start
+window is judged whatever its count. It no longer decides the verdict, and it shows what the amendment changed.
 
 **The ocean readout is measured.** It is a description, with no bar. It comes from `scripts/reads/grazer-moves-read.py`
 at a 10 s stride, on r60-read's islands as seeded at 100 s, per world and per 3,000 s bin.
@@ -86,7 +93,8 @@ Beside these, as in the screens:
 
 These are guesses unless marked measured.
 
-- **D222.** Under reading (a), two or three of the new worlds pass (guess). Under reading (b), all three pass (guess). `r62sm-s100-6201`'s born share
+- **D222.** Under D244's reading, all three new worlds clear the floor and pass (guess). Under the strict reading,
+  two or three pass (guess). `r62sm-s100-6201`'s born share
   was 0.828, its best cohort 1.26, its chain 17 and its intake over upkeep 1.81 (measured).
 The fourth seed is already measured. The moves read ran on `r62sm-s100-6201`
 (`logbook/specs/r62cf-prereg/moves-test/r62sm-s100-6201.txt`), and its count agrees with r60-read's in every year:
