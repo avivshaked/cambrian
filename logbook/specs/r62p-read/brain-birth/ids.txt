@@ -1,0 +1,4 @@
+brain-birth-ids.py  run D:\Projects\experiments\evolution-simulator\runs\r62p-t3-6201\2026-10-26-034325-a9cd635c  frames D:\Projects\experiments\evolution-simulator\scratch\newborn-ledger\full\grazer-frames.tsv
+to 24000 s, window 10 s, seed 1; bred grazers 2565, young and alive left out 8, with a first speed 2003
+population (structure diff 0) n 997: standstill 117; slow 76; moving 804
+wrote D:\Projects\experiments\evolution-simulator\scratch\brain-birth\ids.tsv: 393 rows (standstill 117, slow 76, moving 200 of 804 drawn with random.Random(1))
