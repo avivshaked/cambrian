@@ -9526,3 +9526,129 @@ screen's design.
 **Why.** In the patchy tank of D184, a body with no brain spent nearly as much time near leaves as an evolved one, and
 crossed between patches as often, so drift did the travelling and nothing paid a swimmer for leaving. A tank where food
 moves makes staying lose and searching win, the moving-oasis world's question asked in thirty minutes.
+
+### D237
+**A mouth must touch to graze, and the grazers' dials are derived from a breeding target at the pace of metabolism** · 2026-10-25
+
+**Status:** ruled by the owner on the night of 2026-10-25, in the coordinator's session, after the `r62kg` check
+(`logbook/specs/r62kg-prereg/predictions.md`). The scheme that brings actions into pace is not yet ruled.
+
+**Decision.**
+- Grazing needs contact. A mouth feeds only on what it touches, and no reach or other setting that lets eating happen
+  without touch is screened or built.
+- The grazer screens set their dials from a target rather than by guessing. A grazer must be able to earn a breeding two
+  to three times in one life, a newborn must be able to reach its first meal, and eating speed counts among the dials.
+- Lives stay short, so that a world shows its results in hours. Every action that takes time therefore runs at the pace
+  of the creatures' metabolism: swimming, eating, and any other timed action. The arithmetic is
+  `logbook/specs/grazer-breeding-budget.md`, and the candidate schemes are in `logbook/specs/pace-of-life-read.md`.
+
+**Why.** Every screen since contact eating pushed a dial that saturates on the one leaf part a grazer eats (D230). The
+budget shows that search binds instead: a meal takes about 100 s, mostly travel, against the 41 s that two to three
+breedings in a life allow, while eating takes about one second. Lives here are short by design and movement follows
+real-world speeds, so in units of its own metabolism a creature can do far too little.
+
+### D238
+**The kill rule stays as it is: a body dies when its root is eaten, the gut stays on, and the 420 J bar is retired** · 2026-10-26
+
+**Status:** ruled by the owner on 2026-10-26, accepting the coordinator's recommendation after the design read in
+`logbook/specs/kill-rule-read.md`. It replaces the death threshold the owner first chose on 2026-10-25 and then held
+until the pace-of-life fix was known. The factual sections drafted for `proposals/propose-kill-threshold.md` are absorbed here.
+
+**Decision.**
+- No death threshold is built. A body dies when its root is eaten, as today. A body that loses limbs or blades lives on
+  with what is left, which is how plants are already grazed.
+- D232's gut stays on in every grazer and predator screen, so a predator that kills keeps the victim's store and tissue
+  rather than leaving them as carrion.
+- The bar of 420 J a kill is retired. The grazers' measure is intake over upkeep, D222's second test in substance.
+- `r62kg` runs as pre-registered and is read by the letter of its own tests.
+
+**Rejected.**
+- A threshold on the share of tissue lost, counted over every cell. A plant would die of grazing it lives through today.
+- A threshold counted over non-photosynthetic cells only, which the coordinator first recommended. A body made only of
+  leaf cells could never die of being eaten, and would drift on as a ghost however much of it was taken.
+- Injury that slows a body instead of killing it. It adds a world rule for a gap that is not in the kill.
+
+**Why.** The 420 J came from the corpse rule, under which one dead leaf fed several grazers for 500 s through a 3 m reach,
+and the J-a-kill column charged all of that carrion to the kill (`logbook/specs/r62ce-read/README.md`). Under contact
+eating the gap is how seldom a mouth is touching food, which no kill rule changes. That gap is the pace of life (D239).
+
+### D239
+**The pace of life: two schemes screened side by side, and newborns given half their parent's reserve** · 2026-10-26
+
+**Status:** ruled by the owner on 2026-10-26, accepting the coordinator's recommendations. It settles the scheme D237 left open.
+The design read is `logbook/specs/pace-of-life-read.md`, and the arithmetic is `logbook/specs/grazer-breeding-budget.md`.
+
+**Decision.**
+- Two schemes are built behind switches and screened side by side, each off by default, so that a world with both off
+  matches main's digest.
+  - **A pace factor k.** Each world second holds k seconds of physics, while metabolism, growth and the economy keep
+    world seconds. The current is converted at the seam, so leaves and matter drift per world second as today. Every
+    force stays real, and the world is a time-lapse of its physics. The screen's centre is k = 3, with arms at 2 and 4.
+  - **A uniform thrust multiplier with the work price cut by 1/k².** Bodies swim about k times faster with no change to
+    the clock, and no extra physics steps. The physics is fictional, since every stroke pushes harder than its fin could.
+    It needs no build: both stroke-thrust terms scale with the limb push coefficient, so the arm sets that coefficient
+    k² times higher and the work price k² times lower. Drag on a bending limb, which the coefficient does not touch,
+    carries about 1% of a swimmer's speed (the swim probe, push on against off, on the 67 of 556 jointed bodies that
+    swim alone in still water), so the multiplier is uniform to that accuracy.
+- Before the screen, a short check measures the step size the pace factor can use. The same world and seed run at
+  steps of 0.01, 0.02 and 0.03 s, comparing swim speed, stroke shape and contacts. At k = 3 a step of 0.03 s costs no more
+  machine time than today. A step over 0.01 s engages the drag and drive limiters, so any step chosen is a new realisation.
+- `NewbornReserveFraction` goes from 0.2 to 0.5 in the screen's arms, with one arm at 0.2 so the two dials can be told
+  apart. It becomes the default only if the screen shows it is needed.
+- The deciding numbers are grazer contact share and kills a grazer-second, against D222's tests and the breeding target
+  of D237.
+
+**Why.** Lives are short by design, but movement follows real speeds, so in units of its own metabolism a grazer
+can do far too little: its search for a meal takes about 100 s against the 41 s that two to three breedings in a
+life allow, and a newborn holds about a third of the energy its first meal needs. The pace factor fixes every timed action
+at once and keeps every incentive, at a cost in machine time that the step size may recover. The thrust multiplier costs
+nothing in machine time but makes the physics unreal. Screening both shows whether the real one is worth its price.
+
+### D240
+**The nursery trains under the world's conditions, the pace of life included** · 2026-10-26
+
+**Status:** ruled by the owner on the morning of 2026-10-26, while the pace screen's first group ran. It extends D236 and
+D239.
+
+**Decision.**
+- Swimmers are trained in the nursery under every condition set for the world they will be planted in. When a world
+  rule or a world dial changes for the screens, the nursery's tanks change with it before their swimmers are used
+  as an inoculum for that world.
+- The first such condition is the pace of life. The nursery is built to run at a pace factor, and the curriculum
+  trains at the factor the world uses: 3 now, and 4 if the screens try it. The thrust arm's dials, if that scheme is
+  chosen, are carried the same way.
+- A tank's layout is calibrated at the factor it trains at, since a swimmer covers k times as far in a world second.
+- The price of a stroke is a dial to tune, not a fixed rule (the owner, the same morning). The screens may lower the
+  work price, and a lowered price is carried into the nursery like any other world dial.
+
+**Why.** A swimmer trained at one pace and planted into a world at another is trained for the wrong world: its
+strokes, its reach between meals and its spending all change with the clock. The owner asked for the nursery to train
+in any condition set for the world.
+
+### D241
+**Growth is a climb to adulthood, gated by an inherited reserve threshold** · 2026-10-26
+
+**Status:** ruled by the owner on 2026-10-26. The owner set the direction (growth as a continuous process until adulthood, and no growth while the reserve is below a threshold the creature inherits), then accepted the coordinator's three recommendations on the design in `logbook/specs/growth-runway-design.md`. The design's two numbers are measured by screens, not chosen.
+
+**Decision.**
+- Behind a switch, off by default, growth follows West, Brown and Enquist's ontogenetic law, dm/dt = a·m^{3/4}·(1 − (m/M)^{1/4}). It is paid from reserve, and a body takes the rest of its adult in one step at 0.95 of it if the reserve pays.
+- One time to adulthood serves every body (`GrowthAdultSeconds`), rather than a time scaling as adult mass to the 1/4. The scaled form stays an option for a later screen.
+- A body grows only while its reserve is above its own inherited threshold, the gene `GrowthReserveSeconds`, in seconds of its own standing cost. Founders, inocula and tank bodies start at a tunable value, and evolution moves it.
+- With growth on, only an adult conceives.
+- Growth keeps the metabolic clock. It ticks in world seconds on metabolic steps under any pace factor (D239), and the design states how a growing body's geometry meets the physics clock.
+- The time to adulthood (60, 120 and 240 s) and the founders' starting threshold (1, 30 and 60 s) are set by screens, the owner's ruling of the same day.
+- A juvenile's strength scales with its size, behind its own switch: the drive's torque limit with its mass fraction, as muscle force follows cross-section and torque adds the limb's length, and the other unscaled per-part strengths as the build lists them. The growth screens carry one arm with it on, so whether weaker young are helped or harmed is measured (the owner, the same day).
+
+**Why.** A newborn today grows to adult size on its first metabolic step and is left with about 18 s of reserve, against a median of 26 s for a never-fed newborn to reach a leaf, so half of the bred grazers starve before their first meal (`logbook/specs/r62p-read/newborn/`). Young animals keep a reserve and grow from what they eat; a climb paid only above an inherited threshold gives the newborn its runway and lets selection set how safe a lineage plays it.
+
+### D242
+**The theatre draws a nose as a short snout with a nostril** · 2026-10-26
+
+**Status:** ruled by the owner on 2026-10-26, who took the coordinator's recommendation (N2) and asked that it be done first. It supersedes D235's clause that the theatre draws noses as rhinophores; the rest of D235 stands.
+
+**Decision.**
+- The theatre draws a nose part at its true size, as the collider and the sensing part are, with a pit at its sensing tip: a short snout with a nostril.
+- The alternative, N1, hid the part and cupped the parent's skin where it joins. It read as the indent the owner first asked for, but the outline would no longer be the collider and the pit would not be where the nose smells.
+- A real indent, where the nose sits inside the parent's outline, is a change to D235's world rule. It waits until noses are tested in the nursery and is put to the owner then.
+
+**Why.** The theatre draws what the world simulates. A nose in D235 is a real part that sticks out and smells at its tip, so the picture keeps its true size and puts the opening where the smelling happens. No recorded world carries a nose yet, so nothing already filmed changes.

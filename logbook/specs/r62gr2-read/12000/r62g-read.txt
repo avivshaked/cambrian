@@ -1,0 +1,21 @@
+== round 62 grazer screen: end 12000 s, upkeep 0.908 W
+arm              fnd  bred (unm)  gen chain   repl n 1st half     graz-s  kills  kills/g-s   J/kill    J/g-s intake/upkeep
+r62gr2-g1-6201   109   491     0    9     9  0.945        109     201510   2575   1.28e-02     95.1   1.2147         1.338
+r62gr2-g60-6201   109   530     0    8     8  0.853        102     229410   2581   1.13e-02    111.1   1.2501         1.377
+r62gr-t60-6202   134   726     0   11    11  0.915        130     292462   3282   1.12e-02    119.5   1.3411         1.477
+r62gr-t120-6202   134   718     0   10    10  0.916        154     266472   2692   1.01e-02    125.1   1.2641         1.392
+
+Columns (a grazer is a body born mouthed, atk 1 and ink 1, as r61-grazer-economy defines it; all counts to the end):
+  fnd, bred   grazers born without a parent in the record (trickle and pool founders born mouthed) / grazers born of a parent;
+              (unm) is how many of the bred had a parent born without a mouth (they are counted in bred).
+  gen         deepest generation of any grazer, the birth row's g (counted from the root founder of its line, whatever its guild).
+  chain       deepest run of mouthed parent to mouthed child among grazers (a founder or a grazer of an unmouthed parent is 0).
+  repl        mean mouthed children per grazer, over grazers born at or before end/2 (their children counted to the end); n is the count.
+  graz-s      grazer-seconds lived: the sum over grazers of (death or end) less birth.
+  kills       kill rows whose attacker (by) is a grazer; kills/g-s is kills over grazer-seconds.
+  J/kill      kept mouth intake over kills: stats unitsEaten at the end (cumulative from 0) x joulesPerUnit x (1 - intakeWasteFraction),
+              over the kills. This charges every mouth's intake in the world (one with no kills as well) to the grazers' kills.
+  J/g-s       the same kept intake over grazer-seconds: watts per grazer if all the intake went to grazers.
+  intake/upkeep   J/g-s over --upkeep-w (0.908 W).
+Config values read from each run's config.json: joulesPerUnit 100 and intakeWasteFraction 0.2 (first arm; the
+others are read the same way, each from its own file).

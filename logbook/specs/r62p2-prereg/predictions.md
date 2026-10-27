@@ -115,6 +115,14 @@ One more exit, the coordinator's of 2026-10-26: after 12,000 s, if a world runs 
 it is stopped with `scripts/stop-arm.ps1` and read at its stop second, and the read says so. `r62p-k3` ran close to
 that line over its last hours, so the exit may still fire on `r62p-k3w9` (inference).
 
+## Part b was not run
+
+The owner ruled on 2026-10-27, on the coordinator's recommendation, to drop part b, `r62p-k3w9`, after part a's
+read. The arm is pre-registered here and was never launched. The reason: `r62p-t16` passed D222's three tests
+strongly (`logbook/specs/r62p2-read/24000-a/`), so the screen's question of what feeds the grazers was answered by
+the thrust arm, and the pace factor at 3 was no longer needed to answer it. The arm can be revisited later. Its
+launcher, `rounds/launch-r62p2b.ps1`, is kept unused, with its `-ConfigHash` never set.
+
 ## What would change the plan
 
 If a world overshoots, the next screen rolls back from its dials, as group 1's file says. If `r62p-w9` matches

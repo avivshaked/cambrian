@@ -1,0 +1,12 @@
+world   D:\Projects\experiments\evolution-simulator\runs\r62gr2-g1-6201\2026-10-27-060225-1bfcba4e
+control D:\Projects\experiments\evolution-simulator\runs\r62cs-w500-6201\2026-10-24-101118-0f736451
+bins of 3000 s to 24000 s
+ bin end  leaves  control  ratio  <0.5 | leaf deaths by grazer  share    largest cause  lead | cohort  kids   repl  >=1
+    3000    2681     2435  1.101    no |        2261         0  0.000             aged    no |      0     0    nan   no
+    6000    2363     2653  0.891    no |        4187       197  0.047             aged    no |      0     0    nan   no
+    9000    4104     5060  0.811    no |        5428       723  0.133             aged    no |    109   103  0.945   no
+   12000    2847     4163  0.684    no |        6353       897  0.141             aged    no |    267   252  0.944   no
+   15000    5273     6840  0.771    no |        6031      1213  0.201             aged    no |    224   163  0.728   no
+   18000    5237     7335  0.714    no |        7733      1072  0.139             aged    no |    356   376  1.056  yes
+   21000    7548    10456  0.722    no |       10524      2670  0.254             aged    no |    342   247  0.722   no
+   24000    7456    12663  0.589    no |       11113      2546  0.229             aged    no |    585   651  1.113  yes
