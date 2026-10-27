@@ -17,9 +17,9 @@ namespace Evosim.Nursery.Tests
 
         /// <summary>Each new file and the file it was made from (the pace build's move of integration-1's files, kept beside it).</summary>
         [Theory]
-        [InlineData("613ca725c30288c0", "b2885199f9213276")]
-        [InlineData("ba387b3293d820e0", "cd9cc88c0054cf90")]
-        [InlineData("9d9aca71c61bd36c", "9fa947462638667c")]
+        [InlineData("220192064e01e1c1", "613ca725c30288c0")]
+        [InlineData("d17282b4a0caf9db", "ba387b3293d820e0")]
+        [InlineData("11819c680236db49", "9d9aca71c61bd36c")]
         public void ARound62ConfigLoadsAndIsNamedByItsHash(string name, string parent)
         {
             string text = File.ReadAllText(Path.Combine(Configs, name + ".json"));

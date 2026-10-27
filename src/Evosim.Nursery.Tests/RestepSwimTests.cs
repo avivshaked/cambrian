@@ -52,7 +52,7 @@ namespace Evosim.Nursery.Tests
         {
             // The pilot's draw 0 under its own brains, thirty simulated seconds long: the short episode, and the same six genomes in the same slots.
             string recipe = Path.Combine(_dir, "s3-short.json");
-            File.WriteAllText(recipe, "{\"base\": \"rounds/nursery/brain2-w8.json\", \"name\": \"s3-short\", \"setup\": {\"seconds\": 30}}");
+            File.WriteAllText(recipe, "{\"base\": \"rounds/nursery/brain2-w9.json\", \"name\": \"s3-short\", \"setup\": {\"seconds\": 30}}");
             string request = RestepFixtures.WriteRequest(_dir, RestepFixtures.RequestJson(RestepFixtures.Relative(recipe), Recipe.Load(recipe).Hash(), PilotPool, RestepFixtures.PilotTank0));
             string unwatched = Path.Combine(_dir, "unwatched"), watched = Path.Combine(_dir, "watched");
 

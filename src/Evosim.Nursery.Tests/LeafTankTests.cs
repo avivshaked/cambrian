@@ -80,6 +80,7 @@ namespace Evosim.Nursery.Tests
         [InlineData("brain2-w7.json", "742c8ec75fd53c7f0e27c0f39b1a9fd1b6d207ac09595f0e07ec8f70b6f1ef62")]
         [InlineData("tank-demo-w2.json", "26070372d689917c92f6c76a8e4ad6b5a21f7c52a99cc409311537634e9c31bd")]
         [InlineData("brain2-w8.json", "bd02cb488e297d605c4345f284cc34925c2afdf4ecfdd982556f0d1e03b30822")]
+        [InlineData("brain2-w9.json", "8f1c10f7c78d15c18ad27dc9357c5554abd262feabdd4c12070e3b095db49e65")]
         [InlineData("brain2.json", "ef0743270c7c48a3ea671320892302b23482e63432391e0e54d3e4ec4a19d61a")]
         [InlineData("leaf-drag-off.json", "fb0fc19381dc0782b6bba7548beca7a9276881ba642d0200019a95af97f83f5a")]
         [InlineData("leaf-drag-skin-0p05.json", "c48e7a64a7eb66a8ed757f9c48ed6194686ee691d632ccabf5204a594feb1648")]
