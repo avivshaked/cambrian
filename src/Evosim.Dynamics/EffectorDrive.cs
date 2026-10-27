@@ -223,7 +223,9 @@ namespace Evosim.Dynamics
                         else if (magnitude < -allowed) { magnitude = -allowed; _body.DriveImpulsesLimited++; }
                     }
 
-                    torque += frame.Rotate(Creature.AxisOf(d)) * magnitude;
+                    // D234: the torque of a reflected degree of freedom is the signal's with its sign reversed,
+                    // after the limiter, which is the same either way. Exactly 1 elsewhere.
+                    torque += frame.Rotate(Creature.AxisOf(d)) * (_body.DofSign(b, d) * magnitude);
                 }
 
                 // A muscle pushes against something. The reaction on the parent is what makes
@@ -312,13 +314,19 @@ namespace Evosim.Dynamics
 
                     // The muscle: toward the bend's angle across the joint's own limits.
                     if (_poseOmega <= 0 || inertia <= 0) continue;
-                    double lo = _body.LimitLo[i], hi = _body.LimitHi[i];
+
+                    // D234: the muscle works in the signed reading, where a reflected degree of freedom has the
+                    // genome's own stops and the bend means what it means for the original: the target across
+                    // the signed stops, the signed angle and rate, and the torque reversed back to the stored
+                    // angle. The sign is exactly 1 on every other degree of freedom.
+                    double sign = _body.DofSign(b, d);
+                    double lo = _body.SignedLimitLo(i, sign), hi = _body.SignedLimitHi(i, sign);
                     double target = lo + _bend[i] * (hi - lo);
-                    double magnitude = inertia * _poseOmega * (_poseOmega * (target - _body.Q[i]) - 2.0 * _body.Qd[i]);
+                    double magnitude = inertia * _poseOmega * (_poseOmega * (target - sign * _body.Q[i]) - 2.0 * (sign * _body.Qd[i]));
                     if (magnitude > cap) { magnitude = cap; _body.DriveImpulsesLimited++; }
                     else if (magnitude < -cap) { magnitude = -cap; _body.DriveImpulsesLimited++; }
 
-                    torque += frame.Rotate(Creature.AxisOf(d)) * magnitude;
+                    torque += frame.Rotate(Creature.AxisOf(d)) * (sign * magnitude);
                 }
 
                 Mat3 rotation = Mat3.Read(_body.RotationMatrix, 9 * b);

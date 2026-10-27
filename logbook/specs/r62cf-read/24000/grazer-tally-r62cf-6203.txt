@@ -1,0 +1,23 @@
+run D:\Projects\experiments\evolution-simulator\runs\r62cf-6203\2026-10-27-180610-bcc3af98, to 24000 s
+
+bred grazers: born 2649, died 2597; causes {'eaten': 346, 'starved': 2049, 'aged': 202}
+  age at death s: median 60.0, quartiles 45.5 / 217.0
+  never kept a meal (bk 0): 1173 of 2597
+  never ate at all (bk 0 and no kill, the kill gut's meals counted): 961 of 2597
+  bk of those that ate, J: median 320.78, max 7017.4
+  reserve at death J: median 0.000
+  kept intake over the dead's lives: 1168087 J over 622681 s = 1.876 W (the living are left out, so long lives are under-counted)
+  the median-lived one: 60 s, kept 0.0 J
+  dead within 60 s: 1309, of them never ate 1035
+
+founder grazers: born 271, died 259; causes {'aged': 64, 'starved': 167, 'eaten': 28}
+  age at death s: median 595.0, quartiles 437.5 / 1022.5
+  never kept a meal (bk 0): 88 of 259
+  never ate at all (bk 0 and no kill, the kill gut's meals counted): 88 of 259
+  bk of those that ate, J: median 1159.70, max 4361.8
+  reserve at death J: median 0.000
+  kept intake over the dead's lives: 210013 J over 200626 s = 1.047 W (the living are left out, so long lives are under-counted)
+  the median-lived one: 595 s, kept 0.0 J
+  dead within 60 s: 2, of them never ate 0
+
+whole-body kills by grazers, by victim guild: {'leaf': 9902, 'grazer': 374, 'absorber': 13, 'other jointed': 1}

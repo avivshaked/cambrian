@@ -156,6 +156,20 @@ namespace Evosim.Dynamics
         /// <summary>Each link's drive genes (threshold and envelope), from its part.</summary>
         public readonly DriveGenes[] JointGenes;
 
+        /// <summary>
+        /// D234, the mirrored twin's drive: for each link, a bit mask of the degrees of freedom whose signed
+        /// quantities (angle, rate, target, torque) are read negated. Zero for every link of a body with no
+        /// reflected part, and so for every recorded world. See <c>Creature.Twin.cs</c>.
+        /// </summary>
+        public readonly int[] MirrorMask;
+
+        /// <summary>
+        /// D234, the mirrored twin's senses: for each link, the axis of its own frame that the part's reflection
+        /// is about (0 to 2), or -1 where the part reflects nothing. A vector the senses read in the part's own
+        /// frame has this component negated. See <c>Creature.Twin.cs</c>.
+        /// </summary>
+        public readonly int[] FrameNormal;
+
         // ---------------------------------------------------------------- drag panels
 
         /// <summary>Where link <i>i</i>'s panels start. Length <c>Links + 1</c>.</summary>
@@ -408,6 +422,9 @@ namespace Evosim.Dynamics
             _config = config;
             _shapes = shapes;
 
+            // D231's two refusals come before anything is built: a body the switch cannot push is never made.
+            RefuseStrokeAssembly(config);
+
             Id = id;
             Phenotype = phenotype;
             Links = phenotype.PartCount;
@@ -428,6 +445,8 @@ namespace Evosim.Dynamics
             BuoyancyArm = new double[Links];
             Power = new double[Links];
             JointGenes = new DriveGenes[Links];
+            MirrorMask = new int[Links];
+            FrameNormal = new int[Links];
 
             ChildAnchor = new double[3 * Links];
             ParentAnchor = new double[3 * Links];
@@ -470,6 +489,13 @@ namespace Evosim.Dynamics
 
             PanelStart = new int[Links + 1];
             WritePanels(panelSets, panels);
+
+            // D231's assembly constants, only when the switch is on: with it off nothing is allocated.
+            if (config.StrokePushesAssembly)
+            {
+                AllocateStrokeAssembly();
+                WriteStrokeAssembly();
+            }
 
             // ---- state and scratch
 
@@ -855,9 +881,16 @@ namespace Evosim.Dynamics
         /// and everything else twists about it.
         /// </summary>
         internal static QuatD FrameOf(JointType type) =>
-            type == JointType.Hinge
+            FrameIsTurned(type)
                 ? QuatD.FromEuler(0, System.Math.PI * 0.5, 0)
                 : QuatD.Identity;
+
+        /// <summary>
+        /// Whether <see cref="FrameOf"/> turns the joint frame off the part's own axes: a hinge's first axis
+        /// lies across the attachment axis, and every other joint's lies along it. D234 reads it, since a
+        /// reflection reverses the one and not the other (<c>Creature.Twin.cs</c>).
+        /// </summary>
+        internal static bool FrameIsTurned(JointType type) => type == JointType.Hinge;
 
         /// <summary>
         /// The diagonal inertia tensor of one part about its own centre, in its own axes.

@@ -1,0 +1,37 @@
+== grazer moves: bins of 3000 s to 24000 s, islands as r60-read.py seeds them at 100 s
+
+== r62sm-s100-6201: seed 6201, configHash bcc3af9821602b3e, commit 89b783b3, ended/budget, reach 24000 s; r62sm-s100-6201/2026-10-27-111146-bcc3af98
+   dose: influx 3.6 units/s, budget 45000 units
+   islands as seeded (dump at 100 s): 231 of 3600 water columns (0.06) in 9 islands; the largest, in columns: #5 51, #3 41, #0 36, #8 35, #7 33, #1 18, #2 14, #6 2; nearest island column centre to the glass 47.5 m (margin 45 m)
+   positions cadence found 10 s (the median gap of the chain's first rows); stride used 10 s, effective spacing of the 2400 kept rows 10 s (rows expected to 24000 s: 2400)
+   joined edges: worldShape Box, side sqrt(worldAreaSquareMetres) = 300 x 300 m; each axis takes the shorter way round
+   grazers: bodies with r59.GRAZER set at birth; 2270845 remains-body fixes (flag 8) left out of every count; 'born on A' is the first kept fix being over A (the birth rows carry no position)
+
+   moves by the move's t2 in bins of 3000 s; fixes by the fix's t
+   bin           g-fixes  g-open  all-op  moves  movers mv/1000gs  dist m q1/med/q3 cross s q1/med/q3 m/s q1/med/q3    bornA
+   0-3000              0       -   0.294      0       0         -  -               -                 -                    0
+   3000-6000        4611   0.211   0.320      0       0     0.000  -               -                 -                    0
+   6000-9000       11726   0.121   0.283      0       0     0.000  -               -                 -                    0
+   9000-12000      11271   0.231   0.413      2       2     0.018  20/27/35        105/120/135       0.17/0.21/0.25       1
+   12000-15000     10520   0.148   0.315      0       0     0.000  -               -                 -                    0
+   15000-18000     18723   0.172   0.378      0       0     0.000  -               -                 -                    0
+   18000-21000     33663   0.180   0.406      7       6     0.021  14/16/26        55/70/135         0.20/0.28/0.32       6
+   21000-24000     23688   0.206   0.478      5       5     0.021  12/15/37        60/90/100         0.16/0.25/0.25       3
+   total          114202   0.181   0.382     14      12     0.012  13/16/34        60/90/142         0.17/0.25/0.30      10
+
+   grazers born by 24000 s: 3731 (3465 bred, 266 founders); fixed at least once in the kept rows: 3721 (3455 bred)
+   bred grazers that ever move: 9 of 3465 born (0.003), of 3455 fixed (0.003); all movers 12, moves 14 (1.17 per mover)
+   largest single move: 143.1 m by body 43507, island #8 at 19770 s (229.0, 107.1) to island #0 at 20280 s (66.7, 145.8), 510 s, 0.28 m/s, born on #8
+
+   check at stride 100 s (240 rows), per r60-read year of 3000 s: distinct grazers with a move in the year, here and by Fed.migrants() (r60-read.py, which counts corpses too)
+    year t              here, living here, +remains Fed.migrants
+       1 0-3000                    0              0            0
+       2 3000-6000                 0              0            0
+       3 6000-9000                 0              0            0
+       4 9000-12000                1              1            1
+       5 12000-15000               0              0            0
+       6 15000-18000               0              1            1
+       7 18000-21000               2              3            3
+       8 21000-24000               2              2            2
+   moves at stride 100: 6 living, 8 with corpses; distinct movers over the run: 5 living, 7 with corpses
+   -> AGREE: this script with corpses against Fed.migrants() in every year; the living-only count differs from the corpses-included one (remains bodies carried between islands)

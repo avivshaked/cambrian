@@ -1,0 +1,73 @@
+
+== fin: D:\Projects\experiments\evolution-simulator\scratch\int2-hold\identity-on\r62i2on-fin-g32\2026-10-27-232044-b639a9b8 against D:\Projects\experiments\evolution-simulator\scratch\int2-hold\identity-on\r62i2on-fin-g64\2026-10-27-232703-b639a9b8
+A: D:\Projects\experiments\evolution-simulator\scratch\int2-hold\identity-on\r62i2on-fin-g32\2026-10-27-232044-b639a9b8
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.22 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 8f1b82b844 dirty False dynamics e6c5f372ab1b farm 7d0b0b320465 config b639a9b8528322e7
+  pace     600 s of 600 in 3.19370021 min, 3.1311642741821406 x real time, status ended (budget), diverged 0
+B: D:\Projects\experiments\evolution-simulator\scratch\int2-hold\identity-on\r62i2on-fin-g64\2026-10-27-232703-b639a9b8
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 64, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 2.3567 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 8f1b82b844 dirty False dynamics e6c5f372ab1b farm 7d0b0b320465 config b639a9b8528322e7
+  pace     600 s of 600 in 3.1007748466666665 min, 3.2250003610387905 x real time, status ended (budget), diverged 0
+split A  physics 44%, world 53%, harness 2%, writers 1%
+split B  physics 46%, world 51%, harness 2%, writers 1%
+stats    identical on all 60 shared samples to t=600 (wall clocks left out)
+digest   identical on all 601 shared rows to step 60000
+lineage  byte-equal (1721 lines)
+positions not in both runs
+exit 0
+== asm: D:\Projects\experiments\evolution-simulator\scratch\int2-hold\identity-on\r62i2on-asm-g32\2026-10-27-232044-7a3934f1 against D:\Projects\experiments\evolution-simulator\scratch\int2-hold\identity-on\r62i2on-asm-g64\2026-10-27-232703-7a3934f1
+A: D:\Projects\experiments\evolution-simulator\scratch\int2-hold\identity-on\r62i2on-asm-g32\2026-10-27-232044-7a3934f1
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.218 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 8f1b82b844 dirty False dynamics e6c5f372ab1b farm 7d0b0b320465 config 7a3934f1cd5488a0
+  pace     600 s of 600 in 3.1918908433333333 min, 3.1329392171684884 x real time, status ended (budget), diverged 0
+B: D:\Projects\experiments\evolution-simulator\scratch\int2-hold\identity-on\r62i2on-asm-g64\2026-10-27-232703-7a3934f1
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 64, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 72278.7158 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 8f1b82b844 dirty False dynamics e6c5f372ab1b farm 7d0b0b320465 config 7a3934f1cd5488a0
+  pace     600 s of 600 in 3.0638675 min, 3.263848714084405 x real time, status ended (budget), diverged 0
+split A  physics 45%, world 52%, harness 1%, writers 1%
+split B  physics 46%, world 51%, harness 2%, writers 1%
+stats    identical on all 60 shared samples to t=600 (wall clocks left out)
+digest   identical on all 601 shared rows to step 60000
+lineage  byte-equal (1722 lines)
+positions not in both runs
+exit 0
+== twin: D:\Projects\experiments\evolution-simulator\scratch\int2-hold\identity-on\r62i2on-twin-g32\2026-10-27-232044-68bce97b against D:\Projects\experiments\evolution-simulator\scratch\int2-hold\identity-on\r62i2on-twin-g64\2026-10-27-232703-68bce97b
+A: D:\Projects\experiments\evolution-simulator\scratch\int2-hold\identity-on\r62i2on-twin-g32\2026-10-27-232044-68bce97b
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 22034.3528 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 8f1b82b844 dirty False dynamics e6c5f372ab1b farm 7d0b0b320465 config 68bce97bbfa467d9
+  pace     600 s of 600 in 3.1838399883333333 min, 3.140861361325752 x real time, status ended (budget), diverged 0
+B: D:\Projects\experiments\evolution-simulator\scratch\int2-hold\identity-on\r62i2on-twin-g64\2026-10-27-232703-68bce97b
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 64, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.2123 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 8f1b82b844 dirty False dynamics e6c5f372ab1b farm 7d0b0b320465 config 68bce97bbfa467d9
+  pace     600 s of 600 in 3.1091582383333334 min, 3.2163046179857697 x real time, status ended (budget), diverged 0
+split A  physics 45%, world 52%, harness 1%, writers 1%
+split B  physics 46%, world 51%, harness 1%, writers 1%
+stats    identical on all 60 shared samples to t=600 (wall clocks left out)
+digest   identical on all 601 shared rows to step 60000
+lineage  byte-equal (1713 lines)
+positions not in both runs
+exit 0
+== all: D:\Projects\experiments\evolution-simulator\scratch\int2-hold\identity-on\r62i2on-all-g32\2026-10-27-232044-f8e39feb against D:\Projects\experiments\evolution-simulator\scratch\int2-hold\identity-on\r62i2on-all-g64\2026-10-27-232703-f8e39feb
+A: D:\Projects\experiments\evolution-simulator\scratch\int2-hold\identity-on\r62i2on-all-g32\2026-10-27-232044-f8e39feb
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.8067 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 8f1b82b844 dirty False dynamics e6c5f372ab1b farm 7d0b0b320465 config f8e39feb7864d055
+  pace     600 s of 600 in 3.156589491666667 min, 3.1679760787393487 x real time, status ended (budget), diverged 0
+B: D:\Projects\experiments\evolution-simulator\scratch\int2-hold\identity-on\r62i2on-all-g64\2026-10-27-232703-f8e39feb
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 64, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.2037 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 8f1b82b844 dirty False dynamics e6c5f372ab1b farm 7d0b0b320465 config f8e39feb7864d055
+  pace     600 s of 600 in 3.108169541666667 min, 3.217327712000481 x real time, status ended (budget), diverged 0
+split A  physics 45%, world 53%, harness 2%, writers 1%
+split B  physics 45%, world 52%, harness 1%, writers 1%
+stats    identical on all 60 shared samples to t=600 (wall clocks left out)
+digest   identical on all 601 shared rows to step 60000
+lineage  byte-equal (1726 lines)
+positions not in both runs
+exit 0

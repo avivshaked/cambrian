@@ -9,7 +9,10 @@ param(
     [Parameter(Mandatory)] [string]$Out,
     [int64]$Mask = 983040,
     [int]$End = 24000,
-    [switch]$Gene)
+    [switch]$Gene,
+    # The seed whose r62cs-w500 control stands in for a world whose own seed has none (a cross-seed comparison, said
+    # so in the log and the overshoot file's name is unchanged). Empty: such a world's overshoot is skipped and logged.
+    [string]$ControlSeed = '')
 $ErrorActionPreference = 'Stop'
 $root = 'D:\Projects\experiments\evolution-simulator'
 $me = [System.Diagnostics.Process]::GetCurrentProcess()
@@ -31,9 +34,21 @@ $runs = @($list | ForEach-Object { Latest $_ })
 for ($i = 0; $i -lt $list.Count; $i++) {
     $w = $list[$i]; $run = $runs[$i]
     $seed = $w.Substring($w.Length - 4)
-    $control = Latest "r62cs-w500-$seed"
-    & python -I (Join-Path $root 'scripts\reads\overshoot-read.py') $run $control --end $End *> (Join-Path $Out "overshoot-$w.txt")
-    "$(Get-Date -Format s) overshoot $w against r62cs-w500-$seed exit $LASTEXITCODE" | Add-Content $log
+    $cseed = $seed
+    if (-not (Test-Path (Join-Path $root "runs\r62cs-w500-$seed"))) {
+        if ($ControlSeed) {
+            $cseed = $ControlSeed
+            "$(Get-Date -Format s) overshoot $w has no r62cs-w500-$seed; reads against r62cs-w500-$cseed, a cross-seed comparison" | Add-Content $log
+        } else {
+            $cseed = $null
+            "$(Get-Date -Format s) overshoot $w skipped: no r62cs-w500-$seed and no -ControlSeed" | Add-Content $log
+        }
+    }
+    if ($cseed) {
+        $control = Latest "r62cs-w500-$cseed"
+        & python -I (Join-Path $root 'scripts\reads\overshoot-read.py') $run $control --end $End *> (Join-Path $Out "overshoot-$w.txt")
+        "$(Get-Date -Format s) overshoot $w against r62cs-w500-$cseed exit $LASTEXITCODE" | Add-Content $log
+    }
     & python -I (Join-Path $root 'scripts\reads\grazer-tally.py') $run --end $End *> (Join-Path $Out "grazer-tally-$w.txt")
     "$(Get-Date -Format s) grazer-tally $w exit $LASTEXITCODE" | Add-Content $log
 }

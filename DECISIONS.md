@@ -9669,3 +9669,84 @@ in any condition set for the world.
 - Landing `growth` without the bindings. It is tested too, but a later rate screen or round would need the bindings re-landed.
 
 **Why.** Main had no source commit since growth's crowd fixture (`88d20602`), so the merged tree's source is `struct`'s, checked by an empty source diff. Its hashes (farm `ae99d3c2`, core `361aa924`, dynamics `29144991`) and its fixture (`runs/cefix-s4/2026-10-26-203434-b2f9267b`) are those already tested. The landing therefore costs no machine time.
+
+### D244
+**D222 amended for runs aimed at grazers: at least 30 grazers first, and no window judged on fewer** · 2026-10-27
+
+**Status:** ruled by the owner on the evening of 2026-10-27, on the coordinator's recommendation (option a). It amends D222's reading for runs aimed at grazers only, from `r62cf` on.
+
+**Decision.**
+- The first check of a run aimed at grazers is that it holds at least 30 grazers. A run that never does fails, whatever its tests say, since a grazer run without grazers answers nothing.
+- A window holding fewer than 30 grazers is not judged. Tests 1 to 3 and the pass rule apply to the windows that hold at least 30.
+- 30 is the floor, and the owner allowed that more may be needed. Each read reports the verdict at 40 beside it as a sensitivity.
+- The strict reading, every window judged, is still reported beside it.
+- Runs that are not aimed at grazers keep D222 as it stands.
+
+**Rejected.**
+- Skipping the first 12,000 s. A fixed start would keep judging a thin window later in a run, and would throw away a healthy early one.
+- Keeping the test as it was. Every test-2 miss in the growth groups and in `r62sm` came in one early window holding 9 to 17 grazers, where a couple of deaths decide the verdict.
+
+**Why.** The owner judged a window of 15 grazers not worth measuring. The floor makes a verdict depend on a sample that can show something, and the first check makes a grazer run that never reaches that sample a failure rather than a pass by default.
+
+### D245
+**The energy sense reads the reserve as S / (S + k), with k = 30 s, built with fat** · 2026-10-27
+
+**Status:** ruled by the owner on the evening of 2026-10-27, on the coordinator's recommendation. It replaces the energy sense's squash. It lands with fat's build (`logbook/specs/fat-build-spec.md`), and no world before that build changes.
+
+**Decision.**
+- The energy channel reads `S / (S + k)`, where S is the reserve in seconds of standing cost and k is a tunable half-scale. It replaces `tanh(S / EnergyFullScaleSeconds)`.
+- k ships at 30 s. The sense then reads 0.33 at 15 s, 0.6 at 45 s, 0.9 at 300 s, and still a little under 1 at 3,000 s.
+- It is the chemical sense's squash (`ChemicalHalfScaleJoulesPerCubicMetre`), for the same reason: the quantity spans decades.
+
+**Rejected.**
+- Keeping the tanh with a smaller scale. A scale small enough for a newborn saturates a fat body, and fat is the next build.
+- A log squash. It gives much the same resolution; the half-scale form matches the chemical sense and needs no ceiling.
+
+**Why.** The 3,000 s scale was borrowed from the world's old lifetime and never measured. A grazer now lives a median of 68 s and a newborn holds about 15 s, so every young body's energy sense read about 0.005. In the brain-birth bench (`logbook/specs/r62p-read/brain-birth/`) that reading cost every newborn about a third of its speed. The owner judged a sense that cannot tell 15 s from 45 s to be wrong. Fat widens the reserve's range, so the form has to keep resolution across decades.
+
+**Cost.** It is a world rule. A new tunable refuses every config written before it, and every seed is a new realisation.
+
+### D246
+**The newborns that stand still are left to selection; the theatre's limb becomes a paddle and its water murkier** · 2026-10-27
+
+**Status:** ruled by the owner on the evening of 2026-10-27.
+
+**Decision.**
+- **No world change for the newborns that stand still.** The brain-birth read found their brains drive weakly, with nothing holding them, and the carrion scent was the one sense that split them from the movers on the bench (inference). The owner judged that if they survive it is fine, since that is what selection is for. The chase stopped there. The senses recorder (`t3-senses`, `acc0bf12`) stays an uncompiled branch.
+- **The theatre's limb becomes a paddle.** Both fin webs read as a flat card through the rod. The owner's alternative replaces them: the limb is drawn round and continuous with the body at its root, flattening and widening to a paddle edge at its free end, inside the same collider (`PADDLE_LIMB`). D242's rule, that the outline stays on the colliders, holds.
+- **The film's water is `ABSORB` 0.6**, up from 0.3, on the coordinator's recommendation. The owner could hardly tell the two apart on the triage sheet.
+
+**Why.** The world's rules should push creatures to evolve, not rescue each lineage that does badly. A paddle drawn inside the collider shows the swimming surface D229's fin law already simulates, without drawing tissue the world does not have.
+
+### D247
+**Fat is built to its specification's recommendations, and screened in three arms** · 2026-10-27
+
+**Status:** ruled by the owner late on 2026-10-27, after `r62cf` confirmed D222 under D244. The owner took every recommendation in the fat specification (`logbook/specs/fat-build-spec.md`, drafted 2026-10-25 as a proposal). It carries out D229's fat and amends nothing in D232's meal.
+
+**Decision.**
+- **The cap's form:** D229's cap, `cap = litter price + growth still to come + s × standing watts + room × fat volume`, reusing D098's dial behind a switch that is off by default.
+- **The value of s:** the build ships 3,000 s, and the screen runs 1,000 s beside it.
+- **Income above the cap** goes into the water as charged matter, the route the dial already uses.
+- **The gut does not count against the cap.** Digestion waits while the reserve is full. Columns watch for guts that grow without bound in sated killers.
+- **Fat's prices:** 0.5 W/m³ to keep, 2,000 J/m³ to build, 50,000 J/m³ of room. Attack, intake and protection 0, toughness 1, bud weight 1.
+- **Buoyancy:** lift 0 for the first screen, so fat sinks as other tissue does.
+- **The screen:** arms A (cap at 1,000 s, fat in the table), B (1,000 s, no fat) and C (3,000 s, fat), two seeds each, one card group to 24,000 s, after a 4,500 s check of one seed. An overshoot is rolled back by lowering fat's room, under the delegation D232 gives for digestion.
+- **Step 0**, agent work, measures leaves' reserves from a recorded checkpoint before the constants are fixed.
+- D245's energy sense lands in the same build. The build sits on top of integration branch 2, so nothing is merged twice (D243).
+
+**Why.** `r62cf` showed a world with oases and no migration: a crossing takes a median of 140 to 230 s against a grazer's life of about 60 to 67 s, and 5 to 13 grazers moved in each world over 24,000 s. Fat is the reserve a migrant crosses on. The specification's reasoning for each value stands, in its sections, and is not repeated here.
+
+### D248
+**Integration branch 2 lands on main after its card identity sitting** · 2026-10-27
+
+**Status:** approved by the coordinator on 2026-10-27, under D243, which set the order. Agent work under the standing delegation; nothing is pushed.
+
+**Decision.**
+- Branch `integration-2` (D231's stroke on the whole assembly, D234's mirrored twin drive) lands on main as one merge (`477c2459`), from `8f1b82b8`. Both are behind switches that are off by default: `EVOSIM_STROKE_ASSEMBLY`, and the twin drive rides on D228's `EVOSIM_REFLECT_MIRRORED_ANCHORS`.
+- It landed on the sitting's pass (`logbook/specs/int2-identity/`). With every switch off, the build steps `r62cf`'s three worlds bit for bit, at `r62cf`'s pace. Each switch on is identical at groups 32 and 64, and changes its world.
+- The crowd fixture is `runs/cefix-s4/2026-10-27-220008-7bc16123`, named in `RunFixture.cs`.
+- Main's source after the merge equals `8f1b82b8`'s, so the host suites run there stand: Core 1,620 with the slow tests, Dynamics 403 with 1 skip, Farm 412 without `GpuMeanTests`, and the CPU accelerator 32.
+- `GpuMeanTests` crashes the CPU accelerator at every core count. It does the same at `df2bf3b8`, so it is not integration branch 2's.
+- D243's next step follows: the nursery's configs are brought forward once. Fat (D247) is built on the landed main.
+
+**Why.** D243 set this order so the fixture is re-recorded and the card sitting run once, on the final tree. Both are done.

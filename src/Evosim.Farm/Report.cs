@@ -382,6 +382,8 @@ namespace Evosim.Farm
                 " · fluidAccel " + F(s.FluidAccel) +
                 (s.LimbPush > 0 ? " · limbPush " + F(s.LimbPush) : "") +
                 (s.PowerPush > 0 ? " · powerPush " + F(s.PowerPush) + " rad/s pose " + F(s.PoseHz) + " Hz" : "") +
+                // D231, only when on, so every recorded header reads as it did.
+                (s.StrokeAssembly ? " · stroke pushes assembly" : "") +
                 (s.DriveGenes || s.DriveGeneChance > 0 ? " · drive genes " + (s.DriveGenes ? "drawn" : "default") + " mut " + F(s.DriveGeneChance) : "") +
                 " · " + (s.WaterHold > 0f ? "water held " + F(s.WaterHold) + " s" : "water per link") +
                 (s.TurningDrag == TurningDragForm.Skin ? " · turning skin " + F(s.SkinFriction) : "") +

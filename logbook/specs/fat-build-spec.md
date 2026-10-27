@@ -1,4 +1,6 @@
-# Proposal: fat, the build specification
+# Fat, the build specification
+
+*Ruled by the owner on 2026-10-27 as D247, every recommendation taken. Written as a proposal; its decisions section below is what was ruled.*
 
 *Drafted on 2026-10-25 for the coordinator, the speed agent and the owner. The speed agent's question Q6 asked for three things before building: the cap's number, which bodies it binds today, and the fat cell's prices. The rule is D229, and its meeting with the gut is D232. This draft only reads. It builds nothing and ran no farm. Every claim about the code names its file, in the text or in the table at the end of its section. Anything guessed is marked as inference.*
 

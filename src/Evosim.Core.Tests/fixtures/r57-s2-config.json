@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "7e8456d3ae873543",
+  "configHash": "d17282b4a0caf9db",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -132,6 +132,7 @@
     "shapedAddedMass": false,
     "skinFrictionCoefficient": 0,
     "spinDragCoefficient": 0,
+    "strokePushesAssembly": false,
     "surfaceRestoringFraction": 1,
     "tissueExcessDensity": 0.02,
     "turningDrag": "None",

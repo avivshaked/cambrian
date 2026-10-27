@@ -164,6 +164,29 @@ namespace Evosim.Core
         public bool ShapedAddedMass { get; set; }
 
         /// <summary>
+        /// D231: a stroke pushes its whole assembly. The powered stroke's push (D135, D229) falls on
+        /// the jointed link's own part alone; with this on, a part welded beyond it moves water too.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// A jointed link's assembly is the link plus every link beyond it reached through welds
+        /// only, up to the next jointed link. Each part is projected onto the limb's axis and onto
+        /// the direction across the stroke, and the added mass is the plate formula integrated in
+        /// strips along the axis, <c>M = ∫ ρπ/4 c² ds</c> with <c>c(s)</c> the envelope of the parts
+        /// that cover <c>s</c>. The push acts at the moved water, <c>I1 = ∫ ρπ/4 c² s ds</c>, and the
+        /// work booked follows it. A link with nothing welded beyond it takes D229's own lines.
+        /// </para>
+        /// <para>
+        /// Requires <see cref="ShapedAddedMass"/> and the bend-and-power drive: the swing push's
+        /// direction changes every step, so it is refused. ⚠ Default false, so every recorded config
+        /// replays the world it ran; a world with the push on and this on is a new realisation of
+        /// every seed with a welded part beyond a joint. <c>EVOSIM_STROKE_ASSEMBLY</c>.
+        /// </para>
+        /// </remarks>
+        [Tunable("fluid")]
+        public bool StrokePushesAssembly { get; set; }
+
+        /// <summary>
         /// The bend-and-power drive's stroke rate, Ω in rad/s (propose-joint-drive.md, the owner's
         /// ruling of 2026-09-30). 0 runs the torque drive every recorded world ran.
         /// </summary>
@@ -431,6 +454,7 @@ namespace Evosim.Core
             FluidAccelerationCoefficient = FluidAccelerationCoefficient,
             LimbPushCoefficient = LimbPushCoefficient,
             ShapedAddedMass = ShapedAddedMass,
+            StrokePushesAssembly = StrokePushesAssembly,
             PowerPushRadiansPerSecond = PowerPushRadiansPerSecond,
             PoseHertz = PoseHertz,
             PanelsPerAxis = PanelsPerAxis,

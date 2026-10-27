@@ -1,0 +1,70 @@
+run D:\Projects\experiments\evolution-simulator\runs\r62sm-s25-6201\2026-10-27-111146-e15004fe, to 24000 s, window 10 s, slow under 0.03 m/s
+bred grazers 4115; with both their genome and their parent's in the file 4115; with a speed 3830; no speed, left out 256; born in the last 60 s and alive, left out 29
+groups: slow, never ate 395; slow, ate 233; moving, never ate 828; moving, ate 2374
+per category: share of the group with any change / median / mean of the summed relative change over all members
+
+== slow, never ate  (n 395)
+  category    changed   share    median      mean  scalars/member
+  brain           277   70.1%    1.5512    1.7608            4.08
+  drive           119   30.1%    0.0000    0.0505            0.36
+  limits           85   21.5%    0.0000    0.5913            0.70
+  body            294   74.4%    0.2242    0.5965            1.41
+  cell              7    1.8%    0.0000    0.0050            0.02
+  structure       221   55.9%    1.0000   27.2671           27.27
+  dials           162   41.0%    0.0000    0.1538            0.49
+  other            31    7.8%    0.0000    0.0092            0.08
+
+== slow, ate  (n 233)
+  category    changed   share    median      mean  scalars/member
+  brain           170   73.0%    1.6418    1.8978            4.46
+  drive            77   33.0%    0.0000    0.0540            0.39
+  limits           47   20.2%    0.0000    0.5250            0.65
+  body            180   77.3%    0.2333    0.5357            1.39
+  cell              3    1.3%    0.0000    0.0129            0.01
+  structure       133   57.1%    1.0000   23.5300           23.54
+  dials           108   46.4%    0.0000    0.1410            0.56
+  other            17    7.3%    0.0000    0.0075            0.07
+
+== moving, never ate  (n 828)
+  category    changed   share    median      mean  scalars/member
+  brain           823   99.4%    2.4792    2.7221            6.67
+  drive           285   34.4%    0.0000    0.0476            0.41
+  limits          169   20.4%    0.0000    0.5653            0.68
+  body            652   78.7%    0.3324    0.6750            1.54
+  cell             23    2.8%    0.0000    0.0125            0.03
+  structure       275   33.2%    0.0000    2.7126            2.72
+  dials           368   44.4%    0.0000    0.1506            0.53
+  other            56    6.8%    0.0000    0.0069            0.07
+
+== moving, ate  (n 2374)
+  category    changed   share    median      mean  scalars/member
+  brain          2360   99.4%    2.5408    2.7679            6.56
+  drive           829   34.9%    0.0000    0.0474            0.42
+  limits          324   13.6%    0.0000    0.2684            0.40
+  body           1887   79.5%    0.2865    0.6542            1.54
+  cell             43    1.8%    0.0000    0.0097            0.02
+  structure       804   33.9%    0.0000    2.3069            2.31
+  dials           985   41.5%    0.0000    0.1408            0.52
+  other           192    8.1%    0.0000    0.0081            0.08
+
+== identical to the parent in every category, against any change
+  group                    n  identical  any change  share any  med total  mean total
+  slow, never ate        395          0         395     100.0%     7.3129     30.4343
+  slow, ate              233          1         232      99.6%     6.6086     26.7040
+  moving, never ate      828          0         828     100.0%     4.4116      6.8924
+  moving, ate           2374          0        2374     100.0%     4.3053      6.2033
+  slow (both)            628          1         627      99.8%     6.9820     29.0502
+  moving (both)         3202          0        3202     100.0%     4.3279      6.3815
+  never ate (both)      1223          0        1223     100.0%     4.9755     14.4959
+  ate (both)            2607          1        2606     100.0%     4.3889      8.0356
+
+per-category share with any change, pooled: slow against moving, never ate against ate
+  category         slow     moving  never ate        ate
+  brain           71.2%      99.4%      89.9%      97.0%
+  drive           31.2%      34.8%      33.0%      34.8%
+  limits          21.0%      15.4%      20.8%      14.2%
+  body            75.5%      79.3%      77.4%      79.3%
+  cell             1.6%       2.1%       2.5%       1.8%
+  structure       56.4%      33.7%      40.6%      35.9%
+  dials           43.0%      42.3%      43.3%      41.9%
+  other            7.6%       7.7%       7.1%       8.0%

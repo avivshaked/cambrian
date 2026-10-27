@@ -86,7 +86,7 @@ namespace Evosim.Farm.Tests
         /// </summary>
         public static Creature Body(int id, SolverConfig solver, World world, Rng rng, Vec3 at, int maxNeurons = 256,
                                    SensorChannel[] sensorPool = null, bool central = false, int bigLinks = 0,
-                                   string bodyCell = null)
+                                   string bodyCell = null, DevelopmentLimits limits = null)
         {
             for (int attempt = 0; ; attempt++)
             {
@@ -107,8 +107,8 @@ namespace Evosim.Farm.Tests
                 }
 
                 Phenotype plan = bodyCell == null
-                    ? Developer.Develop(genome, DevelopmentLimits.Default)
-                    : Developer.Develop(genome, DevelopmentLimits.Default, cellTypes: world.Config.CellTypes);
+                    ? Developer.Develop(genome, limits ?? DevelopmentLimits.Default)
+                    : Developer.Develop(genome, limits ?? DevelopmentLimits.Default, cellTypes: world.Config.CellTypes);
                 if (plan.PartCount > 16) continue;
 
                 var body = new Creature(id, plan, solver);
@@ -117,26 +117,40 @@ namespace Evosim.Farm.Tests
                     if (attempt < 200) continue;
                 }
 
-                body.PlaceAsDeveloped(at, plan);
-                body.Senses.Nutrients = world.Nutrients;
-                body.Senses.Scent = world.Scent;
-                body.Senses.LeafScent = world.LeafScent;
-                body.Senses.Reserve = new Reserve { SecondsOfReserve = 40f + id };
-
-                var contact = new bool[body.Links];
-                var damage = new float[body.Links];
-                for (int l = 0; l < body.Links; l++)
-                {
-                    contact[l] = (l + id) % 3 == 0;
-                    damage[l] = 0.1f * ((l + id) % 4);
-                }
-
-                body.Senses.Contact = contact;
-                body.Senses.Damage = damage;
-
-                if (body.Jointed) body.EnableTrace();
-                return body;
+                return Equip(body, plan, world, id, at);
             }
+        }
+
+        /// <summary>
+        /// A body from a hand-built genome, placed and wired as <see cref="Body"/> places and wires a drawn one.
+        /// </summary>
+        public static Creature Hand(int id, SolverConfig solver, World world, Genome genome, Vec3 at)
+        {
+            Phenotype plan = Developer.Develop(genome, DevelopmentLimits.Default);
+            return Equip(new Creature(id, plan, solver), plan, world, id, at);
+        }
+
+        private static Creature Equip(Creature body, Phenotype plan, World world, int id, Vec3 at)
+        {
+            body.PlaceAsDeveloped(at, plan);
+            body.Senses.Nutrients = world.Nutrients;
+            body.Senses.Scent = world.Scent;
+            body.Senses.LeafScent = world.LeafScent;
+            body.Senses.Reserve = new Reserve { SecondsOfReserve = 40f + id };
+
+            var contact = new bool[body.Links];
+            var damage = new float[body.Links];
+            for (int l = 0; l < body.Links; l++)
+            {
+                contact[l] = (l + id) % 3 == 0;
+                damage[l] = 0.1f * ((l + id) % 4);
+            }
+
+            body.Senses.Contact = contact;
+            body.Senses.Damage = damage;
+
+            if (body.Jointed) body.EnableTrace();
+            return body;
         }
 
         /// <summary>
@@ -205,6 +219,130 @@ namespace Evosim.Farm.Tests
             }
 
             return genome.Brain.Validate().Count == 0;
+        }
+
+        // ---- D231's bodies: hinged and universal links, flat blades welded beyond them, a lone flat link.
+
+        private static readonly Float3 StrokeLinkHalf = new Float3(0.1f, 0.05f, 0.04f);
+        private static readonly Float3 StrokeBladeHalf = new Float3(0.15f, 0.01f, 0.12f);
+
+        /// <summary>How many designs <see cref="StrokeGenome"/> draws; a design is the body's index modulo this.</summary>
+        public const int StrokeDesigns = 5;
+
+        /// <summary>The design that a test grows between blocks.</summary>
+        public const int StrokeGrowerDesign = 3;
+
+        private static NeuronDef[] StrokeNeurons(int dof, float hz, float phase)
+        {
+            // The bend-and-power drive reads neuron d of a part as the power of degree d and neuron dof + d as its bend.
+            var set = new NeuronDef[2 * dof];
+            for (int d = 0; d < dof; d++)
+            {
+                set[d] = new NeuronDef
+                {
+                    Op = NeuronOp.OscillateWave, Frequency = hz, Phase = phase + 1.1f * d, Amplitude = 1f, Bias = 0.5f,
+                    Inputs = Array.Empty<NeuronInput>(),
+                };
+                set[dof + d] = new NeuronDef
+                {
+                    Op = NeuronOp.OscillateWave, Frequency = 0.5f * hz, Phase = phase + 0.7f * d, Amplitude = 0.5f, Bias = 0f,
+                    Inputs = Array.Empty<NeuronInput>(),
+                };
+            }
+
+            return set;
+        }
+
+        private static int StrokeAdd(Genome g, int parent, MorphNode node, Float3 parentAnchor, Float3 childAnchor)
+        {
+            int index = g.Nodes.Count;
+            node.RecursiveLimit = 1;
+            g.Nodes.Add(node);
+            g.Nodes[parent].Edges.Add(new MorphEdge
+            {
+                Child = index, ParentAnchor = parentAnchor, ChildAnchor = childAnchor,
+                Orientation = Quat.Identity, Scale = Float3.One,
+            });
+            return index;
+        }
+
+        private static MorphNode StrokeLink(Float3 half, JointType joint, float power, float hz, float phase)
+        {
+            int dof = joint.DofCount();
+            var limits = new Float2[dof];
+            for (int d = 0; d < dof; d++) limits[d] = new Float2(-1.2f, 1.2f);
+            return new MorphNode
+            {
+                Dimensions = half, CellTypeId = CellTypeIds.Link, ShapeId = ShapeIds.Box, JointType = joint,
+                JointLimits = limits, Power = power, Neurons = StrokeNeurons(dof, hz, phase),
+            };
+        }
+
+        private static MorphNode StrokeWeld(Float3 half) => new MorphNode
+        {
+            Dimensions = half, CellTypeId = CellTypeIds.Structural, ShapeId = ShapeIds.Box,
+            JointType = JointType.Fixed, JointLimits = Array.Empty<Float2>(),
+        };
+
+        /// <summary>
+        /// A hand-built body for D231, by design. 0: a hinged link with a flat blade welded at its tip, in line.
+        /// 1: a universal link (two degrees of freedom) with two blades side by side across its stroke. 2: a lone
+        /// flat hinged link, nothing welded beyond it. 3: as 0 with other numbers; the one a test grows. 4: two hinged
+        /// links in a chain with a blade welded beyond the second, so that the first link's assembly is itself alone.
+        /// </summary>
+        public static Genome StrokeGenome(int design, int id)
+        {
+            var g = new Genome { RootIndex = 0, AdultScale = 1f };
+            g.Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f, ReserveMargin = 0f };
+            g.Nodes.Add(new MorphNode
+            {
+                Dimensions = new Float3(0.2f, 0.2f, 0.2f), CellTypeId = CellTypeIds.Structural, ShapeId = ShapeIds.Box,
+                JointType = JointType.Fixed, JointLimits = Array.Empty<Float2>(), RecursiveLimit = 1,
+            });
+
+            float power = 8f + id % 5;
+            float hz = 0.5f + 0.1f * (id % 7);
+            var inLineAt = new Float3(1f, 0f, 0f);
+            var inLineBy = new Float3(-1f, 0f, 0f);
+
+            switch (design % StrokeDesigns)
+            {
+                case 0:
+                {
+                    int link = StrokeAdd(g, 0, StrokeLink(StrokeLinkHalf, JointType.Hinge, power, hz, 0.6f), inLineAt, inLineBy);
+                    StrokeAdd(g, link, StrokeWeld(StrokeBladeHalf), inLineAt, inLineBy);
+                    break;
+                }
+                case 1:
+                {
+                    var link = StrokeAdd(g, 0, StrokeLink(new Float3(0.1f, 0.05f, 0.03f), JointType.Universal, power, hz, 0.3f),
+                                         inLineAt, inLineBy);
+                    var blade = new Float3(0.2f, 0.01f, 0.05f);
+                    StrokeAdd(g, link, StrokeWeld(blade), new Float3(1f, 0f, 1f), new Float3(-1f, 0f, -1f));
+                    StrokeAdd(g, link, StrokeWeld(blade), new Float3(1f, 0f, -1f), new Float3(-1f, 0f, 1f));
+                    break;
+                }
+                case 2:
+                {
+                    StrokeAdd(g, 0, StrokeLink(new Float3(0.2f, 0.01f, 0.12f), JointType.Hinge, power, hz, 0.9f), inLineAt, inLineBy);
+                    break;
+                }
+                case 3:
+                {
+                    int link = StrokeAdd(g, 0, StrokeLink(new Float3(0.12f, 0.05f, 0.05f), JointType.Hinge, power, hz, 1.2f), inLineAt, inLineBy);
+                    StrokeAdd(g, link, StrokeWeld(new Float3(0.2f, 0.012f, 0.1f)), inLineAt, inLineBy);
+                    break;
+                }
+                default:
+                {
+                    int first = StrokeAdd(g, 0, StrokeLink(StrokeLinkHalf, JointType.Hinge, power, hz, 0.4f), inLineAt, inLineBy);
+                    int second = StrokeAdd(g, first, StrokeLink(StrokeLinkHalf, JointType.Hinge, power, hz, 1.0f), inLineAt, inLineBy);
+                    StrokeAdd(g, second, StrokeWeld(StrokeBladeHalf), inLineAt, inLineBy);
+                    break;
+                }
+            }
+
+            return g;
         }
 
         /// <summary>The tank's axis, where Core's tank puts it.</summary>
@@ -521,6 +659,27 @@ namespace Evosim.Farm.Tests
         }
 
         [Fact]
+        public void ABackendBuiltForOneStrokeLawRefusesToStepTheOther()
+        {
+            // The same world twice, as one config and its copy, so that only D231's switch can differ.
+            (_, SolverConfig built) = GpuTank.Build(reefs: false);
+            var copy = (SolverConfig)typeof(object)
+                .GetMethod("MemberwiseClone", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .Invoke(built, null);
+
+            GpuBackend.Check(built, copy);
+
+            copy.StrokePushesAssembly = true;
+            Refused(() => GpuBackend.Check(built, copy), "stroke assembly");
+
+            built.StrokePushesAssembly = true;
+            GpuBackend.Check(built, copy);
+
+            copy.StrokePushesAssembly = false;
+            Refused(() => GpuBackend.Check(built, copy), "stroke assembly");
+        }
+
+        [Fact]
         public void AWaterHoldIsRefusedNamingIt()
         {
             (_, SolverConfig s) = GpuTank.Build(reefs: false);
@@ -647,6 +806,24 @@ namespace Evosim.Farm.Tests
                 if (k == 4) at = new Vec3(axis.X + core.TankRadiusMetres - 0.4, -6.0, axis.Z);
                 if (k == 5) at = new Vec3(axis.X - 2.0, -core.Config.WorldDepthMetres + 0.6, axis.Z - 2.0);
                 world.AddInIdOrder(GpuTank.Body(firstId + k, world.Config, core, rng, at, sensorPool: sensorPool, central: central));
+            }
+        }
+
+        /// <summary>
+        /// D231's crowd: <see cref="Populate"/>'s places, with <see cref="GpuTank.StrokeGenome"/>'s bodies in them, the
+        /// design by the body's place in the crowd. The fifth stands at the glass and the sixth on the bed.
+        /// </summary>
+        private static void PopulateStroke(DynamicsWorld world, World core, int count, int firstId)
+        {
+            Vec3 axis = GpuTank.Axis(core);
+
+            for (int k = 0; k < count; k++)
+            {
+                var at = new Vec3(axis.X + 0.7 * (k % 3) - 0.7, -9.0 - 0.6 * (k / 3), axis.Z + 0.5 * (k % 2));
+                if (k == 4) at = new Vec3(axis.X + core.TankRadiusMetres - 0.4, -6.0, axis.Z);
+                if (k == 5) at = new Vec3(axis.X - 2.0, -core.Config.WorldDepthMetres + 0.6, axis.Z - 2.0);
+                int id = firstId + k;
+                world.AddInIdOrder(GpuTank.Hand(id, world.Config, core, GpuTank.StrokeGenome(k, id), at));
             }
         }
 
@@ -849,6 +1026,7 @@ namespace Evosim.Farm.Tests
         [InlineData("power")]
         [InlineData("swing")]
         [InlineData("shapedpower")]
+        [InlineData("strokeassembly")]
         [InlineData("shapedswing")]
         [InlineData("trueshape")]
         [InlineData("trueshape-crowd")]
@@ -865,6 +1043,12 @@ namespace Evosim.Farm.Tests
             var shapedPower = new Dictionary<string, string>(power) { { "EVOSIM_SHAPED_ADDED_MASS", "1" } };
             var shapedSwing = new Dictionary<string, string>(swing) { { "EVOSIM_SHAPED_ADDED_MASS", "1" } };
 
+            // D231: the power's push moves the assembly welded beyond a jointed link, shown to part on the CPU from
+            // the fin law's push alone. Its crowd is hand-built: a blade beyond a hinge, a universal link with two
+            // blades, a lone flat link, a chain of two joints with a blade beyond the second and a body that grows.
+            var strokeAssembly = new Dictionary<string, string>(shapedPower) { { "EVOSIM_STROKE_ASSEMBLY", "1" } };
+            bool strokes = world == "strokeassembly";
+
             // D228's contact on the true shape: the bodies' parts touch as their convex cores with margins, the
             // bed, the reefs and the glass on the core's support point. The second puts plates and capsules close
             // enough to touch each other and the bed. Each is shown to part on the CPU from the spheres' world.
@@ -880,11 +1064,11 @@ namespace Evosim.Farm.Tests
 
             Dictionary<string, string> settings =
                 world == "drive" ? drive : world == "power" ? power : world == "swing" ? swing
-                : world == "shapedpower" ? shapedPower : world == "shapedswing" ? shapedSwing
+                : world == "shapedpower" ? shapedPower : strokes ? strokeAssembly : world == "shapedswing" ? shapedSwing
                 : world.StartsWith("trueshapeatpoint") ? atPoint : trueShape;
             Dictionary<string, string> without =
-                world == "power" ? drive : world == "shapedpower" ? power : world == "shapedswing" ? swing
-                : world == "trueshapeatpoint-crowd" ? trueShape : null;
+                world == "power" ? drive : world == "shapedpower" ? power : strokes ? shapedPower
+                : world == "shapedswing" ? swing : world == "trueshapeatpoint-crowd" ? trueShape : null;
 
             (DynamicsWorld plain, World core0) = Pair(true, reefs, without);
             (DynamicsWorld cpu, World coreA) = Pair(true, reefs, settings);
@@ -902,6 +1086,12 @@ namespace Evosim.Farm.Tests
                 PopulateCrowd(cpu, coreA, 14, 11UL, 1);
                 PopulateCrowd(gpu, coreB, 14, 11UL, 1);
             }
+            else if (strokes)
+            {
+                PopulateStroke(plain, core0, 6, 1);
+                PopulateStroke(cpu, coreA, 6, 1);
+                PopulateStroke(gpu, coreB, 6, 1);
+            }
             else
             {
                 Populate(plain, core0, 6, 11UL, 1);
@@ -910,11 +1100,31 @@ namespace Evosim.Farm.Tests
             }
             Assert.Equal(world != "swing" && world != "shapedswing" && !world.StartsWith("trueshape"),
                          cpu.Creatures[0].Drive.BendAndPower);
-            Assert.Equal(world.StartsWith("shaped"), cpu.Config.ShapedAddedMass);
+            Assert.Equal(world.StartsWith("shaped") || strokes, cpu.Config.ShapedAddedMass);
+            Assert.Equal(strokes, cpu.Config.StrokePushesAssembly);
+            Assert.False(plain.Config.StrokePushesAssembly);
             Assert.Equal(
                 world.StartsWith("trueshapeatpoint") ? ContactShapeForm.TrueShapeAtPoint
                 : world.StartsWith("trueshape") ? ContactShapeForm.TrueShape : ContactShapeForm.Spheres,
                 cpu.Config.ContactShape);
+
+            if (strokes)
+            {
+                // The crowd holds what the case is about: an assembly of two parts and of three, a jointed link
+                // alone, and a body that will grow. A table that was never filled would pass as a match.
+                int blades = 0, triples = 0, lone = 0;
+                foreach (Creature c in cpu.Creatures)
+                {
+                    for (int l = 0; l < c.Links; l++)
+                    {
+                        if (c.StrokeAssemblyParts[l] == 2) blades++;
+                        if (c.StrokeAssemblyParts[l] == 3) triples++;
+                        if (c.StrokeAssemblyParts[l] == 1) lone++;
+                    }
+                }
+
+                Assert.True(blades >= 3 && triples >= 1 && lone >= 2, "the crowd lacks an assembly: " + blades + " pairs, " + triples + " triples, " + lone + " lone");
+            }
 
             using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
             gpu.UseBackend(backend);
@@ -931,7 +1141,23 @@ namespace Evosim.Farm.Tests
                     foreach ((DynamicsWorld w, World core) in new[] { (plain, core0), (cpu, coreA), (gpu, coreB) })
                     {
                         w.Remove(w.Creatures[0].Id);
-                        Populate(w, core, 1, 99UL, 50);
+                        if (strokes) PopulateStroke(w, core, 1, 50);
+                        else Populate(w, core, 1, 99UL, 50);
+                    }
+                }
+
+                // A body that grows between blocks: it shrinks after the first block and grows after the second,
+                // in all three worlds alike, so that the card re-packs it with the constants of its new sizes.
+                if (strokes && block <= 1)
+                {
+                    foreach (DynamicsWorld w in new[] { plain, cpu, gpu })
+                    {
+                        Creature grower = null;
+                        foreach (Creature c in w.Creatures) if (c.Id == 1 + GpuTank.StrokeGrowerDesign) grower = c;
+                        Assert.NotNull(grower);
+                        long resizes = grower.Resizes;
+                        grower.Resize(grower.Phenotype.Scaled(block == 0 ? 0.6f : 1.5f));
+                        Assert.Equal(resizes + 1, grower.Resizes);
                     }
                 }
             }
@@ -956,6 +1182,97 @@ namespace Evosim.Farm.Tests
                 Assert.True(cpu.OverlapPairs > 0, world + ": no pair of bodies touched");
                 Assert.True(cpu.BedOrGlassBodies > 0, world + ": no body touched the bed or the glass");
             }
+        }
+
+        /// <summary>
+        /// D228's crowd of mirrored twins, bodies developed with the world's own limits (the other cases develop
+        /// with the defaults, whose switch is off): a cluster a couple of metres across at mid-depth.
+        /// </summary>
+        private static void PopulateTwins(DynamicsWorld world, World core, int count, ulong seed, int firstId)
+        {
+            var rng = new Rng(seed);
+            Vec3 axis = GpuTank.Axis(core);
+
+            for (int k = 0; k < count; k++)
+            {
+                var at = new Vec3(axis.X + 0.7 * (k % 3) - 0.7, -9.0 - 0.6 * (k / 3), axis.Z + 0.5 * (k % 2));
+                world.AddInIdOrder(GpuTank.Body(firstId + k, world.Config, core, rng, at, limits: core.Config.Development));
+            }
+        }
+
+        /// <summary>
+        /// D234: a mirrored twin's joint drive reflected with its geometry, under the torque drive and under the
+        /// bend-and-power drive with the limb push (<c>EVOSIM_REFLECT_MIRRORED_ANCHORS</c>): its torque, the stops it
+        /// reads and the angle and rate its brain reads, each the solver's to the bit after every block, a death and a
+        /// birth included. Each world is first shown to hold a body with a reflected degree of freedom and to part on
+        /// the CPU from the world without the switch, so that a switch that never reached the kernel cannot pass as a
+        /// match.
+        /// </summary>
+        [Theory]
+        [InlineData("torque")]
+        [InlineData("power")]
+        public void TheMirroredTwinsOnTheCpuAcceleratorAreTheSolver(string drive)
+        {
+            var drives = drive == "power"
+                ? new Dictionary<string, string>
+                    { { "EVOSIM_POWER_PUSH", "2" }, { "EVOSIM_POSE_HZ", "2" }, { "EVOSIM_LIMB_PUSH", "0.3" } }
+                : new Dictionary<string, string>();
+            var twins = new Dictionary<string, string>(drives) { { "EVOSIM_REFLECT_MIRRORED_ANCHORS", "1" } };
+
+            (DynamicsWorld plain, World core0) = Pair(true, false, drives);
+            (DynamicsWorld cpu, World coreA) = Pair(true, false, twins);
+            (DynamicsWorld gpu, World coreB) = Pair(true, false, twins);
+
+            PopulateTwins(plain, core0, 10, 31UL, 1);
+            PopulateTwins(cpu, coreA, 10, 31UL, 1);
+            PopulateTwins(gpu, coreB, 10, 31UL, 1);
+
+            Assert.False(plain.Config.MirroredDrive);
+            Assert.True(cpu.Config.MirroredDrive);
+            Assert.Equal(drive == "power", cpu.Creatures[0].Drive.BendAndPower);
+
+            int reflected = 0;
+            foreach (Creature body in cpu.Creatures)
+            {
+                for (int link = 0; link < body.Links; link++) if (body.MirrorMask[link] != 0) reflected++;
+            }
+
+            _out.WriteLine(drive + ": " + reflected + " links reflect a degree of freedom");
+            Assert.True(reflected > 0, "no body drew a mirrored jointed limb: draw the crowd again with another seed");
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            for (int block = 0; block < 4; block++)
+            {
+                plain.StepBlock(25);
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, drive + " twins, after block " + block);
+
+                if (block == 1)
+                {
+                    foreach ((DynamicsWorld w, World core) in new[] { (plain, core0), (cpu, coreA), (gpu, coreB) })
+                    {
+                        w.Remove(w.Creatures[0].Id);
+                        PopulateTwins(w, core, 1, 99UL, 50);
+                    }
+                }
+            }
+
+            bool parted = false;
+            for (int i = 0; i < cpu.Creatures.Count && !parted; i++)
+            {
+                double[] a = plain.Creatures[i].Position, b = cpu.Creatures[i].Position;
+                for (int k = 0; k < a.Length && !parted; k++)
+                {
+                    parted = BitConverter.DoubleToInt64Bits(a[k]) != BitConverter.DoubleToInt64Bits(b[k]);
+                }
+            }
+
+            Assert.True(parted, drive + ": the world stepped as the one without its switch");
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
         }
 
         /// <summary>

@@ -74,6 +74,19 @@ namespace Evosim.Farm.Gpu.Dbl
         // it, three numbers: a box's half-extents, or a capsule's radius and half-span.
         public ArrayView<int> ShapeCode;
         public ArrayView<Real> HalfExt;
+
+        // D231's stroke that pushes its assembly. A link each: the parts in the assembly it anchors (0 for
+        // a link that is not jointed); a degree of freedom each, indexed like DofStart: the cosine between
+        // its axis and the limb's, the added mass of the assembly moving along its stroke, and that mass's
+        // first moment about the joint. One row wide when the switch is off.
+        public ArrayView<int> StrokeParts;
+        public ArrayView<Real> StrokeAlong, StrokeMass, StrokeMoment;
+        // D234's mirrored twin, a link each: the bit mask of the degrees of freedom whose signed
+        // quantities are read negated (Creature.MirrorMask). A link wide only in a world whose bodies
+        // reflect their drive, a one-wide stub otherwise, and then never read (cfg.MirrorDrive is 0). Bit d is
+        // degree of freedom d; bit 3 says the part reflects the vectors its senses read in its own frame, and
+        // bits 4 and 5 are the axis of that reflection (Creature.FrameNormal).
+        public ArrayView<int> MirrorMask;
     }
 
     public struct SPanels { public ArrayView<Real> Centre, Normal, Area; }
@@ -239,8 +252,10 @@ namespace Evosim.Farm.Gpu.Dbl
         public int WeldedDrag;   // D199/D200: under LimitDrag, the torque capped by the welded body (WeldedDrag)
         public int OffsetTorque, SplitColumns, Redo, BendAndPower, TurningDrag, RockTouch, Anchoring;
         public int ShapedMass;   // D229: the limb pushes take the part's shaped added mass (Fluid.AddedMassOf)
+        public int MirrorDrive;  // D234: a mirrored twin's drive and senses are read through its link's mirror mask
         public int AnyRemains;   // D220: 1 for a block in which some body is remains; 0 reads no remains flag at all
         public int TrueShape;    // D228: a part touches as its convex core with a margin (SolverConfig.ContactShape)
+        public int StrokeAssembly;   // D231: the powered stroke pushes the assembly welded beyond a jointed link (SolverConfig.StrokePushesAssembly)
         public int AtPoint;      // D228 level (b): with TrueShape, the force acts at the contact point (ContactShapeForm.TrueShapeAtPoint)
         public int Paced;        // D239: 1 when the pace factor is not 1; 0 divides nothing and the water is stored as it was sampled
 
@@ -1589,7 +1604,7 @@ namespace Evosim.Farm.Gpu.Dbl
             bool lost = false;
             if (!remains)
             {
-                Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
+                Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi, b,
                        br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
                        readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
                        sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
@@ -1662,6 +1677,7 @@ namespace Evosim.Farm.Gpu.Dbl
 
                     int offset = dofStart[bl];
                     int gene = bl * N + i;
+                    int mirror = cfg.MirrorDrive != 0 ? b.MirrorMask[gene] : 0;   // D234, Creature.MirrorMask
                     double threshold = b.Threshold[gene];
                     double reaction = b.Reaction[gene];
                     double holdGene = b.HoldGene[gene];
@@ -1715,13 +1731,21 @@ namespace Evosim.Farm.Gpu.Dbl
                         dr.EHoldLeft[e] = holdLeft;
 
                         if (poseOmega <= 0 || inertia <= 0) continue;
-                        double lo = limitLo[idx], hi = limitHi[idx];
+
+                        // D234, EffectorDrive.DriveBendAndPower: a reflected degree of freedom works in the signed
+                        // reading, the genome's own stops (the stored ones swapped and negated back), the signed
+                        // angle and rate, and the torque reversed back to the stored angle. The sign is exactly 1
+                        // everywhere else, and in a world without the rule no mask is read at all.
+                        bool flipped = mirror != 0 && ((mirror >> d) & 1) != 0;
+                        double sign = flipped ? -1.0 : 1.0;
+                        double lo = flipped ? -(double)limitHi[idx] : (double)limitLo[idx];
+                        double hi = flipped ? -(double)limitLo[idx] : (double)limitHi[idx];
                         double target = lo + bd * (hi - lo);
-                        double magnitude = inertia * poseOmega * (poseOmega * (target - q[idx]) - 2.0 * qd[idx]);
+                        double magnitude = inertia * poseOmega * (poseOmega * (target - sign * q[idx]) - 2.0 * (sign * qd[idx]));
                         if (magnitude > cap) { magnitude = cap; limited++; }
                         else if (magnitude < -cap) { magnitude = -cap; limited++; }
 
-                        torque = torque + frame.Rotate(V3.Axis(d)) * (Real)magnitude;
+                        torque = torque + frame.Rotate(V3.Axis(d)) * (Real)(sign * magnitude);
                     }
 
                     M3 rot = M3.Read(rotationMatrix, 9 * bl);
@@ -1776,6 +1800,7 @@ namespace Evosim.Farm.Gpu.Dbl
                     if (n == 0) continue;
 
                     int offset = dofStart[bl];
+                    int mirror = cfg.MirrorDrive != 0 ? b.MirrorMask[bl * N + i] : 0;   // D234, Creature.MirrorMask
                     Q4 frame = Q4.Read(jointFrame, 4 * bl);
 
                     Real allowed = cfg.LimitDrive != 0 ? smallI[bl] * cfg.SpinBudget : 0;
@@ -1794,6 +1819,9 @@ namespace Evosim.Farm.Gpu.Dbl
                             if (magnitude > allowed) { magnitude = allowed; limited++; }
                             else if (magnitude < -allowed) { magnitude = -allowed; limited++; }
                         }
+
+                        // D234: a reflected degree of freedom's torque is reversed, after the limiter.
+                        if (((mirror >> d) & 1) != 0) magnitude = -magnitude;
 
                         torque = torque + frame.Rotate(V3.Axis(d)) * magnitude;
                     }
@@ -1874,10 +1902,28 @@ namespace Evosim.Farm.Gpu.Dbl
                             }
                             Real shapedSum = 0;
 
+                            // D231, as Fluid.Apply: a link with parts welded beyond it takes its constants from
+                            // the tables, and none of the lines below. Not entered with the switch off.
+                            bool assembly = cfg.StrokeAssembly != 0 && b.StrokeParts[fl * N + i] > 1;
+                            Real assemblySum = 0;
+                            Real assemblyMass = 0;
+
                             for (int d = 0; d < dofCount[fl]; d++)
                             {
                                 Real sv = (Real)dr.EPower[(fstart + d) * N + i];
                                 if (sv <= 0) continue;
+
+                                if (assembly)
+                                {
+                                    // q_d = (s_d Omega)^2 (1 - along_d^2), with the along of the link's own frame.
+                                    Real alongStored = b.StrokeAlong[(fstart + d) * N + i];
+                                    Real strokeQ = sv * omega * sv * omega * ((Real)1.0 - alongStored * alongStored);
+                                    swing2 += strokeQ;
+                                    assemblySum += strokeQ * b.StrokeMoment[(fstart + d) * N + i];
+                                    assemblyMass += strokeQ * b.StrokeMass[(fstart + d) * N + i];
+                                    continue;
+                                }
+
                                 V3 dofAxis = frot * fframe.Rotate(V3.Axis(d));
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
@@ -1903,10 +1949,20 @@ namespace Evosim.Farm.Gpu.Dbl
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
                                 if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
+
+                                // D231: C_T times the sum of q_d I1_d, and the push-weighted lever
+                                // (sum q_d I1_d) / (sum q_d M_d). Another link's lever is the reach.
+                                Real lever = linkReach;
+                                if (assembly)
+                                {
+                                    push = cfg.LimbPush * assemblySum;
+                                    lever = AssemblyLeverOf(assemblySum, assemblyMass, linkReach);
+                                }
+
                                 linkForce = linkForce + axis * (-push);
                                 // The work is the push times the lever it acts at: a lever other than the reach
                                 // (LeverOf) must enter this line too, as on the CPU.
-                                dr.Work[i] = dr.Work[i] + (double)(push * linkReach * System.Math.Sqrt(swing2)) * cfg.DtD;
+                                dr.Work[i] = dr.Work[i] + (double)(push * lever * System.Math.Sqrt(swing2)) * cfg.DtD;
                             }
                         }
                     }
@@ -2670,7 +2726,7 @@ namespace Evosim.Farm.Gpu.Dbl
             bool lost = false;
             if (!remains)
             {
-                Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
+                Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi, b,
                        br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
                        readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
                        sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
@@ -2743,6 +2799,7 @@ namespace Evosim.Farm.Gpu.Dbl
 
                     int offset = dofStart[bl];
                     int gene = bl * N + i;
+                    int mirror = cfg.MirrorDrive != 0 ? b.MirrorMask[gene] : 0;   // D234, Creature.MirrorMask
                     double threshold = b.Threshold[gene];
                     double reaction = b.Reaction[gene];
                     double holdGene = b.HoldGene[gene];
@@ -2796,13 +2853,21 @@ namespace Evosim.Farm.Gpu.Dbl
                         dr.EHoldLeft[e] = holdLeft;
 
                         if (poseOmega <= 0 || inertia <= 0) continue;
-                        double lo = limitLo[idx], hi = limitHi[idx];
+
+                        // D234, EffectorDrive.DriveBendAndPower: a reflected degree of freedom works in the signed
+                        // reading, the genome's own stops (the stored ones swapped and negated back), the signed
+                        // angle and rate, and the torque reversed back to the stored angle. The sign is exactly 1
+                        // everywhere else, and in a world without the rule no mask is read at all.
+                        bool flipped = mirror != 0 && ((mirror >> d) & 1) != 0;
+                        double sign = flipped ? -1.0 : 1.0;
+                        double lo = flipped ? -(double)limitHi[idx] : (double)limitLo[idx];
+                        double hi = flipped ? -(double)limitLo[idx] : (double)limitHi[idx];
                         double target = lo + bd * (hi - lo);
-                        double magnitude = inertia * poseOmega * (poseOmega * (target - q[idx]) - 2.0 * qd[idx]);
+                        double magnitude = inertia * poseOmega * (poseOmega * (target - sign * q[idx]) - 2.0 * (sign * qd[idx]));
                         if (magnitude > cap) { magnitude = cap; limited++; }
                         else if (magnitude < -cap) { magnitude = -cap; limited++; }
 
-                        torque = torque + frame.Rotate(V3.Axis(d)) * (Real)magnitude;
+                        torque = torque + frame.Rotate(V3.Axis(d)) * (Real)(sign * magnitude);
                     }
 
                     M3 rot = M3.Read(rotationMatrix, 9 * bl);
@@ -2857,6 +2922,7 @@ namespace Evosim.Farm.Gpu.Dbl
                     if (n == 0) continue;
 
                     int offset = dofStart[bl];
+                    int mirror = cfg.MirrorDrive != 0 ? b.MirrorMask[bl * N + i] : 0;   // D234, Creature.MirrorMask
                     Q4 frame = Q4.Read(jointFrame, 4 * bl);
 
                     Real allowed = cfg.LimitDrive != 0 ? smallI[bl] * cfg.SpinBudget : 0;
@@ -2875,6 +2941,9 @@ namespace Evosim.Farm.Gpu.Dbl
                             if (magnitude > allowed) { magnitude = allowed; limited++; }
                             else if (magnitude < -allowed) { magnitude = -allowed; limited++; }
                         }
+
+                        // D234: a reflected degree of freedom's torque is reversed, after the limiter.
+                        if (((mirror >> d) & 1) != 0) magnitude = -magnitude;
 
                         torque = torque + frame.Rotate(V3.Axis(d)) * magnitude;
                     }
@@ -2955,10 +3024,28 @@ namespace Evosim.Farm.Gpu.Dbl
                             }
                             Real shapedSum = 0;
 
+                            // D231, as Fluid.Apply: a link with parts welded beyond it takes its constants from
+                            // the tables, and none of the lines below. Not entered with the switch off.
+                            bool assembly = cfg.StrokeAssembly != 0 && b.StrokeParts[fl * N + i] > 1;
+                            Real assemblySum = 0;
+                            Real assemblyMass = 0;
+
                             for (int d = 0; d < dofCount[fl]; d++)
                             {
                                 Real sv = (Real)dr.EPower[(fstart + d) * N + i];
                                 if (sv <= 0) continue;
+
+                                if (assembly)
+                                {
+                                    // q_d = (s_d Omega)^2 (1 - along_d^2), with the along of the link's own frame.
+                                    Real alongStored = b.StrokeAlong[(fstart + d) * N + i];
+                                    Real strokeQ = sv * omega * sv * omega * ((Real)1.0 - alongStored * alongStored);
+                                    swing2 += strokeQ;
+                                    assemblySum += strokeQ * b.StrokeMoment[(fstart + d) * N + i];
+                                    assemblyMass += strokeQ * b.StrokeMass[(fstart + d) * N + i];
+                                    continue;
+                                }
+
                                 V3 dofAxis = frot * fframe.Rotate(V3.Axis(d));
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
@@ -2984,10 +3071,20 @@ namespace Evosim.Farm.Gpu.Dbl
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
                                 if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
+
+                                // D231: C_T times the sum of q_d I1_d, and the push-weighted lever
+                                // (sum q_d I1_d) / (sum q_d M_d). Another link's lever is the reach.
+                                Real lever = linkReach;
+                                if (assembly)
+                                {
+                                    push = cfg.LimbPush * assemblySum;
+                                    lever = AssemblyLeverOf(assemblySum, assemblyMass, linkReach);
+                                }
+
                                 linkForce = linkForce + axis * (-push);
                                 // The work is the push times the lever it acts at: a lever other than the reach
                                 // (LeverOf) must enter this line too, as on the CPU.
-                                dr.Work[i] = dr.Work[i] + (double)(push * linkReach * System.Math.Sqrt(swing2)) * cfg.DtD;
+                                dr.Work[i] = dr.Work[i] + (double)(push * lever * System.Math.Sqrt(swing2)) * cfg.DtD;
                             }
                         }
                     }
@@ -3751,7 +3848,7 @@ namespace Evosim.Farm.Gpu.Dbl
             bool lost = false;
             if (!remains)
             {
-                Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
+                Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi, b,
                        br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
                        readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
                        sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
@@ -3824,6 +3921,7 @@ namespace Evosim.Farm.Gpu.Dbl
 
                     int offset = dofStart[bl];
                     int gene = bl * N + i;
+                    int mirror = cfg.MirrorDrive != 0 ? b.MirrorMask[gene] : 0;   // D234, Creature.MirrorMask
                     double threshold = b.Threshold[gene];
                     double reaction = b.Reaction[gene];
                     double holdGene = b.HoldGene[gene];
@@ -3877,13 +3975,21 @@ namespace Evosim.Farm.Gpu.Dbl
                         dr.EHoldLeft[e] = holdLeft;
 
                         if (poseOmega <= 0 || inertia <= 0) continue;
-                        double lo = limitLo[idx], hi = limitHi[idx];
+
+                        // D234, EffectorDrive.DriveBendAndPower: a reflected degree of freedom works in the signed
+                        // reading, the genome's own stops (the stored ones swapped and negated back), the signed
+                        // angle and rate, and the torque reversed back to the stored angle. The sign is exactly 1
+                        // everywhere else, and in a world without the rule no mask is read at all.
+                        bool flipped = mirror != 0 && ((mirror >> d) & 1) != 0;
+                        double sign = flipped ? -1.0 : 1.0;
+                        double lo = flipped ? -(double)limitHi[idx] : (double)limitLo[idx];
+                        double hi = flipped ? -(double)limitLo[idx] : (double)limitHi[idx];
                         double target = lo + bd * (hi - lo);
-                        double magnitude = inertia * poseOmega * (poseOmega * (target - q[idx]) - 2.0 * qd[idx]);
+                        double magnitude = inertia * poseOmega * (poseOmega * (target - sign * q[idx]) - 2.0 * (sign * qd[idx]));
                         if (magnitude > cap) { magnitude = cap; limited++; }
                         else if (magnitude < -cap) { magnitude = -cap; limited++; }
 
-                        torque = torque + frame.Rotate(V3.Axis(d)) * (Real)magnitude;
+                        torque = torque + frame.Rotate(V3.Axis(d)) * (Real)(sign * magnitude);
                     }
 
                     M3 rot = M3.Read(rotationMatrix, 9 * bl);
@@ -3938,6 +4044,7 @@ namespace Evosim.Farm.Gpu.Dbl
                     if (n == 0) continue;
 
                     int offset = dofStart[bl];
+                    int mirror = cfg.MirrorDrive != 0 ? b.MirrorMask[bl * N + i] : 0;   // D234, Creature.MirrorMask
                     Q4 frame = Q4.Read(jointFrame, 4 * bl);
 
                     Real allowed = cfg.LimitDrive != 0 ? smallI[bl] * cfg.SpinBudget : 0;
@@ -3956,6 +4063,9 @@ namespace Evosim.Farm.Gpu.Dbl
                             if (magnitude > allowed) { magnitude = allowed; limited++; }
                             else if (magnitude < -allowed) { magnitude = -allowed; limited++; }
                         }
+
+                        // D234: a reflected degree of freedom's torque is reversed, after the limiter.
+                        if (((mirror >> d) & 1) != 0) magnitude = -magnitude;
 
                         torque = torque + frame.Rotate(V3.Axis(d)) * magnitude;
                     }
@@ -4036,10 +4146,28 @@ namespace Evosim.Farm.Gpu.Dbl
                             }
                             Real shapedSum = 0;
 
+                            // D231, as Fluid.Apply: a link with parts welded beyond it takes its constants from
+                            // the tables, and none of the lines below. Not entered with the switch off.
+                            bool assembly = cfg.StrokeAssembly != 0 && b.StrokeParts[fl * N + i] > 1;
+                            Real assemblySum = 0;
+                            Real assemblyMass = 0;
+
                             for (int d = 0; d < dofCount[fl]; d++)
                             {
                                 Real sv = (Real)dr.EPower[(fstart + d) * N + i];
                                 if (sv <= 0) continue;
+
+                                if (assembly)
+                                {
+                                    // q_d = (s_d Omega)^2 (1 - along_d^2), with the along of the link's own frame.
+                                    Real alongStored = b.StrokeAlong[(fstart + d) * N + i];
+                                    Real strokeQ = sv * omega * sv * omega * ((Real)1.0 - alongStored * alongStored);
+                                    swing2 += strokeQ;
+                                    assemblySum += strokeQ * b.StrokeMoment[(fstart + d) * N + i];
+                                    assemblyMass += strokeQ * b.StrokeMass[(fstart + d) * N + i];
+                                    continue;
+                                }
+
                                 V3 dofAxis = frot * fframe.Rotate(V3.Axis(d));
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
@@ -4065,10 +4193,20 @@ namespace Evosim.Farm.Gpu.Dbl
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
                                 if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
+
+                                // D231: C_T times the sum of q_d I1_d, and the push-weighted lever
+                                // (sum q_d I1_d) / (sum q_d M_d). Another link's lever is the reach.
+                                Real lever = linkReach;
+                                if (assembly)
+                                {
+                                    push = cfg.LimbPush * assemblySum;
+                                    lever = AssemblyLeverOf(assemblySum, assemblyMass, linkReach);
+                                }
+
                                 linkForce = linkForce + axis * (-push);
                                 // The work is the push times the lever it acts at: a lever other than the reach
                                 // (LeverOf) must enter this line too, as on the CPU.
-                                dr.Work[i] = dr.Work[i] + (double)(push * linkReach * System.Math.Sqrt(swing2)) * cfg.DtD;
+                                dr.Work[i] = dr.Work[i] + (double)(push * lever * System.Math.Sqrt(swing2)) * cfg.DtD;
                             }
                         }
                     }
@@ -4832,7 +4970,7 @@ namespace Evosim.Farm.Gpu.Dbl
             bool lost = false;
             if (!remains)
             {
-                Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
+                Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi, b,
                        br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
                        readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
                        sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
@@ -4905,6 +5043,7 @@ namespace Evosim.Farm.Gpu.Dbl
 
                     int offset = dofStart[bl];
                     int gene = bl * N + i;
+                    int mirror = cfg.MirrorDrive != 0 ? b.MirrorMask[gene] : 0;   // D234, Creature.MirrorMask
                     double threshold = b.Threshold[gene];
                     double reaction = b.Reaction[gene];
                     double holdGene = b.HoldGene[gene];
@@ -4958,13 +5097,21 @@ namespace Evosim.Farm.Gpu.Dbl
                         dr.EHoldLeft[e] = holdLeft;
 
                         if (poseOmega <= 0 || inertia <= 0) continue;
-                        double lo = limitLo[idx], hi = limitHi[idx];
+
+                        // D234, EffectorDrive.DriveBendAndPower: a reflected degree of freedom works in the signed
+                        // reading, the genome's own stops (the stored ones swapped and negated back), the signed
+                        // angle and rate, and the torque reversed back to the stored angle. The sign is exactly 1
+                        // everywhere else, and in a world without the rule no mask is read at all.
+                        bool flipped = mirror != 0 && ((mirror >> d) & 1) != 0;
+                        double sign = flipped ? -1.0 : 1.0;
+                        double lo = flipped ? -(double)limitHi[idx] : (double)limitLo[idx];
+                        double hi = flipped ? -(double)limitLo[idx] : (double)limitHi[idx];
                         double target = lo + bd * (hi - lo);
-                        double magnitude = inertia * poseOmega * (poseOmega * (target - q[idx]) - 2.0 * qd[idx]);
+                        double magnitude = inertia * poseOmega * (poseOmega * (target - sign * q[idx]) - 2.0 * (sign * qd[idx]));
                         if (magnitude > cap) { magnitude = cap; limited++; }
                         else if (magnitude < -cap) { magnitude = -cap; limited++; }
 
-                        torque = torque + frame.Rotate(V3.Axis(d)) * (Real)magnitude;
+                        torque = torque + frame.Rotate(V3.Axis(d)) * (Real)(sign * magnitude);
                     }
 
                     M3 rot = M3.Read(rotationMatrix, 9 * bl);
@@ -5019,6 +5166,7 @@ namespace Evosim.Farm.Gpu.Dbl
                     if (n == 0) continue;
 
                     int offset = dofStart[bl];
+                    int mirror = cfg.MirrorDrive != 0 ? b.MirrorMask[bl * N + i] : 0;   // D234, Creature.MirrorMask
                     Q4 frame = Q4.Read(jointFrame, 4 * bl);
 
                     Real allowed = cfg.LimitDrive != 0 ? smallI[bl] * cfg.SpinBudget : 0;
@@ -5037,6 +5185,9 @@ namespace Evosim.Farm.Gpu.Dbl
                             if (magnitude > allowed) { magnitude = allowed; limited++; }
                             else if (magnitude < -allowed) { magnitude = -allowed; limited++; }
                         }
+
+                        // D234: a reflected degree of freedom's torque is reversed, after the limiter.
+                        if (((mirror >> d) & 1) != 0) magnitude = -magnitude;
 
                         torque = torque + frame.Rotate(V3.Axis(d)) * magnitude;
                     }
@@ -5117,10 +5268,28 @@ namespace Evosim.Farm.Gpu.Dbl
                             }
                             Real shapedSum = 0;
 
+                            // D231, as Fluid.Apply: a link with parts welded beyond it takes its constants from
+                            // the tables, and none of the lines below. Not entered with the switch off.
+                            bool assembly = cfg.StrokeAssembly != 0 && b.StrokeParts[fl * N + i] > 1;
+                            Real assemblySum = 0;
+                            Real assemblyMass = 0;
+
                             for (int d = 0; d < dofCount[fl]; d++)
                             {
                                 Real sv = (Real)dr.EPower[(fstart + d) * N + i];
                                 if (sv <= 0) continue;
+
+                                if (assembly)
+                                {
+                                    // q_d = (s_d Omega)^2 (1 - along_d^2), with the along of the link's own frame.
+                                    Real alongStored = b.StrokeAlong[(fstart + d) * N + i];
+                                    Real strokeQ = sv * omega * sv * omega * ((Real)1.0 - alongStored * alongStored);
+                                    swing2 += strokeQ;
+                                    assemblySum += strokeQ * b.StrokeMoment[(fstart + d) * N + i];
+                                    assemblyMass += strokeQ * b.StrokeMass[(fstart + d) * N + i];
+                                    continue;
+                                }
+
                                 V3 dofAxis = frot * fframe.Rotate(V3.Axis(d));
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
@@ -5146,10 +5315,20 @@ namespace Evosim.Farm.Gpu.Dbl
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
                                 if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
+
+                                // D231: C_T times the sum of q_d I1_d, and the push-weighted lever
+                                // (sum q_d I1_d) / (sum q_d M_d). Another link's lever is the reach.
+                                Real lever = linkReach;
+                                if (assembly)
+                                {
+                                    push = cfg.LimbPush * assemblySum;
+                                    lever = AssemblyLeverOf(assemblySum, assemblyMass, linkReach);
+                                }
+
                                 linkForce = linkForce + axis * (-push);
                                 // The work is the push times the lever it acts at: a lever other than the reach
                                 // (LeverOf) must enter this line too, as on the CPU.
-                                dr.Work[i] = dr.Work[i] + (double)(push * linkReach * System.Math.Sqrt(swing2)) * cfg.DtD;
+                                dr.Work[i] = dr.Work[i] + (double)(push * lever * System.Math.Sqrt(swing2)) * cfg.DtD;
                             }
                         }
                     }
@@ -8038,7 +8217,7 @@ namespace Evosim.Farm.Gpu.Dbl
 
         private static void Sample(
             int i, int links, int[] dofCount, int[] dofStart, Real[] position, Real[] rotationMatrix,
-            Real[] relVel, Real[] q, Real[] qd, Real[] limitHi, SBrain br, SWorld w, SCfg cfg,
+            Real[] relVel, Real[] q, Real[] qd, Real[] limitHi, SConst b, SBrain br, SWorld w, SCfg cfg,
             bool readsDepth, bool readsUp, bool readsJoint, bool readsFlow, bool readsChemical, bool readsScent,
             bool readsEnergy, bool leaves, bool readsLeafDir,
             float[] sDepth, float[] sUp, float[] sChem, float[] sScent, float[] sFlow, float[] sAngle, float[] sRate, float[] sDrive,
@@ -8104,7 +8283,11 @@ namespace Evosim.Farm.Gpu.Dbl
                     sScent[bl] = sc > 0f ? sc / (sc + cfg.ScentHalf) : 0f;
                 }
 
-                if (leaves) SampleLeaf(bl, (float)px, (float)py, (float)pz, rotationMatrix, readsLeafDir, sLeaf, w, cfg);
+                // D234: a part that reflects reads the vectors in its own frame with the component along the
+                // reflection's axis negated (CreatureSenses, Creature.ReflectFrameVector). 0 reflects nothing.
+                int frameMirror = cfg.MirrorDrive != 0 ? b.MirrorMask[bl * cfg.N + i] : 0;
+
+                if (leaves) SampleLeaf(bl, (float)px, (float)py, (float)pz, rotationMatrix, readsLeafDir, frameMirror, sLeaf, w, cfg);
 
                 if (readsFlow)
                 {
@@ -8117,6 +8300,14 @@ namespace Evosim.Farm.Gpu.Dbl
                     Real ly = m01 * vx + m11 * vy + m21 * vz;
                     Real lz = m02 * vx + m12 * vy + m22 * vz;
 
+                    if ((frameMirror & 8) != 0)
+                    {
+                        int axis = (frameMirror >> 4) & 3;
+                        if (axis == 0) lx = -lx;
+                        else if (axis == 1) ly = -ly;
+                        else lz = -lz;
+                    }
+
                     sFlow[3 * bl] = Clamp((float)(lx / flowScale));
                     sFlow[3 * bl + 1] = Clamp((float)(ly / flowScale));
                     sFlow[3 * bl + 2] = Clamp((float)(lz / flowScale));
@@ -8128,16 +8319,23 @@ namespace Evosim.Farm.Gpu.Dbl
                 int offset = dofStart[bl];
                 if (n == 0 || offset < 0) continue;
 
+                // D234: CreatureSenses reads a reflected degree of freedom's angle and rate with the sign
+                // reversed, against the reversed lower stop as its upper one. The mask is read only in a world
+                // whose bodies reflect their drive; elsewhere the sign is 1 and the line is the old one.
+                int mirror = cfg.MirrorDrive != 0 ? b.MirrorMask[bl * cfg.N + i] : 0;
+
                 for (int d = 0; d < n; d++)
                 {
                     int at = offset + d;
-                    Real limit = AbsR(limitHi[at]);
+                    bool flipped = ((mirror >> d) & 1) != 0;
+                    Real sign = flipped ? (Real)(-1) : (Real)1;
+                    Real limit = AbsR(flipped ? -b.LimitLo[at * cfg.N + i] : limitHi[at]);
 
                     sAngle[at] = limit > (Real)1e-6
-                        ? Clamp((float)(q[at] / limit))
+                        ? Clamp((float)(sign * q[at] / limit))
                         : 0f;
 
-                    sRate[at] = Clamp((float)(qd[at] / rateScale));
+                    sRate[at] = Clamp((float)(sign * qd[at] / rateScale));
                 }
             }
         }
@@ -9077,6 +9275,14 @@ namespace Evosim.Farm.Gpu.Dbl
         /// reach, exactly. The one place a later rule would move it; the work line must follow.
         /// </summary>
         private static Real LeverOf(Real reach, V3 axis, V3 direction) => reach;
+
+        /// <summary>
+        /// Fluid.AssemblyLeverOf (D231): the lever a stroke's push acts at when it moves a whole assembly,
+        /// the first moment of the added mass over the added mass, <c>I1 / M</c>. Where nothing is moved
+        /// (the mass not above 0) the reach, so that the work line stays finite.
+        /// </summary>
+        private static Real AssemblyLeverOf(Real firstMoment, Real addedMass, Real reach) =>
+            addedMass > 0 ? firstMoment / addedMass : reach;
 
         /// <summary>
         /// Fluid.AddedMassOf (D229) for a box (shape 1) or a capsule (shape 2), in the same operations in
@@ -12413,7 +12619,7 @@ namespace Evosim.Farm.Gpu.Dbl
         /// the part's own frame, unit length, times that value; zero where the gradient is.
         /// </summary>
         private static void SampleLeaf(int bl, float px, float py, float pz, Real[] rotationMatrix, bool direction,
-                                       float[] sLeaf, SWorld w, SCfg cfg)
+                                       int frameMirror, float[] sLeaf, SWorld w, SCfg cfg)
         {
             float s = LeafAt(px, py, pz, w, cfg);
             float strength = s > 0f ? s / (s + cfg.LeafHalf) : 0f;
@@ -12428,6 +12634,16 @@ namespace Evosim.Farm.Gpu.Dbl
             Real lx = rotationMatrix[r] * gx + rotationMatrix[r + 3] * gy + rotationMatrix[r + 6] * gz;
             Real ly = rotationMatrix[r + 1] * gx + rotationMatrix[r + 4] * gy + rotationMatrix[r + 7] * gz;
             Real lz = rotationMatrix[r + 2] * gx + rotationMatrix[r + 5] * gy + rotationMatrix[r + 8] * gz;
+
+            // D234, as the flow in Sample: the component along the reflection's axis negated.
+            if ((frameMirror & 8) != 0)
+            {
+                int axis = (frameMirror >> 4) & 3;
+                if (axis == 0) lx = -lx;
+                else if (axis == 1) ly = -ly;
+                else lz = -lz;
+            }
+
             Real length = SqrtR(lx * lx + ly * ly + lz * lz);
 
             if (length > 0 && strength > 0f)
@@ -12641,6 +12857,15 @@ namespace Evosim.Farm.Gpu.Dbl
         // world that runs the law, one-wide otherwise.
         public readonly Seg<int> ShapeCode;
         public readonly Seg<Real> HalfExt;
+
+        // D231's stroke that pushes its assembly: a link's parts in its assembly, and a degree of freedom's
+        // along, added mass and first moment. A link or a degree of freedom wide only in a world that runs it,
+        // one-wide otherwise.
+        public readonly Seg<int> StrokeParts;
+        public readonly Seg<Real> StrokeAlong, StrokeMass, StrokeMoment;
+        // D234's mirrored twin: each link's mask of the degrees of freedom read negated. A link wide only in
+        // a world whose bodies reflect their drive, one-wide otherwise.
+        public readonly Seg<int> MirrorMask;
         public readonly Seg<float> Bend;
         public readonly Seg<double> EPower, EBend, EPowerTarget, EBendTarget, EPowerRate, EBendRate, EHoldLeft;
 
@@ -12666,7 +12891,7 @@ namespace Evosim.Farm.Gpu.Dbl
         public readonly Seg<double> TTime;
         public readonly Seg<int> Enabled, Held, TCursor, FirstBadLink, Resized, Poison, Pending;
 
-        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower, bool shapedMass)
+        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower, bool shapedMass, bool strokeAssembly, bool mirroredDrive)
         {
             _acc = acc;
             _stream = stream;
@@ -12703,6 +12928,11 @@ namespace Evosim.Farm.Gpu.Dbl
 
             int gs = shapedMass ? L : 0;
             ShapeCode = C<int>(gs, Constant); HalfExt = C<Real>(3 * gs, Constant);
+
+            int sa = strokeAssembly ? L : 0, sd = strokeAssembly ? D : 0;
+            StrokeParts = C<int>(sa, Constant);
+            StrokeAlong = C<Real>(sd, Constant); StrokeMass = C<Real>(sd, Constant); StrokeMoment = C<Real>(sd, Constant);
+            MirrorMask = C<int>(mirroredDrive ? L : 0, Constant);
             Bend = C<float>(gd, Down);
             EPower = C<double>(gd, Down); EBend = C<double>(gd, Down);
             EPowerTarget = C<double>(gd, Down); EBendTarget = C<double>(gd, Down);
@@ -12939,6 +13169,9 @@ namespace Evosim.Farm.Gpu.Dbl
             TotalMass = TotalMass.View, TorquePerUnit = TorquePerUnit.View, PowerScale = PowerScale.View,
             Threshold = Threshold.View, Reaction = Reaction.View, HoldGene = HoldGene.View, Release = Release.View,
             LinkPower = LinkPower.View, ShapeCode = ShapeCode.View, HalfExt = HalfExt.View,
+            StrokeParts = StrokeParts.View, StrokeAlong = StrokeAlong.View,
+            StrokeMass = StrokeMass.View, StrokeMoment = StrokeMoment.View,
+            MirrorMask = MirrorMask.View,
         };
 
         public SPanels PanelSet => new SPanels { Centre = PCentre.View, Normal = PNormal.View, Area = PArea.View };
@@ -13253,7 +13486,7 @@ namespace Evosim.Farm.Gpu.Dbl
             _classes = new ClassSet[options.ClassLinks.Length];
             for (int k = 0; k < _classes.Length; k++)
             {
-                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower, world.ShapedMass);
+                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower, world.ShapedMass, world.StrokeAssembly, world.MirroredDrive);
             }
 
             int oc = options.OverlapCap;
@@ -13585,7 +13818,9 @@ namespace Evosim.Farm.Gpu.Dbl
                 UseRestore = w.UseRestore ? 1 : 0, FloorRestores = w.FloorRestores ? 1 : 0,
                 CreatureContact = w.CreatureContact ? 1 : 0, OffsetTorque = w.OffsetTorque ? 1 : 0,
                 ShapedMass = w.ShapedMass ? 1 : 0,
+                MirrorDrive = w.MirroredDrive ? 1 : 0,
                 TrueShape = w.TrueShape ? 1 : 0, AtPoint = w.AtPoint ? 1 : 0,
+                StrokeAssembly = w.StrokeAssembly ? 1 : 0,
                 BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
                 Anchoring = w.AnchorCell != null ? 1 : 0,
                 GripDecay = w.GripDecay, GripThreshold = w.GripThreshold, GripLag = w.GripLag,
@@ -15060,6 +15295,57 @@ namespace Evosim.Farm.Gpu.Dbl
                         throw new ArgumentException(
                             "The fin law has no added mass for the shape '" + part.ShapeId +
                             "'; it knows box, capsule and sphere.");
+                    }
+                }
+            }
+
+            // D231's stroke that pushes its assembly: the host body's own tables, as Creature.WriteStrokeAssembly
+            // left them at its build and at its last resize (a resize re-packs the body whole, so the card never
+            // holds the old sizes' constants). A link's parts in its assembly, then a degree of freedom's
+            // along, added mass and first moment, indexed like DofStart.
+            if (_w.StrokeAssembly)
+            {
+                if (c.StrokeAssemblyParts == null)
+                {
+                    throw new InvalidOperationException(
+                        "The gpu engine runs the stroke that pushes its assembly and this body was built " +
+                        "without it, so it has no assembly table. A body is built under the config it is stepped with.");
+                }
+
+                for (int l = 0; l < links; l++) s.StrokeParts.Host[l * N + i] = c.StrokeAssemblyParts[l];
+
+                for (int d = 0; d < dof; d++)
+                {
+                    int at = d * N + i;
+                    s.StrokeAlong.Host[at] = (Real)c.StrokeAlong[d];
+                    s.StrokeMass.Host[at] = (Real)c.StrokeAddedMass[d];
+                    s.StrokeMoment.Host[at] = (Real)c.StrokeFirstMoment[d];
+                }
+            }
+
+            // D234's mirrored twin: each link's mask of the degrees of freedom read negated, a mask for every
+            // link so that a slot's earlier body leaves nothing behind. A world that did not ask for the rule
+            // sizes no column for it, so a body that reflects its drive there would be stepped as a seesaw
+            // by the card and as a mirror image by the solver; it is refused naming the setting instead.
+            // The column holds the degrees of freedom's bits (0 to 2), and beside them the frame-vector reflection of
+            // the senses (Creature.FrameNormal): bit 3 set when the part reflects, and its axis in bits 4 and 5.
+            if (_w.MirroredDrive)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    int frame = c.FrameNormal[l];
+                    s.MirrorMask.Host[l * N + i] = c.MirrorMask[l] | (frame >= 0 ? 8 | (frame << 4) : 0);
+                }
+            }
+            else
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    if (c.MirrorMask[l] != 0 || c.FrameNormal[l] >= 0)
+                    {
+                        throw new ArgumentException(
+                            "Body " + c.Id + " reflects a mirrored part's joint drive, and the gpu engine was built for " +
+                            "a world that does not (EVOSIM_REFLECT_MIRRORED_ANCHORS).");
                     }
                 }
             }

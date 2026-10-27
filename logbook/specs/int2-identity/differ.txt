@@ -1,0 +1,34 @@
+== off-6202 vs fin
+
+stats    identical through t=0; first difference at t=10 in 40 fields, e.g. 
+burntTotal=0.30590544209649373/0.3059054541036044, burntWindow=0.30590544209649373/0.3059054541036044, 
+depthJointed=-6.378276774659753/-6.379520634189248, detritusCv=325.2839554379533/325.2887594217581, 
+detritusExudedTotal=8.043972442857921/8.04510257113725
+digest   identical through step 100; parts at step 200 (t=1.9999999552965164), bodies 6/6
+lineage  first differs at line 46
+exit 1
+== fin vs asm
+stats    identical through t=380; first difference at t=390 in 18 fields, e.g. 
+detritusCv=22.56496473602881/22.564964736094538, detritusExudedTotal=29662.827098485548/29662.82709839614, 
+detritusExudedWindow=2382.954468385782/2382.954468296375, detritusJoules=28533.392163795535/28533.39216370615, 
+foodJointed=6.415120465296601/6.4151204648235485
+digest   identical through step 38900; parts at step 39000 (t=389.9999912828207), bodies 850/850
+lineage  first differs at line 1274
+exit 1
+== off-6202 vs twin
+stats    identical through t=330; first difference at t=340 in 22 fields, e.g. 
+auditResidual=7.649941835552454e-07/7.64979631640017e-07, buoyantDepth=-1.7235811859624/-1.7239964759757376, 
+depthRigid=-1.6899425838783644/-1.6900637532837521, detritusCv=26.18618514646197/26.186185146791743, 
+detritusExudedTotal=17741.129028295167/17741.129028075375
+digest   identical through step 33900; parts at step 34000 (t=339.9999924004078), bodies 498/498
+lineage  first differs at line 874
+exit 1
+== asm vs all
+stats    identical through t=400; first difference at t=410 in 39 fields, e.g. 
+auditResidual=-5.694164428859949e-07/-5.696492735296488e-07, depthJointed=-3.079398320451991/-3.079627398146342, 
+detritusCv=20.80299506538208/20.802985119582413, detritusExudedTotal=34114.37562081078/34114.39376247814, 
+detritusExudedWindow=2179.113006833475/2179.1311485008337
+digest   identical through step 40000; parts at step 40100 (t=400.99999103695154), bodies 903/903
+lineage  first differs at line 1064
+exit 1
+

@@ -1,0 +1,14 @@
+2026-10-27T21:05:02 read begins: r62cf-6202, r62cf-6203, r62cf-6204 to 24000 s
+2026-10-27T21:06:52 r62-read exit 0
+2026-10-27T21:07:16 r60-read-3000 exit 0
+2026-10-27T21:07:19 scaling-audit exit 0
+2026-10-27T21:07:21 overshoot r62cf-6202 against r62cs-w500-6202 exit 0
+2026-10-27T21:07:23 grazer-tally r62cf-6202 exit 0
+2026-10-27T21:07:23 overshoot r62cf-6203 has no r62cs-w500-6203; reads against r62cs-w500-6202, a cross-seed comparison
+2026-10-27T21:07:25 overshoot r62cf-6203 against r62cs-w500-6202 exit 0
+2026-10-27T21:07:26 grazer-tally r62cf-6203 exit 0
+2026-10-27T21:07:26 overshoot r62cf-6204 has no r62cs-w500-6204; reads against r62cs-w500-6202, a cross-seed comparison
+2026-10-27T21:07:28 overshoot r62cf-6204 against r62cs-w500-6202 exit 0
+2026-10-27T21:07:29 grazer-tally r62cf-6204 exit 0
+2026-10-27T21:07:30 grs-drift exit 0
+2026-10-27T21:07:30 read ends
