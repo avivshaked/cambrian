@@ -9750,3 +9750,19 @@ in any condition set for the world.
 - D243's next step follows: the nursery's configs are brought forward once. Fat (D247) is built on the landed main.
 
 **Why.** D243 set this order so the fixture is re-recorded and the card sitting run once, on the final tree. Both are done.
+
+### D249
+**D245's energy sense ships behind a switch, and fat's screen gains a control with the new sense** · 2026-10-27
+
+**Status:** decided by the coordinator late on 2026-10-27, scoping fat's build (D247). It carries out D245 and adds one arm to D247's screen without changing the three it ruled.
+
+**Decision.**
+- The energy sense's form is a switch, `EnergySenseSquash` (`Tanh` or `HalfScale`), with `Tanh` as the default and `EnergyHalfScaleSeconds` at 30 s. Every arm of fat's screen, and every round after it, sets `HalfScale` with k = 30 s, which is D245's ruling in force.
+- Fat's screen adds arm D: `HalfScale` at k = 30 s, with no cap and no fat, on the screen's two seeds. The group is eight worlds.
+- The sense is computed on the card as well as the host, so fat's build regenerates the kernels and passes a card identity sitting before its screen.
+
+**Rejected.**
+- k = 30 s as the build's default. Every world that did not set it would change, no recorded config would replay, and arms A to C would differ from the recorded control in two things at once.
+- k = 0 as the off value. It reads as a number and divides by zero if taken at its face.
+
+**Why.** The project's builds land with every new switch off (D243). With the sense in every arm, arm D is the control that isolates fat and the cap from the sense.
