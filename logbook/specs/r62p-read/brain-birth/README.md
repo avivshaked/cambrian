@@ -174,8 +174,8 @@ chemical alone).
 
 **One finding stands on its own.** With a scale of 3,000 s and a newborn reserve of about 15 s, the energy sense reads
 almost 0 for every young body. On this bench that costs a newborn about a third of its swimming speed. Whether the
-scale should fit a young body's reserve is a world rule, so it is the owner's to rule; it is set out here as a possible
-finding, not as a fix.
+scale should fit a young body's reserve is a world rule, and so the owner's to rule. It is set out here as a possible
+finding.
 
 ## What comes next
 
