@@ -43,6 +43,8 @@ namespace Evosim.SwimProbe
             double finPush = 0.3, finOmega = 2.0, finStroke = 0.8, finHertz = 1.0;
             bool brainBirth = false;    // the brain-at-birth bench: held bodies, child and parent brains, fresh or carried
             bool swim = false;          // --brain-birth only: also swim each child and parent alone under its own brain
+            bool passive = false;       // --brain-birth --swim only: also step the same bodies with the brain off (Variant.Passive)
+            bool birthHeight = false;   // --brain-birth --swim only: start each body at its row's y0, not at -20 m
             bool secondsGiven = false;  // --seconds defaults to 120 here and to 60 for the brain-at-birth bench
             double parentWarm = 60, kick = 0.05, eps = 0.05;
             ulong seed = 1;
@@ -80,6 +82,8 @@ namespace Evosim.SwimProbe
                         break;
                     case "--brain-birth": brainBirth = true; break;
                     case "--swim": swim = true; break;
+                    case "--passive": passive = true; break;
+                    case "--birth-height": birthHeight = true; break;
                     case "--parent-warm": parentWarm = double.Parse(args[++i], Inv); break;
                     case "--kick": kick = double.Parse(args[++i], Inv); break;
                     case "--eps": eps = double.Parse(args[++i], Inv); break;
@@ -101,10 +105,17 @@ namespace Evosim.SwimProbe
                 return 2;
             }
 
+            if ((passive || birthHeight) && !(brainBirth && swim))
+            {
+                Console.Error.WriteLine("--passive and --birth-height are read only with --brain-birth --swim");
+                return 2;
+            }
+
             if (brainBirth)
             {
                 return BrainBirth.Run(
-                    run, idsFile, outDir, secondsGiven ? seconds : 60.0, parentWarm, kick, seed, eps, configPath, _dt, par, swim);
+                    run, idsFile, outDir, secondsGiven ? seconds : 60.0, parentWarm, kick, seed, eps, configPath, _dt, par, swim,
+                    passive, birthHeight);
             }
 
             Directory.CreateDirectory(outDir);
@@ -182,20 +193,7 @@ namespace Evosim.SwimProbe
                 rec.LimitLo = (double[])probe.LimitLo.Clone();
                 rec.LimitHi = (double[])probe.LimitHi.Clone();
                 rec.JointTypes = string.Join("+", rec.JointLinks.Select(b => adult.Parts[b].JointType.ToString()));
-                {
-                    // Body length: the largest distance between any two parts' far corners, as centre distance plus both longest half-extents.
-                    double len = 0;
-                    for (int i = 0; i < adult.PartCount; i++)
-                        for (int j = i; j < adult.PartCount; j++)
-                        {
-                            var pi = adult.Parts[i]; var pj = adult.Parts[j];
-                            double dx = pi.Position.X - pj.Position.X, dy = pi.Position.Y - pj.Position.Y, dz = pi.Position.Z - pj.Position.Z;
-                            double hi = Math.Max(Math.Abs(pi.HalfExtents.X), Math.Max(Math.Abs(pi.HalfExtents.Y), Math.Abs(pi.HalfExtents.Z)));
-                            double hj = Math.Max(Math.Abs(pj.HalfExtents.X), Math.Max(Math.Abs(pj.HalfExtents.Y), Math.Abs(pj.HalfExtents.Z)));
-                            len = Math.Max(len, Math.Sqrt(dx * dx + dy * dy + dz * dz) + hi + hj);
-                        }
-                    rec.Length = len;
-                }
+                rec.Length = BodyLength(adult);
                 rec.StartHeight = heightAtEnd.TryGetValue(kv.Key, out double h) ? h : -20.0;
                 if (poses.TryGetValue(kv.Key, out var samples)) AnalysePoses(rec, samples);
                 records.Add(rec);
@@ -432,7 +430,7 @@ namespace Evosim.SwimProbe
         private static SwimResult Swim(BodyRecord rec, Variant variant, int steps, StrokePlan plan)
         {
             var body = new Creature(0, rec.Adult, _solver, _config.Shapes);
-            double y0 = Math.Max(-40.0, Math.Min(-2.0, rec.StartHeight));
+            double y0 = Math.Max(-40.0, Math.Min(_startTop, rec.StartHeight));
             body.PlaceAsDeveloped(new Vec3(0, y0, 0), rec.Adult);
 
             DynamicsWorld world = new DynamicsWorld(_solver);
@@ -556,6 +554,7 @@ namespace Evosim.SwimProbe
                 {
                     double ex = root[at10].X - root[0].X, ez = root[at10].Z - root[0].Z;
                     res.Early = Math.Sqrt(ex * ex + ez * ez) / (at10 * sampleEvery);
+                    res.Dy10 = root[at10].Y - root[0].Y;   // y is up (the start is at a negative depth): up positive
                 }
             }
 
@@ -605,6 +604,26 @@ namespace Evosim.SwimProbe
             return res;
         }
 
+        /// <summary>
+        /// Body length: the largest distance between any two parts' far corners, as centre distance plus both longest
+        /// half-extents. The snapshot pass's own measure (it was inline there), shared with the brain-at-birth bench.
+        /// </summary>
+        internal static double BodyLength(Phenotype adult)
+        {
+            double len = 0;
+            for (int i = 0; i < adult.PartCount; i++)
+                for (int j = i; j < adult.PartCount; j++)
+                {
+                    var pi = adult.Parts[i]; var pj = adult.Parts[j];
+                    double dx = pi.Position.X - pj.Position.X, dy = pi.Position.Y - pj.Position.Y, dz = pi.Position.Z - pj.Position.Z;
+                    double hi = Math.Max(Math.Abs(pi.HalfExtents.X), Math.Max(Math.Abs(pi.HalfExtents.Y), Math.Abs(pi.HalfExtents.Z)));
+                    double hj = Math.Max(Math.Abs(pj.HalfExtents.X), Math.Max(Math.Abs(pj.HalfExtents.Y), Math.Abs(pj.HalfExtents.Z)));
+                    len = Math.Max(len, Math.Sqrt(dx * dx + dy * dy + dz * dz) + hi + hj);
+                }
+
+            return len;
+        }
+
         // ---------------------------------------------------------------- the brain-at-birth bench's door into Swim
 
         /// <summary>What <see cref="SwimAlone"/> hands the bench: the fields of one <c>SwimResult</c> it reports.</summary>
@@ -614,6 +633,15 @@ namespace Evosim.SwimProbe
             public int Dof;
             public double NetSpeed = double.NaN, PathSpeed = double.NaN, Horizontal = double.NaN;
             public double DominantHz = double.NaN, DominantAmp = double.NaN, Early = double.NaN;
+
+            // Buoyancy and size, read on the body as built and placed at its start, before any step:
+            // TotalMass kg (the effective mass, added mass folded in, as Fluid.Apply weighs it), TotalVolume m3,
+            // Excess the excess density Fluid.Apply uses for the whole body (kg/m3), NetBuoyancy the vertical force of
+            // one Fluid.Apply call at rest in still water, N, up positive. BodyLength is BodyLength(adult), metres.
+            // Dy10 is the root's vertical displacement over 0 to 10 s, up positive.
+            public double TotalMass = double.NaN, TotalVolume = double.NaN, Excess = double.NaN;
+            public double NetBuoyancy = double.NaN, BodyLength = double.NaN, Dy10 = double.NaN;
+            public double StartUsed = double.NaN;   // the root height Swim started the body at, after its clamp to [-40, -2]
         }
 
         /// <summary>
@@ -622,22 +650,58 @@ namespace Evosim.SwimProbe
         /// any thread starts, with the config, the solver it built (no glass, no creature contact, as the probe builds
         /// its own) and its step; they are only read after that, so concurrent swims are safe.
         /// </summary>
-        internal static void ConfigureForBench(RunConfig config, SolverConfig solver, double dt)
+        internal static void ConfigureForBench(RunConfig config, SolverConfig solver, double dt, double startTop = -2.0)
         {
             _config = config;
             _solver = solver;
             _dt = dt;
+            _startTop = startTop;
         }
+
+        // The highest root height Swim starts a body at. -2 m for every probe pass; the bench's --birth-height lifts it
+        // to just under the surface, so a newborn recorded at -1 m starts there rather than at -2 m.
+        private static double _startTop = -2.0;
 
         /// <summary>
         /// One developed body alone in still water for <paramref name="steps"/> steps under its own brain with the
-        /// world's physics step (<c>Variant.BrainWorld</c>), at root height -20 m. The <c>BodyRecord</c> is built as
-        /// the snapshot pass builds it, with the fields <c>Swim</c> reads for that variant; the pose fields are not set.
+        /// world's physics step (<c>Variant.BrainWorld</c>), at root height <paramref name="startHeight"/> (-20 m by
+        /// default; <c>Swim</c> clamps it to [-40, -2]). With <paramref name="passive"/> the same body is stepped with
+        /// <c>Variant.Passive</c> instead: the brain is not stepped, the drive signal is zero, and the forces are the
+        /// fluid's, the contact pass's and the joints' (see <c>Swim</c>). The <c>BodyRecord</c> is built as the
+        /// snapshot pass builds it, with the fields <c>Swim</c> reads for that variant; the pose fields are not set.
         /// </summary>
-        internal static SwimAloneResult SwimAlone(Phenotype adult, int steps)
+        internal static SwimAloneResult SwimAlone(Phenotype adult, int steps, bool passive = false, double startHeight = -20.0)
         {
             var probe = new Creature(0, adult, _solver, _config.Shapes);
             var outcome = new SwimAloneResult { Dof = probe.Dof };
+            outcome.StartUsed = Math.Max(-40.0, Math.Min(_startTop, startHeight));   // the clamp at the top of Swim
+            outcome.TotalMass = probe.TotalMass;
+            outcome.TotalVolume = probe.TotalVolume;
+            outcome.BodyLength = BodyLength(adult);
+
+            // The excess density Fluid.Apply uses (Fluid.cs:44-51), then the force it puts on the whole body at rest:
+            // one Fluid.Apply on a separate body placed where Swim places it, with still water (Water and
+            // WaterAcceleration are zero), no velocity (so no drag) and no swing (so no limb push). That one call
+            // takes in the lift genes (Lift[i]), the surface and floor rule and the size scaling, and nothing else
+            // writes a vertical force on a body in still water. The sum is over each link's force y, Fext[6*i+4].
+            {
+                double excess = _solver.TissueExcessDensity;
+                if (_solver.NeutralBodyVolume > 0)
+                {
+                    excess *= BuoyancyModel.ExcessDensityFactor((float)probe.TotalVolume, (float)_solver.NeutralBodyVolume);
+                }
+
+                outcome.Excess = excess;
+
+                var meter = new Creature(0, adult, _solver, _config.Shapes);
+                meter.PlaceAsDeveloped(new Vec3(0, outcome.StartUsed, 0), adult);
+                Array.Clear(meter.Fext, 0, meter.Fext.Length);
+                Fluid.Apply(meter, _solver);
+                double up = 0;
+                for (int i = 0; i < meter.Links; i++) up += meter.Fext[6 * i + 4];
+                outcome.NetBuoyancy = up;
+            }
+
             var rec = new BodyRecord { Id = 0, Adult = adult, Dof = probe.Dof, Links = probe.Links, Parts = adult.PartCount };
             rec.JointLinks = new List<int>();
             for (int b = 1; b < probe.Links; b++) if (probe.DofCount[b] > 0) rec.JointLinks.Add(b);
@@ -652,9 +716,9 @@ namespace Evosim.SwimProbe
             rec.Parent = (int[])probe.Parent.Clone();
             rec.LimitLo = (double[])probe.LimitLo.Clone();
             rec.LimitHi = (double[])probe.LimitHi.Clone();
-            rec.StartHeight = -20.0;
+            rec.StartHeight = startHeight;
 
-            SwimResult res = Swim(rec, Variant.BrainWorld, steps, null);
+            SwimResult res = Swim(rec, passive ? Variant.Passive : Variant.BrainWorld, steps, null);
             if (res.Lost)
             {
                 outcome.Lost = true;
@@ -667,6 +731,7 @@ namespace Evosim.SwimProbe
             outcome.DominantHz = res.DominantHz;
             outcome.DominantAmp = res.DominantAmp;
             outcome.Early = res.Early;
+            outcome.Dy10 = res.Dy10;
             return outcome;
         }
 
@@ -766,6 +831,7 @@ namespace Evosim.SwimProbe
             public long FinalBits;
             public double Horizontal, Vertical, NetSpeed, PathSpeed, RootPathSpeed, Net3, PerStroke;
             public double Early = double.NaN;   // root net horizontal speed over 0..10 s, m/s; NaN under 10 s
+            public double Dy10 = double.NaN;    // root vertical displacement over 0..10 s, m, up positive; NaN under 10 s
             public double DominantHz, DominantAmp, LeadAsym;
             public double WorkWatts;
             public int ActiveJoints;
