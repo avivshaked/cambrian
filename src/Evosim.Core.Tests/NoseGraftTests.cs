@@ -76,6 +76,48 @@ namespace Evosim.Core.Tests
             }
         }
 
+        /// <summary>
+        /// The nose touches its host: the joint's anchor lies on the root's top face, both sides of the joint name one
+        /// point, and the nose's box stands on that face with its whole footprint inside it. Asked on 2026-10-27, when a
+        /// film drew the nose a body-width off the swimmer.
+        /// </summary>
+        [Fact]
+        public void TheNoseStandsOnTheHostsFaceAndItsAnchorIsOnTheHostsSurface()
+        {
+            const float tolerance = 1e-5f;
+            foreach ((string name, Genome genome) in Founders())
+            {
+                Phenotype body = Developer.Develop(Graft(genome).Genome, cellTypes: Table);
+                PhenotypePart host = body.Parts[0], nose = body.Parts[body.Parts.Count - 1];
+                Assert.Equal(ShapeIds.Box, host.ShapeId);
+                Assert.Equal(ShapeIds.Box, nose.ShapeId);
+                Assert.Equal(0, nose.ParentIndex);
+
+                // The anchor, in the host's frame, is on the top face and inside its edges.
+                Float3 h = host.HalfExtents, a = nose.ParentAnchorLocal;
+                Assert.InRange(a.Y, h.Y - tolerance, h.Y + tolerance);
+                Assert.InRange(Math.Abs(a.X), 0f, h.X + tolerance);
+                Assert.InRange(Math.Abs(a.Z), 0f, h.Z + tolerance);
+
+                // Both sides of the joint name the same point in the world.
+                Float3 fromHost = host.Position + host.Rotation.Rotate(nose.ParentAnchorLocal);
+                Float3 fromNose = nose.Position + nose.Rotation.Rotate(nose.ChildAnchorLocal);
+                Assert.True(Float3.Dot(fromHost - fromNose, fromHost - fromNose) < tolerance * tolerance,
+                    $"{name}: the joint is at {fromHost} on the host and {fromNose} on the nose");
+
+                // The nose, unturned in the host's frame, stands on that face with its whole footprint on it.
+                Quat turn = host.Rotation.Conjugate * nose.Rotation;
+                Float3 up = turn.Rotate(new Float3(0f, 1f, 0f));
+                Assert.True(up.Y > 1f - tolerance, $"{name}: the nose points along {up} in the host's frame");
+                Float3 c = host.Rotation.Conjugate.Rotate(nose.Position - host.Position);
+                Float3 n = nose.HalfExtents;
+                Assert.InRange(c.Y - n.Y, h.Y - tolerance, h.Y + tolerance);
+                Assert.True(Math.Abs(c.X) + n.X <= h.X + tolerance && Math.Abs(c.Z) + n.Z <= h.Z + tolerance,
+                    $"{name}: the nose's footprint at ({c.X}, {c.Z}) ± ({n.X}, {n.Z}) leaves the face ± ({h.X}, {h.Z})");
+                _out.WriteLine($"{name}: host {h}, nose centre {c} in the host's frame, half-extents {n}");
+            }
+        }
+
         [Fact]
         public void TheSmellLinksMoveOntoTheNoseSummedAndEveryOtherLinkIsKept()
         {
