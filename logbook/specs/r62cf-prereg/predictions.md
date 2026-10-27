@@ -1,0 +1,118 @@
+# DRAFT. The confirmation round: three new seeds of the chosen settings, and do grazers travel between oases?
+
+*Draft of 2026-10-27, the speed agent, at the coordinator's request, for the owner's ruling. Nothing launches before
+the owner's yes. The round then launches from a clean worktree at this file's final commit, after the card notice, HOLD
+and the heat watch.*
+
+## The questions
+
+The screens chose the settings one at a time, each on one or two seeds:
+- the thrust arm T16, the limb push ×16 at a sixteenth of the price (`logbook/specs/r62p2-read/24000-a/`);
+- growth as a climb in T = 60 s, with the growth-reserve gene starting at G = 30 s and juvenile strength off
+  (`logbook/specs/r62gr-read/24000/`, `logbook/specs/r62gr2-read/24000/`);
+- today's structural mutation rate (`logbook/specs/r62sm-read/24000/`).
+
+1. Do grazers make a living from living leaves on seeds the screens never saw? That is D222 on every new world.
+2. The ocean question. Do grazers travel between oases, how often and how far, and how much of their time do they
+   spend over open water?
+
+## The worlds
+
+| World | Seed |
+|---|---|
+| `r62cf-6202` | 6202 |
+| `r62cf-6203` | 6203 |
+| `r62cf-6204` | 6204 |
+
+- Each world runs 24,000 world seconds, and all three run in one card group.
+- The settings are `rounds/env-r62cf.ps1`, which is `rounds/env-r62sm-s100.ps1` unchanged: `r62p-t16`'s world, growth
+  at T = 60 and G = 30, and the seven structural chances at today's values.
+- D231's whole-assembly push and D234's twin drive stay off. Integration branch 2 is not on main yet, and neither is
+  part of the chosen settings.
+- The launcher is `rounds/launch-r62cf.ps1`.
+
+`r62sm-s100-6201` is the fourth seed, already run. Main's source at `565ade1e` is the screen's source, checked by an
+empty source diff (D243), so the same settings on seed 6201 would replay it bit for bit. The launch checks that the new
+manifests carry farm `ae99d3c2`, core `361aa924` and dynamics `29144991`. If any differs, the fourth seed is not the
+same build, and the round reads three worlds alone.
+
+No identity sitting is needed. The build is the one `r62sid` checked. Main has had no source change since, unless one
+lands before the launch. If one does, a sitting runs first.
+
+## The tests and the readouts
+
+**D222's three tests per world at 24,000 s**, by `scripts/reads/screen-read-24000.ps1 -Gene`, as in the screens.
+
+**The settings are confirmed** when every new world passes D222, or when every miss is test 2 in a summer-start window
+that holds fewer than 20 grazers. Misses in windows that small have come before: growth group 2 failed at 9 to 17
+grazers (`logbook/specs/r62gr2-read/24000/`), and `r62sm-s100-6201` at 15. A miss in a larger window, or a miss of test
+1 or 3, means the settings are not confirmed. That goes to the owner with the read.
+
+**The ocean readout is measured.** It is a description, with no bar. It comes from `scripts/reads/grazer-moves-read.py`
+at a 10 s stride, on r60-read's islands as seeded at 100 s, per world and per 3,000 s bin.
+- **Moves.** A move is a grazer seen over one island and later over another; open water between them does not count.
+  The read gives:
+  - the moves and the distinct movers;
+  - moves per 1,000 grazer-seconds;
+  - the share of bred grazers that ever move;
+  - each move's straight-line distance, the shorter way round the joined square, as quartiles;
+  - its crossing time, as quartiles;
+  - the largest move.
+- **Open water.** The share of grazer fixes over open water, with the same share for all living bodies beside it.
+- **The check.** At a 100 s stride, the move count must equal r60-read's grazer migrants per year.
+
+Beside these, as in the screens:
+- the slow-newborn share;
+- the never-ate share;
+- the deepest chain;
+- intake over upkeep;
+- r60-read's islands held at 5% or more;
+- the overshoot marks against a control world. Only seeds 6201 and 6202 have one (`r62cs-w500-6201`, `-6202`), so
+  `r62cf-6203` and `-6204` read against `r62cs-w500-6202` (`screen-read-24000.ps1 -ControlSeed 6202`). That is a
+  cross-seed comparison and is reported as one. The other way is to add `r62cs-w500-6203` and `-6204` to the group as
+  controls, at the cost of two more worlds on the card. I recommend the cross-seed read: overshoot has never come near
+  in these worlds, whose lowest leaf ratio was 0.56 (measured, `logbook/specs/r62sm-read/24000/`).
+
+## Predictions
+
+These are guesses unless marked measured.
+
+- **D222.** All three new worlds pass, or miss only test 2 in a small window (guess). `r62sm-s100-6201`'s born share
+  was 0.828, its best cohort 1.26, its chain 17 and its intake over upkeep 1.81 (measured).
+- **Moves are rare.** In `r62sm-s100-6201`, r60-read counts 7 grazer migrants in 24,000 s at a 100 s stride (measured,
+  `logbook/specs/r62sm-read/24000/r60-read-3000.txt`). At a 10 s stride I expect under 30 moves a world, and under 2% of
+  bred grazers ever moving (guess). A grazer lives a median of about 68 s (measured), shorter than a crossing between
+  oases at its speed, so few live to make one (inference).
+- **Moves are long.** The median move is over 30 m, since the islands are 5 m columns grouped into 9 islands across a
+  300 m square (guess).
+- **Open water.** About half of grazer fixes are over open water, as about half of all the living are at 24,000 s,
+  0.49 to 0.55 on the islands (measured for all the living, a guess for grazers).
+
+## What a result would mean
+
+**If the settings are confirmed and moves are rare:** grazers make a living, each on its own oasis, and the world has
+oases without migration. The aim is grazers that travel between oases. So the next design question, the owner's, is
+what makes a crossing worth its cost: food that runs out on an oasis, a season that moves it, or a longer life
+(inference).
+
+**If moves are common:** the aim is already partly met, and the next rounds can measure what drives them.
+
+## The machine
+
+- One card group of three worlds, on logical 22 to 31 at 10 threads, with the theatre's one Unity on 16 to 21.
+- The four r62sm worlds took 3 h 47 min together, at 1.1 to 1.5 times real time (measured). Three should take about
+  3.5 to 4 h (guess).
+- The exits are the screens':
+  - a world under 0.7 times real time for an hour makes the theatre give way;
+  - after 12,000 s, a world under 0.6 times real time for an hour is stopped with `scripts/stop-arm.ps1` and read at
+    its stop second;
+  - a world under half its own pace of the hour before is stopped and probed at once.
+- The read takes about 5 minutes for the screen read, then the moves read on one pinned core.
+
+## Before launch
+
+- The owner's yes.
+- This file's DRAFT mark removed, and the file committed.
+- A clean worktree at that commit, made with `git worktree add scratch/wt-r62cf`. Its Release farm is built from its
+  own clean tree, so the manifest's gitCommit names the commit.
+- The card notice to assay-d6, its clear, HOLD, the coordinator's heat watch, then the go.
