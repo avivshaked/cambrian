@@ -1,0 +1,126 @@
+slow-newborn-read.py  run D:\Projects\experiments\evolution-simulator\runs\r62sm-s100-6201\2026-10-27-111146-bcc3af98  frames D:\Projects\experiments\evolution-simulator\scratch\sm-newborn\r62sm-s100-6201\grazer-frames.tsv
+to 24000 s, window 10 s; slow = first speed under 0.03 m/s; all of it ASSOCIATION in recorded data, not cause
+definitions are genome-diff-read.py's (loaded from its source; see this file's docstring)
+bred grazers (p >= 0) 3480; with both genomes in the file 3480; born in the last 60 s and alive, left out 17
+  of the rest: with a first speed 3231, without 232
+  structure changed 1722, structure unchanged (n of the population) 1509
+POPULATION: bred grazers with a first speed and structure count 0: n 1509, slow 165, share 0.109 (README: about 999, 191, 0.19)
+
+== (a) the parent's own first speed (same rule, same age 0-10 s after the parent's birth)
+  reference (safest band with n >= 30): parent has no speed, slow rate 0.053
+  band                                    n   slow   share    excess
+  parent slow                            55      9   0.164       6.1
+  parent moving                        1360    151   0.111      78.7
+  parent has no speed                    94      5   0.053       0.0  (reference)
+  excess slow = 84.7, which is 51.4% of the population's 165 slow (association only)
+  of 'no speed': parent a founder 19, parent bred but not a grazer 0, parent a grazer without a first pair 75
+  (founder parents that did get a speed by the rule, counted in the slow/moving bands: 239 children)
+  P(child slow | parent slow)   = 9 / 55 = 0.164
+  P(child slow | parent moving) = 151 / 1360 = 0.111
+  ratio 1.47, difference 0.053
+  slow children with a slow parent: 9; of those
+    grandparent slow               0  (0.000)
+    grandparent moving             9  (1.000)
+    grandparent has no speed       0  (0.000)
+
+(b) the child's summed relative brain change against its parent: min 0, median 2.566, max 11.87; share with no brain change 0.001
+
+== (b) brain change (summed relative change, genome-diff-read's 'brain' category), quartiles of the population
+  reference (safest band with n >= 30): v < 1.654, slow rate 0.090
+  band                                    n   slow   share    excess
+  v < 1.654                             377     34   0.090       0.0  (reference)
+  1.654 <= v < 2.566                    377     35   0.093       1.0
+  2.566 <= v < 3.637                    377     48   0.127      14.0
+  v >= 3.637                            378     48   0.127      13.9
+  excess slow = 28.9, which is 17.5% of the population's 165 slow (association only)
+
+(c) first frame's age after birth: median 5.0 s (the first frame is on the world's 10 s grid, so J and bf depend partly on how late it came)
+
+== (c1) body fraction bf at the child's first frame (bf 1 is adult size), quartiles of the population
+  reference (safest band with n >= 30): v < 0.6145, slow rate 0.074
+  band                                    n   slow   share    excess
+  v < 0.6145                            377     28   0.074       0.0  (reference)
+  0.6145 <= v < 0.6845                  360     44   0.122      17.3
+  0.6845 <= v < 0.7204                  388     47   0.121      18.2
+  v >= 0.7204                           384     46   0.120      17.5
+  excess slow = 52.9, which is 32.1% of the population's 165 slow (association only)
+
+== (c2) reserve J (joules) at the child's first frame, quartiles of the population
+  reference (safest band with n >= 30): v < 21.98, slow rate 0.069
+  band                                    n   slow   share    excess
+  v < 21.98                             377     26   0.069       0.0  (reference)
+  21.98 <= v < 28.62                    377     50   0.133      24.0
+  28.62 <= v < 33.05                    377     50   0.133      24.0
+  v >= 33.05                            378     39   0.103      12.9
+  excess slow = 60.9, which is 36.9% of the population's 165 slow (association only)
+
+== (c3, extra, not ranked) body fraction at birth, from the lineage birth row 'bf', quartiles
+  reference (safest band with n >= 30): 0.65 <= v < 0.65, slow rate 0.061
+  band                                    n   slow   share    excess
+  v < 0.5743                            377     27   0.072       4.1
+  0.5743 <= v < 0.65                    299     33   0.110      14.8
+  0.65 <= v < 0.65                      115      7   0.061       0.0  (reference)
+  v >= 0.65                             718     98   0.136      54.3
+  excess slow = 73.1, which is 44.3% of the population's 165 slow (association only)
+
+(d) dleafh is metres, horizontal, root to the nearest living leaf's root, at the child's first frame (newborn-extract.py). The README's horizontal median for slow-or-not newborns is 0.53 m, its 3D median 1.45 m, so the 1.4 m edge here, from the 3D figure, falls in the far tail of a horizontal distance. Bands are the ones asked for, in the same unit.
+
+== (d) birth place: horizontal distance to the nearest living leaf at the first frame
+  reference (safest band with n >= 30): dleafh < 0.3 m, slow rate 0.079
+  band                                    n   slow   share    excess
+  dleafh < 0.3 m                        277     22   0.079       0.0  (reference)
+  0.3 <= dleafh <= 1.4 m               1183    139   0.117      45.0
+  dleafh > 1.4 m                         49      4   0.082       0.1
+  excess slow = 45.2, which is 27.4% of the population's 165 slow (association only)
+
+== (extra, not ranked) jointed at birth (lineage birth row 'jnt')
+  reference (safest band with n >= 30): jnt 1, slow rate 0.109
+  band                                    n   slow   share    excess
+  jnt 1                                1509    165   0.109       0.0  (reference)
+  excess slow = 0.0, which is 0.0% of the population's 165 slow (association only)
+
+== (e) the measure
+  histogram of first speeds, m/s, population n 1509 (slow is < 0.03)
+    0.00-0.01     87    5.8%  cumulative   5.8%  ###
+    0.01-0.02     48    3.2%  cumulative   8.9%  ##
+    0.02-0.03     30    2.0%  cumulative  10.9%  #
+    0.03-0.04     28    1.9%  cumulative  12.8%  #
+    0.04-0.05     28    1.9%  cumulative  14.6%  #
+    0.05-0.06     24    1.6%  cumulative  16.2%  #
+    0.06-0.07     30    2.0%  cumulative  18.2%  #
+    0.07-0.08     24    1.6%  cumulative  19.8%  #
+    0.08-0.09     41    2.7%  cumulative  22.5%  ##
+    0.09-0.10     35    2.3%  cumulative  24.9%  #
+    >= 0.10     1134   75.1%  cumulative 100.0%  #############################################
+  exactly 0 m/s: 0
+
+  the 165 slow children's later speeds, first frame pair starting at each age, by the same straight-line rule
+    pair starting at age 10-30 s: 165 of 165 have one; median 0.0190 m/s; 57 at or above 0.03 (0.345)
+    pair starting at age 30-60 s: 151 of 165 have one; median 0.0340 m/s; 83 at or above 0.03 (0.550)
+    class                                                n   dead med age dead (age at death in seconds from birth, lineage)
+    late starters (a pair at or above 0.03 by 60 s)     90     90         68.8
+    stayers (pairs found, all under 0.03)               75     75         54.5
+    no later pair (dead or gone)                         0      0          nan
+
+  bred grazers with no first speed (genome and parent genome in the file, not born in the last 60 s and alive): 232 (README: 554)
+    ate share, no speed: 168 / 232 = 0.724;  ate share, with a speed: 2231 / 3231 = 0.690
+    of the no-speed: dead 230, median age at death 55.2 s
+    (not in the above: 0 bred grazers without both genomes, 0 of them with a first speed by the rule)
+
+== overlap of the two causes with the largest excess (ranked: parent, brain, bf, J, place; association only)
+  parent   excess slow    84.7
+  J        excess slow    60.9
+  bf       excess slow    52.9
+  place    excess slow    45.2
+  brain    excess slow    28.9
+  the excess depends on how a cause is cut into bands (4 quartile bands against 3 for the parent and place); treat the ranking as rough
+  cells: a cause is 'risky' when the child's band there has a slow share above the population's (0.109)
+    parent risky bands: parent moving; parent slow
+    J risky bands: 21.98 <= v < 28.62; 28.62 <= v < 33.05
+
+  rows: parent; columns: J
+                         | J not risky                          | J risky                             
+  parent not risky       | n   42  slow    2  share 0.048       | n   52  slow    3  share 0.058      
+  parent risky           | n  713  slow   63  share 0.088       | n  702  slow   97  share 0.138      
+
+All of the above is association in recorded data. Nothing here separates a cause from what travels with it.
