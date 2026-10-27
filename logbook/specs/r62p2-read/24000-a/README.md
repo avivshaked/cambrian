@@ -60,7 +60,10 @@ are from `logbook/specs/r62p-read/24000-t3/` and `24000-k3/`.
 ## What follows
 
 By the pre-registration's own rule, `r62p-w9` does not match `r62p-t3`, so cost alone did not carry the thrust arm.
-The group's remaining question, whether the pace factor at 3 does as well once its strokes are cheap, is `r62p-k3w9`'s,
-in part b. If it fails test 1 too, the file's last rule applies: the speed the thrust buys is what feeds the grazers.
+The group's remaining question was whether the pace factor at 3 does as well once its strokes are cheap. That was part
+b's, `r62p-k3w9`. The owner ruled on 2026-10-27, on the coordinator's recommendation, to drop part b: `r62p-t16`'s
+strong pass answered the pace question, and the pace factor at 3 can be revisited later. So part b was
+pre-registered and not run, and this read is the group's last. The thrust arm, not the pace factor, carries the
+screens on.
 `r62p-t16`'s push of 16 is the strongest world in the record so far, and it has not overshot. So a push past it is
 still open within the owner's delegation of 2026-10-24 to overshoot and roll back (inference).

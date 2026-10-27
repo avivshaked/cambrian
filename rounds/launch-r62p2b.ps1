@@ -1,4 +1,6 @@
-﻿# D239's pace screen, group 2, part b (logbook/specs/r62p2-prereg/predictions.md, "The machine"), from scratch/wt-pace
+﻿# UNUSED: part b was dropped by the owner's ruling of 2026-10-27 (logbook/specs/r62p2-prereg/predictions.md, "Part b was
+# not run"), so -ConfigHash below was never set and this launcher was never started. Kept for the record.
+# D239's pace screen, group 2, part b (logbook/specs/r62p2-prereg/predictions.md, "The machine"), from scratch/wt-pace
 # with the pre-registration's commits merged in: the group's world at the pace factor 3, r62p-k3w9-6201, founded alone
 # for 24,000 s on seed 6201 (rounds/env-r62p-k3w9.ps1), through scripts/card/card-run.ps1, since card-group.ps1 refuses
 # one world. The snow's transport on the card, group 32, the heat stop on, checkpoints every 1,500 s, on logical 16 to
