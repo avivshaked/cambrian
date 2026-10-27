@@ -9735,3 +9735,18 @@ in any condition set for the world.
 - D245's energy sense lands in the same build. The build sits on top of integration branch 2, so nothing is merged twice (D243).
 
 **Why.** `r62cf` showed a world with oases and no migration: a crossing takes a median of 140 to 230 s against a grazer's life of about 60 to 67 s, and 5 to 13 grazers moved in each world over 24,000 s. Fat is the reserve a migrant crosses on. The specification's reasoning for each value stands, in its sections, and is not repeated here.
+
+### D248
+**Integration branch 2 lands on main after its card identity sitting** · 2026-10-27
+
+**Status:** approved by the coordinator on 2026-10-27, under D243, which set the order. Agent work under the standing delegation; nothing is pushed.
+
+**Decision.**
+- Branch `integration-2` (D231's stroke on the whole assembly, D234's mirrored twin drive) lands on main as one merge (`477c2459`), from `8f1b82b8`. Both are behind switches that are off by default: `EVOSIM_STROKE_ASSEMBLY`, and the twin drive rides on D228's `EVOSIM_REFLECT_MIRRORED_ANCHORS`.
+- It landed on the sitting's pass (`logbook/specs/int2-identity/`). With every switch off, the build steps `r62cf`'s three worlds bit for bit, at `r62cf`'s pace. Each switch on is identical at groups 32 and 64, and changes its world.
+- The crowd fixture is `runs/cefix-s4/2026-10-27-220008-7bc16123`, named in `RunFixture.cs`.
+- Main's source after the merge equals `8f1b82b8`'s, so the host suites run there stand: Core 1,620 with the slow tests, Dynamics 403 with 1 skip, Farm 412 without `GpuMeanTests`, and the CPU accelerator 32.
+- `GpuMeanTests` crashes the CPU accelerator at every core count. It does the same at `df2bf3b8`, so it is not integration branch 2's.
+- D243's next step follows: the nursery's configs are brought forward once. Fat (D247) is built on the landed main.
+
+**Why.** D243 set this order so the fixture is re-recorded and the card sitting run once, on the final tree. Both are done.
