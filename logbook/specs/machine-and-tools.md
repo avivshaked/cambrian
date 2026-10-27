@@ -146,6 +146,13 @@ The root file's rules still apply. The entries below were moved word for word, s
     compile ignores the thread count and uses every core in its affinity mask, which is how 14-core masks
     reached 89 °C twice that day. Each job in a HOLD window runs on a mask of four cores (for example
     `0xF0000` or `0xF00000`), with at most two such lanes at once and their compiles staggered.
+  - **Memory is committed by idle sessions, not only by runs.** On 2026-10-27 at 09:58 the machine had 63.7 GB of
+    RAM with 17.7 GB free, and 90.8 of 103.7 GB committed. Growth group 2's farm process held 7.4 GB. Twenty
+    `claude.exe` processes, from sessions opened between 2026-10-23 and 2026-10-25, held about 10 GB between them,
+    and each Claude Code session's own `narration.mcp` Python held about 1.06 GB. VS Code's 42 processes held
+    16.8 GB. The owner asked that day that stray processes be watched (the owner, 2026-10-27), so each look at
+    the machine reads committed memory beside the heat. Closing an idle session frees about 1.5 to 2.5 GB with
+    its helpers, and which sessions close is the owner's choice.
   - **A helper command starts pinned while a card run is up.** On 2026-10-27 at 07:43:11 the CPU read
     88 °C for one second at 156 W, beside growth group 2 on 22 to 31. The theatre's renders on 16 to 21
     peaked at 80 °C that half hour. The spike came from the theatre agent's own helper commands, unpinned
