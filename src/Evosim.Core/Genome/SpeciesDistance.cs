@@ -272,6 +272,18 @@ namespace Evosim.Core
                 RelativeDiff(a.Reproduction.GestationShare, b.Reproduction.GestationShare);
             if (gestation != 0f) units += gestation;
 
+            // D241. The growth-reserve gene, on its logarithm as a mutation steps it, over its
+            // range. The range is the default's (RunConfig.GrowthReserveMinSeconds and
+            // GrowthReserveMaxSeconds): a distance is a pure function of two genomes and has no
+            // config to ask. Its own statement, and only when both carry the gene, so a pair
+            // without it adds exactly nothing and every recorded world's species replay.
+            if (a.GrowthReserveSeconds.HasValue && b.GrowthReserveSeconds.HasValue)
+            {
+                units += LogGap(
+                    a.GrowthReserveSeconds.Value, b.GrowthReserveSeconds.Value,
+                    GrowthReserveRangeMin, GrowthReserveRangeMax);
+            }
+
             int minNodes = Math.Min(a.Nodes.Count, b.Nodes.Count);
             for (int i = 0; i < minNodes; i++)
             {
@@ -291,10 +303,10 @@ namespace Evosim.Core
                 units += Math.Abs(na.BuoyancyOffset - nb.BuoyancyOffset) / 2f;
 
                 // D233. Two family nodes differ by their three genes, each on its logarithm, since a
-                // mutation steps the logarithm, and each over its whole range counting one unit, as an
-                // anchor's does. A family node against a named one already counts its shape mismatch
-                // above. Nothing is added unless both carry a form, so every distance in the record
-                // keeps its bits.
+                // mutation steps the logarithm, and the mean of the three over their ranges counts one
+                // unit at opposite corners of all three, as a shape mismatch does. A family node
+                // against a named one already counts its shape mismatch in the topology term. Nothing
+                // is added unless both carry a form, so every distance in the record keeps its bits.
                 if (!na.Form.IsNone && !nb.Form.IsNone) units += FormUnits(na.Form, nb.Form);
 
                 int minLimits = Math.Min(na.JointLimits.Length, nb.JointLimits.Length);
@@ -379,13 +391,23 @@ namespace Evosim.Core
 
         /// <summary>
         /// Two family forms' distance, D233: for each gene the gap between the logarithms over the
-        /// logarithm of its range, so each gene is in <c>[0, 1]</c> inside the ranges and the three sum
-        /// to at most 3, as three scalar fields do.
+        /// logarithm of its range, so each gene is in <c>[0, 1]</c> inside the ranges, and the mean of
+        /// the three, so opposite corners of all three ranges are exactly one unit, the same as a
+        /// shape mismatch.
         /// </summary>
         private static float FormUnits(PartForm a, PartForm b) =>
-            LogGap(a.Profile, b.Profile, PartForm.ProfileMin, PartForm.ProfileMax) +
-            LogGap(a.Section, b.Section, PartForm.SectionMin, PartForm.SectionMax) +
-            LogGap(a.Taper, b.Taper, PartForm.TaperMin, PartForm.TaperMax);
+            (LogGap(a.Profile, b.Profile, PartForm.ProfileMin, PartForm.ProfileMax) +
+             LogGap(a.Section, b.Section, PartForm.SectionMin, PartForm.SectionMax) +
+             LogGap(a.Taper, b.Taper, PartForm.TaperMin, PartForm.TaperMax)) / 3f;
+
+        /// <summary>
+        /// D241: the range the growth-reserve gene's gap is judged over, in seconds. These are the
+        /// defaults of <see cref="RunConfig.GrowthReserveMinSeconds"/> and
+        /// <see cref="RunConfig.GrowthReserveMaxSeconds"/>; a world that moves its range does not
+        /// move this, so the gap is a unit of the default's range and is comparable across worlds.
+        /// </summary>
+        private const float GrowthReserveRangeMin = 1f;
+        private const float GrowthReserveRangeMax = 300f;
 
         private static float LogGap(float x, float y, float min, float max) =>
             (float)(Math.Abs(Math.Log(x) - Math.Log(y)) / Math.Log(max / min));

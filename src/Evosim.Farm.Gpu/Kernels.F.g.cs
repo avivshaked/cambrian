@@ -242,6 +242,7 @@ namespace Evosim.Farm.Gpu.Sgl
         public int AnyRemains;   // D220: 1 for a block in which some body is remains; 0 reads no remains flag at all
         public int TrueShape;    // D228: a part touches as its convex core with a margin (SolverConfig.ContactShape)
         public int AtPoint;      // D228 level (b): with TrueShape, the force acts at the contact point (ContactShapeForm.TrueShapeAtPoint)
+        public int Paced;        // D239: 1 when the pace factor is not 1; 0 divides nothing and the water is stored as it was sampled
 
         public long TraceStep;
         public double TraceTime, DtD, PoseOmega, GripDecay, GripThreshold, GripLag;
@@ -258,6 +259,7 @@ namespace Evosim.Farm.Gpu.Sgl
         public Real BedRadius, BedDepth, TiltX, TiltZ, Offset, ShoalHeight;
 
         public Real CurDepth, CurTankR, EddyWeight, Overturning, PerSecond, Squared, ShoreDepth, ShoreFadeW;
+        public Real Pace, PaceSquared;   // D239: the pace factor and its square, which the stored water is divided by when Paced
         public Real HalfThickness, Fillet, ReefFade;
 
         // D194's coral (CoralRock): its colonies, 0 without; the fade, its floor, the fillet, the grid's cell and
@@ -5616,9 +5618,22 @@ namespace Evosim.Farm.Gpu.Sgl
 
             float wx, wy, wz;
             VelocityAt(x, y, z, w, ib, cfg, out wx, out wy, out wz);
-            s.Water[a] = wx;
-            s.Water[a + N] = wy;
-            s.Water[a + 2 * N] = wz;
+
+            // D239, as Water.Store on the host: the world's metres per world second over k, in the
+            // arithmetic of the stored column. Unpaced, the sample is stored as it was.
+            if (cfg.Paced == 0)
+            {
+                s.Water[a] = wx;
+                s.Water[a + N] = wy;
+                s.Water[a + 2 * N] = wz;
+            }
+            else
+            {
+                Real pace = cfg.Pace;
+                s.Water[a] = (Real)wx / pace;
+                s.Water[a + N] = (Real)wy / pace;
+                s.Water[a + 2 * N] = (Real)wz / pace;
+            }
 #if GPU_PHASE_PROBE
             LinkMark(gl, cfg, row, 1, ref clk);
 #endif
@@ -5633,9 +5648,21 @@ namespace Evosim.Farm.Gpu.Sgl
 
             float ax, ay, az;
             AccelerationAt(x, y, z, w, ib, cfg, out ax, out ay, out az);
-            s.WaterAcc[a] = ax;
-            s.WaterAcc[a + N] = ay;
-            s.WaterAcc[a + 2 * N] = az;
+
+            // The acceleration over k squared, the same way.
+            if (cfg.Paced == 0)
+            {
+                s.WaterAcc[a] = ax;
+                s.WaterAcc[a + N] = ay;
+                s.WaterAcc[a + 2 * N] = az;
+            }
+            else
+            {
+                Real paceSquared = cfg.PaceSquared;
+                s.WaterAcc[a] = (Real)ax / paceSquared;
+                s.WaterAcc[a + N] = (Real)ay / paceSquared;
+                s.WaterAcc[a + 2 * N] = (Real)az / paceSquared;
+            }
 #if GPU_PHASE_PROBE
             LinkMark(gl, cfg, row, 2, ref clk);
 #endif
@@ -13552,6 +13579,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 Anchoring = w.AnchorCell != null ? 1 : 0,
                 GripDecay = w.GripDecay, GripThreshold = w.GripThreshold, GripLag = w.GripLag,
 
+                Paced = w.Paced ? 1 : 0, Pace = (Real)w.Pace, PaceSquared = (Real)w.PaceSquared,
                 DtD = w.Dt, PoseOmega = w.PoseOmega,
                 PushOmega = (Real)w.PushOmega, LimbPush = (Real)w.LimbPush,
                 NegSkin = (Real)w.NegSkin, NegSpin = (Real)w.NegSpin,
@@ -14223,7 +14251,9 @@ namespace Evosim.Farm.Gpu.Sgl
             _base.LeafNz = leaf == null ? 1 : leaf.CellsZ;
             _base.LeafCell = leaf == null ? 1f : leaf.CellSizeMetres;
 
-            double dt = world.Config.StepSeconds;
+            // D239: the instants are the world's clock, which steps by dt over the pace factor (dt itself
+            // at a factor of 1), exactly as DynamicsWorld.BackendAdvanceClock advances it.
+            double dt = world.Config.ClockStepSeconds;
             double seconds = world.ElapsedSeconds;
             for (int k = 0; k < steps; k++)
             {

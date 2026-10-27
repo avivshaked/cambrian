@@ -30,17 +30,17 @@ namespace Evosim.Nursery.Tests
         /// </summary>
         private string UnloadableRecipe()
         {
-            string config = File.ReadAllText(Path.Combine(Real, "configs", "b2885199f9213276.json")).Replace("\r\n", "\n");
+            string config = File.ReadAllText(Path.Combine(Real, "configs", "613ca725c30288c0.json")).Replace("\r\n", "\n");
             string line = "    \"" + MissingKey + "\": 0,\n";
             Assert.Contains(line, config);
             string configPath = Path.Combine(_dir, "old-world.json");
             File.WriteAllText(configPath, config.Replace(line, ""));
             string rel = Path.GetRelativePath(Root, configPath).Replace("\\", "/");
-            string recipe = File.ReadAllText(Path.Combine(Real, "brain2-w7.json")).Replace("\r\n", "\n");
-            string from = "\"config\": \"rounds/nursery/configs/b2885199f9213276.json\"";
+            string recipe = File.ReadAllText(Path.Combine(Real, "brain2-w8.json")).Replace("\r\n", "\n");
+            string from = "\"config\": \"rounds/nursery/configs/613ca725c30288c0.json\"";
             Assert.Contains(from, recipe);
             string path = Path.Combine(_dir, "old-world-recipe.json");
-            File.WriteAllText(path, recipe.Replace(from, "\"config\": \"" + rel + "\"").Replace("\"name\": \"brain2-w7\"", "\"name\": \"old-world\""));
+            File.WriteAllText(path, recipe.Replace(from, "\"config\": \"" + rel + "\"").Replace("\"name\": \"brain2-w8\"", "\"name\": \"old-world\""));
             return path;
         }
 
@@ -82,7 +82,7 @@ namespace Evosim.Nursery.Tests
             Recipe r = Recipe.Read(path);
             Assert.Equal("old-world", r.Name);
             Assert.Equal(18, r.Controls.Count);
-            Assert.Equal("b2885199f9213276", r.ConfigHash);
+            Assert.Equal("613ca725c30288c0", r.ConfigHash);
             Assert.False(string.IsNullOrEmpty(r.Hash()));
             Assert.Contains("old-world.json", r.Canonical());   // the canonical text names the config's path, never its contents
 
@@ -97,7 +97,7 @@ namespace Evosim.Nursery.Tests
         [Fact]
         public void ARecipeThatReadRefusesIsRefusedByReadToo()
         {
-            string text = File.ReadAllText(Path.Combine(Real, "brain2-w7.json")).Replace("\"seed\": \"0x1\"", "\"sed\": \"0x1\"");
+            string text = File.ReadAllText(Path.Combine(Real, "brain2-w8.json")).Replace("\"seed\": \"0x1\"", "\"sed\": \"0x1\"");
             Assert.Contains("sed", text);
             string path = Path.Combine(_dir, "bad.json");
             File.WriteAllText(path, text);

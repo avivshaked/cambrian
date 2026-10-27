@@ -105,6 +105,24 @@ namespace Evosim.Farm.Tests
         }
 
         [Fact]
+        public void ThePaceFactorIsRefusedByName()
+        {
+            // D239: a world is resumed at the pace it was written at, so a cousin's edited config
+            // cannot turn the factor either.
+            RunConfig source = Source();
+            RunConfig edited = RunConfigJson.Read(RunConfigJson.Write(source));
+            edited.WorkCostMultiplier = 2f;
+            edited.PaceFactor = 3f;
+
+            var e = Assert.Throws<InvalidOperationException>(() =>
+                CousinConfig.Build(source, Saved(edited, "pace"), false, out _));
+
+            string refused = e.Message.Substring(e.Message.IndexOf("also changes", StringComparison.Ordinal));
+            Assert.Contains("physics.", refused);
+            Assert.Contains("pacefactor", refused.ToLowerInvariant());
+        }
+
+        [Fact]
         public void TheTrickleFallsToZeroOnlyUnderItsSwitch()
         {
             RunConfig source = Source();

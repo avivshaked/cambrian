@@ -196,9 +196,15 @@ namespace Evosim.Farm
             int stepsPerMetabolic = (int)Math.Round(EnvBinding.MetabolicStepSeconds / physicsDt);
             float metabolicStep = stepsPerMetabolic * physicsDt;
 
+            // D239. Above a pace factor of 1 the metabolic step is still 0.5 world seconds, and the
+            // physics step is named beside the factor; at 1 the line is every recorded header's.
+            bool paced = config.PaceFactor != 1f;
+            if (paced) metabolicStep = EnvBinding.MetabolicStepSeconds;
+
             return
                 "engine=" + (engine ?? RunManifest.EngineName) + " " + (engineVersion ?? "unknown") +
                 " · dt=" + F(physicsDt) +
+                (paced ? " · pace factor " + F(config.PaceFactor) : "") +
                 " · metabolic step " + F(metabolicStep) +
                 " s · seed " + s.Seed.ToString(Inv) + " · idle " + F(s.Idle) + " W/N·m · power " +
                 F(s.MinPower) + "-" + F(s.MaxPower) +
@@ -488,6 +494,18 @@ namespace Evosim.Farm
                       " at " + F(config.Mutation.LifespanChance)
                     : "off") +
                 RoundFiftyNineToken(config) +
+
+                // D233's two, on the end and only when a world departs from the recorded one, so
+                // every other line is what it was.
+                (config.Shapes.ToString() != PartShapeRegistry.Standard.ToString()
+                    ? " · shapes " + string.Join(",", config.ShapeIds)
+                    : "") +
+                (config.Mutation.FormChance > 0f ? " · form mut " + F(config.Mutation.FormChance) : "") +
+
+                // D241's climb, after the family and before the hash, and only when the world has it or
+                // can mutate the gene, so every other line is what it was.
+                ClimbToken(config) +
+                (config.JuvenileStrengthScales ? " · juvenile strength scaled" : "") +
                 " · configHash `" + config.Hash() + "`" +
                 // D159's exchange, after the hash because it is a farm setting and no part of the
                 // config, and only in a migrating world, so every other line is what it was. A lone
@@ -495,6 +513,28 @@ namespace Evosim.Farm
                 (s.MigrateEvery > 0f
                     ? " · exchange every " + F(s.MigrateEvery) + " s x " + s.MigrateCount.ToString(Inv)
                     : "");
+        }
+
+        /// <summary>
+        /// D241's header token: the time to adulthood T, in world seconds and in the consumer's
+        /// metabolic clocks (<see cref="CellType.MetabolicClockSeconds"/>), the gene's start and range,
+        /// and its mutation chance. Empty unless T is above 0 or the chance is.
+        /// </summary>
+        public static string ClimbToken(RunConfig config)
+        {
+            if (!(config.GrowthAdultSeconds > 0f) && !(config.Mutation.GrowthReserveChance > 0f)) return "";
+
+            string clocks = "";
+            if (config.CellTypes.Contains(CellTypeIds.Consumer))
+            {
+                double clock = CellType.MetabolicClockSeconds(config.CellTypes.Resolve(CellTypeIds.Consumer));
+                clocks = " (" + (config.GrowthAdultSeconds / clock).ToString("0.00", Inv) + " consumer clocks)";
+            }
+
+            return " · climb T " + F(config.GrowthAdultSeconds) + " s" + clocks +
+                   " reserve " + F(config.GrowthReserveStartSeconds) + " s [" +
+                   F(config.GrowthReserveMinSeconds) + "-" + F(config.GrowthReserveMaxSeconds) + "]" +
+                   " mut " + F(config.Mutation.GrowthReserveChance);
         }
 
         /// <summary>

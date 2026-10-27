@@ -122,6 +122,29 @@ namespace Evosim.Dynamics
         /// <summary>The step the drivers are conditioned at. Gates both stabilisers.</summary>
         public double StepSeconds = 0.01;
 
+        /// <summary>
+        /// D239's pace factor k, <c>RunConfig.PaceFactor</c>: physics seconds in one world second.
+        /// 1 is every world before it, and then no code below enters a multiplication by it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>It changes the solver's clock and the water it samples, and nothing else.</b>
+        /// <see cref="StepSeconds"/> stays the physics step, so every force, the limiters, the
+        /// drag, buoyancy and gravity are what they were. <see cref="DynamicsWorld.ElapsedSeconds"/>
+        /// advances by <see cref="ClockStepSeconds"/>, a step in world seconds, and the current is
+        /// pinned and sampled at that clock; <c>Water.Sample</c> then divides the water's velocity
+        /// by k and its acceleration by k², which is the same water in metres per physics second.
+        /// </para>
+        /// </remarks>
+        public double PaceFactor = 1.0;
+
+        /// <summary>
+        /// What the solver's clock advances by in a step: <see cref="StepSeconds"/> itself at a
+        /// pace factor of 1, and that over the factor above it. The one place a step is turned into
+        /// world seconds, for the CPU solver and for a backend alike.
+        /// </summary>
+        public double ClockStepSeconds => PaceFactor == 1.0 ? StepSeconds : StepSeconds / PaceFactor;
+
         /// <summary><c>RunConfig.DriveLimitAtEveryStep</c>.</summary>
         public bool DriveLimitAtEveryStep;
 
@@ -358,6 +381,7 @@ namespace Evosim.Dynamics
                 PatchCount = (int)config.HorizontalPatches,
 
                 StepSeconds = stepSeconds,
+                PaceFactor = config.PaceFactor,
                 DriveLimitAtEveryStep = config.DriveLimitAtEveryStep,
                 DragLimitByWeldedBody = config.DragLimitByWeldedBody,
                 DragLimitAtEveryStep = config.DragLimitAtEveryStep,

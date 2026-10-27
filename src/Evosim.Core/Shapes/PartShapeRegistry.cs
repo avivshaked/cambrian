@@ -48,8 +48,28 @@ namespace Evosim.Core
             }
         }
 
+        /// <summary>
+        /// The default world list: box, sphere, capsule. It is what a run draws shapes from unless
+        /// <see cref="RunConfig.ShapeIds"/> names others, and it is the one list whose config hash and
+        /// genome files predate D233's family.
+        /// </summary>
         public static readonly PartShapeRegistry Standard =
             new PartShapeRegistry(new BoxShape(), new SphereShape(), new CapsuleShape());
+
+        /// <summary>
+        /// Every shape the build knows, one of each id: box, sphere, capsule and the superellipsoid
+        /// family — D233.
+        /// </summary>
+        /// <remarks>
+        /// <b>For geometry only.</b> A shape's geometry has one answer per id, so a caller that asks
+        /// "what does this id measure as" (development, scaling, the drag panels, the solver) may resolve
+        /// against the catalogue whatever the world allows. Membership stays the world's: the mutation
+        /// draw and <see cref="Genome.Validate"/> take <see cref="RunConfig.Shapes"/>, never this list.
+        /// <see cref="RunConfig.ShapeIds"/> builds a world's list from it.
+        /// </remarks>
+        public static readonly PartShapeRegistry Catalogue =
+            new PartShapeRegistry(
+                new BoxShape(), new SphereShape(), new CapsuleShape(), new SuperellipsoidShape());
 
         public int Count => _shapes.Length;
 

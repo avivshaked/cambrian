@@ -1,0 +1,114 @@
+{
+  "format": 1,
+  "name": "leaf-direction-patches-w8",
+  "description": "leaf-direction-patches-w8 is leaf-direction-patches-w7 on the pace build's world config format (physics.paceFactor, D239, at 1, which leaves the world as it was): its world config is 9fa947462638667c's successor 9d9aca71c61bd36c. Every other setting as leaf-direction-patches-w7, whose description was: leaf-direction-patches on integration-1's world config format (mouth.killSwallowsBody, D232, at false, which leaves the world as it was): its world config is e80c201e54b3963f's successor 9fa947462638667c, which is e6bdb9c74cb48742's config (the one leaf-direction-patches named) on round 60's format (world.matterIslandGlassMarginMetres (D185) at 0, as e80c201e54b3963f) with mouth.killSwallowsBody (D232) that integration-1 added, at false, and the 45 tunables the round-62 build added, the 27 coral keys (D194's branching coral; coral.reefShape at Mushroom and its dials at their defaults), development.reflectMirroredAnchors (D228), development.scaleLengthensOnce (D199), feeding.plantsKeepMatter (D206), feeding.plantsKeepOwnFirst (D207), field.corpseHalfLifeSeconds (D212), fluid.shapedAddedMass (D229), mouth.biteDamageScale (D226), mouth.biteTakesStore (D224), mouth.contactEating (D219, D220), mouth.intakeReachFromMouth (D214), mouth.intakeScale, mouth.remainsWindowSeconds (D220), physics.dragLimitAtEveryStep (D196, D199), physics.dragLimitByWeldedBody (D199), world.contactShape (D228), world.matterBurialDesertPerSecond (D190), world.readAcrossSeams (D204) and world.seedOverrides (D192), at their defaults; all of them leave the tank as it was. Every other setting as leaf-direction-patches, whose description was: D182's patchy tank (laid out as D184 approved): leaf-direction-return in a tank of 3,400 m2 in place of 400 m2, its 31 leaves in 3 equal patches of 6 m radius whose centres lie 120 degrees apart on a ring of 21 m about the axis, the ring turned by an angle each episode draws, so 24 m of bare water lies between patches and 6 m between each patch and the glass. The bred bodies start anywhere in the tank. The score (EnergyReturn), the prices, the founders and their brains, the body search, the stop on eaten and the exam are leaf-direction-return's.",
+  "seed": "0x1",
+  "world": {
+    "config": "rounds/nursery/configs/9d9aca71c61bd36c.json",
+    "configHash": "9d9aca71c61bd36c",
+    "overrides": {
+      "AgeHazardBaseSeconds": 0,
+      "AgeRepairExponent": 0,
+      "AgeingPerBirth": 0,
+      "AgeingPerWound": 0,
+      "BedShoreDepthMetres": 0,
+      "BedShoreFadeMetres": 0,
+      "BedTiltMetres": 0,
+      "Fluid.SpinDragCoefficient": 0.5,
+      "Fluid.TurningDrag": "Spin",
+      "FoundingTricklePerSecond": 0,
+      "FoundingTricklePoolCount": 0,
+      "FoundingTricklePoolHash": "",
+      "FoundingTricklePoolShare": 0,
+      "InitialMatterPerCubicMetre": 0,
+      "LeafScent": "Direction",
+      "LeafScentRangeMetres": 6,
+      "MatterBudgetUnits": 0,
+      "MatterIslandWavelengthMetres": 0,
+      "ReefCover": 0,
+      "UnbittenDeathsLeaveNoCorpse": true,
+      "WorldAreaSquareMetres": 3400
+    }
+  },
+  "bodies": {
+    "source": "pool",
+    "founders": 0,
+    "trunk": null,
+    "pool": "rounds/nursery/pools/410a70db44a4b20a.tsv",
+    "keep": null,
+    "brains": "kept"
+  },
+  "setup": {
+    "seconds": 1800,
+    "dt": 0.01,
+    "tankSize": 8,
+    "floorClosed": true,
+    "birthsHeld": true,
+    "snow": null,
+    "carrion": {
+      "count": 0,
+      "joules": 40
+    },
+    "start": {
+      "aboveBed": 11.5
+    },
+    "purse": {
+      "rule": "grown",
+      "seconds": 3830
+    }
+  },
+  "leaves": {
+    "pool": "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz",
+    "count": 31,
+    "spentUnitsPerCubicMetre": 0.004237,
+    "patches": {
+      "count": 3,
+      "radius": 6,
+      "ring": 21
+    }
+  },
+  "search": {
+    "population": 48,
+    "draws": 8,
+    "generations": 60,
+    "elites": 8,
+    "tournament": 3,
+    "perBody": true,
+    "evolve": "kind",
+    "evolveEnvelope": false,
+    "crossover": null,
+    "stop": {
+      "measure": "eaten",
+      "window": 5,
+      "gain": 0.05,
+      "over": 10,
+      "floor": 20
+    }
+  },
+  "reward": {
+    "class": "EnergyReturn",
+    "parameters": {
+      "chargeDeathToEnd": true
+    }
+  },
+  "exam": {
+    "episodes": 32,
+    "salt": "0x62656e6368",
+    "controls": [
+      {
+        "kind": "own"
+      },
+      {
+        "kind": "brainless"
+      },
+      {
+        "kind": "knockout",
+        "channels": [
+          "LeafScent",
+          "LeafScentDirection"
+        ]
+      }
+    ],
+    "pool": "tops"
+  }
+}

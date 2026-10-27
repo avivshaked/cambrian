@@ -59,8 +59,16 @@ namespace Evosim.Core.Tests
                 // D117's pool hash, the one scalar string, at the only non-empty shape it takes.
                 else if (p.PropertyType == typeof(string)) p.SetValue(config, new string('b', 64));
 
-                // D192's seed overrides, the one list directly on RunConfig, in the only shape it takes.
-                else if (p.PropertyType == typeof(string[])) p.SetValue(config, new[] { "landscape=3" });
+                // D192's seed overrides, in the only shape they take, and D233's shape ids, which take
+                // only shape ids: the lists directly on RunConfig.
+                else if (p.PropertyType == typeof(string[]))
+                {
+                    p.SetValue(
+                        config,
+                        p.Name == nameof(RunConfig.ShapeIds)
+                            ? new[] { ShapeIds.Box, ShapeIds.Sphere, ShapeIds.Capsule, ShapeIds.Superellipsoid }
+                            : new[] { "landscape=3" });
+                }
 
                 // A scalar enum, moved to any member but the one it holds. Skipping enums is how
                 // a knob written by name gets to be in the hash and absent from the file — the

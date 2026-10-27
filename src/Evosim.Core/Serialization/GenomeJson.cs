@@ -111,6 +111,54 @@ namespace Evosim.Core
         /// </summary>
         public const int CentralFormatVersion = 12;
 
+        /// <summary>
+        /// 13 - the extended format, 11 plus either optional extension, for the old model; the one
+        /// brain is <see cref="FamilyCentralFormatVersion"/>. The extensions are D233's superellipsoid
+        /// form, written for a genome that holds at least one node of a shape that takes a form
+        /// (<see cref="PartShape.TakesForm"/> in <see cref="PartShapeRegistry.Catalogue"/>): such a
+        /// node carries a <c>form</c> object, <c>profile</c>, <c>section</c> and <c>taper</c>, directly
+        /// after its <c>shape</c>; and D241's growth-reserve gene, written for a genome that carries
+        /// <see cref="Genome.GrowthReserveSeconds"/>. A format 13 or 14 always holds the whole-creature
+        /// key <c>growthReserve</c> directly after <c>lifespan</c>, as a number or as JSON
+        /// <c>null</c> when the genome does not carry the gene, so a dropped key is still refused
+        /// under the rule that loading refuses rather than defaults. A genome with neither extension
+        /// is still written as 11 or 12, byte for byte as before, so every recorded run and every
+        /// inoculum stays readable and writes back the same text. A format 13 or 14 that holds neither
+        /// extension is refused, since written back it would be 11 or 12. Formats 11 to 14 are all read.
+        /// </summary>
+        public const int FamilyFormatVersion = 13;
+
+        /// <summary>
+        /// 14 - format 13 for a genome that carries D146's one brain: the same extensions, and
+        /// everything else as in <see cref="CentralFormatVersion"/>.
+        /// </summary>
+        public const int FamilyCentralFormatVersion = 14;
+
+        /// <summary>
+        /// The format <see cref="Write"/> gives a genome: 11 or 12 as before, or 13 or 14 when it holds
+        /// a node of a shape that takes a form or carries D241's growth-reserve gene.
+        /// </summary>
+        public static int FormatFor(Genome genome)
+        {
+            if (genome == null) throw new ArgumentNullException(nameof(genome));
+
+            bool central = genome.Brain != null;
+            bool family = false;
+            foreach (MorphNode node in genome.Nodes)
+            {
+                if (TakesForm(node.ShapeId)) { family = true; break; }
+            }
+
+            return family || genome.GrowthReserveSeconds.HasValue
+                ? (central ? FamilyCentralFormatVersion : FamilyFormatVersion)
+                : (central ? CentralFormatVersion : FormatVersion);
+        }
+
+        /// <summary>Whether the catalogue knows this id and its shape takes a form.</summary>
+        private static bool TakesForm(string shapeId) =>
+            PartShapeRegistry.Catalogue.Contains(shapeId) &&
+            PartShapeRegistry.Catalogue.Resolve(shapeId).TakesForm;
+
         /// <summary>Written for a row that carries no organism id.</summary>
         public const long NoId = -1;
 
@@ -164,13 +212,35 @@ namespace Evosim.Core
                 w.EndArray();
             }
 
+            int format = FormatFor(genome);
             bool central = genome.Brain != null;
-            w.Field("format", central ? CentralFormatVersion : FormatVersion);
+            w.Field("format", format);
             w.Field("root", genome.RootIndex);
             if (central) w.Field("nextEdgeId", genome.NextEdgeId);
 
             w.Field("adultScale", genome.AdultScale);
             w.Field("lifespan", genome.LifespanScale);
+
+            // D241. Whole-creature, and only in the extended formats, where it is always written: a
+            // number, or null for a stated absence, so a dropped key is a refusal and not a default.
+            if (format == FamilyFormatVersion || format == FamilyCentralFormatVersion)
+            {
+                if (genome.GrowthReserveSeconds.HasValue)
+                {
+                    float gene = genome.GrowthReserveSeconds.Value;
+                    if (float.IsNaN(gene) || float.IsInfinity(gene) || gene <= 0f)
+                    {
+                        throw new InvalidOperationException(
+                            $"Cannot write growth reserve {gene}: it must be finite and positive.");
+                    }
+
+                    w.Field("growthReserve", gene);
+                }
+                else
+                {
+                    w.FieldNull("growthReserve");
+                }
+            }
 
             w.BeginObject("reproduction")
                 .Field("brood", genome.Reproduction.BroodSize)
@@ -181,7 +251,7 @@ namespace Evosim.Core
                 .EndObject();
 
             w.BeginArray("nodes");
-            foreach (MorphNode node in genome.Nodes) WriteNode(w, node, central);
+            for (int i = 0; i < genome.Nodes.Count; i++) WriteNode(w, genome.Nodes[i], i, central);
             w.EndArray();
 
             w.BeginArray("globalBrain");
@@ -199,12 +269,19 @@ namespace Evosim.Core
             JsonNode root = Json.Parse(text);
 
             int format = root["format"].AsInt();
-            if (format != FormatVersion && format != CentralFormatVersion)
+            if (format != FormatVersion && format != CentralFormatVersion &&
+                format != FamilyFormatVersion && format != FamilyCentralFormatVersion)
             {
                 throw new FormatException(
-                    $"Genome is format {format}, this build reads {FormatVersion} and, for the one brain of D146, {CentralFormatVersion}. There is no " +
+                    $"Genome is format {format}, this build reads {FormatVersion} and, for the one brain of D146, {CentralFormatVersion}; " +
+                    $"and, for a genome that holds either extension (a superellipsoid, or the growth-reserve gene), {FamilyFormatVersion} and " +
+                    $"{FamilyCentralFormatVersion}. There is no " +
                     "migration path: re-run, or check out the revision that wrote it. " +
-                    "(Format 11 added a joint's drive genes (`Drive`: threshold, reaction, hold, " +
+                    "(Formats 13 and 14 are the extended formats, 13 being 11 and 14 being 12 plus " +
+                    "either optional extension: the form of a part whose shape takes one (`form`: " +
+                    "profile, section, taper; D233), and the growth-reserve gene (`growthReserve`, " +
+                    "a number or null, always present in these two formats; D241). " +
+                    "Format 11 added a joint's drive genes (`Drive`: threshold, reaction, hold, " +
                     "release; propose-joint-drive.md), which scripts/convert-format10-to-11.py " +
                     "adds at their defaults. " +
                     "Format 10 added the lifespan (`LifespanScale`, D128): how long a body is " +
@@ -225,11 +302,49 @@ namespace Evosim.Core
                     "investment.)");
             }
 
+            bool extended = format == FamilyFormatVersion || format == FamilyCentralFormatVersion;
+
+            // D241. The gene's key is written in 13 and 14 only; in 11 and 12 it is refused, as is a
+            // 13 or 14 without it, and a value that is no positive finite number. The world's range is
+            // judged at admission.
+            float? growthReserve = null;
+            if (!extended && root.Has("growthReserve"))
+            {
+                throw new FormatException(
+                    $"Genome is format {format}, which has no growth-reserve gene, but it carries a " +
+                    "'growthReserve' key. The gene is written only in formats 13 and 14 (D241).");
+            }
+
+            if (extended)
+            {
+                if (!root.Has("growthReserve"))
+                {
+                    throw new FormatException(
+                        $"Genome is format {format}, which always carries 'growthReserve' (a number, or " +
+                        "null for a genome without the gene), and it is missing. Present: " +
+                        string.Join(", ", root.Keys()) + ".");
+                }
+
+                JsonNode gene = root["growthReserve"];
+                if (gene.Kind != JsonNode.NodeKind.Null)
+                {
+                    float value = gene.AsFloat();
+                    if (float.IsNaN(value) || float.IsInfinity(value) || value <= 0f)
+                    {
+                        throw new FormatException(
+                            $"Genome's growthReserve is {value}, which must be finite and positive (D241).");
+                    }
+
+                    growthReserve = value;
+                }
+            }
+
             var genome = new Genome
             {
                 RootIndex = root["root"].AsInt(),
                 AdultScale = root["adultScale"].AsFloat(),
                 LifespanScale = root["lifespan"].AsFloat(),
+                GrowthReserveSeconds = growthReserve,
                 Reproduction = new ReproductionTraits
                 {
                     BroodSize = root["reproduction"]["brood"].AsInt(),
@@ -240,8 +355,29 @@ namespace Evosim.Core
                 },
             };
 
-            bool central = format == CentralFormatVersion;
-            foreach (JsonNode n in root["nodes"].Items()) genome.Nodes.Add(ReadNode(n, central));
+            bool central = format == CentralFormatVersion || format == FamilyCentralFormatVersion;
+            bool family = format == FamilyFormatVersion || format == FamilyCentralFormatVersion;
+            int index = 0;
+            bool anyFamilyNode = false;
+            foreach (JsonNode n in root["nodes"].Items())
+            {
+                MorphNode node = ReadNode(n, index, format, central, family);
+                anyFamilyNode |= TakesForm(node.ShapeId);
+                genome.Nodes.Add(node);
+                index++;
+            }
+
+            // The writer never makes a format 13 or 14 for a genome with neither extension, and reading
+            // one would write back as 11 or 12: the text would not round-trip, so the file is refused.
+            if (extended && !anyFamilyNode && !growthReserve.HasValue)
+            {
+                throw new FormatException(
+                    $"Genome is format {format}, which is written only for a genome that holds a node " +
+                    "of a shape that takes a form or carries the growth-reserve gene (D241), and it has " +
+                    "neither. Written back it would " +
+                    $"be format {(central ? CentralFormatVersion : FormatVersion)}, so the text would " +
+                    "not round-trip.");
+            }
 
             var brain = new List<NeuronDef>();
             foreach (JsonNode n in root["globalBrain"].Items()) brain.Add(ReadNeuron(n));
@@ -307,22 +443,47 @@ namespace Evosim.Core
 
         // ---------------------------------------------------------------- nodes
 
-        private static void WriteNode(Json.Writer w, MorphNode node, bool central)
+        private static void WriteNode(Json.Writer w, MorphNode node, int index, bool central)
         {
-            // D233. A node's form has no field in the file yet, and a writer that left it out would
-            // store a family node as a shape the reader cannot give a form: another creature under the
-            // stored one's name. Refused until the format that carries the genes is built.
-            if (!node.Form.IsNone)
+            // D233. A node of a shape that takes a form writes it, and no other node may carry one.
+            // The writer refuses what the reader would refuse, so a file this build writes is a file
+            // this build reads back to the same text: a family node with no form, or one outside the
+            // ranges, would store another creature under the stored one's name.
+            bool family = TakesForm(node.ShapeId);
+            if (family)
+            {
+                if (node.Form.IsNone)
+                {
+                    throw new InvalidOperationException(
+                        $"Cannot write node {index}: its shape '{node.ShapeId}' takes a form and the " +
+                        "node carries none.");
+                }
+
+                if (!node.Form.InRange)
+                {
+                    throw new InvalidOperationException(
+                        $"Cannot write node {index}: its form ({node.Form}) is outside the ranges of " +
+                        "D233 (profile 0.1 to 1, section 0.1 to 2, taper 0.25 to 4).");
+                }
+            }
+            else if (!node.Form.IsNone)
             {
                 throw new InvalidOperationException(
-                    $"Cannot write a node of shape '{node.ShapeId}' with form {node.Form}: the genome " +
-                    "format that carries a superellipsoid's genes is not built yet, and this one would " +
-                    "drop them.");
+                    $"Cannot write node {index}: its shape '{node.ShapeId}' takes no form and the node " +
+                    $"carries one ({node.Form}).");
             }
 
             w.BeginObject();
             w.Field("cell", node.CellTypeId);
             w.Field("shape", node.ShapeId);
+            if (family)
+            {
+                w.BeginObject("form")
+                    .Field("profile", node.Form.Profile)
+                    .Field("section", node.Form.Section)
+                    .Field("taper", node.Form.Taper)
+                    .EndObject();
+            }
             w.Field("joint", node.JointType.ToString());
             w.Field("power", node.Power);
 
@@ -369,12 +530,16 @@ namespace Evosim.Core
             w.EndObject();
         }
 
-        private static MorphNode ReadNode(JsonNode n, bool central)
+        private static MorphNode ReadNode(JsonNode n, int index, int format, bool central, bool family)
         {
+            string shapeId = n["shape"].AsString();
+            PartForm form = ReadForm(n, index, format, family, shapeId);
+
             var node = new MorphNode
             {
                 CellTypeId = n["cell"].AsString(),
-                ShapeId = n["shape"].AsString(),
+                ShapeId = shapeId,
+                Form = form,
                 JointType = ParseEnum<JointType>(n["joint"].AsString()),
                 Power = n["power"].AsFloat(),
                 Drive = new DriveGenes(
@@ -408,6 +573,63 @@ namespace Evosim.Core
             node.Neurons = neurons.ToArray();
 
             return node;
+        }
+
+        /// <summary>
+        /// A node's form, or <see cref="PartForm.None"/> for a node that has none, refusing every
+        /// way the file and the shape can disagree - D233. Each refusal names the node and the reason.
+        /// </summary>
+        private static PartForm ReadForm(JsonNode n, int index, int format, bool family, string shapeId)
+        {
+            bool takes = TakesForm(shapeId);
+            bool has = n.Has("form");
+
+            if (!family)
+            {
+                if (has)
+                {
+                    throw new FormatException(
+                        $"Node {index}: a format-{format} genome cannot carry a form. Forms are in " +
+                        $"formats {FamilyFormatVersion} and {FamilyCentralFormatVersion}.");
+                }
+
+                if (takes)
+                {
+                    throw new FormatException(
+                        $"Node {index}: its shape '{shapeId}' takes a form, which a format-{format} " +
+                        "genome cannot carry.");
+                }
+
+                return PartForm.None;
+            }
+
+            if (!takes)
+            {
+                if (has)
+                {
+                    throw new FormatException(
+                        $"Node {index}: its shape '{shapeId}' takes no form and the node carries one.");
+                }
+
+                return PartForm.None;
+            }
+
+            if (!has)
+            {
+                throw new FormatException(
+                    $"Node {index}: its shape '{shapeId}' takes a form and the node carries none.");
+            }
+
+            JsonNode f = n["form"];
+            var read = new PartForm(f["profile"].AsFloat(), f["section"].AsFloat(), f["taper"].AsFloat());
+            if (!read.InRange)
+            {
+                throw new FormatException(
+                    $"Node {index}: its form ({read}) is outside the ranges of D233 " +
+                    "(profile 0.1 to 1, section 0.1 to 2, taper 0.25 to 4).");
+            }
+
+            return read;
         }
 
         // ---------------------------------------------------------------- edges

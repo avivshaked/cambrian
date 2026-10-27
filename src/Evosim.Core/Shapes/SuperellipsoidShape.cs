@@ -23,9 +23,10 @@ namespace Evosim.Core
     /// solver and the drag model assume a convex body.
     /// </para>
     /// <para>
-    /// <b>Not in <see cref="PartShapeRegistry.Standard"/>.</b> No genome file can carry a form yet, so
-    /// the standard table and every config hash stay as they were; a registry that wants the family
-    /// adds this shape beside the three.
+    /// <b>In <see cref="PartShapeRegistry.Catalogue"/>, not in <see cref="PartShapeRegistry.Standard"/>.</b>
+    /// A genome file carries a family part's form from format 13 on, but a world allows the shape only
+    /// when <see cref="RunConfig.ShapeIds"/> names it, so the default world's list and its mutation
+    /// stream stay as they were.
     /// </para>
     /// </remarks>
     public sealed class SuperellipsoidShape : PartShape

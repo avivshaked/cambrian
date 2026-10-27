@@ -676,6 +676,18 @@ namespace Evosim.Nursery
                 }
             }
             if (FloorClosed) c.MinimumPopulation = 0;
+
+            // D239. A tank takes 0.5 s over dt physics steps to a metabolic step and its watchers read time off the
+            // physics step, so it carries no pace factor; a world at one other than 1 is refused by name, whether
+            // its config or an override set it.
+            if (c.PaceFactor != 1f)
+            {
+                throw Bad(
+                    "world.config",
+                    $"has PaceFactor {c.PaceFactor.ToString(System.Globalization.CultureInfo.InvariantCulture)} (D239), and the nursery's tanks " +
+                    "carry no pace factor: they step 0.5 s over dt physics steps to a metabolic step. Use a world at a factor of 1");
+            }
+
             return c;
         }
 

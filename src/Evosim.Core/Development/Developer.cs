@@ -32,9 +32,11 @@ namespace Evosim.Core
         /// <param name="limits">Guard rails. Defaults to <see cref="DevelopmentLimits.Default"/>.</param>
         /// <param name="rootTransform">Where to place the root. Defaults to the origin.</param>
         /// <param name="shapes">
-        /// Geometry each node's shape id resolves against. Defaults to
-        /// <see cref="PartShapeRegistry.Standard"/>. A run using custom shapes must pass its own,
-        /// or its genomes will fail to resolve rather than silently developing as boxes.
+        /// Geometry each node's shape id resolves against, and the list the genome is validated
+        /// against. Defaults to <see cref="PartShapeRegistry.Catalogue"/>, which answers geometry for
+        /// every shape the build knows (D233). A run passes its own world list,
+        /// <see cref="RunConfig.Shapes"/>, so that a genome holding a shape the world does not allow
+        /// is refused rather than developed.
         /// </param>
         /// <param name="moduleCounts">
         /// How many times each <see cref="ModuleGrowth.Indeterminate"/> node may occur along one
@@ -65,7 +67,7 @@ namespace Evosim.Core
             CellTypeRegistry cellTypes = null)
         {
             if (genome == null) throw new ArgumentNullException(nameof(genome));
-            shapes = shapes ?? PartShapeRegistry.Standard;
+            shapes = shapes ?? PartShapeRegistry.Catalogue;
 
             IReadOnlyList<string> issues = genome.Validate(cellTypes, shapes: shapes);
             if (issues.Count > 0)

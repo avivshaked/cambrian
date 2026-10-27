@@ -18,6 +18,11 @@ NEW = {"intakeOwnKillJ", "intakeOtherKillJ", "intakeCarrionJ", "mouthedIntakeOwn
        "mouthedIntakeOtherKillJ", "mouthedIntakeCarrionJ", "intakeOriginFrom"}
 NEW_LINEAGE = {"iok", "iak", "ic"}
 
+# D239: the two mouth-blow columns are written whenever contact eating is on, where an earlier build wrote them only
+# with the bite damage dial off 1. They are compared when both rows hold them, and are expected among the fields only
+# in the newer build's rows when the recording has none.
+D239_COLUMNS = {"mouthBlows", "mouthBlowsFinishing"}
+
 
 def rows(path):
     with open(path, encoding="utf-8") as f:
@@ -55,6 +60,8 @@ def main():
     print("  first difference: " + ("none" if first is None else f"t {first[0]:g} field {first[1]}: recorded {first[2]!r}, resumed {first[3]!r}"))
     print(f"  only in the resumed rows: {sorted(only_res)}")
     print(f"  only in the recorded rows: {sorted(only_rec)}")
+    print(f"  only in the resumed rows, apart from NEW and D239's two mouth-blow columns: "
+          f"{sorted(only_res - NEW - D239_COLUMNS)}")
 
     t_end = both[-1]["t"] if both else a.t_from
     def window(path):

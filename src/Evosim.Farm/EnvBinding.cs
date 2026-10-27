@@ -100,6 +100,16 @@ namespace Evosim.Farm
             // joins a mirrored part where its twin is joined.
             Flag("EVOSIM_REFLECT_MIRRORED_ANCHORS", (s, v) => s.ReflectMirroredAnchors = v),
 
+            // D241: a scaled body's joint torque scales with the cube of its length, as muscle does
+            // (force with cross-section, moment arm with length), at birth, growth and rebuild. Off is the
+            // recorded world, where a juvenile has its adult's torque on smaller limbs.
+            Flag("EVOSIM_JUVENILE_STRENGTH", (s, v) => s.JuvenileStrength = v),
+
+            // D233: the shapes the world allows, comma-separated ids in their order ("box,sphere,
+            // capsule,superellipsoid"). Unset is box, sphere and capsule, every recorded world. An id
+            // the catalogue does not know, or one named twice, is refused here.
+            Custom("EVOSIM_SHAPES", (s, env) => s.ShapeIds = ShapeIdsOf(env, "EVOSIM_SHAPES")),
+
             // D109: the matter seeded as islands, founders planted in them, and the light's shade
             // map from the same noise, drifting or not. Every default is the recorded world.
             Num("EVOSIM_MATTER_ISLANDS", 0f, (s, v) => s.MatterIslands = v),
@@ -269,6 +279,15 @@ namespace Evosim.Farm
             Num("EVOSIM_MARGIN_MIN", RandomGenomeOptions.Default.MinReserveMargin, (s, v) => s.MarginMin = v),
             Num("EVOSIM_MARGIN_MAX", RandomGenomeOptions.Default.MaxReserveMargin, (s, v) => s.MarginMax = v),
             Num("EVOSIM_MARGIN_CHANCE", MutationRates.Default.MarginChance, (s, v) => s.MarginChance = v),
+            // The structural mutation chances: the operators that add or remove a node, an edge or a
+            // neuron, or step a node's recursive limit. Unset, each is MutationRates' own default.
+            Num("EVOSIM_ADD_NODE_CHANCE", MutationRates.Default.AddNodeChance, (s, v) => s.AddNodeChance = v),
+            Num("EVOSIM_ADD_EDGE_CHANCE", MutationRates.Default.AddEdgeChance, (s, v) => s.AddEdgeChance = v),
+            Num("EVOSIM_REMOVE_EDGE_CHANCE", MutationRates.Default.RemoveEdgeChance, (s, v) => s.RemoveEdgeChance = v),
+            Num("EVOSIM_ADD_NEURON_CHANCE", MutationRates.Default.AddNeuronChance, (s, v) => s.AddNeuronChance = v),
+            Num("EVOSIM_REMOVE_NEURON_CHANCE", MutationRates.Default.RemoveNeuronChance, (s, v) => s.RemoveNeuronChance = v),
+            Num("EVOSIM_RECURSIVE_LIMIT_CHANCE", MutationRates.Default.RecursiveLimitChance, (s, v) => s.RecursiveLimitChance = v),
+            Num("EVOSIM_JOINT_TYPE_CHANCE", MutationRates.Default.JointTypeChance, (s, v) => s.JointTypeChance = v),
             Num("EVOSIM_FLOOR_REFUGE", D.FloorRefugeMetres, (s, v) => s.FloorRefuge = v),
             Num("EVOSIM_REFUGE_FRACTION", D.RefugeEdibleFraction, (s, v) => s.RefugeFraction = v),
             Num("EVOSIM_SATIATION", D.SatiationWattsPerCubicMetre, (s, v) => s.Satiation = v),
@@ -281,6 +300,11 @@ namespace Evosim.Farm
             // D190: the desert's own burial, outside the islands' influx; below 0 is the recorded world.
             Num("EVOSIM_MATTER_BURIAL_DESERT", D.MatterBurialDesertPerSecond, (s, v) => s.MatterBurialDesert = v),
             Num("EVOSIM_DT", DefaultPhysicsStepSeconds, (s, v) => s.PhysicsDt = v),
+
+            // D239: how many seconds of physics one world second holds. 1 is the recorded world;
+            // RunConfig refuses a value below 1 or not finite, and ResolvePhysicsStep refuses a dt
+            // that does not divide 0.5 s times it.
+            Num("EVOSIM_PACE_FACTOR", D.PaceFactor, (s, v) => s.PaceFactor = v),
             Num("EVOSIM_SPECIES_THETA", D.SpeciesDriftThreshold, (s, v) => s.SpeciesTheta = v),
             Num("EVOSIM_PATCHES", D.HorizontalPatches, (s, v) => s.Patches = v),
             Num("EVOSIM_PATCHES_ACROSS", D.PatchesAcross, (s, v) => s.PatchesAcross = v),
@@ -476,6 +500,19 @@ namespace Evosim.Farm
             Num("EVOSIM_MODULE_DROP_AFTER", D.ModuleDropAfterSeconds, (s, v) => s.ModuleDropAfter = v),
             Num("EVOSIM_MODULE_MUT", MutationRates.Default.ModuleGeneMutationChance, (s, v) => s.ModuleMutation = v),
 
+            // D233: the chance per generation that a family part steps its three form genes. 0 is
+            // the recorded world, and draws nothing.
+            Num("EVOSIM_FORM_CHANCE", MutationRates.Default.FormChance, (s, v) => s.FormChance = v),
+
+            // D241: growth as a climb. T is the time to adulthood in world seconds (0 is today's growth),
+            // the start, min and max are the growth-reserve gene's, and the last is the chance a birth
+            // steps it. Each defaults to Core's, so a launcher that names none runs the recorded world.
+            Num("EVOSIM_GROWTH_ADULT", D.GrowthAdultSeconds, (s, v) => s.GrowthAdult = v),
+            Num("EVOSIM_GROWTH_RESERVE_START", D.GrowthReserveStartSeconds, (s, v) => s.GrowthReserveStart = v),
+            Num("EVOSIM_GROWTH_RESERVE_MIN", D.GrowthReserveMinSeconds, (s, v) => s.GrowthReserveMin = v),
+            Num("EVOSIM_GROWTH_RESERVE_MAX", D.GrowthReserveMaxSeconds, (s, v) => s.GrowthReserveMax = v),
+            Num("EVOSIM_GROWTH_RESERVE_MUT", MutationRates.Default.GrowthReserveChance, (s, v) => s.GrowthReserveMutation = v),
+
             // D106 items 1, 3 and 4's ten. Every one of them is off or neutral by default, so a
             // launcher that names none of them runs the world it always ran: health is present
             // and nothing damages it, nothing heals, nothing reaches a corpse and no attribute
@@ -670,25 +707,62 @@ namespace Evosim.Farm
         /// integrates at and not the one the launcher asked for. The metabolic step is fixed at
         /// <see cref="MetabolicStepSeconds"/> and is not a tunable in either engine.
         /// </remarks>
-        public static float ResolvePhysicsStep(float dt, out int stepsPerMetabolicStep)
+        public static float ResolvePhysicsStep(float dt, out int stepsPerMetabolicStep) =>
+            ResolvePhysicsStep(dt, 1f, out stepsPerMetabolicStep);
+
+        /// <summary>
+        /// <see cref="ResolvePhysicsStep(float, out int)"/> at a pace factor k (D239): a metabolic
+        /// step of 0.5 world seconds holds 0.5·k physics seconds, so the step must divide 0.5·k
+        /// exactly, with the same tolerance, and the steps in a metabolic step are 0.5·k / dt.
+        /// </summary>
+        /// <remarks>
+        /// <b>At k = 1 nothing is multiplied</b>, so every dt accepted before gives the same steps,
+        /// to the bit. A k below 1 or not finite is refused by name. The refusal for a dt lists the
+        /// steps that do divide 0.5·k, which are 0.01·k, 0.02·k, 0.025·k, 0.05·k, 0.1·k, 0.125·k,
+        /// 0.25·k and 0.5·k (those of the 50, 25, 20, 10, 5, 4, 2 and 1 steps a metabolic step
+        /// holds at k = 1), though any other whole division is accepted.
+        /// </remarks>
+        public static float ResolvePhysicsStep(float dt, float paceFactor, out int stepsPerMetabolicStep)
         {
-            if (!(dt > 0f) || dt > MetabolicStepSeconds)
+            if (!(paceFactor >= 1f) || float.IsInfinity(paceFactor))
             {
-                throw new ArgumentOutOfRangeException(nameof(dt), dt, "Must be in (0, 0.5].");
+                throw new ArgumentOutOfRangeException(
+                    nameof(paceFactor), paceFactor,
+                    "The pace factor (EVOSIM_PACE_FACTOR) must be a finite number of at least 1.");
             }
 
-            float steps = MetabolicStepSeconds / dt;
+            // The physics seconds one metabolic step holds: 0.5 at k = 1, untouched by a multiplication.
+            float span = paceFactor == 1f ? MetabolicStepSeconds : MetabolicStepSeconds * paceFactor;
+
+            if (!(dt > 0f) || dt > span)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(dt), dt,
+                    paceFactor == 1f
+                        ? "Must be in (0, 0.5]."
+                        : "Must be in (0, " + Allowed(span) + "] at a pace factor of " + Allowed(paceFactor) + ".");
+            }
+
+            float steps = span / dt;
             int rounded = (int)Math.Round(steps);
             if (rounded < 1 || Math.Abs(steps - rounded) > 1e-4f)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(dt), dt,
-                    "Must divide the 0.5 s metabolic step exactly: 0.01, 0.02, 0.025, 0.05, 0.1, 0.125, 0.25 or 0.5.");
+                    paceFactor == 1f
+                        ? "Must divide the 0.5 s metabolic step exactly: 0.01, 0.02, 0.025, 0.05, 0.1, 0.125, 0.25 or 0.5."
+                        : "Must divide 0.5 s times the pace factor (" + Allowed(paceFactor) + ", so " + Allowed(span) +
+                          " s) exactly: " + Allowed(span / 50f) + ", " + Allowed(span / 25f) + ", " +
+                          Allowed(span / 20f) + ", " + Allowed(span / 10f) + ", " + Allowed(span / 5f) + ", " +
+                          Allowed(span / 4f) + ", " + Allowed(span / 2f) + " or " + Allowed(span) + ".");
             }
 
             stepsPerMetabolicStep = rounded;
             return dt;
         }
+
+        private static string Allowed(float value) =>
+            value.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture);
 
         /// <summary>
         /// The <see cref="RunConfig"/> the settings build — <c>EvolutionRun.RunBody</c>'s
@@ -698,7 +772,7 @@ namespace Evosim.Farm
         {
             if (s == null) throw new ArgumentNullException(nameof(s));
 
-            float physicsDt = ResolvePhysicsStep(s.PhysicsDt, out _);
+            float physicsDt = ResolvePhysicsStep(s.PhysicsDt, s.PaceFactor, out _);
 
             var config = new RunConfig
             {
@@ -816,6 +890,13 @@ namespace Evosim.Farm
             config.Genome.MinReserveMargin = Math.Min(s.MarginMin, s.MarginMax);
             config.Genome.MaxReserveMargin = Math.Max(s.MarginMin, s.MarginMax);
             config.Mutation.MarginChance = s.MarginChance;
+            config.Mutation.AddNodeChance = s.AddNodeChance;
+            config.Mutation.AddEdgeChance = s.AddEdgeChance;
+            config.Mutation.RemoveEdgeChance = s.RemoveEdgeChance;
+            config.Mutation.AddNeuronChance = s.AddNeuronChance;
+            config.Mutation.RemoveNeuronChance = s.RemoveNeuronChance;
+            config.Mutation.RecursiveLimitChance = s.RecursiveLimitChance;
+            config.Mutation.JointTypeChance = s.JointTypeChance;
             config.FloorRefugeMetres = s.FloorRefuge;
             config.RefugeEdibleFraction = s.RefugeFraction;
             config.SatiationWattsPerCubicMetre = s.Satiation;
@@ -843,6 +924,7 @@ namespace Evosim.Farm
             config.Development.FloorsWeighRigidGroups = s.RigidFloors;
             config.Development.ScaleLengthensOnce = s.ScaleLengthensOnce;
             config.Development.ReflectMirroredAnchors = s.ReflectMirroredAnchors;
+            config.ShapeIds = s.ShapeIds;
 
             config.MatterIslandWavelengthMetres = s.MatterIslands;
             config.MatterIslandCover = s.MatterIslandCover;
@@ -863,6 +945,7 @@ namespace Evosim.Farm
             config.SharedSpace = s.SharedSpace;
             config.OffspringDispersalMetres = s.OffspringDispersal;
             config.PhysicsStepSeconds = physicsDt;
+            config.PaceFactor = s.PaceFactor;
             config.FloorClosesAfterSeconds = s.FloorCloses;
             config.FoundingTricklePerSecond = s.Trickle;
 
@@ -983,6 +1066,14 @@ namespace Evosim.Farm
             config.ModuleDropReserveSeconds = s.ModuleDrop;
             config.ModuleDropAfterSeconds = s.ModuleDropAfter;
             config.Mutation.ModuleGeneMutationChance = s.ModuleMutation;
+            config.Mutation.FormChance = s.FormChance;
+
+            config.GrowthAdultSeconds = s.GrowthAdult;
+            config.JuvenileStrengthScales = s.JuvenileStrength;
+            config.GrowthReserveStartSeconds = s.GrowthReserveStart;
+            config.GrowthReserveMinSeconds = s.GrowthReserveMin;
+            config.GrowthReserveMaxSeconds = s.GrowthReserveMax;
+            config.Mutation.GrowthReserveChance = s.GrowthReserveMutation;
 
             config.HealthPerCubicMetre = s.Health;
             config.HealingPerSecond = s.Healing;
@@ -1164,6 +1255,37 @@ namespace Evosim.Farm
 
             throw new ArgumentException(
                 name + " is '" + raw + "', which is none of 'cells', 'vertices' or 'grid'.");
+        }
+
+        /// <summary>
+        /// D233's shape list: comma-separated ids in their order, box, sphere and capsule when unset.
+        /// Each id must be in <see cref="PartShapeRegistry.Catalogue"/> and named once, or the launch is
+        /// refused here rather than at the first read of <see cref="RunConfig.Shapes"/>.
+        /// </summary>
+        private static string[] ShapeIdsOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrWhiteSpace(raw)) return EnvSettings.StandardShapeIds();
+
+            string[] parts = raw.Split(',');
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < parts.Length; i++)
+            {
+                parts[i] = parts[i].Trim();
+                if (!PartShapeRegistry.Catalogue.Contains(parts[i]))
+                {
+                    throw new ArgumentException(
+                        name + " names '" + parts[i] + "', which is not a shape this build knows. Known: " +
+                        PartShapeRegistry.Catalogue + ".");
+                }
+
+                if (!seen.Add(parts[i]))
+                {
+                    throw new ArgumentException(name + " names '" + parts[i] + "' twice.");
+                }
+            }
+
+            return parts;
         }
 
         /// <summary>D192's seed overrides: a comma-separated list, empty when unset; each entry is RunConfig's to judge.</summary>
@@ -1459,11 +1581,21 @@ namespace Evosim.Farm
 
         /// <summary>D228 — <c>EVOSIM_REFLECT_MIRRORED_ANCHORS</c>.</summary>
         public bool ReflectMirroredAnchors;
+
+        /// <summary>D241's juvenile strength — <c>EVOSIM_JUVENILE_STRENGTH</c>. Off is the recorded world.</summary>
+        public bool JuvenileStrength;
         public float MatterIslands;
         public float MatterIslandCover;
         public float MatterIslandDepth;
         public float MatterIslandMargin;
         public string[] SeedOverrides = Array.Empty<string>();
+
+        /// <summary>D233's shape list — <c>EVOSIM_SHAPES</c>. Box, sphere and capsule unless named.</summary>
+        public string[] ShapeIds = StandardShapeIds();
+
+        /// <summary>The recorded world's list, a fresh array each call so no caller can edit another's.</summary>
+        public static string[] StandardShapeIds() =>
+            new[] { Evosim.Core.ShapeIds.Box, Evosim.Core.ShapeIds.Sphere, Evosim.Core.ShapeIds.Capsule };
         public bool FoundersFollowMatter;
         public bool FoundersFollowFood;
 
@@ -1658,6 +1790,13 @@ namespace Evosim.Farm
         public float MarginMin;
         public float MarginMax;
         public float MarginChance;
+        public float AddNodeChance;
+        public float AddEdgeChance;
+        public float RemoveEdgeChance;
+        public float AddNeuronChance;
+        public float RemoveNeuronChance;
+        public float RecursiveLimitChance;
+        public float JointTypeChance;
         public float FloorRefuge;
         public float RefugeFraction;
         public float Satiation;
@@ -1669,6 +1808,9 @@ namespace Evosim.Farm
         public float MatterBurial;
         public float MatterBurialDesert;
         public float PhysicsDt;
+
+        /// <summary>D239's pace factor k, <c>EVOSIM_PACE_FACTOR</c>; 1 is the recorded world.</summary>
+        public float PaceFactor;
         public float SpeciesTheta;
         public float Patches;
         public float PatchesAcross;
@@ -1826,6 +1968,24 @@ namespace Evosim.Farm
         public float ModuleDrop;
         public float ModuleDropAfter;
         public float ModuleMutation;
+
+        /// <summary>D233's form walk — <c>EVOSIM_FORM_CHANCE</c>. 0 draws nothing.</summary>
+        public float FormChance;
+
+        /// <summary>D241's time to adulthood, world seconds — <c>EVOSIM_GROWTH_ADULT</c>. 0 is today's growth.</summary>
+        public float GrowthAdult;
+
+        /// <summary>D241's growth-reserve gene: the start given at admission, seconds — <c>EVOSIM_GROWTH_RESERVE_START</c>.</summary>
+        public float GrowthReserveStart;
+
+        /// <summary>The gene's range floor, seconds — <c>EVOSIM_GROWTH_RESERVE_MIN</c>.</summary>
+        public float GrowthReserveMin;
+
+        /// <summary>The gene's range ceiling, seconds — <c>EVOSIM_GROWTH_RESERVE_MAX</c>.</summary>
+        public float GrowthReserveMax;
+
+        /// <summary>The chance a birth steps the gene — <c>EVOSIM_GROWTH_RESERVE_MUT</c>. 0 draws nothing.</summary>
+        public float GrowthReserveMutation;
         public float Health;
         public float Healing;
         public float HealingCost;
