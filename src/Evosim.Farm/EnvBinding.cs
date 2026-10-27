@@ -279,6 +279,15 @@ namespace Evosim.Farm
             Num("EVOSIM_MARGIN_MIN", RandomGenomeOptions.Default.MinReserveMargin, (s, v) => s.MarginMin = v),
             Num("EVOSIM_MARGIN_MAX", RandomGenomeOptions.Default.MaxReserveMargin, (s, v) => s.MarginMax = v),
             Num("EVOSIM_MARGIN_CHANCE", MutationRates.Default.MarginChance, (s, v) => s.MarginChance = v),
+            // The structural mutation chances: the operators that add or remove a node, an edge or a
+            // neuron, or step a node's recursive limit. Unset, each is MutationRates' own default.
+            Num("EVOSIM_ADD_NODE_CHANCE", MutationRates.Default.AddNodeChance, (s, v) => s.AddNodeChance = v),
+            Num("EVOSIM_ADD_EDGE_CHANCE", MutationRates.Default.AddEdgeChance, (s, v) => s.AddEdgeChance = v),
+            Num("EVOSIM_REMOVE_EDGE_CHANCE", MutationRates.Default.RemoveEdgeChance, (s, v) => s.RemoveEdgeChance = v),
+            Num("EVOSIM_ADD_NEURON_CHANCE", MutationRates.Default.AddNeuronChance, (s, v) => s.AddNeuronChance = v),
+            Num("EVOSIM_REMOVE_NEURON_CHANCE", MutationRates.Default.RemoveNeuronChance, (s, v) => s.RemoveNeuronChance = v),
+            Num("EVOSIM_RECURSIVE_LIMIT_CHANCE", MutationRates.Default.RecursiveLimitChance, (s, v) => s.RecursiveLimitChance = v),
+            Num("EVOSIM_JOINT_TYPE_CHANCE", MutationRates.Default.JointTypeChance, (s, v) => s.JointTypeChance = v),
             Num("EVOSIM_FLOOR_REFUGE", D.FloorRefugeMetres, (s, v) => s.FloorRefuge = v),
             Num("EVOSIM_REFUGE_FRACTION", D.RefugeEdibleFraction, (s, v) => s.RefugeFraction = v),
             Num("EVOSIM_SATIATION", D.SatiationWattsPerCubicMetre, (s, v) => s.Satiation = v),
@@ -881,6 +890,13 @@ namespace Evosim.Farm
             config.Genome.MinReserveMargin = Math.Min(s.MarginMin, s.MarginMax);
             config.Genome.MaxReserveMargin = Math.Max(s.MarginMin, s.MarginMax);
             config.Mutation.MarginChance = s.MarginChance;
+            config.Mutation.AddNodeChance = s.AddNodeChance;
+            config.Mutation.AddEdgeChance = s.AddEdgeChance;
+            config.Mutation.RemoveEdgeChance = s.RemoveEdgeChance;
+            config.Mutation.AddNeuronChance = s.AddNeuronChance;
+            config.Mutation.RemoveNeuronChance = s.RemoveNeuronChance;
+            config.Mutation.RecursiveLimitChance = s.RecursiveLimitChance;
+            config.Mutation.JointTypeChance = s.JointTypeChance;
             config.FloorRefugeMetres = s.FloorRefuge;
             config.RefugeEdibleFraction = s.RefugeFraction;
             config.SatiationWattsPerCubicMetre = s.Satiation;
@@ -1774,6 +1790,13 @@ namespace Evosim.Farm
         public float MarginMin;
         public float MarginMax;
         public float MarginChance;
+        public float AddNodeChance;
+        public float AddEdgeChance;
+        public float RemoveEdgeChance;
+        public float AddNeuronChance;
+        public float RemoveNeuronChance;
+        public float RecursiveLimitChance;
+        public float JointTypeChance;
         public float FloorRefuge;
         public float RefugeFraction;
         public float Satiation;

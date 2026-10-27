@@ -300,6 +300,13 @@ namespace Evosim.Farm.Tests
             expected.Genome.MaxReserveMargin = Math.Max(
                 RandomGenomeOptions.Default.MinReserveMargin, RandomGenomeOptions.Default.MaxReserveMargin);
             expected.Mutation.MarginChance = MutationRates.Default.MarginChance;
+            expected.Mutation.AddNodeChance = MutationRates.Default.AddNodeChance;
+            expected.Mutation.AddEdgeChance = MutationRates.Default.AddEdgeChance;
+            expected.Mutation.RemoveEdgeChance = MutationRates.Default.RemoveEdgeChance;
+            expected.Mutation.AddNeuronChance = MutationRates.Default.AddNeuronChance;
+            expected.Mutation.RemoveNeuronChance = MutationRates.Default.RemoveNeuronChance;
+            expected.Mutation.RecursiveLimitChance = MutationRates.Default.RecursiveLimitChance;
+            expected.Mutation.JointTypeChance = MutationRates.Default.JointTypeChance;
             expected.FloorRefugeMetres = d.FloorRefugeMetres;
             expected.RefugeEdibleFraction = d.RefugeEdibleFraction;
             expected.SatiationWattsPerCubicMetre = d.SatiationWattsPerCubicMetre;
@@ -465,6 +472,180 @@ namespace Evosim.Farm.Tests
             EnvSettings on = EnvBinding.Read(EnvBinding.Of(block));
             Assert.True(on.RigidFloors);
             Assert.True(EnvBinding.BuildConfig(on).Development.FloorsWeighRigidGroups);
+        }
+
+        /// <summary>
+        /// The structural mutation chances: the operators that add or remove a node, an edge or a
+        /// neuron, or step a node's recursive limit. Each name reaches its own field of
+        /// <c>config.Mutation</c> and no other, and moves the hash.
+        /// </summary>
+        private static (string Name, Func<MutationRates, float> Read, float Default)[] StructuralChances() =>
+            new (string Name, Func<MutationRates, float> Read, float Default)[]
+            {
+                ("EVOSIM_ADD_NODE_CHANCE", m => m.AddNodeChance, MutationRates.Default.AddNodeChance),
+                ("EVOSIM_ADD_EDGE_CHANCE", m => m.AddEdgeChance, MutationRates.Default.AddEdgeChance),
+                ("EVOSIM_REMOVE_EDGE_CHANCE", m => m.RemoveEdgeChance, MutationRates.Default.RemoveEdgeChance),
+                ("EVOSIM_ADD_NEURON_CHANCE", m => m.AddNeuronChance, MutationRates.Default.AddNeuronChance),
+                ("EVOSIM_REMOVE_NEURON_CHANCE", m => m.RemoveNeuronChance, MutationRates.Default.RemoveNeuronChance),
+                ("EVOSIM_RECURSIVE_LIMIT_CHANCE", m => m.RecursiveLimitChance, MutationRates.Default.RecursiveLimitChance),
+                ("EVOSIM_JOINT_TYPE_CHANCE", m => m.JointTypeChance, MutationRates.Default.JointTypeChance),
+            };
+
+        [Fact]
+        public void EachStructuralChanceReachesItsOwnMutationField()
+        {
+            var cases = StructuralChances();
+            RunConfig plain = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(Round42Seed1())));
+
+            for (int i = 0; i < cases.Length; i++)
+            {
+                // A value that is nobody's default, and different for each name, so a name wired to
+                // the wrong field is caught by the field it should have left alone.
+                float value = 0.0123f + 0.001f * i;
+                var block = Round42Seed1();
+                block[cases[i].Name] = value.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+
+                RunConfig config = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block)));
+
+                for (int j = 0; j < cases.Length; j++)
+                {
+                    float expected = j == i ? value : cases[j].Default;
+                    Assert.True(
+                        Math.Abs(expected - cases[j].Read(config.Mutation)) < 1e-6f,
+                        cases[i].Name + " set to " + value + " left " + cases[j].Name + "'s field at " +
+                        cases[j].Read(config.Mutation) + ", expected " + expected);
+                }
+
+                Assert.Empty(EnvBinding.UnknownNames(block.Keys));
+                Assert.NotEqual(plain.Hash(), config.Hash());
+            }
+        }
+
+        [Fact]
+        public void StructuralChancesUnsetOrSetToTheirDefaultsLeaveTheConfigAndItsHashAsTheyWere()
+        {
+            var cases = StructuralChances();
+            var defaults = MutationRates.Default;
+
+            // Unset: round 42's launcher keeps its hash, and every field is MutationRates' own.
+            RunConfig unset = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(Round42Seed1())));
+            Assert.Equal(Round42ConfigHash, unset.Hash());
+            foreach (var c in cases) Assert.Equal(c.Default, c.Read(unset.Mutation));
+            Assert.Equal(defaults.AddNodeChance, unset.Mutation.AddNodeChance);
+            Assert.Equal(defaults.RecursiveLimitChance, unset.Mutation.RecursiveLimitChance);
+
+            // And with an empty environment too.
+            RunConfig empty = EnvBinding.BuildConfig(
+                EnvBinding.Read(EnvBinding.Of(new Dictionary<string, string>())));
+            foreach (var c in cases) Assert.Equal(c.Default, c.Read(empty.Mutation));
+
+            // Each name set to the very number it defaults to is the same world, field for field.
+            var block = Round42Seed1();
+            foreach (var c in cases)
+            {
+                block[c.Name] = c.Default.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            RunConfig explicitDefaults = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block)));
+            Assert.Equal(Round42ConfigHash, explicitDefaults.Hash());
+            AssertSameConfig(RunConfigJson.Write(unset), RunConfigJson.Write(explicitDefaults));
+        }
+
+        /// <summary>
+        /// With every structural chance at 0 (through the launcher's own names), a child never differs
+        /// from its parent in node count, edge count, neuron count, input count, recursive limit,
+        /// growth or module ceiling; with them unset, some children do, so the check can fail.
+        /// </summary>
+        /// <remarks>
+        /// Three other things change structure and are not structural chances, so the test closes
+        /// them by hand: <c>EVOSIM_CELLTYPE_MUTATION</c> (a bud adds a node) and
+        /// <c>EVOSIM_MODULE_MUT</c> (flips growth) are launcher names set to 0 here, and
+        /// <c>NodeExtinctionHalfExtent</c> (a node shrunk below it is removed by the scalar step) has
+        /// no launcher name and is set to 0 on the rates directly. A scalar step can still retarget an
+        /// edge (<c>edge.Child</c>, under <c>ScalarChance</c>), which changes no count; targets are not
+        /// compared.
+        /// </remarks>
+        [Fact]
+        public void WithEveryStructuralChanceAtZeroChildrenNeverDifferInStructure()
+        {
+            var off = Round42Seed1();
+            foreach (var c in StructuralChances()) off[c.Name] = "0";
+            off["EVOSIM_CELLTYPE_MUTATION"] = "0";
+            off["EVOSIM_MODULE_MUT"] = "0";
+
+            MutationRates frozen = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(off))).Mutation;
+            foreach (var c in StructuralChances()) Assert.Equal(0f, c.Read(frozen));
+            Assert.Equal(0f, frozen.CellTypeChance);
+            Assert.Equal(0f, frozen.ModuleGeneMutationChance);
+            frozen.NodeExtinctionHalfExtent = 0f;
+
+            MutationRates unset =
+                EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(Round42Seed1()))).Mutation;
+
+            int frozenChildren = 0;
+            int unsetChildrenThatDiffer = 0;
+
+            for (ulong lineage = 1; lineage <= 5; lineage++)
+            {
+                Genome parent = GenomeFactory.RandomViable(
+                    new Rng(lineage), RandomGenomeOptions.Default, DevelopmentLimits.Default, minParts: 3);
+
+                // 600 children of one parent, each from its own seed.
+                for (ulong seed = 1; seed <= 600; seed++)
+                {
+                    Genome child = Mutator.Mutate(parent, new Rng(lineage * 100000 + seed), frozen);
+                    Assert.True(
+                        Structure(parent) == Structure(child),
+                        "lineage " + lineage + " seed " + seed + ": " + Structure(parent) + " became " + Structure(child));
+                    frozenChildren++;
+
+                    Genome free = Mutator.Mutate(parent, new Rng(lineage * 100000 + seed), unset);
+                    if (Structure(parent) != Structure(free)) unsetChildrenThatDiffer++;
+                }
+
+                // And 400 generations deep, each child the next one's parent.
+                Genome walker = parent;
+                var rng = new Rng(lineage + 7000);
+                for (int generation = 0; generation < 400; generation++)
+                {
+                    Genome child = Mutator.Mutate(walker, rng, frozen);
+                    Assert.True(
+                        Structure(walker) == Structure(child),
+                        "lineage " + lineage + " generation " + generation + ": " + Structure(walker) + " became " + Structure(child));
+                    walker = child;
+                    frozenChildren++;
+                }
+            }
+
+            Assert.Equal(5 * 1000, frozenChildren);
+            Assert.True(
+                unsetChildrenThatDiffer > 0,
+                "no child differed in structure at the default rates, so the comparison above could not have failed");
+        }
+
+        /// <summary>
+        /// What the structure category of a genome diff counts, as one string: node count and root,
+        /// then per node its edge count, recursive limit, growth, module ceiling, neuron count and
+        /// each neuron's input count.
+        /// </summary>
+        private static string Structure(Genome g)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.Append("nodes=").Append(g.Nodes.Count).Append(" root=").Append(g.RootIndex);
+
+            foreach (MorphNode n in g.Nodes)
+            {
+                sb.Append(" |e").Append(n.Edges.Count)
+                  .Append(" r").Append(n.RecursiveLimit)
+                  .Append(' ').Append(n.Growth)
+                  .Append(" m").Append(n.MaxModules)
+                  .Append(" j").Append(n.JointType).Append('/').Append(n.JointLimits.Length)
+                  .Append(" n").Append(n.Neurons.Length);
+
+                foreach (NeuronDef neuron in n.Neurons) sb.Append(':').Append(neuron.Inputs.Length);
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>
