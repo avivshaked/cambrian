@@ -9691,7 +9691,7 @@ in any condition set for the world.
 ### D245
 **The energy sense reads the reserve as S / (S + k), with k = 30 s, built with fat** · 2026-10-27
 
-**Status:** ruled by the owner on the evening of 2026-10-27, on the coordinator's recommendation. It replaces the energy sense's squash. It lands with fat's build (`proposals/propose-fat.md`), and no world before that build changes.
+**Status:** ruled by the owner on the evening of 2026-10-27, on the coordinator's recommendation. It replaces the energy sense's squash. It lands with fat's build (`logbook/specs/fat-build-spec.md`), and no world before that build changes.
 
 **Decision.**
 - The energy channel reads `S / (S + k)`, where S is the reserve in seconds of standing cost and k is a tunable half-scale. It replaces `tanh(S / EnergyFullScaleSeconds)`.
@@ -9717,3 +9717,21 @@ in any condition set for the world.
 - **The film's water is `ABSORB` 0.6**, up from 0.3, on the coordinator's recommendation. The owner could hardly tell the two apart on the triage sheet.
 
 **Why.** The world's rules should push creatures to evolve, not rescue each lineage that does badly. A paddle drawn inside the collider shows the swimming surface D229's fin law already simulates, without drawing tissue the world does not have.
+
+### D247
+**Fat is built to its specification's recommendations, and screened in three arms** · 2026-10-27
+
+**Status:** ruled by the owner late on 2026-10-27, after `r62cf` confirmed D222 under D244. The owner took every recommendation in the fat specification (`logbook/specs/fat-build-spec.md`, drafted 2026-10-25 as a proposal). It carries out D229's fat and amends nothing in D232's meal.
+
+**Decision.**
+- **The cap's form:** D229's cap, `cap = litter price + growth still to come + s × standing watts + room × fat volume`, reusing D098's dial behind a switch that is off by default.
+- **The value of s:** the build ships 3,000 s, and the screen runs 1,000 s beside it.
+- **Income above the cap** goes into the water as charged matter, the route the dial already uses.
+- **The gut does not count against the cap.** Digestion waits while the reserve is full. Columns watch for guts that grow without bound in sated killers.
+- **Fat's prices:** 0.5 W/m³ to keep, 2,000 J/m³ to build, 50,000 J/m³ of room. Attack, intake and protection 0, toughness 1, bud weight 1.
+- **Buoyancy:** lift 0 for the first screen, so fat sinks as other tissue does.
+- **The screen:** arms A (cap at 1,000 s, fat in the table), B (1,000 s, no fat) and C (3,000 s, fat), two seeds each, one card group to 24,000 s, after a 4,500 s check of one seed. An overshoot is rolled back by lowering fat's room, under the delegation D232 gives for digestion.
+- **Step 0**, agent work, measures leaves' reserves from a recorded checkpoint before the constants are fixed.
+- D245's energy sense lands in the same build. The build sits on top of integration branch 2, so nothing is merged twice (D243).
+
+**Why.** `r62cf` showed a world with oases and no migration: a crossing takes a median of 140 to 230 s against a grazer's life of about 60 to 67 s, and 5 to 13 grazers moved in each world over 24,000 s. Fat is the reserve a migrant crosses on. The specification's reasoning for each value stands, in its sections, and is not repeated here.
