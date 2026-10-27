@@ -36,17 +36,24 @@ empty source diff (D243), so the same settings on seed 6201 would replay it bit 
 manifests carry farm `ae99d3c2`, core `361aa924` and dynamics `29144991`. If any differs, the fourth seed is not the
 same build, and the round reads three worlds alone.
 
-No identity sitting is needed. The build is the one `r62sid` checked. Main has had no source change since, unless one
-lands before the launch. If one does, a sitting runs first.
+No identity sitting is needed. The build is the one `r62sid` checked, and main has had no source change since. If one
+lands before the launch, a sitting runs first. The card engine's world check refuses a change of clock step: the clock
+step is derived from the physics step and the pace factor alone (`SolverConfig.ClockStepSeconds`), and
+`GpuBackend.Check` compares both, so no fix is needed before the round.
 
 ## The tests and the readouts
 
 **D222's three tests per world at 24,000 s**, by `scripts/reads/screen-read-24000.ps1 -Gene`, as in the screens.
 
-**The settings are confirmed** when every new world passes D222, or when every miss is test 2 in a summer-start window
-that holds fewer than 20 grazers. Misses in windows that small have come before: growth group 2 failed at 9 to 17
-grazers (`logbook/specs/r62gr2-read/24000/`), and `r62sm-s100-6201` at 15. A miss in a larger window, or a miss of test
-1 or 3, means the settings are not confirmed. That goes to the owner with the read.
+**Two readings are reported, side by side.**
+- **(a) Strict, D222 as it stands.** The settings are confirmed when every new world passes all three tests. Any miss
+  means they are not confirmed, and that goes to the owner with the read.
+- **(b) The small-window reading, pending the owner's ruling on the D222 amendment the coordinator has put to them.**
+  It counts as a pass a test-2 miss in a summer-start window that holds fewer grazers than a threshold. The
+  threshold of 20 is a proposal, not a ruling. Misses in windows that small have come before: growth group 2 failed at
+  9 to 17 grazers (`logbook/specs/r62gr2-read/24000/`), and `r62sm-s100-6201` at 15. Reading (b) decides nothing
+  unless the owner adopts the amendment. Under it, a miss in a larger window, or a miss of test 1 or 3, still means
+  the settings are not confirmed.
 
 **The ocean readout is measured.** It is a description, with no bar. It comes from `scripts/reads/grazer-moves-read.py`
 at a 10 s stride, on r60-read's islands as seeded at 100 s, per world and per 3,000 s bin.
@@ -77,7 +84,7 @@ Beside these, as in the screens:
 
 These are guesses unless marked measured.
 
-- **D222.** All three new worlds pass, or miss only test 2 in a small window (guess). `r62sm-s100-6201`'s born share
+- **D222.** Under reading (a), two or three of the new worlds pass (guess). Under reading (b), all three pass (guess). `r62sm-s100-6201`'s born share
   was 0.828, its best cohort 1.26, its chain 17 and its intake over upkeep 1.81 (measured).
 - **Moves are rare.** In `r62sm-s100-6201`, r60-read counts 7 grazer migrants in 24,000 s at a 100 s stride (measured,
   `logbook/specs/r62sm-read/24000/r60-read-3000.txt`). At a 10 s stride I expect under 30 moves a world, and under 2% of
