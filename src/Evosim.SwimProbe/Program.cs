@@ -42,6 +42,7 @@ namespace Evosim.SwimProbe
             bool finBench = false;      // D229's fin-law bench: no run, two bodies of equal volume, the law off and on
             double finPush = 0.3, finOmega = 2.0, finStroke = 0.8, finHertz = 1.0;
             bool brainBirth = false;    // the brain-at-birth bench: held bodies, child and parent brains, fresh or carried
+            bool swim = false;          // --brain-birth only: also swim each child and parent alone under its own brain
             bool secondsGiven = false;  // --seconds defaults to 120 here and to 60 for the brain-at-birth bench
             double parentWarm = 60, kick = 0.05, eps = 0.05;
             ulong seed = 1;
@@ -78,6 +79,7 @@ namespace Evosim.SwimProbe
 
                         break;
                     case "--brain-birth": brainBirth = true; break;
+                    case "--swim": swim = true; break;
                     case "--parent-warm": parentWarm = double.Parse(args[++i], Inv); break;
                     case "--kick": kick = double.Parse(args[++i], Inv); break;
                     case "--eps": eps = double.Parse(args[++i], Inv); break;
@@ -93,10 +95,16 @@ namespace Evosim.SwimProbe
 
             if (finBench) return FinBench.Run(seconds, finPush, finOmega, finStroke, finHertz, outDir);
 
+            if (swim && !brainBirth)
+            {
+                Console.Error.WriteLine("--swim is read only with --brain-birth");
+                return 2;
+            }
+
             if (brainBirth)
             {
                 return BrainBirth.Run(
-                    run, idsFile, outDir, secondsGiven ? seconds : 60.0, parentWarm, kick, seed, eps, configPath, _dt, par);
+                    run, idsFile, outDir, secondsGiven ? seconds : 60.0, parentWarm, kick, seed, eps, configPath, _dt, par, swim);
             }
 
             Directory.CreateDirectory(outDir);
@@ -538,6 +546,19 @@ namespace Evosim.SwimProbe
             for (int i = half + 1; i < root.Count; i++) rootPath += (root[i] - root[i - 1]).Magnitude;
             res.RootPathSpeed = rootPath / window;
 
+            // The brain-at-birth bench's "early": the root's net horizontal (x, z) displacement from t = 0 to t = 10 s
+            // over the elapsed time of the sample nearest 10 s. Read-only on the trajectory above; NaN when the run is
+            // shorter than 10 s. Nothing else in the result depends on it.
+            {
+                double sampleEvery = every * _dt;
+                int at10 = (int)Math.Round(10.0 / sampleEvery);
+                if (at10 >= 1 && at10 < root.Count)
+                {
+                    double ex = root[at10].X - root[0].X, ez = root[at10].Z - root[0].Z;
+                    res.Early = Math.Sqrt(ex * ex + ez * ez) / (at10 * sampleEvery);
+                }
+            }
+
             // Per joint (primary dof by alone amplitude): amplitude, dominant frequency, stroke asymmetry.
             res.JointAmp = new Dictionary<int, double>();
             res.JointHz = new Dictionary<int, double>();
@@ -582,6 +603,71 @@ namespace Evosim.SwimProbe
                     res.PairLagDeg.Add((act[i], act[j], chain, lag));
                 }
             return res;
+        }
+
+        // ---------------------------------------------------------------- the brain-at-birth bench's door into Swim
+
+        /// <summary>What <see cref="SwimAlone"/> hands the bench: the fields of one <c>SwimResult</c> it reports.</summary>
+        internal sealed class SwimAloneResult
+        {
+            public bool Lost, NoJoints;
+            public int Dof;
+            public double NetSpeed = double.NaN, PathSpeed = double.NaN, Horizontal = double.NaN;
+            public double DominantHz = double.NaN, DominantAmp = double.NaN, Early = double.NaN;
+        }
+
+        /// <summary>
+        /// The bench runs inside <c>Main</c>'s early return, before <c>_config</c>, <c>_solver</c> and <c>_dt</c> are
+        /// set, and <see cref="Swim"/> reads all three. The bench calls this once, before its first swim and before
+        /// any thread starts, with the config, the solver it built (no glass, no creature contact, as the probe builds
+        /// its own) and its step; they are only read after that, so concurrent swims are safe.
+        /// </summary>
+        internal static void ConfigureForBench(RunConfig config, SolverConfig solver, double dt)
+        {
+            _config = config;
+            _solver = solver;
+            _dt = dt;
+        }
+
+        /// <summary>
+        /// One developed body alone in still water for <paramref name="steps"/> steps under its own brain with the
+        /// world's physics step (<c>Variant.BrainWorld</c>), at root height -20 m. The <c>BodyRecord</c> is built as
+        /// the snapshot pass builds it, with the fields <c>Swim</c> reads for that variant; the pose fields are not set.
+        /// </summary>
+        internal static SwimAloneResult SwimAlone(Phenotype adult, int steps)
+        {
+            var probe = new Creature(0, adult, _solver, _config.Shapes);
+            var outcome = new SwimAloneResult { Dof = probe.Dof };
+            var rec = new BodyRecord { Id = 0, Adult = adult, Dof = probe.Dof, Links = probe.Links, Parts = adult.PartCount };
+            rec.JointLinks = new List<int>();
+            for (int b = 1; b < probe.Links; b++) if (probe.DofCount[b] > 0) rec.JointLinks.Add(b);
+            if (probe.Dof == 0 || rec.JointLinks.Count == 0)
+            {
+                outcome.NoJoints = true;   // Swim picks its lead joint from the jointed links and needs at least one
+                return outcome;
+            }
+
+            rec.DofStart = (int[])probe.DofStart.Clone();
+            rec.DofCount = (int[])probe.DofCount.Clone();
+            rec.Parent = (int[])probe.Parent.Clone();
+            rec.LimitLo = (double[])probe.LimitLo.Clone();
+            rec.LimitHi = (double[])probe.LimitHi.Clone();
+            rec.StartHeight = -20.0;
+
+            SwimResult res = Swim(rec, Variant.BrainWorld, steps, null);
+            if (res.Lost)
+            {
+                outcome.Lost = true;
+                return outcome;
+            }
+
+            outcome.NetSpeed = res.NetSpeed;
+            outcome.PathSpeed = res.PathSpeed;
+            outcome.Horizontal = res.Horizontal;
+            outcome.DominantHz = res.DominantHz;
+            outcome.DominantAmp = res.DominantAmp;
+            outcome.Early = res.Early;
+            return outcome;
         }
 
         private static double DominantHz(double[] x, double dt)
@@ -679,6 +765,7 @@ namespace Evosim.SwimProbe
             public bool Lost;
             public long FinalBits;
             public double Horizontal, Vertical, NetSpeed, PathSpeed, RootPathSpeed, Net3, PerStroke;
+            public double Early = double.NaN;   // root net horizontal speed over 0..10 s, m/s; NaN under 10 s
             public double DominantHz, DominantAmp, LeadAsym;
             public double WorkWatts;
             public int ActiveJoints;
