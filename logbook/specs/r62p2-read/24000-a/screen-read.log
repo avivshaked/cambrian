@@ -1,0 +1,11 @@
+2026-10-27T05:48:22 read begins: r62p-w9-6201, r62p-t16-6201 to 24000 s
+2026-10-27T05:50:34 r62-read exit 0
+2026-10-27T05:50:56 r60-read-3000 exit 0
+2026-10-27T05:50:59 scaling-audit exit 0
+2026-10-27T05:51:02 overshoot r62p-w9-6201 against r62cs-w500-6201 exit 0
+2026-10-27T05:51:03 grazer-tally r62p-w9-6201 exit 0
+2026-10-27T05:51:06 overshoot r62p-t16-6201 against r62cs-w500-6201 exit 0
+2026-10-27T05:51:07 grazer-tally r62p-t16-6201 exit 0
+2026-10-27T05:51:07 read ends
+2026-10-27T05:59:58 grazer-motion exit 0
+2026-10-27T05:59:58 all reads end
