@@ -1,0 +1,20 @@
+== census-6202-12000.tsv living 2898
+  mouthed          32  median   403.5 s  p90   640.0 s  max   709.7 s  s=100 plain 69% D247 56%  s=300 plain 56% D247 44%  s=1000 plain 0% D247 0%
+                 share holding at least 100 s 69%, at least 230 s 59%
+  nopho mouthed    32  median   403.5 s  p90   640.0 s  max   709.7 s  s=100 plain 69% D247 56%  s=300 plain 56% D247 44%  s=1000 plain 0% D247 0%
+                 share holding at least 100 s 69%, at least 230 s 59%
+== census-6202-24000.tsv living 8659
+  mouthed         141  median   163.2 s  p90   668.0 s  max   908.7 s  s=100 plain 60% D247 43%  s=300 plain 42% D247 27%  s=1000 plain 0% D247 0%
+                 share holding at least 100 s 60%, at least 230 s 45%
+  nopho mouthed   141  median   163.2 s  p90   668.0 s  max   908.7 s  s=100 plain 60% D247 43%  s=300 plain 42% D247 27%  s=1000 plain 0% D247 0%
+                 share holding at least 100 s 60%, at least 230 s 45%
+== census-6204-12000.tsv living 2322
+  mouthed          23  median   293.0 s  p90   570.6 s  max   723.9 s  s=100 plain 83% D247 52%  s=300 plain 48% D247 26%  s=1000 plain 0% D247 0%
+                 share holding at least 100 s 83%, at least 230 s 61%
+  nopho mouthed    23  median   293.0 s  p90   570.6 s  max   723.9 s  s=100 plain 83% D247 52%  s=300 plain 48% D247 26%  s=1000 plain 0% D247 0%
+                 share holding at least 100 s 83%, at least 230 s 61%
+== census-6204-24000.tsv living 6534
+  mouthed         112  median   161.8 s  p90   556.6 s  max   782.6 s  s=100 plain 63% D247 37%  s=300 plain 31% D247 20%  s=1000 plain 0% D247 0%
+                 share holding at least 100 s 63%, at least 230 s 42%
+  nopho mouthed   109  median   164.8 s  p90   556.6 s  max   782.6 s  s=100 plain 64% D247 38%  s=300 plain 32% D247 20%  s=1000 plain 0% D247 0%
+                 share holding at least 100 s 64%, at least 230 s 43%

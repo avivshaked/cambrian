@@ -1,0 +1,52 @@
+== D:\Projects\experiments\evolution-simulator\scratch\fat-step0\census-6202-12000.tsv
+2898 rows
+
+second 12000
+guild   count  gest     med s     p90 s     p99 s     max s  plain600    plain1000   plain2000   plain3000   D247 600    D247 1000   D247 2000   D247 3000 
+leaf     2850   376       187       682      1240      4486   13.3%        2.9%        0.2%        0.0%        0.0%        0.0%        0.0%        0.0%    
+stom        2     0      3.36     19.57     19.57     19.57    0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%    
+mixo       14     1       123       635       681       681   14.3%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%    
+jnt        29     0       408       678       710       710   20.7%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%    
+plain       3     0       229       375       375       375    0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%    
+all      2898   377       188       681      1240      4486   13.4%        2.9%        0.2%        0.0%        0.0%        0.0%        0.0%        0.0%    
+(11 bodies with adult tissue under tissue, R negative and used as it stands; 0 with no standing cost, seconds_of_reserve inf)
+
+== D:\Projects\experiments\evolution-simulator\scratch\fat-step0\census-6202-24000.tsv
+8659 rows
+
+second 24000
+guild   count  gest     med s     p90 s     p99 s     max s  plain600    plain1000   plain2000   plain3000   D247 600    D247 1000   D247 2000   D247 3000 
+leaf     8374  1075       201       662      1384      4907   12.8%        3.1%        0.2%        0.1%        0.1%        0.0%        0.0%        0.0%    
+stom      108    58       268       594      1647      2017    9.3%        1.9%        0.9%        0.0%        1.9%        1.9%        0.0%        0.0%    
+mixo       36     2     65.82       583       812       812    8.3%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%    
+jnt       110    31       182       683       888       909   21.8%        0.0%        0.0%        0.0%        1.8%        0.0%        0.0%        0.0%    
+plain      31     8       128       595       732       732    6.5%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%    
+all      8659  1174       200       661      1381      4907   12.8%        3.1%        0.2%        0.1%        0.2%        0.1%        0.0%        0.0%    
+(99 bodies with adult tissue under tissue, R negative and used as it stands; 0 with no standing cost, seconds_of_reserve inf)
+
+== D:\Projects\experiments\evolution-simulator\scratch\fat-step0\census-6204-12000.tsv
+2322 rows
+
+second 12000
+guild   count  gest     med s     p90 s     p99 s     max s  plain600    plain1000   plain2000   plain3000   D247 600    D247 1000   D247 2000   D247 3000 
+leaf     2278   374       245       913      1415      2991   22.2%        7.2%        0.3%        0.0%        0.4%        0.1%        0.0%        0.0%    
+stom        1     0     98.08     98.08     98.08     98.08    0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%    
+mixo       19     3       557      1132      1364      1364   47.4%       15.8%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%    
+jnt        22     0       246       516       724       724    9.1%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%    
+plain       2     0       259       571       571       571    0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%    
+all      2322   377       246       912      1384      2991   22.2%        7.2%        0.3%        0.0%        0.4%        0.1%        0.0%        0.0%    
+(6 bodies with adult tissue under tissue, R negative and used as it stands; 0 with no standing cost, seconds_of_reserve inf)
+
+== D:\Projects\experiments\evolution-simulator\scratch\fat-step0\census-6204-24000.tsv
+6534 rows
+
+second 24000
+guild   count  gest     med s     p90 s     p99 s     max s  plain600    plain1000   plain2000   plain3000   D247 600    D247 1000   D247 2000   D247 3000 
+leaf     6368   804       270       920      1679      3107   24.7%        8.2%        0.4%        0.0%        0.3%        0.0%        0.0%        0.0%    
+stom       25     5       159       367       738       738    4.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%    
+mixo       32     4       392       889      1131      1131   31.2%        6.2%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%    
+jnt        82    47       172       592       783       783    9.8%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%    
+plain      27     8       161       496       595       595    0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%        0.0%    
+all      6534   868       266       916      1664      3107   24.4%        8.0%        0.4%        0.0%        0.3%        0.0%        0.0%        0.0%    
+(50 bodies with adult tissue under tissue, R negative and used as it stands; 0 with no standing cost, seconds_of_reserve inf)
+

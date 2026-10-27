@@ -1,0 +1,6 @@
+census-6202-24000.tsv leaves 8374
+  median P 58.4 J, tissue 21.2 J, W 0.1187 W, 1000 s x W 118.7 J, energy 27.9 J, median P/(1000 s x W) 0.55
+  tissue above adult: n 99, largest overshoot 1.67e-14 of adult
+census-6204-24000.tsv leaves 6368
+  median P 81.3 J, tissue 21.5 J, W 0.1316 W, 1000 s x W 131.6 J, energy 41.9 J, median P/(1000 s x W) 0.66
+  tissue above adult: n 50, largest overshoot 1.67e-14 of adult
