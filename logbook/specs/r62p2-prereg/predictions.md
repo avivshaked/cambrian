@@ -27,7 +27,7 @@ much. The group asks:
 
 ## The worlds
 
-Three worlds, founded on seed 6201, 24,000 world seconds each, in one card group, on group 1's world
+Three worlds, founded on seed 6201, 24,000 world seconds each, in two launches (below), on group 1's world
 (`rounds/env-r62kg.ps1`) with the newborn reserve at 0.5 in all three:
 
 | World | Pace factor | Limb push | Work price | Settings |
@@ -89,13 +89,31 @@ read moved two of them, and each one says so.
 
 ## The machine
 
-Group 1's measured pace: `r62p-t3`, at the pace factor 1, reached 24,000 s in 3.3 hours. `r62p-k3` took 7.3 hours,
-at 0.58 to 0.65 times real time over its last hours with 9,000 to 13,000 bodies. This group's slowest world is
-`r62p-k3w9`, so the group takes about 7 to 8 hours (guess).
+**The launch is split in two** (the coordinator's ruling of 2026-10-27, amending this file before either part
+launches). Each world is bit-identical at any thread count and beside any other worlds on the card (the pace build's
+sitting, `logbook/specs/r62p-prereg/identity.md`, and the growth build's at 10 threads against 14,
+`logbook/specs/r62gr-prereg/identity.md`). So the split moves no result, and the predictions, the tests and the exits
+stand as written. The comparison is read when all three worlds have ended.
 
-One more exit, the coordinator's of 2026-10-26: after 12,000 s, if the slowest world runs under 0.6 times real time
-for an hour, it is stopped with `scripts/stop-arm.ps1` and read at its stop second, and the read says so. `r62p-k3`
-ran close to that line over its last hours, so the exit may well fire on `r62p-k3w9` (inference).
+- **Part a,** `rounds/launch-r62p2a.ps1`: `r62p-w9` and `r62p-t16`, the two worlds at the pace factor 1, in one card
+  group on logical 22 to 31 at 10 threads, with the theatre's one Unity beside them on 16 to 21.
+- **Part b,** `rounds/launch-r62p2b.ps1`: `r62p-k3w9` alone, through `scripts/card/card-run.ps1`, on logical 16 to 29
+  at 14 threads with the theatre paused. It runs in a long gap in the theatre's queue.
+
+**Why.** Group 1's measured pace: `r62p-t3`, at the pace factor 1, reached 24,000 s in 3.3 hours, at about 2 times
+real time early and 1.4 to 1.7 late. `r62p-k3` took 7.3 hours, at 1.0 to 1.3 times early and 0.58 to 0.65 over its
+last hours with 9,000 to 13,000 bodies. Ten threads against 14 cost 13 to 25 % of pace (derived from the host's 39 to
+42 % of the wall, `logbook/specs/r62gr-prereg/predictions.md`).
+
+- At 10 threads the two worlds at the pace factor 1 should run at about 1.6 times early and 1.1 to 1.4 late
+  (guess).
+- `r62p-k3w9` at 10 threads would run at about 0.45 to 0.55 times over its second half. The exit below would very
+  likely fire, and the group would lose the world's 24,000 s read, which is its second question.
+- Alone on the card at 14 threads it should match or beat `r62p-k3`'s pace (guess), 7 hours or less.
+
+One more exit, the coordinator's of 2026-10-26: after 12,000 s, if a world runs under 0.6 times real time for an hour,
+it is stopped with `scripts/stop-arm.ps1` and read at its stop second, and the read says so. `r62p-k3` ran close to
+that line over its last hours, so the exit may still fire on `r62p-k3w9` (inference).
 
 ## What would change the plan
 
