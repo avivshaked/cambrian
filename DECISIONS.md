@@ -9766,3 +9766,14 @@ in any condition set for the world.
 - k = 0 as the off value. It reads as a number and divides by zero if taken at its face.
 
 **Why.** The project's builds land with every new switch off (D243). With the sense in every arm, arm D is the control that isolates fat and the cap from the sense.
+
+### D250
+**Fat's screen adds arms A' and B' at s = 300 s, where D247's cap binds in today's world** · 2026-10-27
+
+**Status:** decided by the coordinator late on 2026-10-27, after fat's step 0. It adds two arms to D247's screen and changes none of the ruled ones.
+
+**Decision.**
+- Arms A' (s = 300 s, with fat) and B' (s = 300 s, without fat) join arms A, B and C as D247 ruled them and arm D from D249. The group is ten worlds on the screen's two seeds.
+- The 4,500 s check runs A' and B' first, since a cap that binds may also trim grazers' small reserves.
+
+**Why.** Step 0 measured every living body in `r62cf`'s worlds at 12,000 and 24,000 s. Under D247's cap form, s = 1,000 s binds 0.0 to 0.1 % of bodies and 3,000 s binds none. Reserves are small: leaves, 96-97 % of the living, hold a median of 28 to 42 J against a 1,000 s cap near 180 J. D247's arm A is "fat with room to buy", and in this world that holds at 300 s, where the cap binds 2 to 8 %. Keeping A and B as ruled keeps the owner's arms. The record is `logbook/specs/fat-step0/`.
