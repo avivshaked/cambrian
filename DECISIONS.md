@@ -9652,3 +9652,20 @@ in any condition set for the world.
 - A real indent, where the nose sits inside the parent's outline, is a change to D235's world rule. It waits until noses are tested in the nursery and is put to the owner then.
 
 **Why.** The theatre draws what the world simulates. A nose in D235 is a real part that sticks out and smells at its tip, so the picture keeps its true size and puts the opening where the smelling happens. No recorded world carries a nose yet, so nothing already filmed changes.
+
+### D243
+**Pace, growth, the shape family's clip and genes, and the structural mutation bindings land on main as one merge, before integration branch 2** · 2026-10-27
+
+**Status:** approved by the coordinator on 2026-10-27, after the owner judged the same day that the screens had answered the pace and growth settings. Agent work under the standing delegation; nothing is pushed.
+
+**Decision.**
+- Branch `struct` lands on main as one merge (`565ade1e`). It holds `growth`, which holds `pace`, `shape-core` and `shape-genes`, and one code commit beyond it: the seven structural mutation chances bound from the environment (`37341da0`). Every new switch and binding is off or at today's value by default.
+- The bindings land whatever the structural screen's rule picks. Unset, they leave the world bit for bit as it was, as the card identity sitting at `5fc76e11` showed. They are the only way to run a world at another structural rate.
+- Integration branch 2 (D231 and the twin drive, D234) lands after, merged onto the new main. Its owed tests, its crowd-fixture re-record and its card identity sitting then run once, on the final tree.
+- The nursery's configs are brought forward once, after integration branch 2, since its two new tunables would refuse configs brought forward before it.
+
+**Rejected.**
+- Landing integration branch 2 first. `struct` would then need a re-merge, a re-test and a second card sitting, and the fixture would be re-recorded twice.
+- Landing `growth` without the bindings. It is tested too, but a later rate screen or round would need the bindings re-landed.
+
+**Why.** Main had no source commit since growth's crowd fixture (`88d20602`), so the merged tree's source is `struct`'s, checked by an empty source diff. Its hashes (farm `ae99d3c2`, core `361aa924`, dynamics `29144991`) and its fixture (`runs/cefix-s4/2026-10-26-203434-b2f9267b`) are those already tested. The landing therefore costs no machine time.
