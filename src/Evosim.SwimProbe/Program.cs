@@ -26,6 +26,10 @@ namespace Evosim.SwimProbe
         private static SolverConfig _solver;
         private static double _dt = 0.01;
         private static double _uniformWater;   // m/s along x, brain pass only: what the flow sensor reads in a current
+        // Set by the brain-at-birth bench's --current phase alone (SetCurrentLoop): makes Variant.BrainLoop step the
+        // brain and the drive with the bend array, and run Anchor.Apply, as DynamicsWorld.StepOne does. Off for every
+        // other pass, so the probe's own BrainLoop passes are unchanged.
+        private static bool _loopBend;
         private static MethodInfo _jointTorques =
             typeof(DynamicsWorld).GetMethod("JointTorques", BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -45,6 +49,8 @@ namespace Evosim.SwimProbe
             bool swim = false;          // --brain-birth only: also swim each child and parent alone under its own brain
             bool passive = false;       // --brain-birth --swim only: also step the same bodies with the brain off (Variant.Passive)
             bool birthHeight = false;   // --brain-birth --swim only: start each body at its row's y0, not at -20 m
+            string senseSweep = null;   // --brain-birth --swim only: constants for ConstantChemicalAndEnergy, comma-separated
+            double current = double.NaN;   // --brain-birth --swim only: a uniform water speed along x, m/s
             bool secondsGiven = false;  // --seconds defaults to 120 here and to 60 for the brain-at-birth bench
             double parentWarm = 60, kick = 0.05, eps = 0.05;
             ulong seed = 1;
@@ -84,6 +90,8 @@ namespace Evosim.SwimProbe
                     case "--swim": swim = true; break;
                     case "--passive": passive = true; break;
                     case "--birth-height": birthHeight = true; break;
+                    case "--sense-sweep": senseSweep = args[++i]; break;
+                    case "--current": current = double.Parse(args[++i], Inv); break;
                     case "--parent-warm": parentWarm = double.Parse(args[++i], Inv); break;
                     case "--kick": kick = double.Parse(args[++i], Inv); break;
                     case "--eps": eps = double.Parse(args[++i], Inv); break;
@@ -111,11 +119,17 @@ namespace Evosim.SwimProbe
                 return 2;
             }
 
+            if ((senseSweep != null || !double.IsNaN(current)) && !(brainBirth && swim))
+            {
+                Console.Error.WriteLine("--sense-sweep and --current are read only with --brain-birth --swim");
+                return 2;
+            }
+
             if (brainBirth)
             {
                 return BrainBirth.Run(
                     run, idsFile, outDir, secondsGiven ? seconds : 60.0, parentWarm, kick, seed, eps, configPath, _dt, par, swim,
-                    passive, birthHeight);
+                    passive, birthHeight, senseSweep, current);
             }
 
             Directory.CreateDirectory(outDir);
@@ -430,6 +444,9 @@ namespace Evosim.SwimProbe
         private static SwimResult Swim(BodyRecord rec, Variant variant, int steps, StrokePlan plan)
         {
             var body = new Creature(0, rec.Adult, _solver, _config.Shapes);
+            // The bench's childSwimReserve hook: the energy sense reads this stand-in's SecondsOfReserve through the
+            // same path the world's Organism takes (CreatureSenses.Sample). Null for every other swim, so unchanged.
+            if (rec.Reserve != null) body.Senses.Reserve = rec.Reserve;
             double y0 = Math.Max(-40.0, Math.Min(_startTop, rec.StartHeight));
             body.PlaceAsDeveloped(new Vec3(0, y0, 0), rec.Adult);
 
@@ -473,7 +490,12 @@ namespace Evosim.SwimProbe
                     if (_uniformWater != 0 && variant == Variant.BrainLoop)
                         for (int i = 0; i < body.Links; i++) body.Water[3 * i] = _uniformWater;
                     body.Senses.Sample();
-                    if (variant == Variant.BrainLoop) body.Brain.Step((float)_dt, body.DriveSignal, body.Senses);
+                    if (variant == Variant.BrainLoop)
+                    {
+                        body.Brain.Step(
+                            (float)_dt, body.DriveSignal, body.Senses,
+                            _loopBend && body.Drive.BendAndPower ? body.BendSignal : null);
+                    }
                     else
                     {
                         Array.Clear(body.DriveSignal, 0, body.DriveSignal.Length);
@@ -498,9 +520,11 @@ namespace Evosim.SwimProbe
                     }
                     Array.Clear(body.Fext, 0, body.Fext.Length);
                     Array.Clear(body.Tau, 0, body.Tau.Length);
-                    body.Drive.Drive(body.DriveSignal);
+                    if (_loopBend && variant == Variant.BrainLoop) body.Drive.Drive(body.DriveSignal, body.BendSignal);
+                    else body.Drive.Drive(body.DriveSignal);
                     Fluid.Apply(body, _solver);
                     Contacts.Apply(body, 0, grid, _solver, ref scratch);
+                    if (_loopBend && variant == Variant.BrainLoop) Anchor.Apply(body, _solver, _dt);
                     _jointTorques.Invoke(world, jtArgs);
                     if (step >= keepFrom) { for (int d = 0; d < dof; d++) work += Math.Abs(body.Tau[d] * body.Qd[d]) * _dt; workTime += _dt; }
                     Aba.Solve(body);
@@ -555,6 +579,9 @@ namespace Evosim.SwimProbe
                     double ex = root[at10].X - root[0].X, ez = root[at10].Z - root[0].Z;
                     res.Early = Math.Sqrt(ex * ex + ez * ez) / (at10 * sampleEvery);
                     res.Dy10 = root[at10].Y - root[0].Y;   // y is up (the start is at a negative depth): up positive
+                    res.EarlyDx = ex;                      // the signed parts of the same displacement, and its elapsed
+                    res.EarlyDz = ez;                      // time, so a bench in a current can take the water's own
+                    res.EarlyT = at10 * sampleEvery;       // drift off along x
                 }
             }
 
@@ -641,7 +668,8 @@ namespace Evosim.SwimProbe
             // Dy10 is the root's vertical displacement over 0 to 10 s, up positive.
             public double TotalMass = double.NaN, TotalVolume = double.NaN, Excess = double.NaN;
             public double NetBuoyancy = double.NaN, BodyLength = double.NaN, Dy10 = double.NaN;
-            public double StartUsed = double.NaN;   // the root height Swim started the body at, after its clamp to [-40, -2]
+            public double StartUsed = double.NaN;   // the root height Swim started the body at, after its clamp to [-40, _startTop]
+            public double EarlyDx = double.NaN, EarlyDz = double.NaN, EarlyT = double.NaN;   // Early's signed x and z displacement (m) and elapsed time (s); NaN under 10 s
         }
 
         /// <summary>
@@ -662,6 +690,28 @@ namespace Evosim.SwimProbe
         // to just under the surface, so a newborn recorded at -1 m starts there rather than at -2 m.
         private static double _startTop = -2.0;
 
+        /// <summary>The clamp's upper end in force, metres: -2 m for the probe's passes, -0.05 m under <c>--birth-height</c>.</summary>
+        internal static double StartTop => _startTop;
+
+        /// <summary>
+        /// Turns on the bench's current phase: <see cref="Variant.BrainLoop"/> feeds the flow sensor a uniform water
+        /// speed of <paramref name="metresPerSecond"/> along x (Swim sets <c>body.Water</c> every step, Fluid.Apply turns
+        /// it into <c>RelativeVelocity</c>, <c>CreatureSenses.Sample</c> reads that), and steps the brain and drive with
+        /// the bend array and runs <c>Anchor.Apply</c>, as <c>DynamicsWorld.StepOne</c> does. Statics, so it is set and
+        /// cleared by the bench between phases, never while a swim is running. <see cref="ClearCurrentLoop"/> resets both.
+        /// </summary>
+        internal static void SetCurrentLoop(double metresPerSecond)
+        {
+            _uniformWater = metresPerSecond;
+            _loopBend = true;
+        }
+
+        internal static void ClearCurrentLoop()
+        {
+            _uniformWater = 0;
+            _loopBend = false;
+        }
+
         /// <summary>
         /// One developed body alone in still water for <paramref name="steps"/> steps under its own brain with the
         /// world's physics step (<c>Variant.BrainWorld</c>), at root height <paramref name="startHeight"/> (-20 m by
@@ -670,7 +720,9 @@ namespace Evosim.SwimProbe
         /// fluid's, the contact pass's and the joints' (see <c>Swim</c>). The <c>BodyRecord</c> is built as the
         /// snapshot pass builds it, with the fields <c>Swim</c> reads for that variant; the pose fields are not set.
         /// </summary>
-        internal static SwimAloneResult SwimAlone(Phenotype adult, int steps, bool passive = false, double startHeight = -20.0)
+        internal static SwimAloneResult SwimAlone(
+            Phenotype adult, int steps, bool passive = false, double startHeight = -20.0, bool loop = false,
+            IReserveSource reserve = null)
         {
             var probe = new Creature(0, adult, _solver, _config.Shapes);
             var outcome = new SwimAloneResult { Dof = probe.Dof };
@@ -717,8 +769,11 @@ namespace Evosim.SwimProbe
             rec.LimitLo = (double[])probe.LimitLo.Clone();
             rec.LimitHi = (double[])probe.LimitHi.Clone();
             rec.StartHeight = startHeight;
+            rec.Reserve = reserve;   // the hook: Swim sets it on the Creature it builds, per call, so threads do not share it
 
-            SwimResult res = Swim(rec, passive ? Variant.Passive : Variant.BrainWorld, steps, null);
+            // loop: the probe's own step loop (Variant.BrainLoop) in place of DynamicsWorld.Step, which is the only variant
+            // that reads _uniformWater. The bench's --current phase asks for it, with SetCurrentLoop on.
+            SwimResult res = Swim(rec, passive ? Variant.Passive : loop ? Variant.BrainLoop : Variant.BrainWorld, steps, null);
             if (res.Lost)
             {
                 outcome.Lost = true;
@@ -731,6 +786,9 @@ namespace Evosim.SwimProbe
             outcome.DominantHz = res.DominantHz;
             outcome.DominantAmp = res.DominantAmp;
             outcome.Early = res.Early;
+            outcome.EarlyDx = res.EarlyDx;
+            outcome.EarlyDz = res.EarlyDz;
+            outcome.EarlyT = res.EarlyT;
             outcome.Dy10 = res.Dy10;
             return outcome;
         }
@@ -811,6 +869,7 @@ namespace Evosim.SwimProbe
             public double[] LimitLo, LimitHi;
             public string JointTypes;
             public double StartHeight;
+            public IReserveSource Reserve;   // the bench's childSwimReserve: set on Senses.Reserve in Swim; null otherwise
             public double Length, Mass;
             public int PoseSamples;
             public double[] PoseSd;
@@ -831,6 +890,7 @@ namespace Evosim.SwimProbe
             public long FinalBits;
             public double Horizontal, Vertical, NetSpeed, PathSpeed, RootPathSpeed, Net3, PerStroke;
             public double Early = double.NaN;   // root net horizontal speed over 0..10 s, m/s; NaN under 10 s
+            public double EarlyDx = double.NaN, EarlyDz = double.NaN, EarlyT = double.NaN;   // its signed x and z parts (m) and the elapsed time (s)
             public double Dy10 = double.NaN;    // root vertical displacement over 0..10 s, m, up positive; NaN under 10 s
             public double DominantHz, DominantAmp, LeadAsym;
             public double WorkWatts;

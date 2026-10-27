@@ -88,7 +88,7 @@ namespace Evosim.SwimProbe
         public static int Run(
             string run, string idsFile, string outDir, double seconds, double parentWarm, double kick, ulong seed,
             double eps, string configPath, double dt, int threads, bool swim = false, bool passive = false,
-            bool birthHeight = false)
+            bool birthHeight = false, string senseSweep = null, double current = double.NaN)
         {
             if (run == null || idsFile == null || outDir == null)
             {
@@ -102,13 +102,35 @@ namespace Evosim.SwimProbe
                 return 2;
             }
 
+            // --sense-sweep: a comma-separated list of finite constants for ConstantChemicalAndEnergy, read with --swim only
+            // (Program.Main refuses it otherwise). --current: a finite water speed along x, m/s.
+            var sweepValues = new List<double>();
+            if (swim && senseSweep != null)
+            {
+                foreach (string part in senseSweep.Split(','))
+                {
+                    if (!double.TryParse(part.Trim(), NumberStyles.Float, Inv, out double value) ||
+                        double.IsNaN(value) || double.IsInfinity(value))
+                    {
+                        Console.Error.WriteLine("--sense-sweep needs a comma-separated list of numbers, for example 0,0.25,0.75,1; got " + senseSweep);
+                        return 2;
+                    }
+
+                    sweepValues.Add(value);
+                }
+            }
+
+            if (swim && !double.IsNaN(current) && double.IsInfinity(current))
+            {
+                Console.Error.WriteLine("--current needs a finite speed in m/s");
+                return 2;
+            }
+
             Directory.CreateDirectory(outDir);
 
             RunConfig config = RunConfigJson.Read(
                 File.ReadAllText(configPath ?? Path.Combine(run, "config.json")), out string mismatch);
-            SolverConfig solver = SolverConfig.From(config, dt);
-            solver.TankRadiusMetres = 0;       // alone: no glass
-            solver.CreatureContact = false;    // alone: nobody to touch
+            SolverConfig solver = BenchSolver(config, dt, null);
 
             var cx = new Context
             {
@@ -123,6 +145,8 @@ namespace Evosim.SwimProbe
                 Swim = swim,
                 Passive = swim && passive,
                 BirthHeight = swim && birthHeight,
+                SweepValues = sweepValues,
+                Current = swim ? current : double.NaN,
             };
 
             // --swim: Program.Swim reads the probe's statics, which Main has not set on this path. Set them from this
@@ -154,6 +178,11 @@ namespace Evosim.SwimProbe
             Console.WriteLine(
                 $"  ids {rows.Count} rows; genomes found {genomeRows.Count} of {wantGenomes.Count}; birth fractions found {birthFractions.Count} of {wantBirths.Count}");
             foreach (string note in notes) Console.WriteLine("  note: " + note);
+
+            // rows with an S0 (the ids file's optional first-frame seconds of reserve); the reserve phase runs if any
+            int haveReserve = 0;
+            if (swim) foreach (IdRow row in rows) if (!double.IsNaN(row.S0)) haveReserve++;
+
             if (swim)
             {
                 Console.WriteLine(FormattableString.Invariant(
@@ -170,12 +199,37 @@ namespace Evosim.SwimProbe
                     int have = 0;
                     foreach (IdRow row in rows) if (!double.IsNaN(row.Y0)) have++;
                     Console.WriteLine(FormattableString.Invariant(
-                        $"  start: --birth-height. Each swim and passive body starts at its row's y0 (the parent at its child's y0), {have} of {rows.Count} rows have one; a row without y0 keeps {StartHeight} m and says so in its note. Swim clamps the start to [-40, -2] m, and says so in the note when it does"));
+                        $"  start: --birth-height. Each swim and passive body starts at its row's y0 (the parent at its child's y0), {have} of {rows.Count} rows have one; a row without y0 keeps {StartHeight} m and says so in its note. Swim clamps the start to [-40, {Program.StartTop}] m, and says so in the note when it does"));
                 }
                 else
                 {
                     Console.WriteLine(FormattableString.Invariant(
-                        $"  start: root at y {StartHeight} m for every swim and passive body (no --birth-height)"));
+                        $"  start: root at y {StartHeight} m for every swim and passive body (no --birth-height). Swim clamps the start to [-40, {Program.StartTop}] m"));
+                }
+
+                if (cx.SweepValues.Count > 0)
+                {
+                    Console.WriteLine(
+                        "  sense sweep: childSwim@v is the child, fresh at its birth size, swimming alone at its start height with ConstantChemicalAndEnergy = v for v in " +
+                        string.Join(", ", cx.SweepValues.Select(v => F(v, "0.######"))) +
+                        ". That constant feeds two separate channels, SensorChannel.Chemical (CreatureSenses.cs:399-402, every part, while Senses.Nutrients is null) and SensorChannel.Energy (CreatureSenses.cs:407-408, the whole body, while Senses.Reserve is null); the sweep moves both together. A brain reads either only through a neuron wired to that channel. The base childSwim is at " +
+                        F(solver.ConstantChemicalAndEnergy, "0.######"));
+                }
+
+                if (haveReserve > 0)
+                {
+                    Console.WriteLine(FormattableString.Invariant(
+                        $"  reserve: childSwimReserve is childSwim with Senses.Reserve set to a fixed stand-in whose SecondsOfReserve is the row's S0 ({haveReserve} of {rows.Count} rows have one; the others are skipped with a note). The energy sense is then tanh(S0 / EnergyFullScaleSeconds {solver.EnergyFullScaleSeconds}) (CreatureSenses.cs:203, :475-482; +infinity reads 1); the chemical sense stays at the constant {solver.ConstantChemicalAndEnergy}. Anchor reads the same reserve only for a held grip, and a body alone holds none"));
+                }
+                else if (senseSweep != null || !double.IsNaN(current))
+                {
+                    Console.WriteLine("  reserve: the ids file has no S0 column, so childSwimReserve is not run");
+                }
+
+                if (cx.HasCurrent)
+                {
+                    Console.WriteLine(FormattableString.Invariant(
+                        $"  current: childSwimCurrent is childSwim run through the probe's own step loop (Variant.BrainLoop, with the bend array and Anchor.Apply as DynamicsWorld.StepOne has them) with a uniform water speed of {cx.Current} m/s along x: Program.Swim sets Creature.Water[3 i] each step, Fluid.Apply turns it into RelativeVelocity (Fluid.cs:85-86), and CreatureSenses.Sample reads that in each part's frame as the flow sense (CreatureSenses.cs:292-301). The body is dragged along. Its early column is the absolute root displacement over 0 to 10 s; earlyRelWater is the same with {cx.Current} m/s times the elapsed time taken off the x displacement. childSwimLoop0 is the same loop in still water, run first as the current's control"));
                 }
 
                 Console.WriteLine(
@@ -201,10 +255,126 @@ namespace Evosim.SwimProbe
                 return 3;
             }
 
-            WriteTables(outDir, rows, results);
+            if (swim && (cx.SweepValues.Count > 0 || haveReserve > 0 || cx.HasCurrent))
+            {
+                try
+                {
+                    RunExtras(cx, rows, results, genomeRows, birthFractions, threads, haveReserve > 0);
+                }
+                catch (AggregateException ex)
+                {
+                    foreach (Exception inner in ex.Flatten().InnerExceptions)
+                    {
+                        Console.Error.WriteLine("brain-birth extras failed: " + inner.GetType().Name + ": " + inner.Message);
+                    }
+
+                    return 3;
+                }
+            }
+
+            WriteTables(outDir, rows, results, cx.Current);
             Summarise(rows, results);
             if (swim) SummariseSwim(rows, results);
+            if (swim) SummariseExtras(cx, rows, results);
             return 0;
+        }
+
+        // ================================================================ the extra phases
+
+        /// <summary>
+        /// The sweep, the reserve and the current, each a phase of its own: Program.Swim reads the solver and the
+        /// current from statics, so a phase sets them, runs every row (in parallel, <c>--threads</c> honoured; a row's
+        /// result lands at its own index) and puts them back. The bench's own solver is restored before the reserve
+        /// and the current phases and after the last.
+        /// </summary>
+        private static void RunExtras(
+            Context cx, List<IdRow> rows, RowResult[] results, Dictionary<long, string> genomeRows,
+            Dictionary<long, float> birthFractions, int threads, bool reserve)
+        {
+            var options = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, threads) };
+            double startTop = cx.BirthHeight ? -0.05 : -2.0;
+
+            try
+            {
+                foreach (double v in cx.SweepValues)
+                {
+                    // Built as Run builds the bench's own, with the constant set to v for both channels.
+                    Program.ConfigureForBench(cx.Config, BenchSolver(cx.Config, cx.Dt, (float)v), cx.Dt, startTop);
+                    string name = "childSwim@" + F(v, "0.######");
+                    Parallel.For(0, rows.Count, options, k =>
+                    {
+                        results[k].Extra.Add(ChildSwim(cx, rows[k], name, genomeRows, birthFractions, false, null, ""));
+                    });
+                }
+            }
+            finally
+            {
+                Program.ConfigureForBench(cx.Config, cx.Solver, cx.Dt, startTop);
+            }
+
+            if (reserve)
+            {
+                Parallel.For(0, rows.Count, options, k =>
+                {
+                    IdRow row = rows[k];
+                    if (double.IsNaN(row.S0))
+                    {
+                        results[k].Extra.Add(Skip(ReserveName, "skip: the ids file has no S0 for this row"));
+                        return;
+                    }
+
+                    float seconds = (float)row.S0;
+                    string note = FormattableString.Invariant($"S0 {seconds:0.###} s, energy sense {EnergySense(cx, seconds):0.####}");
+                    results[k].Extra.Add(ChildSwim(cx, row, ReserveName, genomeRows, birthFractions, false, new FixedReserve(seconds), note));
+                });
+            }
+
+            if (cx.HasCurrent)
+            {
+                // The current runs on the probe's own step loop, not on DynamicsWorld.Step, so the same loop in still
+                // water (childSwimLoop0) runs first as its control: the current's effect is childSwimCurrent against
+                // childSwimLoop0, and childSwimLoop0 against childSwim measures the loop's own difference.
+                foreach ((string name, double water) in new[] { (LoopName, 0.0), (CurrentName, cx.Current) })
+                {
+                    Program.SetCurrentLoop(water);
+                    try
+                    {
+                        Parallel.For(0, rows.Count, options, k =>
+                        {
+                            results[k].Extra.Add(ChildSwim(cx, rows[k], name, genomeRows, birthFractions, true, null, ""));
+                        });
+                    }
+                    finally
+                    {
+                        Program.ClearCurrentLoop();
+                    }
+                }
+            }
+        }
+
+        /// <summary>The energy sense a reserve of <paramref name="seconds"/> gives: CreatureSenses.Squash, mirrored for the note.</summary>
+        private static double EnergySense(Context cx, float seconds)
+        {
+            if (float.IsNaN(seconds)) return 0.0;
+            if (float.IsPositiveInfinity(seconds)) return 1.0;
+            if (float.IsNegativeInfinity(seconds)) return -1.0;
+            return (float)Math.Tanh(seconds / (float)Math.Max(1e-6, cx.Solver.EnergyFullScaleSeconds));
+        }
+
+        /// <summary>One row's child swim in an extra phase: the child, fresh at its birth size, at its start height.</summary>
+        private static VariantResult ChildSwim(
+            Context cx, IdRow row, string name, Dictionary<long, string> genomeRows,
+            Dictionary<long, float> birthFractions, bool loop, IReserveSource reserve, string extraNote)
+        {
+            if (!genomeRows.TryGetValue(row.Id, out string childRow))
+            {
+                return Skip(name, "skip: the child's genome is not in genomes.jsonl.gz");
+            }
+
+            float fraction = birthFractions.TryGetValue(row.Id, out float bf) ? bf : 1f;
+            string bfNote = float.IsNaN(fraction) ? "" : FormattableString.Invariant($"bf {fraction:0.####}");
+            double start = StartOf(cx, row, out string startNote);
+            return SwimOne(cx, name, childRow, fraction, JoinNote(JoinNote(bfNote, startNote), extraNote), false, start, loop, reserve);
         }
 
         // ================================================================ one child
@@ -218,6 +388,23 @@ namespace Evosim.SwimProbe
             public double Kick, Eps;
             public ulong Seed;
             public bool Swim, Passive, BirthHeight;
+            public List<double> SweepValues = new List<double>();   // --sense-sweep, in the order given
+            public double Current = double.NaN;                     // --current, m/s along x; NaN when not asked for
+            public bool HasCurrent => !double.IsNaN(Current);
+        }
+
+        /// <summary>
+        /// The solver the bench builds, for the held variants and, with a constant, for one sweep value: the run's
+        /// own, with no glass and no creature contact, as the probe builds its own. A null constant leaves
+        /// <c>ConstantChemicalAndEnergy</c> at what the build gives (0.5).
+        /// </summary>
+        private static SolverConfig BenchSolver(RunConfig config, double dt, float? constant)
+        {
+            SolverConfig solver = SolverConfig.From(config, dt);
+            solver.TankRadiusMetres = 0;       // alone: no glass
+            solver.CreatureContact = false;    // alone: nobody to touch
+            if (constant.HasValue) solver.ConstantChemicalAndEnergy = constant.Value;
+            return solver;
         }
 
         /// <summary>A failure that stops the whole bench instead of becoming a skipped row.</summary>
@@ -232,6 +419,7 @@ namespace Evosim.SwimProbe
             public string Group;
             public string FirstSpeed;
             public double Y0 = double.NaN;   // the child's root y at its first frame; NaN when the ids file has no y0 column or a blank
+            public double S0 = double.NaN;   // the child's seconds of reserve at its first frame; NaN when absent; +infinity is allowed
         }
 
         private sealed class Stats
@@ -256,6 +444,24 @@ namespace Evosim.SwimProbe
         {
             public VariantResult[] Variants = new VariantResult[VariantNames.Length];
             public VariantResult[] Swims = new VariantResult[SwimNames.Length];   // entries stay null without --swim
+
+            // The extra child swims, in the order the phases ran: childSwim@v for each --sense-sweep value, then
+            // childSwimReserve (when the ids file has an S0 column), then childSwimCurrent (--current). Written by
+            // the one thread that holds the row in a phase, and phases do not overlap.
+            public List<VariantResult> Extra = new List<VariantResult>();
+        }
+
+        private const string ReserveName = "childSwimReserve", CurrentName = "childSwimCurrent", LoopName = "childSwimLoop0";
+
+        /// <summary>
+        /// A reserve that never changes: the child's first-frame seconds of reserve (the ids file's S0). It is the
+        /// whole of <c>IReserveSource</c> (one property, Organism.cs:17-21), so nothing else is stubbed.
+        /// </summary>
+        private sealed class FixedReserve : IReserveSource
+        {
+            private readonly float _seconds;
+            public FixedReserve(float seconds) { _seconds = seconds; }
+            public float SecondsOfReserve => _seconds;
         }
 
         /// <summary>A body held at rest, its brain run on the senses of that body.</summary>
@@ -365,13 +571,7 @@ namespace Evosim.SwimProbe
             {
                 // The start: -20 m, or with --birth-height the child's y0 for both bodies (a row without one keeps -20 m
                 // and says so). The same start and the same bodies for the passive runs.
-                double start = StartHeight;
-                string startNote = "";
-                if (cx.BirthHeight)
-                {
-                    if (double.IsNaN(row.Y0)) startNote = FormattableString.Invariant($"y0 nan, start {StartHeight} m");
-                    else start = row.Y0;
-                }
+                double start = StartOf(cx, row, out string startNote);
 
                 for (int s = 0; s < SwimNames.Length; s++)
                 {
@@ -393,12 +593,31 @@ namespace Evosim.SwimProbe
         private static string JoinNote(string a, string b) =>
             a.Length == 0 ? b : b.Length == 0 ? a : a + "; " + b;
 
+        /// <summary>
+        /// The start height of a row's swims: -20 m, or with --birth-height the child's y0 (a row without one keeps
+        /// -20 m and says so in <paramref name="startNote"/>).
+        /// </summary>
+        private static double StartOf(Context cx, IdRow row, out string startNote)
+        {
+            startNote = "";
+            if (!cx.BirthHeight) return StartHeight;
+            if (double.IsNaN(row.Y0))
+            {
+                startNote = FormattableString.Invariant($"y0 nan, start {StartHeight} m");
+                return StartHeight;
+            }
+
+            return row.Y0;
+        }
+
         private static VariantResult SwimOne(
-            Context cx, string name, string genomeRow, float fraction, string note, bool passive, double start)
+            Context cx, string name, string genomeRow, float fraction, string note, bool passive, double start,
+            bool loop = false, IReserveSource reserve = null)
         {
             try
             {
-                Program.SwimAloneResult swum = Program.SwimAlone(DevelopBody(cx, genomeRow, fraction), cx.Steps, passive, start);
+                Program.SwimAloneResult swum = Program.SwimAlone(
+                    DevelopBody(cx, genomeRow, fraction), cx.Steps, passive, start, loop, reserve);
                 string why = swum.NoJoints ? "no actuated degree of freedom" : swum.Lost ? "lost: the body went non-finite" : "";
                 if (Math.Abs(swum.StartUsed - start) > 1e-9)
                 {
@@ -635,6 +854,7 @@ namespace Evosim.SwimProbe
             int ci = Array.IndexOf(head, "id"), cp = Array.IndexOf(head, "parent"), cg = Array.IndexOf(head, "group");
             int cs = Array.IndexOf(head, "firstSpeed");
             int cy = Array.IndexOf(head, "y0");   // optional: an ids file written before it existed stays readable
+            int cr = Array.IndexOf(head, "S0");   // optional likewise: the child's first-frame seconds of reserve
             if (ci < 0 || cp < 0 || cg < 0)
             {
                 throw new InvalidDataException("the ids file needs columns id, parent and group; it has " + lines[0]);
@@ -663,10 +883,23 @@ namespace Evosim.SwimProbe
                          !double.IsNaN(y0) && !double.IsInfinity(y0)
                         ? y0
                         : double.NaN,
+                    S0 = cr >= 0 && cr < p.Length ? ParseReserve(p[cr]) : double.NaN,
                 });
             }
 
             return rows;
+        }
+
+        /// <summary>
+        /// A seconds-of-reserve cell: a number, or inf / +inf / infinity / -inf as a script writes it (a body at zero
+        /// burn has infinite reserve); NaN for a blank or anything else.
+        /// </summary>
+        private static double ParseReserve(string text)
+        {
+            string t = text.Trim().ToLowerInvariant();
+            if (t == "inf" || t == "+inf" || t == "infinity" || t == "+infinity") return double.PositiveInfinity;
+            if (t == "-inf" || t == "-infinity") return double.NegativeInfinity;
+            return double.TryParse(t, NumberStyles.Float, Inv, out double v) && !double.IsNaN(v) ? v : double.NaN;
         }
 
         /// <summary>
@@ -716,15 +949,17 @@ namespace Evosim.SwimProbe
         private static string F(double v, string format = "0.######") =>
             double.IsNaN(v) ? "nan" : v.ToString(format, Inv);
 
-        private static void WriteTables(string outDir, List<IdRow> rows, RowResult[] results)
+        private static void WriteTables(string outDir, List<IdRow> rows, RowResult[] results, double current)
         {
             var main = new StringBuilder();
             // The swim columns come after note, so every earlier column keeps its place. They are blank for the four
-            // held variants, and the held measures are "-" for the two swim variants.
+            // held variants, and the held measures are "-" for the two swim variants. earlyRelWater is last: blank
+            // except on childSwimCurrent rows, where early is the absolute root speed over 0 to 10 s and earlyRelWater
+            // is the same with the water's own drift (current x elapsed time, along x) taken off.
             main.Append("id\tparent\tgroup\tvariant\tdof\tactive\tmaxP2P\tmedianHz\tsilent\tsettled\tnote");
             main.Append("\tnetSpeed\tpathSpeed\thorizontal\tdominantHz\tdominantAmp\tearly");
-            main.Append("\ttotalMass\ttotalVolume\texcessDensity\tnetBuoyancy\tdyFirst10\tbodyLength\n");
-            const string NoSwim = "\t\t\t\t\t\t\t\t\t\t\t\t";   // twelve empty swim columns (six swim, six size and buoyancy)
+            main.Append("\ttotalMass\ttotalVolume\texcessDensity\tnetBuoyancy\tdyFirst10\tbodyLength\tearlyRelWater\n");
+            const string NoSwim = "\t\t\t\t\t\t\t\t\t\t\t\t\t";   // thirteen empty swim columns (six swim, six size and buoyancy, earlyRelWater)
 
             var channels = new StringBuilder();
             channels.Append("id\tvariant\tchannel\tmean\tp2p\trms\thz\tactive\n");
@@ -760,10 +995,10 @@ namespace Evosim.SwimProbe
                     }
                 }
 
-                foreach (VariantResult v in results[k].Swims)
+                var swimRows = new List<VariantResult>(results[k].Swims.Where(sw => sw != null));   // null without --swim
+                swimRows.AddRange(results[k].Extra);
+                foreach (VariantResult v in swimRows)
                 {
-                    if (v == null) continue;   // no --swim
-
                     main.Append(row.Id.ToString(Inv)).Append('\t').Append(row.Parent.ToString(Inv)).Append('\t')
                         .Append(row.Group).Append('\t').Append(v.Name).Append('\t');
 
@@ -791,12 +1026,19 @@ namespace Evosim.SwimProbe
                         .Append(sized ? F(w.Excess, "0.####") : "").Append('\t')
                         .Append(sized ? F(w.NetBuoyancy, "0.#######") : "").Append('\t')
                         .Append(has && !double.IsNaN(w.Dy10) ? F(w.Dy10, "0.#####") : "").Append('\t')
-                        .Append(sized ? F(w.BodyLength, "0.#####") : "").Append('\n');
+                        .Append(sized ? F(w.BodyLength, "0.#####") : "").Append('\t')
+                        .Append(has && v.Name == CurrentName && !double.IsNaN(EarlyRelWater(w, current))
+                            ? F(EarlyRelWater(w, current), "0.#####")
+                            : "").Append('\n');
                 }
             }
 
             int perRow = VariantNames.Length;
-            if (rows.Count > 0) foreach (VariantResult v in results[0].Swims) if (v != null) perRow++;
+            if (rows.Count > 0)
+            {
+                foreach (VariantResult v in results[0].Swims) if (v != null) perRow++;
+                perRow += results[0].Extra.Count;
+            }
             var utf8 = new UTF8Encoding(false);
             File.WriteAllText(Path.Combine(outDir, "brain-birth.tsv"), main.ToString(), utf8);
             File.WriteAllText(Path.Combine(outDir, "brain-birth-channels.tsv"), channels.ToString(), utf8);
@@ -998,6 +1240,144 @@ namespace Evosim.SwimProbe
             Console.WriteLine($"  moving in the world     {diffMovingSlow,10}   {diffMovingFast,14}   (group moving)");
             Console.WriteLine(
                 $"  measure: early for {diffSlowSlow + diffSlowFast + diffMovingSlow + diffMovingFast - diffUsedNet} rows, netSpeed for {diffUsedNet}; left out: {diffNone} where the own-brain or the passive swim has no number, {diffOther} in another group");
+        }
+
+        // ================================================================ the extra variants' tables
+
+        private const string BaseName = "childSwim";
+
+        private static VariantResult Pick(RowResult r, string name)
+        {
+            if (name == BaseName) return r.Swims[ChildSwim];
+            foreach (VariantResult v in r.Extra) if (v.Name == name) return v;
+            return null;
+        }
+
+        /// <summary>
+        /// The early speed relative to the water, m/s: the root's x displacement over 0 to 10 s less
+        /// <paramref name="current"/> times the elapsed time, with the z displacement as it is, over the elapsed time.
+        /// NaN when the swim was under 10 s or no current was given.
+        /// </summary>
+        private static double EarlyRelWater(Program.SwimAloneResult w, double current)
+        {
+            if (double.IsNaN(current) || double.IsNaN(w.EarlyT) || w.EarlyT <= 0.0) return double.NaN;
+            double dx = w.EarlyDx - current * w.EarlyT;
+            return Math.Sqrt(dx * dx + w.EarlyDz * w.EarlyDz) / w.EarlyT;
+        }
+
+        /// <summary>
+        /// A swim's speed alone: early (or, with a current in <paramref name="relativeTo"/>, early relative to the
+        /// water), and netSpeed where early is blank (a swim under 10 s), with <paramref name="viaNet"/> set then.
+        /// </summary>
+        private static double Alone(VariantResult r, double relativeTo, out bool viaNet)
+        {
+            viaNet = false;
+            double e = double.IsNaN(relativeTo) ? r.Swim.Early : EarlyRelWater(r.Swim, relativeTo);
+            if (!double.IsNaN(e)) return e;
+            viaNet = true;
+            return r.Swim.NetSpeed;
+        }
+
+        /// <summary>
+        /// The sweep table per group (standstill, slow, moving, then any other): childSwim at the bench's constant,
+        /// each childSwim@v, childSwimReserve and childSwimCurrent, each with n, the median early and the share of
+        /// early under <see cref="SlowSpeed"/>; childSwimCurrent also with early relative to the water. Then a 2x2 per
+        /// variant in the form of the existing one: slow in the world against slow alone.
+        /// </summary>
+        private static void SummariseExtras(Context cx, List<IdRow> rows, RowResult[] results)
+        {
+            if (rows.Count == 0 || results[0].Extra.Count == 0) return;
+
+            var names = new List<string> { BaseName };
+            foreach (VariantResult v in results[0].Extra) names.Add(v.Name);
+
+            double baseConst = cx.Solver.ConstantChemicalAndEnergy;
+            var groups = new List<string> { "standstill", "slow", "moving" };
+            foreach (IdRow row in rows) if (!groups.Contains(row.Group)) groups.Add(row.Group);
+
+            foreach (string group in groups)
+            {
+                var members = new List<int>();
+                for (int k = 0; k < rows.Count; k++) if (rows[k].Group == group) members.Add(k);
+                if (members.Count == 0) continue;
+
+                Console.WriteLine();
+                Console.WriteLine($"== sense sweep, {group} (children {members.Count})");
+                Console.WriteLine(FormattableString.Invariant(
+                    $"  variant              chem+energy  n  median early  early<{SlowSpeed}  median earlyRelWater  earlyRelWater<{SlowSpeed}  no-number"));
+
+                foreach (string name in names)
+                {
+                    var early = new List<double>();
+                    var rel = new List<double>();
+                    int n = 0, slow = 0, relSlow = 0, relN = 0, none = 0;
+                    foreach (int k in members)
+                    {
+                        VariantResult r = Pick(results[k], name);
+                        if (r == null || !HasSwimNumber(r)) { none++; continue; }
+
+                        n++;
+                        if (!double.IsNaN(r.Swim.Early)) early.Add(r.Swim.Early);
+                        if (Alone(r, double.NaN, out _) < SlowSpeed) slow++;
+                        if (name == CurrentName)
+                        {
+                            double er = EarlyRelWater(r.Swim, cx.Current);
+                            if (!double.IsNaN(er)) { rel.Add(er); relN++; if (er < SlowSpeed) relSlow++; }
+                        }
+                    }
+
+                    string sense = name == ReserveName ? "chem " + F(baseConst, "0.###") + ", energy S0"
+                        : name == BaseName || name == CurrentName || name == LoopName ? F(baseConst, "0.###")
+                        : name.Substring(name.IndexOf('@') + 1);
+                    string relMedian = name == CurrentName ? F(Median(rel), "0.#####") : "-";
+                    string relShare = name == CurrentName ? Pct(relSlow, relN) : "-";
+                    Console.WriteLine(
+                        $"  {name,-19}  {sense,-11} {n,5} {F(Median(early), "0.#####"),13} {Pct(slow, n),12} {relMedian,21} {relShare,18}  {none}");
+                }
+            }
+
+            foreach (string name in names)
+            {
+                if (name == BaseName) continue;
+                if (name == CurrentName)
+                {
+                    TwoByTwo(rows, results, name, cx.Current, FormattableString.Invariant($"{name}, early relative to the water ({cx.Current} m/s along x)"));
+                    TwoByTwo(rows, results, name, double.NaN, $"{name}, absolute early");
+                }
+                else TwoByTwo(rows, results, name, double.NaN, name);
+            }
+        }
+
+        /// <summary>The existing 2x2's form, for one named variant: in the world (standstill or slow, against moving) by alone (slow, or not).</summary>
+        private static void TwoByTwo(List<IdRow> rows, RowResult[] results, string name, double relativeTo, string title)
+        {
+            int slowSlow = 0, slowFast = 0, movingSlow = 0, movingFast = 0, usedNet = 0, otherGroup = 0, noNumber = 0;
+            for (int k = 0; k < rows.Count; k++)
+            {
+                VariantResult r = Pick(results[k], name);
+                if (!HasSwimNumber(r)) { noNumber++; continue; }
+
+                bool inWorldSlow;
+                if (rows[k].Group == "standstill" || rows[k].Group == "slow") inWorldSlow = true;
+                else if (rows[k].Group == "moving") inWorldSlow = false;
+                else { otherGroup++; continue; }
+
+                double alone = Alone(r, relativeTo, out bool viaNet);
+                if (viaNet) usedNet++;
+                bool aloneSlow = alone < SlowSpeed;
+
+                if (inWorldSlow) { if (aloneSlow) slowSlow++; else slowFast++; }
+                else { if (aloneSlow) movingSlow++; else movingFast++; }
+            }
+
+            Console.WriteLine();
+            Console.WriteLine(FormattableString.Invariant(
+                $"== children, in the world against alone, {title} (alone slow = {(usedNet == 0 ? "early" : "early, netSpeed where early is blank")} under {SlowSpeed} m/s)"));
+            Console.WriteLine("                          slow alone   not slow alone");
+            Console.WriteLine($"  slow in the world       {slowSlow,10}   {slowFast,14}   (groups standstill and slow)");
+            Console.WriteLine($"  moving in the world     {movingSlow,10}   {movingFast,14}   (group moving)");
+            Console.WriteLine(
+                $"  measure: early for {slowSlow + slowFast + movingSlow + movingFast - usedNet} rows, netSpeed for {usedNet}; left out: {noNumber} with no swim number (skipped, no joint, lost or no S0), {otherGroup} in another group");
         }
 
         /// <summary>
