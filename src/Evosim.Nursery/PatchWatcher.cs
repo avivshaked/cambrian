@@ -217,7 +217,7 @@ namespace Evosim.Nursery
         public void Metabolic(EpisodeProbe probe)
         {
             if (_schedule != null) { MetabolicSwitching(probe); return; }
-            double t = probe.PhysicsSeconds;
+            double t = probe.ClockSeconds;   // world seconds (D240): the switching schedule's own clock, and the same bits as the physics clock at a pace factor of 1
             IReadOnlyList<BodyView> leaves = null;
             for (int m = 0; m < Tracks.Length; m++)
             {
@@ -247,7 +247,7 @@ namespace Evosim.Nursery
         /// </summary>
         private void MetabolicSwitching(EpisodeProbe probe)
         {
-            double t = probe.PhysicsSeconds;
+            double t = probe.ClockSeconds;
             IReadOnlyList<BodyView> leaves = probe.Others();
             IReadOnlyList<LeafOpening> openings = _schedule.Openings;
             var fresh = new List<LeafOpening>();

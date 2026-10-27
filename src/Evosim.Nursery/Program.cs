@@ -522,6 +522,10 @@ namespace Evosim.Nursery
             Console.WriteLine("episode config hash " + episode.Hash());
             Console.WriteLine("recipe hash " + _recipe.Hash());
             foreach (KeyValuePair<string, string> kv in RunRecord.FieldsOf(_o)) Console.WriteLine("option " + kv.Key + " = " + kv.Value);
+            // D240: the step, the pace factor beside it and the steps a metabolic step holds, so that a batch says which pace it ran at.
+            // The recipe's read has refused a dt that cannot make a metabolic step at this factor.
+            EnvBinding.ResolvePhysicsStep(_o.Dt, episode.PaceFactor, out int physicsSteps);
+            Console.WriteLine(FormattableString.Invariant($"physics dt {_o.Dt:R} s, pace factor {episode.PaceFactor:R}, {physicsSteps} physics steps a metabolic step"));
             foreach (Recipe.ExamControl c in _recipe.Controls) Console.WriteLine("exam brain " + c.Label);
             // A leaf tank is laid for every seed the run will swim (LeafTank.cs), since a tank too full for its leaves stops the run.
             // And the feeder refusal a run with leaves makes at its start, asked of every line of the pool (LeafTank.cs).
@@ -561,6 +565,11 @@ namespace Evosim.Nursery
                 new KeyValuePair<string, ulong>("exam", _o.ExamSalt),
             };
             _record.Threads = _o.Threads;
+            // D240: the step, the pace factor and the steps a metabolic step holds, beside the episode config that carries the factor too.
+            _record.PhysicsDt = _o.Dt;
+            _record.PaceFactor = _config.PaceFactor;
+            EnvBinding.ResolvePhysicsStep(_o.Dt, _config.PaceFactor, out int physicsSteps);
+            _record.StepsPerMetabolicStep = physicsSteps;
             _record.ReadBuild(Environment.GetEnvironmentVariable("EVOSIM_REPO_ROOT"));
             _record.Write(_o.Out);
             if (_record.Note != null) Say("run record: " + _record.Note);

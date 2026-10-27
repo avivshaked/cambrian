@@ -520,6 +520,8 @@ namespace Evosim.Nursery.Tests
             // D236 piece 4: what the tank calls eaten (the leaves' joules under contact eating, else the mouth's), as a number. It reads one
             // of two cumulative counters of a body; it hands out no organism and writes nothing.
             "EatenJoules",
+            // D240: world time between economy steps, as a number (PhysicsSeconds itself at a pace factor of 1). A getter over the solver's step count.
+            "ClockSeconds",
         };
 
         [Fact]

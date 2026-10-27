@@ -677,18 +677,31 @@ namespace Evosim.Nursery
             }
             if (FloorClosed) c.MinimumPopulation = 0;
 
-            // D239. A tank takes 0.5 s over dt physics steps to a metabolic step and its watchers read time off the
-            // physics step, so it carries no pace factor; a world at one other than 1 is refused by name, whether
-            // its config or an override set it.
-            if (c.PaceFactor != 1f)
-            {
-                throw Bad(
-                    "world.config",
-                    $"has PaceFactor {c.PaceFactor.ToString(System.Globalization.CultureInfo.InvariantCulture)} (D239), and the nursery's tanks " +
-                    "carry no pace factor: they step 0.5 s over dt physics steps to a metabolic step. Use a world at a factor of 1");
-            }
+            // D239, D240. The tank carries the world's pace factor k, whether its config or an override set it: a metabolic step holds
+            // 0.5·k physics seconds, so setup.dt must divide that. A dt that cannot is refused here, at the recipe's read (--check
+            // among the readers), and not at the first episode.
+            CheckStepAtPace(c.PaceFactor);
 
             return c;
+        }
+
+        /// <summary>
+        /// Refuses a <c>setup.dt</c> that cannot make a metabolic step at the pace factor <paramref name="paceFactor"/>, by the setting and its
+        /// value, with the steps the farm's own check (<c>EnvBinding.ResolvePhysicsStep</c>) says would be accepted. At a factor of 1 it is the
+        /// check every dt of 0.01 has always passed.
+        /// </summary>
+        private void CheckStepAtPace(float paceFactor)
+        {
+            try { Evosim.Farm.EnvBinding.ResolvePhysicsStep(Dt, paceFactor, out _); }
+            catch (ArgumentOutOfRangeException e)
+            {
+                string said = e.Message;
+                int cut = said.IndexOf(" (Parameter", StringComparison.Ordinal);
+                if (cut >= 0) said = said.Substring(0, cut);
+                throw Bad(
+                    "setup.dt",
+                    $"is {Dt.ToString("R", Inv)} at the world's PaceFactor of {paceFactor.ToString("R", Inv)} (D239), which cannot make a metabolic step: {said}");
+            }
         }
 
         private static object OverrideValue(Type t, JsonNode v, string at)
