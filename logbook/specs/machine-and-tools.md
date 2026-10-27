@@ -146,6 +146,13 @@ The root file's rules still apply. The entries below were moved word for word, s
     compile ignores the thread count and uses every core in its affinity mask, which is how 14-core masks
     reached 89 °C twice that day. Each job in a HOLD window runs on a mask of four cores (for example
     `0xF0000` or `0xF00000`), with at most two such lanes at once and their compiles staggered.
+  - **A helper command starts pinned while a card run is up.** On 2026-10-27 at 07:43:11 the CPU read
+    88 °C for one second at 156 W, beside growth group 2 on 22 to 31. The theatre's renders on 16 to 21
+    peaked at 80 °C that half hour. The spike came from the theatre agent's own helper commands, unpinned
+    on the fast cores: a cold `pwsh` start that parse-checked an 800-line script, and two short Python
+    reads. A process's start burst lands wherever Windows puts it, so a helper is launched already pinned
+    and at below-normal priority, for example `cmd /c start /b /wait /belownormal /affinity 3F0000 <command>`
+    for 16 to 21, rather than pinned from inside once it runs.
   - The GPU (RTX 4090) is read by `nvidia-smi`. WARN at 80 °C or a hardware slowdown; HOT at 85 °C or a
     thermal slowdown (clock event reasons 0x20 or 0x40).
   - The CPU's temperature comes from MSI Afterburner, which the owner starts. While it runs, its
