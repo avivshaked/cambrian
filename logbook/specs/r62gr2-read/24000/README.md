@@ -47,7 +47,7 @@ for `r62gr-t120-6201` did not repeat on seed 6202.
   holds still. Inference: at a mutation chance of 0.08 and a step of 15 % on the logarithm, about 20 generations
   move it by little, and the selection on it is too weak to show in 24,000 s.
 - **Test 2's failures.** Across the eight growth worlds of both groups, the four that failed test 2 each failed it
-  in one window at the turn into the first or second summer, at 5,750 or 11,750 s, holding 9 to 19 grazers. No world
+  in one window at the turn into the first or second summer, at 5,750 or 11,750 s, holding 9 to 17 grazers. No world
   failed a summer start after 12,000 s. Inference: test 2's early windows weigh a dozen founders' luck against the
   0.9 bar.
 - **The overshoot.** No world's leaf stand falls below half of `r62cs-w500`'s on its own seed in any bin
