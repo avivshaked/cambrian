@@ -207,6 +207,17 @@ namespace Evosim.Nursery
 
         public double Tissue(int member) => _focal[member]?.TissueJoules ?? double.NaN;
 
+        /// <summary>
+        /// The tissue joules of the body's adult, its body fraction (1 once it is the adult) and the adult's standing watts at age 0; NaN where the slot
+        /// landed nothing. Reads the growth climb's (D241) placement: a body placed grown holds the first and has the second.
+        /// </summary>
+        public double AdultTissue(int member) => _focal[member]?.AdultTissueJoules ?? double.NaN;
+
+        public double BodyFraction(int member) => _focal[member]?.BodyFraction ?? double.NaN;
+
+        public double AdultStandingWatts(int member) =>
+            _focal[member] == null ? double.NaN : Metabolism.StandingWatts(_focal[member].AdultPhenotype, _world.Config);
+
         public double Gestation(int member) => _focal[member]?.GestationJoules ?? double.NaN;
 
         /// <summary>The joules the body's mouths have kept over its life, net of the waste (<c>Organism.MouthJoules</c>); NaN where the slot landed nothing.</summary>

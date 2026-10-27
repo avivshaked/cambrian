@@ -30,11 +30,12 @@ namespace Evosim.Nursery.Tests
             "{\"pool\": \"" + pool + "\", \"count\": " + count + ", \"spentUnitsPerCubicMetre\": " + spent.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "}";
 
         /// <summary>A recipe on the test's tank, its three bred bodies and the leaves given (null: the section left out); its path.</summary>
-        private string Recipe(string leaves, double seconds = 2, Func<int, Genome> bred = null, string name = "recipe.json", bool today = false)
+        private string Recipe(string leaves, double seconds = 2, Func<int, Genome> bred = null, string name = "recipe.json", bool today = false,
+            string overrides = null, double? purse = null, string search = null)
         {
             (string config, string hash) = LeafTankFixtures.WriteConfig(_dir, LeafTankFixtures.Config(leaves: !today));
             string pool = LeafTankFixtures.WriteBredPool(_dir, 3, bred);
-            return LeafTankFixtures.Write(_dir, name, LeafTankFixtures.RecipeJson(config, hash, pool, 3, leaves, seconds));
+            return LeafTankFixtures.Write(_dir, name, LeafTankFixtures.RecipeJson(config, hash, pool, 3, leaves, seconds, purseSeconds: purse, overrides: overrides, search: search));
         }
 
         // ------------------------------------------------------------------ the section
@@ -455,6 +456,187 @@ namespace Evosim.Nursery.Tests
                 string[] got = o.Members.Select((m, k) => LeafTankFixtures.Line(m) + " | " + LeafTankFixtures.Line(seen.FirstRoots[k])).ToArray();
                 foreach (string line in got) _out.WriteLine(line);
                 Assert.Equal(Today[e], got);
+            }
+        }
+
+        // ------------------------------------------------------------------ D241: placed grown under the growth climb
+
+        // The nursery's world with the climb on, by the recipe's own override (world.overrides), as a recipe turns it on. The config file keeps T = 0,
+        // so its hash is the recorded fixtures'.
+        private const string Climb = "{\"GrowthAdultSeconds\": 120}";
+
+        /// <summary>The synthetic founder as a juvenile, born at 0.65 of its adult (as the Core fixtures set it), so that "grown" has growth to place.</summary>
+        private static Genome Juvenile(int k)
+        {
+            Genome g = RestepFixtures.Founder((ulong)k + 1);
+            g.Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.65f / (1f - new RunConfig().NewbornReserveFraction) };
+            return g;
+        }
+
+        /// <summary>What each member held after its purse and before its first step.</summary>
+        private sealed class Held
+        {
+            public double[] Reserve, Tissue, Adult, Fraction, Watts;
+        }
+
+        private Held SwimHeld(string recipe)
+        {
+            var held = new Held();
+            var seen = new LeafTankFixtures.Seen
+            {
+                OnBegin = p =>
+                {
+                    int n = p.MemberCount;
+                    held.Reserve = new double[n];
+                    held.Tissue = new double[n];
+                    held.Adult = new double[n];
+                    held.Fraction = new double[n];
+                    held.Watts = new double[n];
+                    for (int m = 0; m < n; m++)
+                    {
+                        held.Reserve[m] = p.Reserve(m);
+                        held.Tissue[m] = p.Tissue(m);
+                        held.Adult[m] = p.AdultTissue(m);
+                        held.Fraction[m] = p.BodyFraction(m);
+                        held.Watts[m] = p.AdultStandingWatts(m);
+                    }
+                    return true;
+                },
+            };
+            LeafTankFixtures.Swim(_dir, recipe, 3, 3, 0, seen);
+            Assert.True(seen.Took);
+            return held;
+        }
+
+        [Fact]
+        public void UnderTheClimbAGrownBredBodyIsAdultBeforeItsFirstStep()
+        {
+            // A purse far above the founder's endowment, so that the purse rule gives (target less the reserve is positive) and the reserve is the target.
+            const double purse = 10000;
+            Held zero = SwimHeld(Recipe(null, seconds: 0.5, bred: Juvenile, name: "zero.json", purse: purse));
+            Held climb = SwimHeld(Recipe(null, seconds: 0.5, bred: Juvenile, name: "climb.json", purse: purse, overrides: Climb));
+
+            Assert.Equal(3, zero.Tissue.Length);
+            Assert.Equal(3, climb.Tissue.Length);
+            for (int m = 0; m < 3; m++)
+            {
+                _out.WriteLine(FormattableString.Invariant(
+                    $"member {m}: T=0 tissue {zero.Tissue[m]:0.0} of {zero.Adult[m]:0.0} (fraction {zero.Fraction[m]:0.000}), reserve {zero.Reserve[m]:0.0}; climb tissue {climb.Tissue[m]:0.0} of {climb.Adult[m]:0.0} (fraction {climb.Fraction[m]}), reserve {climb.Reserve[m]:0.0}"));
+
+                // At T = 0 nothing changed: the body is its newborn, and the growth it owes is in its reserve.
+                Assert.True(zero.Fraction[m] < 1d, "the fixture's body is not a juvenile, so this test places nothing");
+                Assert.True(zero.Tissue[m] < zero.Adult[m]);
+                Assert.True(zero.Reserve[m] > purse * zero.Watts[m], "T = 0 paid the owed tissue on top of the purse");
+
+                // Under the climb it is the adult already, and the reserve is the purse seconds of the adult's standing watts alone.
+                Assert.Equal(climb.Adult[m], climb.Tissue[m]);
+                Assert.Equal(1d, climb.Fraction[m]);
+                Assert.Equal(zero.Adult[m], climb.Adult[m]);
+                Assert.InRange(climb.Reserve[m] / (purse * climb.Watts[m]), 1d - 1e-9, 1d + 1e-9);
+            }
+        }
+
+        [Fact]
+        public void UnderTheClimbALaidLeafIsAdultAndHoldsNoReserveGiven()
+        {
+            Start zero = SwimStart(Recipe(LeavesJson(count: 12, spent: 0), seconds: 0.5, name: "zero.json"), 0);
+            Start climb = SwimStart(Recipe(LeavesJson(count: 12, spent: 0), seconds: 0.5, name: "climb.json", overrides: Climb), 0);
+
+            // The same leaves in the same places: the climb moves no draw.
+            Assert.Equal(12, climb.Leaves.Length);
+            Assert.Equal(zero.Leaves.Select(l => (l.X, l.Z)), climb.Leaves.Select(l => (l.X, l.Z)));
+
+            int juveniles = 0;
+            for (int i = 0; i < 12; i++)
+            {
+                BodyView z = zero.Leaves[i], c = climb.Leaves[i];
+                Assert.Equal(z.AdultTissue, c.AdultTissue);
+                Assert.Equal(c.AdultTissue, c.Tissue);
+
+                // What T = 0 gives a leaf as reserve to grow with, the climb gives as tissue: the two hold the same joules in all.
+                Assert.Equal(z.Reserve + z.Tissue, c.Reserve + c.Tissue, 6);
+                if (z.Tissue < z.AdultTissue)
+                {
+                    juveniles++;
+                    Assert.True(c.Reserve < z.Reserve, "a laid leaf was given reserve under the climb");
+                }
+            }
+            Assert.True(juveniles > 0, "no leaf of the draw is born smaller than its adult, so this test places nothing");
+        }
+
+        [Fact]
+        public void TheStartIsGivenOnlyUnderTheClimbAndOnlyToAGenomeWithoutTheGene()
+        {
+            RunConfig on = LeafTankFixtures.Config(growthAdultSeconds: 120f);
+            on.GrowthReserveStartSeconds = 45f;
+            RunConfig off = LeafTankFixtures.Config();
+
+            // With the climb, a gene-less genome is given the start, in place, and the written pool line carries it.
+            Genome bare = RestepFixtures.Founder(1);
+            Assert.Null(bare.GrowthReserveSeconds);
+            Assert.Same(bare, GrowthStart.Give(bare, on));
+            Assert.Equal(45f, bare.GrowthReserveSeconds);
+            Assert.Equal(45f, GenomeJson.Read(GenomeJson.Write(bare)).GrowthReserveSeconds);
+
+            // A genome with its own value keeps it.
+            Genome own = RestepFixtures.Founder(2);
+            own.GrowthReserveSeconds = 7f;
+            GrowthStart.Give(own, on);
+            Assert.Equal(7f, own.GrowthReserveSeconds);
+
+            // At T = 0 the genome is left alone, to the byte.
+            Genome plain = RestepFixtures.Founder(3);
+            string text = GenomeJson.Write(plain);
+            GrowthStart.Give(plain, off);
+            Assert.Null(plain.GrowthReserveSeconds);
+            Assert.Equal(text, GenomeJson.Write(plain));
+        }
+
+        /// <summary>
+        /// A one-generation search under the climb, run as the program (a child process of the Release build, like the other swims: it is skipped
+        /// unless EVOSIM_NURSERY_SWIM=1, and run with <c>--filter "Category=Swim"</c>). Its bred pool has two gene-less bodies and a third that
+        /// carries 7.5 s; every member of the last generation, and every genome the exam is written from, carries the gene: the start
+        /// (the config's 30 s) for the first two and 7.5 s for the third.
+        /// </summary>
+        [SwimFact(LeafTankFixtures.LeafPool)]
+        [Trait("Category", "Swim")]
+        public void UnderTheClimbTheSearchMembersCarryTheStartAndAGenomeKeepsItsOwn()
+        {
+            const string search = "{\"population\": 3, \"draws\": 1, \"generations\": 1, \"elites\": 1, \"tournament\": 2, \"perBody\": false, " +
+                "\"evolve\": \"brain\", \"evolveEnvelope\": false, \"crossover\": null}";
+            Genome Bred(int k)
+            {
+                Genome g = RestepFixtures.Founder((ulong)k + 1);
+                if (k == 1) g.GrowthReserveSeconds = 7.5f;
+                return g;
+            }
+            string recipe = Recipe(null, seconds: 0.5, bred: Bred, name: "search.json", overrides: Climb, search: search);
+            string outDir = Path.Combine(_dir, "search-out");
+
+            (int code, string stdout, string stderr) = RestepProcess.Run(15, "--recipe", recipe, "--out", outDir, "--threads", "1");
+            _out.WriteLine(stdout);
+            Assert.True(code == 0, "the search: " + stderr);
+
+            // The last generation, whole: tank-population.jsonl, one member a line, its genome the last field.
+            string[] members = File.ReadAllLines(Path.Combine(outDir, TankPopulation.FileName)).Where(l => l.Length > 0).ToArray();
+            Assert.Equal(3, members.Length);
+            foreach (string row in members)
+            {
+                int body = (int)Json.Parse(row)["body"].AsDouble();
+                int at = row.IndexOf("\"genome\":", StringComparison.Ordinal) + "\"genome\":".Length;
+                Genome genome = GenomeJson.Read(row.Substring(at, row.Length - at - 1));
+                Assert.Equal(body == 1 ? 7.5f : 30f, genome.GrowthReserveSeconds);
+            }
+
+            // The pool the exam swims, as it was written: each line a body index, a tab and a genome.
+            string[] exam = File.ReadAllLines(Path.Combine(outDir, "tank-exam-genomes.tsv")).Where(l => l.Length > 0).ToArray();
+            Assert.NotEmpty(exam);
+            foreach (string line in exam)
+            {
+                int tab = line.IndexOf('\t');
+                int body = int.Parse(line.Substring(0, tab), System.Globalization.CultureInfo.InvariantCulture);
+                Genome genome = GenomeJson.Read(line.Substring(tab + 1));
+                Assert.Equal(body == 1 ? 7.5f : 30f, genome.GrowthReserveSeconds);
             }
         }
 

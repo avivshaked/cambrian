@@ -522,6 +522,8 @@ namespace Evosim.Nursery.Tests
             "EatenJoules",
             // D240: world time between economy steps, as a number (PhysicsSeconds itself at a pace factor of 1). A getter over the solver's step count.
             "ClockSeconds",
+            // D241: the adult's tissue, the body fraction and the adult's standing watts, as numbers, to read a body placed grown under the climb.
+            "AdultTissue", "BodyFraction", "AdultStandingWatts",
         };
 
         [Fact]

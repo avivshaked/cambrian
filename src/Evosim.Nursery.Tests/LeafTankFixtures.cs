@@ -24,7 +24,11 @@ namespace Evosim.Nursery.Tests
         /// round that bred it held above that round's floor, and this is that floor's order. Without it, the tank is the one
         /// <c>ARecipeWithoutLeavesSwimsTodaysTank</c> recorded.
         /// </summary>
-        public static RunConfig Config(bool leaves = true)
+        /// <param name="growthAdultSeconds">
+        /// D241's time to adulthood T; above 0 the world grows its bodies as a climb. 0 (the default) sets nothing, so the config is the one every
+        /// recorded fixture was made on.
+        /// </param>
+        public static RunConfig Config(bool leaves = true, float growthAdultSeconds = 0f)
         {
             var c = new RunConfig
             {
@@ -47,7 +51,19 @@ namespace Evosim.Nursery.Tests
                 NeuralCostPerConnectionWatts = 0f,            };
             c.Brain.BrainModel = BrainModel.Central;
             if (leaves) c.MinNewbornPartKilograms = 0.01f;
+            if (growthAdultSeconds > 0f) c.GrowthAdultSeconds = growthAdultSeconds;
             return c;
+        }
+
+        /// <summary>
+        /// The body <paramref name="genome"/> is born as at a point in a bare world of <paramref name="config"/> (a world of its own, with no one else in it
+        /// and nothing stepped): what a laid body holds before anything is given to it, to set a placed body beside. The caller passes a config of its
+        /// own, since a world pins its config.
+        /// </summary>
+        public static Organism Newborn(RunConfig config, Genome genome, float x, float y, float z)
+        {
+            var world = new World(config, 1UL) { BirthsHeld = true };
+            return world.InoculateAt(genome, new Float3(x, y, z));
         }
 
         /// <summary>The config written as the world config a recipe names; its repository-relative path and its hash.</summary>
@@ -71,18 +87,20 @@ namespace Evosim.Nursery.Tests
         /// <summary>
         /// A bench recipe (no search; the exam's own brain alone, two episodes) on the config and the pool; <paramref name="leaves"/> is the
         /// section's JSON or null to leave the section out. <paramref name="carrion"/> corpses of 40 J each lie on the bed (none by default).
+        /// <paramref name="overrides"/> is the world's overrides as a JSON object (none by default); <paramref name="search"/> is the search
+        /// section's JSON (none by default: a bench).
         /// </summary>
         public static string RecipeJson(string config, string hash, string pool, int tankSize, string leaves = null, double seconds = 2, int carrion = 0, double? purseSeconds = null,
-            string overrides = "{}", double dt = 0.01, double aboveBed = 0.5, string moreControls = "") =>
+            string overrides = null, double dt = 0.01, double aboveBed = 0.5, string moreControls = "", string search = null) =>
             "{\n" +
             "  \"format\": 1, \"name\": \"leaf-test\", \"description\": \"\", \"seed\": \"0x1\",\n" +
-            "  \"world\": {\"config\": \"" + config + "\", \"configHash\": \"" + hash + "\", \"overrides\": " + overrides + "},\n" +
+            "  \"world\": {\"config\": \"" + config + "\", \"configHash\": \"" + hash + "\", \"overrides\": " + (overrides ?? "{}") + "},\n" +
             "  \"bodies\": {\"source\": \"pool\", \"founders\": 0, \"trunk\": null, \"pool\": \"" + pool + "\", \"keep\": null},\n" +
             "  \"setup\": {\"seconds\": " + seconds.ToString("R", CultureInfo.InvariantCulture) + ", \"dt\": " + dt.ToString("R", CultureInfo.InvariantCulture) + ", \"tankSize\": " + tankSize +
             ", \"floorClosed\": true, \"birthsHeld\": true, \"snow\": null, \"carrion\": {\"count\": " + carrion + ", \"joules\": 40}, \"start\": {\"aboveBed\": " + aboveBed.ToString("R", CultureInfo.InvariantCulture) + "}," +
             " \"purse\": {\"rule\": \"grown\", \"seconds\": " + (purseSeconds.HasValue ? purseSeconds.Value.ToString("R", CultureInfo.InvariantCulture) : "null") + "}},\n" +
             (leaves == null ? "" : "  \"leaves\": " + leaves + ",\n") +
-            "  \"search\": null,\n" +
+            "  \"search\": " + (search ?? "null") + ",\n" +
             "  \"reward\": {\"class\": \"Net\", \"parameters\": {}},\n" +
             "  \"exam\": {\"episodes\": 4, \"salt\": \"0x62656e6368\", \"controls\": [{\"kind\": \"own\"}" + moreControls + "]}\n" +
             "}\n";
