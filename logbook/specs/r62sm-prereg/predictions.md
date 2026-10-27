@@ -54,21 +54,25 @@ The arms scale every structural mutation chance by one factor S:
 | `r62sm-s25-6201` | 0.25 | a quarter |
 | `r62sm-s10-6201` | 0.1 | a tenth |
 
-**The structural chances are the ones `scripts/reads/genome-diff-read.py` counts under "structure".** By
-`MutationRates` today, the candidates are:
+**The structural chances are the ones whose operators change what `scripts/reads/genome-diff-read.py` counts under
+"structure".** The build read them from the mutator (`src/Evosim.Core/Mutation/Mutator.cs`):
 
-| Chance | Today's value |
-|---|---|
-| `AddNodeChance` | 0.04 |
-| `AddEdgeChance` | 0.06 |
-| `RemoveEdgeChance` | 0.05 |
-| `AddNeuronChance` | 0.05 |
-| `RemoveNeuronChance` | 0.04 |
-| `RewireInputChance` | 0.05 |
-| `RecursiveLimitChance` | 0.03 |
+| Chance | Operator | Today's value |
+|---|---|---|
+| `AddNodeChance` | adds a node, one draw a birth (:139) | 0.04 |
+| `AddEdgeChance` | adds an edge, a draw a node (:367) | 0.06 |
+| `RemoveEdgeChance` | removes an edge, a draw an edge (:363) | 0.05 |
+| `AddNeuronChance` | adds a neuron, a draw a node (:909) | 0.05 |
+| `RemoveNeuronChance` | removes a neuron, a draw a neuron (:905) | 0.04 |
+| `RecursiveLimitChance` | steps a node's recursive limit by 1 (:279) | 0.03 |
+| `JointTypeChance` | changes a joint's type, and with it the count of its limits (:325, :719) | 0.04 |
 
-The build names the exact list from the mutator's code, with each operator's line, and it includes node removal if
-another path does it. The brain's weights, the scalars, the drive, the limits and the whole-creature dials keep
+`RewireInputChance` is left out. It repoints an input without adding or removing one, which the diff counts as brain.
+Four sources of structural change stay at today's rates in every arm, and the read counts them:
+- `CellTypeChance`, 0.001, whose bud adds a node;
+- `ModuleGeneMutationChance`, 0 in this world;
+- a node's removal when its size shrinks below `NodeExtinctionHalfExtent`, which has no chance of its own;
+- an edge's child retargeted by the scalar step. The brain's weights, the scalars, the drive, the limits and the whole-creature dials keep
 today's rates in every arm. So the screen moves the body plan's rate alone. Today's arm is a new world, since no
 recorded world has t16 and the climb together.
 
