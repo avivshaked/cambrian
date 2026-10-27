@@ -303,7 +303,7 @@ namespace Evosim.SwimProbe
                     string name = "childSwim@" + F(v, "0.######");
                     Parallel.For(0, rows.Count, options, k =>
                     {
-                        results[k].Extra.Add(ChildSwim(cx, rows[k], name, genomeRows, birthFractions, false, null, ""));
+                        results[k].Extra.Add(ExtraChildSwim(cx, rows[k], name, genomeRows, birthFractions, false, null, ""));
                     });
                 }
             }
@@ -325,7 +325,7 @@ namespace Evosim.SwimProbe
 
                     float seconds = (float)row.S0;
                     string note = FormattableString.Invariant($"S0 {seconds:0.###} s, energy sense {EnergySense(cx, seconds):0.####}");
-                    results[k].Extra.Add(ChildSwim(cx, row, ReserveName, genomeRows, birthFractions, false, new FixedReserve(seconds), note));
+                    results[k].Extra.Add(ExtraChildSwim(cx, row, ReserveName, genomeRows, birthFractions, false, new FixedReserve(seconds), note));
                 });
             }
 
@@ -341,7 +341,7 @@ namespace Evosim.SwimProbe
                     {
                         Parallel.For(0, rows.Count, options, k =>
                         {
-                            results[k].Extra.Add(ChildSwim(cx, rows[k], name, genomeRows, birthFractions, true, null, ""));
+                            results[k].Extra.Add(ExtraChildSwim(cx, rows[k], name, genomeRows, birthFractions, true, null, ""));
                         });
                     }
                     finally
@@ -362,7 +362,7 @@ namespace Evosim.SwimProbe
         }
 
         /// <summary>One row's child swim in an extra phase: the child, fresh at its birth size, at its start height.</summary>
-        private static VariantResult ChildSwim(
+        private static VariantResult ExtraChildSwim(
             Context cx, IdRow row, string name, Dictionary<long, string> genomeRows,
             Dictionary<long, float> birthFractions, bool loop, IReserveSource reserve, string extraNote)
         {
