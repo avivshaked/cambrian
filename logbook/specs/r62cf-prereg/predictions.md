@@ -1,8 +1,8 @@
-# DRAFT. The confirmation round: three new seeds of the chosen settings, and do grazers travel between oases?
+# The confirmation round: three new seeds of the chosen settings, and do grazers travel between oases?
 
-*Draft of 2026-10-27, the speed agent, at the coordinator's request, for the owner's ruling. Nothing launches before
-the owner's yes. The round then launches from a clean worktree at this file's final commit, after the card notice, HOLD
-and the heat watch.*
+*Pre-registration of 2026-10-27, the speed agent, written at the coordinator's request. The owner gave the go at about
+18:00 UTC the same day, through the coordinator. The round launches from a clean worktree at this file's commit, after
+the card notice, HOLD and the heat watch.*
 
 ## The questions
 
@@ -36,8 +36,9 @@ empty source diff (D243), so the same settings on seed 6201 would replay it bit 
 manifests carry farm `ae99d3c2`, core `361aa924` and dynamics `29144991`. If any differs, the fourth seed is not the
 same build, and the round reads three worlds alone.
 
-No identity sitting is needed. The build is the one `r62sid` checked, and main has had no source change since. If one
-lands before the launch, a sitting runs first. The card engine's world check refuses a change of clock step: the clock
+No identity sitting is needed. The build is main's, which is the one `r62sid` checked. Since `565ade1e`, main's source
+has changed only in `src/Evosim.SwimProbe`, the brain-at-birth bench. No hash covers that folder: the manifest hashes
+`src/Evosim.Core`, `src/Evosim.Dynamics` and `src/Evosim.Farm` (`Manifest.cs`). Integration branch 2 is not merged. The card engine's world check refuses a change of clock step: the clock
 step is derived from the physics step and the pace factor alone (`SolverConfig.ClockStepSeconds`), and
 `GpuBackend.Check` compares both, so no fix is needed before the round.
 
@@ -45,7 +46,8 @@ step is derived from the physics step and the pace factor alone (`SolverConfig.C
 
 **D222's three tests per world at 24,000 s**, by `scripts/reads/screen-read-24000.ps1 -Gene`, as in the screens.
 
-**Two readings are reported, side by side.**
+**Two readings are reported, side by side, and neither is primary.** The owner has not ruled on the amendment
+behind reading (b). Until they do, the read gives both, and the verdict on the settings is the owner's.
 - **(a) Strict, D222 as it stands.** The settings are confirmed when every new world passes all three tests. Any miss
   means they are not confirmed, and that goes to the owner with the read.
 - **(b) The small-window reading, pending the owner's ruling on the D222 amendment the coordinator has put to them.**
@@ -130,8 +132,10 @@ what makes a crossing worth its cost: food that runs out on an oasis, a season t
 
 ## Before launch
 
-- The owner's yes.
-- This file's DRAFT mark removed, and the file committed.
+- This file committed.
 - A clean worktree at that commit, made with `git worktree add scratch/wt-r62cf`. Its Release farm is built from its
   own clean tree, so the manifest's gitCommit names the commit.
 - The card notice to assay-d6, its clear, HOLD, the coordinator's heat watch, then the go.
+
+**What a result would gate.** The owner chose fat as what should make a crossing pay. Its screen waits for D222 to
+pass, so this round is also its gate.
