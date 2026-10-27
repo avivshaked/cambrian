@@ -1,0 +1,78 @@
+== round 61's grazer economy: year 6000 s, end 12000 s, upkeep None W
+
+######## r62sm-s100-6201: seed 6201, PLANTED, configHash bcc3af9821602b3e, read to 12000 s; r62sm-s100-6201/2026-10-27-111146-bcc3af98
+   joulesPerUnit 100, intakeWasteFraction 0.2, corpseDecayPerSecond 0.000385, attackWattsPerUnit 0.1, intakeWattsPerUnit 0.1, workCostMultiplier 0.03125, ageHazardBaseSeconds 3000, trickle 0.033333335/s, pool share 0.5
+   pool: 0:pool 0 (stomach/stomach), 1:pool 1 (stomach/stomach), 2:pool 2 (stomach/stomach), 3:pool 3 (stomach/stomach), 4:direction-sparse-g33-47, 5:direction-sparse-g22-27, 6:direction-sparse-g33-30, 7:direction-sparse-g33-37, 8:direction-sparse-g31-19, 9:direction-sparse-g30-40, 10:direction-sparse-g16-2, 11:direction-sparse-g14-31, 12:direction-sparse-g12-35, 13:direction-sparse-g15-36
+
+== 1. mouthed births per year by origin; deaths of mouthed bodies; pool admissions (stats poolSpawns)
+    yr pl.fnd bred-pl bred-oth bred-unm oth.fnd  total  nopho bred jnt deaths pool adm | living at year end: mouthed founders  bred old pl.line max gen
+     1     35     121        0        0       0    156    156      104    147       41 |                           9        5     4           0       3
+     2     74     671        0        0       0    745    741      603    740       94 |                          14        5     9           0       8
+   all years: planted founder 109, bred, planted line 792, bred, other line 0, bred of an unmouthed parent 0, other founder 0; total 901
+
+   replacement per birth-year cohort of mouthed bodies (children counted to the end; late cohorts censored):
+    yr | founders n kids/body mouthed kids/body with a kid | bred n kids/body mouthed kids/body with a kid
+     1 |         35     1.771             1.771      0.286 |        121     0.562             0.562      0.124
+     2 |         74     2.081             2.081      0.459 |        671     0.757             0.757      0.180
+   all mouthed bodies: 901, mean children 0.879, mean mouthed children 0.879
+
+   planted lines: 109 founders admitted to 12000 s; 44 with any descendant; descendant births 792 (mouthed 792); lines alive at 12000 s: 8 holding 14 bodies
+   largest planted lines (founder id, admitted s, swimmer, descendant births, mouthed, jointed, deepest gen, span s, living at end): 9230 6498.5 direction-sparse-g30-40 158 158 139 12 4728 0; 10234 6999 direction-sparse-g16-2 155 155 141 9 5001 3; 5169 3723 direction-sparse-g22-27 80 80 72 7 4503 0; 11139 7377.5 direction-sparse-g15-36 78 78 72 7 3876 0; 11127 7374 direction-sparse-g15-36 31 31 28 4 3154 0
+   longest-lived planted lines (span s, founder id, admitted s, descendant births, deepest gen, living): 5001 10234 6999 155 9 3; 4728 9230 6498.5 158 12 0; 4503 5169 3723 80 7 0; 3876 11139 7377.5 78 7 0; 3822 9938 6835 19 3 0
+   per swimmer pool genome (pool index: name, founders, descendant births, mouthed descendants, living at end): 9: direction-sparse-g30-40 16 229 229 6; 13: direction-sparse-g15-36 15 188 188 0; 10: direction-sparse-g16-2 11 161 161 3; 5: direction-sparse-g22-27 13 87 87 3; 8: direction-sparse-g31-19 16 65 65 0; 11: direction-sparse-g14-31 8 45 45 0; 4: direction-sparse-g33-47 9 10 10 2; 6: direction-sparse-g33-30 3 4 4 0; 7: direction-sparse-g33-37 10 3 3 0; 12: direction-sparse-g12-35 8 0 0 0
+
+== 2. age at death (s) and cause, per guild and year of death (year 0 = all years)
+   guild                         yr  deaths  median    mean   starved     eaten      aged  diverged  other
+   grazer (nopho mouthed)         0     883      70     304     0.759     0.147     0.094     0.000  0
+   grazer (nopho mouthed)         1     147      74     279     0.816     0.102     0.082     0.000  0
+   grazer (nopho mouthed)         2     736      69     309     0.747     0.156     0.096     0.000  0
+   mouthed with pho               0       4      41     110     0.750     0.250     0.000     0.000  0
+   mouthed with pho               2       4      41     110     0.750     0.250     0.000     0.000  0
+   stomach                        0     170     530    1199     0.541     0.182     0.276     0.000  0
+   stomach                        1      36     256     868     0.806     0.000     0.194     0.000  0
+   stomach                        2     134     720    1288     0.470     0.231     0.299     0.000  0
+   leaf                           0   12922    1422    1531     0.258     0.152     0.590     0.000  0
+   leaf                           1    3787    1475    1600     0.308     0.046     0.647     0.000  0
+   leaf                           2    9135    1394    1502     0.237     0.196     0.567     0.000  0
+   other jointed                  0    3942    1858    1983     0.357     0.118     0.525     0.000  0
+   other jointed                  1    1827    1859    1921     0.383     0.050     0.567     0.000  0
+   other jointed                  2    2115    1854    2037     0.335     0.176     0.489     0.000  0
+   other                          0      29     102     122     1.000     0.000     0.000     0.000  0
+   other                          1      14      99      97     1.000     0.000     0.000     0.000  0
+   other                          2      15     113     146     1.000     0.000     0.000     0.000  0
+     mouthed: planted founder     0     104     568     746     0.740     0.058     0.202     0.000  0
+     mouthed: planted founder     1      30     536     598     0.833     0.000     0.167     0.000  0
+     mouthed: planted founder     2      74     746     806     0.703     0.081     0.216     0.000  0
+     mouthed: bred                0     783      60     245     0.761     0.160     0.079     0.000  0
+     mouthed: bred                1     117      54     197     0.812     0.128     0.060     0.000  0
+     mouthed: bred                2     666      61     253     0.752     0.165     0.083     0.000  0
+   alive at the end (censored): grazer (nopho mouthed) 14 (median age 422 s); stomach 29 (median age 953 s); leaf 2165 (median age 718 s); other jointed 425 (median age 911 s); mouthed: planted founder 5 (median age 602 s); mouthed: bred 9 (median age 298 s)
+
+== 3. energy per mouthed body: kills it made, the corpse joules they founded kept at 1 - waste (0.8; an upper bound on what its kills fed it), against upkeep (no --upkeep-w given)
+   per birth-year cohort and origin; a body alive at the end has its life to the end
+    yr origin           n >=1 kill >=1 leaf kills mean median leafK mean median life mean s  kept W kept J/kill endow J covers upkeep
+   all planted fnd    109    0.550    0.486       5.19      1       2.94      0         739   0.073        10.4     371             -
+   all bred           792    0.501    0.338       3.27      1       2.15      0         248   0.126         9.6       -             -
+   all all            901    0.507    0.356       3.50      1       2.25      0         307   0.111         9.7     371             -
+     1 planted fnd     35    0.429    0.371       4.00      0       1.57      0         609   0.071        10.7     371             -
+     1 bred           121    0.446    0.256       2.20      0       1.10      0         235   0.096        10.3       -             -
+     2 planted fnd     74    0.608    0.541       5.76      3       3.58      1         800   0.074        10.3     371             -
+     2 bred           671    0.511    0.353       3.46      1       2.34      0         250   0.131         9.5       -             -
+   kills by mouthed attackers by victim guild: leaf 2023, other jointed 832, grazer (nopho mouthed) 261, stomach 40, mouthed with pho 1; a leaf kill's corpse: mean 1.5 J, median 0.0 J (tj + rj, before waste)
+
+   world level per year (measured): mouths' intake from stats unitsEaten x 100 J, kept at 0.8; corpse J founded by kills of mouthed attackers; body-seconds with intake (ink 1) and mouthed; mean kept W per intake body; work billed per jointed body (stats workJoulesPerSecond x workCostMultiplier / jointed, mean over the year's rows; every jointed body, not only the mouthed)
+    yr  kills  leafK kill corpse J    kept J kept/corpse  ink body-s mouthed body-s kept W/ink mean ink alive work W/jnt corpsesEaten corpsesFromKills
+     1    379    175          5180         0        0.00       49660          46088      0.000            8.3     0.0048            0                0
+     2   2778   1848         33177         0        0.00      233854         230725      0.000           39.0     0.0127            0                0
+
+== 5. speed from positions (m/s): per 10 s step, 3-D and horizontal, over body-samples; net = horizontal displacement over the window per body present at both ends, over the span
+          window class                   samples  mean 3D  med 3D  mean h   med h bodies net med net mean   rel n rel med rel mean | stats speedJointed / speedRigid
+     5700:6000   jointed, planted line       712   0.1727  0.1986  0.1518  0.1241     17  0.0212   0.0292     433  0.2276   0.1825 | 0.031 / 0.020 (row 6000)
+     5700:6000   jointed, other            19886   0.0248  0.0199  0.0243  0.0196    576  0.0107   0.0141       0       -        - | 
+     5700:6000   rigid                     49739   0.0207  0.0191  0.0205  0.0190   1389  0.0106   0.0109    2455  0.0047   0.0071 | 
+     5700:6000   rigid leaf                40138   0.0209  0.0192  0.0206  0.0190   1072  0.0107   0.0108       0       -        - | 
+    11700:12000  jointed, planted line      1086   0.1276  0.0416  0.1181  0.0403     25  0.0198   0.0252     960  0.0224   0.1131 | 0.036 / 0.025 (row 12000)
+    11700:12000  jointed, other            13492   0.0256  0.0221  0.0253  0.0219    386  0.0095   0.0118       0       -        - | 
+    11700:12000  rigid                     75954   0.0224  0.0201  0.0223  0.0200   2061  0.0126   0.0135    3271  0.0049   0.0070 | 
+    11700:12000  rigid leaf                59478   0.0226  0.0202  0.0224  0.0201   1529  0.0129   0.0137       0       -        - | 
+    23000:28000  no positions rows

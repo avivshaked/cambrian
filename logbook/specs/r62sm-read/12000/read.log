@@ -1,0 +1,12 @@
+2026-10-27T13:04:40 round 62 read to 12000 s begins, mask 983040
+2026-10-27T13:04:44 r62-health exit 0, 4 s
+2026-10-27T13:04:47 r62g-read exit 0, 4 s
+2026-10-27T13:04:51 r62g-cohorts exit 0, 4 s
+2026-10-27T13:04:55 r62g-seasons exit 0, 4 s
+2026-10-27T13:04:59 r62g-windows exit 0, 4 s
+2026-10-27T13:05:13 r60-read exit 0, 14 s
+2026-10-27T13:05:16 r61-grazer-economy-r62sm-s100-6201 exit 0, 3 s
+2026-10-27T13:05:18 r61-grazer-economy-r62sm-s50-6201 exit 0, 3 s
+2026-10-27T13:05:21 r61-grazer-economy-r62sm-s25-6201 exit 0, 3 s
+2026-10-27T13:05:24 r61-grazer-economy-r62sm-s10-6201 exit 0, 3 s
+2026-10-27T13:05:24 read ends
