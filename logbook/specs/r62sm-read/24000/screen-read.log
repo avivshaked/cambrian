@@ -1,0 +1,14 @@
+2026-10-27T14:58:44 read begins: r62sm-s100-6201, r62sm-s50-6201, r62sm-s25-6201, r62sm-s10-6201 to 24000 s
+2026-10-27T15:01:24 r62-read exit 0
+2026-10-27T15:01:58 r60-read-3000 exit 0
+2026-10-27T15:02:03 scaling-audit exit 0
+2026-10-27T15:02:05 overshoot r62sm-s100-6201 against r62cs-w500-6201 exit 0
+2026-10-27T15:02:07 grazer-tally r62sm-s100-6201 exit 0
+2026-10-27T15:02:09 overshoot r62sm-s50-6201 against r62cs-w500-6201 exit 0
+2026-10-27T15:02:10 grazer-tally r62sm-s50-6201 exit 0
+2026-10-27T15:02:13 overshoot r62sm-s25-6201 against r62cs-w500-6201 exit 0
+2026-10-27T15:02:14 grazer-tally r62sm-s25-6201 exit 0
+2026-10-27T15:02:16 overshoot r62sm-s10-6201 against r62cs-w500-6201 exit 0
+2026-10-27T15:02:18 grazer-tally r62sm-s10-6201 exit 0
+2026-10-27T15:02:20 grs-drift exit 0
+2026-10-27T15:02:20 read ends

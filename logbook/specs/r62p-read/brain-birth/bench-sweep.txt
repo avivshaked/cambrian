@@ -1,0 +1,160 @@
+=== brain-birth bench: D:\Projects\experiments\evolution-simulator\runs\r62p-t3-6201\2026-10-26-034325-a9cd635c
+  config 10105b672f132a19 (recorded Stored hash a9cd635c6257af36 does not match the settings in this file (10105b672f132a19). The file was edited after it was written, which is fine — but results filed under the stored hash were produced by different settings.)
+  dt 0.01 s, seconds 60 (6000 steps, measured over the last half), parent-warm 60 s (6000 steps), eps 0.05, kick 0.05, seed 1
+  senses: held-sampled. The body is held at rest and the physics step is never called; Senses.Sample() runs each step, joint angle and rate, flow, scent, contact, damage and bed read 0, depth and up read the placement (root at y -20 m), chemical and energy read the constant 0.5, and the drive-envelope senses are live (Drive.Drive each step)
+  ids 393 rows; genomes found 628 of 628; birth fractions found 393 of 393
+  swim: parentSwim (the parent at size 1) and childSwim (the child at its birth fraction) each swim alone in still water for 60 s (6000 steps) under their own brain, with physics on (the probe's Swim, Variant.BrainWorld, no glass, no contact). netSpeed, pathSpeed and horizontal are over the last half of the swim; early is the root's net horizontal speed over 0 to 10 s
+  passive: parentPassive and childPassive are the same bodies at the same start, stepped through the probe's Swim with Variant.Passive (the brain is not stepped, the drive signal is zero; drag, contact and joint torques act as in Swim's hand-written loop)
+  start: --birth-height. Each swim and passive body starts at its row's y0 (the parent at its child's y0), 393 of 393 rows have one; a row without y0 keeps -20 m and says so in its note. Swim clamps the start to [-40, -0.05] m, and says so in the note when it does
+  sense sweep: childSwim@v is the child, fresh at its birth size, swimming alone at its start height with ConstantChemicalAndEnergy = v for v in 0, 0.25, 0.75, 1. That constant feeds two separate channels, SensorChannel.Chemical (CreatureSenses.cs:399-402, every part, while Senses.Nutrients is null) and SensorChannel.Energy (CreatureSenses.cs:407-408, the whole body, while Senses.Reserve is null); the sweep moves both together. A brain reads either only through a neuron wired to that channel. The base childSwim is at 0.5
+  reserve: childSwimReserve is childSwim with Senses.Reserve set to a fixed stand-in whose SecondsOfReserve is the row's S0 (393 of 393 rows have one; the others are skipped with a note). The energy sense is then tanh(S0 / EnergyFullScaleSeconds 3000) (CreatureSenses.cs:203, :475-482; +infinity reads 1); the chemical sense stays at the constant 0.5. Anchor reads the same reserve only for a held grip, and a body alone holds none
+  current: childSwimCurrent is childSwim run through the probe's own step loop (Variant.BrainLoop, with the bend array and Anchor.Apply as DynamicsWorld.StepOne has them) with a uniform water speed of 0.02 m/s along x: Program.Swim sets Creature.Water[3 i] each step, Fluid.Apply turns it into RelativeVelocity (Fluid.cs:85-86), and CreatureSenses.Sample reads that in each part's frame as the flow sense (CreatureSenses.cs:292-301). The body is dragged along. Its early column is the absolute root displacement over 0 to 10 s; earlyRelWater is the same with 0.02 m/s times the elapsed time taken off the x displacement. childSwimLoop0 is the same loop in still water, run first as the current's control
+  columns after early: totalMass kg (effective, added mass folded in) and totalVolume m3 of the Creature; excessDensity kg/m3, the tissue excess density Fluid.Apply uses for the body (TissueExcessDensity x ExcessDensityFactor); netBuoyancy N, up positive, the vertical force of one Fluid.Apply on the body at its start, at rest in still water; dyFirst10 m, the root's vertical displacement over 0 to 10 s, up positive; bodyLength m, the probe's measure on the body as built
+  wrote brain-birth.tsv (5895 rows) and brain-birth-channels.tsv, per channel mean, range, RMS and rate
+
+== standstill (children 117)
+  variant       n   silent  settled  skipped
+  parent        117   100.0%   100.0%        0
+  fresh         117   100.0%   100.0%        0
+  fromParent    117   100.0%   100.0%        0
+  kick          117   100.0%   100.0%        0
+  silent under fresh with a parent that is not silent: 0
+    made active by fromParent: 0 of 0 (skipped 0)
+    made active by kick: 0 of 0 (skipped 0)
+
+== slow (children 76)
+  variant       n   silent  settled  skipped
+  parent         76   100.0%   100.0%        0
+  fresh          76   100.0%   100.0%        0
+  fromParent     76   100.0%   100.0%        0
+  kick           76   100.0%   100.0%        0
+  silent under fresh with a parent that is not silent: 0
+    made active by fromParent: 0 of 0 (skipped 0)
+    made active by kick: 0 of 0 (skipped 0)
+
+== moving (children 200)
+  variant       n   silent  settled  skipped
+  parent        200   100.0%   100.0%        0
+  fresh         200   100.0%   100.0%        0
+  fromParent    200   100.0%   100.0%        0
+  kick          200   100.0%   100.0%        0
+  silent under fresh with a parent that is not silent: 0
+    made active by fromParent: 0 of 0 (skipped 0)
+    made active by kick: 0 of 0 (skipped 0)
+
+== swim alone, standstill (children 117)
+  variant         n  median netSpeed  median early  netSpeed<0.03  median netBuoyancy N  median dyFirst10 m  median bodyLength m  no-number (skipped/nojoint/lost)
+  childSwim       117           0.2089       0.14148            6.8%                   0            -0.0005             0.96788  0/0/0
+  parentSwim      117          0.25491       0.17104            0.9%                   0           -0.00147                1.12  0/0/0
+  childPassive    117                0             0          100.0%                   0                  0             0.96788  0/0/0
+  parentPassive   117                0             0          100.0%                   0                  0                1.12  0/0/0
+  child own brain minus child passive, early m/s: n 117, median 0.14148, quartiles 0.11979 to 0.15648 (netSpeed in place of early for 0)
+
+== swim alone, slow (children 76)
+  variant         n  median netSpeed  median early  netSpeed<0.03  median netBuoyancy N  median dyFirst10 m  median bodyLength m  no-number (skipped/nojoint/lost)
+  childSwim        76          0.18245         0.129           17.1%                   0           -0.00074             0.94293  0/0/0
+  parentSwim       76          0.25212       0.16528            2.6%                   0           -0.00213                1.12  0/0/0
+  childPassive     76                0             0          100.0%                   0                  0             0.94293  0/0/0
+  parentPassive    76                0             0          100.0%                   0                  0                1.12  0/0/0
+  child own brain minus child passive, early m/s: n 76, median 0.129, quartiles 0.08106 to 0.1526 (netSpeed in place of early for 0)
+
+== swim alone, moving (children 200)
+  variant         n  median netSpeed  median early  netSpeed<0.03  median netBuoyancy N  median dyFirst10 m  median bodyLength m  no-number (skipped/nojoint/lost)
+  childSwim       200          0.20371       0.13828            7.0%                   0           -0.00064             0.95627  0/0/0
+  parentSwim      200          0.24878       0.16685            2.0%                   0           -0.00175                1.12  0/0/0
+  childPassive    200                0             0          100.0%                   0                  0             0.95627  0/0/0
+  parentPassive   200                0             0          100.0%                   0                  0                1.12  0/0/0
+  child own brain minus child passive, early m/s: n 200, median 0.13828, quartiles 0.10195 to 0.15936 (netSpeed in place of early for 0)
+
+== children, in the world against alone (alone slow = early under 0.03 m/s)
+                          slow alone   not slow alone
+  slow in the world               10              183   (groups standstill and slow)
+  moving in the world              1              199   (group moving)
+  measure: early for 393 rows, netSpeed for 0; left out: 0 with no swim number (skipped, no joint or lost), 0 in another group
+
+== children, in the world against own brain over passive (slow alone = own-brain speed minus passive speed under 0.03 m/s)
+                          slow alone   not slow alone
+  slow in the world               10              183   (groups standstill and slow)
+  moving in the world              2              198   (group moving)
+  measure: early for 393 rows, netSpeed for 0; left out: 0 where the own-brain or the passive swim has no number, 0 in another group
+
+== sense sweep, standstill (children 117)
+  variant              chem+energy  n  median early  early<0.03  median earlyRelWater  earlyRelWater<0.03  no-number
+  childSwim            0.5           117       0.14148         5.1%                     -                  -  0
+  childSwim@0          0             117       0.07825        12.8%                     -                  -  0
+  childSwim@0.25       0.25          117       0.12098         5.1%                     -                  -  0
+  childSwim@0.75       0.75          117       0.14974         4.3%                     -                  -  0
+  childSwim@1          1             117       0.15696         3.4%                     -                  -  0
+  childSwimReserve     chem 0.5, energy S0   117       0.08091        14.5%                     -                  -  0
+  childSwimLoop0       0.5           117       0.14148         5.1%                     -                  -  0
+  childSwimCurrent     0.5           117       0.14374         4.3%               0.14417               4.3%  0
+
+== sense sweep, slow (children 76)
+  variant              chem+energy  n  median early  early<0.03  median earlyRelWater  earlyRelWater<0.03  no-number
+  childSwim            0.5            76         0.129         5.3%                     -                  -  0
+  childSwim@0          0              76        0.0734        14.5%                     -                  -  0
+  childSwim@0.25       0.25           76       0.10922         5.3%                     -                  -  0
+  childSwim@0.75       0.75           76       0.13772         5.3%                     -                  -  0
+  childSwim@1          1              76       0.14484         3.9%                     -                  -  0
+  childSwimReserve     chem 0.5, energy S0    76       0.07859        18.4%                     -                  -  0
+  childSwimLoop0       0.5            76         0.129         5.3%                     -                  -  0
+  childSwimCurrent     0.5            76       0.13054         3.9%               0.13177               3.9%  0
+
+== sense sweep, moving (children 200)
+  variant              chem+energy  n  median early  early<0.03  median earlyRelWater  earlyRelWater<0.03  no-number
+  childSwim            0.5           200       0.13828         0.5%                     -                  -  0
+  childSwim@0          0             200       0.09921         3.0%                     -                  -  0
+  childSwim@0.25       0.25          200       0.12327         1.0%                     -                  -  0
+  childSwim@0.75       0.75          200       0.14781         1.0%                     -                  -  0
+  childSwim@1          1             200        0.1523         0.5%                     -                  -  0
+  childSwimReserve     chem 0.5, energy S0   200       0.09789         5.0%                     -                  -  0
+  childSwimLoop0       0.5           200       0.13828         0.5%                     -                  -  0
+  childSwimCurrent     0.5           200       0.14052         0.5%               0.14117               0.0%  0
+
+== children, in the world against alone, childSwim@0 (alone slow = early under 0.03 m/s)
+                          slow alone   not slow alone
+  slow in the world               26              167   (groups standstill and slow)
+  moving in the world              6              194   (group moving)
+  measure: early for 393 rows, netSpeed for 0; left out: 0 with no swim number (skipped, no joint, lost or no S0), 0 in another group
+
+== children, in the world against alone, childSwim@0.25 (alone slow = early under 0.03 m/s)
+                          slow alone   not slow alone
+  slow in the world               10              183   (groups standstill and slow)
+  moving in the world              2              198   (group moving)
+  measure: early for 393 rows, netSpeed for 0; left out: 0 with no swim number (skipped, no joint, lost or no S0), 0 in another group
+
+== children, in the world against alone, childSwim@0.75 (alone slow = early under 0.03 m/s)
+                          slow alone   not slow alone
+  slow in the world                9              184   (groups standstill and slow)
+  moving in the world              2              198   (group moving)
+  measure: early for 393 rows, netSpeed for 0; left out: 0 with no swim number (skipped, no joint, lost or no S0), 0 in another group
+
+== children, in the world against alone, childSwim@1 (alone slow = early under 0.03 m/s)
+                          slow alone   not slow alone
+  slow in the world                7              186   (groups standstill and slow)
+  moving in the world              1              199   (group moving)
+  measure: early for 393 rows, netSpeed for 0; left out: 0 with no swim number (skipped, no joint, lost or no S0), 0 in another group
+
+== children, in the world against alone, childSwimReserve (alone slow = early under 0.03 m/s)
+                          slow alone   not slow alone
+  slow in the world               31              162   (groups standstill and slow)
+  moving in the world             10              190   (group moving)
+  measure: early for 393 rows, netSpeed for 0; left out: 0 with no swim number (skipped, no joint, lost or no S0), 0 in another group
+
+== children, in the world against alone, childSwimLoop0 (alone slow = early under 0.03 m/s)
+                          slow alone   not slow alone
+  slow in the world               10              183   (groups standstill and slow)
+  moving in the world              1              199   (group moving)
+  measure: early for 393 rows, netSpeed for 0; left out: 0 with no swim number (skipped, no joint, lost or no S0), 0 in another group
+
+== children, in the world against alone, childSwimCurrent, early relative to the water (0.02 m/s along x) (alone slow = early under 0.03 m/s)
+                          slow alone   not slow alone
+  slow in the world                8              185   (groups standstill and slow)
+  moving in the world              0              200   (group moving)
+  measure: early for 393 rows, netSpeed for 0; left out: 0 with no swim number (skipped, no joint, lost or no S0), 0 in another group
+
+== children, in the world against alone, childSwimCurrent, absolute early (alone slow = early under 0.03 m/s)
+                          slow alone   not slow alone
+  slow in the world                8              185   (groups standstill and slow)
+  moving in the world              1              199   (group moving)
+  measure: early for 393 rows, netSpeed for 0; left out: 0 with no swim number (skipped, no joint, lost or no S0), 0 in another group

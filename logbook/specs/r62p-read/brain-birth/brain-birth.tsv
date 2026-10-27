@@ -1,0 +1,1573 @@
+id	parent	group	variant	dof	active	maxP2P	medianHz	silent	settled	note
+6386	5882	standstill	parent	1	0	0	nan	1	1	
+6386	5882	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+6386	5882	standstill	fromParent	1	0	0	nan	1	1	
+6386	5882	standstill	kick	1	0	0	nan	1	1	
+8333	7868	standstill	parent	1	0	0	nan	1	1	
+8333	7868	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+8333	7868	standstill	fromParent	1	0	0	nan	1	1	
+8333	7868	standstill	kick	1	0	0	nan	1	1	
+9025	8328	standstill	parent	1	0	0	nan	1	1	
+9025	8328	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+9025	8328	standstill	fromParent	1	0	0	nan	1	1	
+9025	8328	standstill	kick	1	0	0	nan	1	1	
+9483	9088	standstill	parent	1	0	0	nan	1	1	
+9483	9088	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+9483	9088	standstill	fromParent	1	0	0	nan	1	1	
+9483	9088	standstill	kick	1	0	0	nan	1	1	
+9585	9088	standstill	parent	1	0	0	nan	1	1	
+9585	9088	standstill	fresh	1	0	0	nan	1	1	bf 1
+9585	9088	standstill	fromParent	1	0	0	nan	1	1	
+9585	9088	standstill	kick	1	0	0	nan	1	1	
+10361	10034	standstill	parent	1	0	0	nan	1	1	
+10361	10034	standstill	fresh	1	0	0	nan	1	1	bf 0.668
+10361	10034	standstill	fromParent	1	0	0	nan	1	1	
+10361	10034	standstill	kick	1	0	0	nan	1	1	
+10922	10535	standstill	parent	1	0	0	nan	1	1	
+10922	10535	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+10922	10535	standstill	fromParent	1	0	0	nan	1	1	
+10922	10535	standstill	kick	1	0	0	nan	1	1	
+11574	8293	standstill	parent	1	0	0	nan	1	1	
+11574	8293	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+11574	8293	standstill	fromParent	1	0	0	nan	1	1	
+11574	8293	standstill	kick	1	0	0	nan	1	1	
+11661	10865	standstill	parent	1	0	0	nan	1	1	
+11661	10865	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+11661	10865	standstill	fromParent	1	0	0	nan	1	1	
+11661	10865	standstill	kick	1	0	0	nan	1	1	
+12781	11490	standstill	parent	1	0	0	nan	1	1	
+12781	11490	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+12781	11490	standstill	fromParent	1	0	0	nan	1	1	
+12781	11490	standstill	kick	1	0	0	nan	1	1	
+12821	11490	standstill	parent	1	0	0	nan	1	1	
+12821	11490	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+12821	11490	standstill	fromParent	1	0	0	nan	1	1	
+12821	11490	standstill	kick	1	0	0	nan	1	1	
+13397	12462	standstill	parent	1	0	0	nan	1	1	
+13397	12462	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+13397	12462	standstill	fromParent	1	0	0	nan	1	1	
+13397	12462	standstill	kick	1	0	0	nan	1	1	
+13631	12462	standstill	parent	1	0	0	nan	1	1	
+13631	12462	standstill	fresh	1	0	0	nan	1	1	bf 0.6427
+13631	12462	standstill	fromParent	1	0	0	nan	1	1	
+13631	12462	standstill	kick	1	0	0	nan	1	1	
+14449	11490	standstill	parent	1	0	0	nan	1	1	
+14449	11490	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+14449	11490	standstill	fromParent	1	0	0	nan	1	1	
+14449	11490	standstill	kick	1	0	0	nan	1	1	
+14575	13585	standstill	parent	1	0	0	nan	1	1	
+14575	13585	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+14575	13585	standstill	fromParent	1	0	0	nan	1	1	
+14575	13585	standstill	kick	1	0	0	nan	1	1	
+15860	14676	standstill	parent	1	0	0	nan	1	1	
+15860	14676	standstill	fresh	1	0	0	nan	1	1	bf 0.6495
+15860	14676	standstill	fromParent	1	0	0	nan	1	1	
+15860	14676	standstill	kick	1	0	0	nan	1	1	
+17903	16599	standstill	parent	1	0	0	nan	1	1	
+17903	16599	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+17903	16599	standstill	fromParent	1	0	0	nan	1	1	
+17903	16599	standstill	kick	1	0	0	nan	1	1	
+18053	17348	standstill	parent	1	0	0	nan	1	1	
+18053	17348	standstill	fresh	1	0	0	nan	1	1	bf 0.6197
+18053	17348	standstill	fromParent	1	0	0	nan	1	1	
+18053	17348	standstill	kick	1	0	0	nan	1	1	
+18345	17641	standstill	parent	1	0	0	nan	1	1	
+18345	17641	standstill	fresh	1	0	0	nan	1	1	bf 0.6452
+18345	17641	standstill	fromParent	1	0	0	nan	1	1	
+18345	17641	standstill	kick	1	0	0	nan	1	1	
+19512	17739	standstill	parent	1	0	0	nan	1	1	
+19512	17739	standstill	fresh	1	0	0	nan	1	1	bf 0.6502
+19512	17739	standstill	fromParent	1	0	0	nan	1	1	
+19512	17739	standstill	kick	1	0	0	nan	1	1	
+20263	16734	standstill	parent	1	0	0	nan	1	1	
+20263	16734	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+20263	16734	standstill	fromParent	1	0	0	nan	1	1	
+20263	16734	standstill	kick	1	0	0	nan	1	1	
+20738	20000	standstill	parent	1	0	0	nan	1	1	
+20738	20000	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+20738	20000	standstill	fromParent	1	0	0	nan	1	1	
+20738	20000	standstill	kick	1	0	0	nan	1	1	
+21028	20189	standstill	parent	1	0	0	nan	1	1	
+21028	20189	standstill	fresh	1	0	0	nan	1	1	bf 0.6282
+21028	20189	standstill	fromParent	1	0	0	nan	1	1	
+21028	20189	standstill	kick	1	0	0	nan	1	1	
+21191	21030	standstill	parent	1	0	0	nan	1	1	
+21191	21030	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+21191	21030	standstill	fromParent	1	0	0	nan	1	1	
+21191	21030	standstill	kick	1	0	0	nan	1	1	
+21565	21165	standstill	parent	1	0	0	nan	1	1	
+21565	21165	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+21565	21165	standstill	fromParent	1	0	0	nan	1	1	
+21565	21165	standstill	kick	1	0	0	nan	1	1	
+23037	22489	standstill	parent	1	0	0	nan	1	1	
+23037	22489	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+23037	22489	standstill	fromParent	1	0	0	nan	1	1	
+23037	22489	standstill	kick	1	0	0	nan	1	1	
+23394	22888	standstill	parent	1	0	0	nan	1	1	
+23394	22888	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+23394	22888	standstill	fromParent	1	0	0	nan	1	1	
+23394	22888	standstill	kick	1	0	0	nan	1	1	
+24067	21835	standstill	parent	1	0	0	nan	1	1	
+24067	21835	standstill	fresh	1	0	0	nan	1	1	bf 0.6509
+24067	21835	standstill	fromParent	1	0	0	nan	1	1	
+24067	21835	standstill	kick	1	0	0	nan	1	1	
+26614	24036	standstill	parent	1	0	0	nan	1	1	
+26614	24036	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+26614	24036	standstill	fromParent	1	0	0	nan	1	1	
+26614	24036	standstill	kick	1	0	0	nan	1	1	
+27342	26491	standstill	parent	1	0	0	nan	1	1	
+27342	26491	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+27342	26491	standstill	fromParent	1	0	0	nan	1	1	
+27342	26491	standstill	kick	1	0	0	nan	1	1	
+27562	26491	standstill	parent	1	0	0	nan	1	1	
+27562	26491	standstill	fresh	1	0	0	nan	1	1	bf 0.7043
+27562	26491	standstill	fromParent	1	0	0	nan	1	1	
+27562	26491	standstill	kick	1	0	0	nan	1	1	
+29121	26561	standstill	parent	1	0	0	nan	1	1	
+29121	26561	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+29121	26561	standstill	fromParent	1	0	0	nan	1	1	
+29121	26561	standstill	kick	1	0	0	nan	1	1	
+31405	30862	standstill	parent	1	0	0	nan	1	1	
+31405	30862	standstill	fresh	1	0	0	nan	1	1	bf 0.602
+31405	30862	standstill	fromParent	1	0	0	nan	1	1	
+31405	30862	standstill	kick	1	0	0	nan	1	1	
+32142	31026	standstill	parent	1	0	0	nan	1	1	
+32142	31026	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+32142	31026	standstill	fromParent	1	0	0	nan	1	1	
+32142	31026	standstill	kick	1	0	0	nan	1	1	
+32477	31026	standstill	parent	1	0	0	nan	1	1	
+32477	31026	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+32477	31026	standstill	fromParent	1	0	0	nan	1	1	
+32477	31026	standstill	kick	1	0	0	nan	1	1	
+32725	32182	standstill	parent	1	0	0	nan	1	1	
+32725	32182	standstill	fresh	1	0	0	nan	1	1	bf 0.6466
+32725	32182	standstill	fromParent	1	0	0	nan	1	1	
+32725	32182	standstill	kick	1	0	0	nan	1	1	
+32959	31711	standstill	parent	1	0	0	nan	1	1	
+32959	31711	standstill	fresh	1	0	0	nan	1	1	bf 0.6232
+32959	31711	standstill	fromParent	1	0	0	nan	1	1	
+32959	31711	standstill	kick	1	0	0	nan	1	1	
+33871	31851	standstill	parent	1	0	0	nan	1	1	
+33871	31851	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+33871	31851	standstill	fromParent	1	0	0	nan	1	1	
+33871	31851	standstill	kick	1	0	0	nan	1	1	
+34677	31768	standstill	parent	1	0	0	nan	1	1	
+34677	31768	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+34677	31768	standstill	fromParent	1	0	0	nan	1	1	
+34677	31768	standstill	kick	1	0	0	nan	1	1	
+34778	30184	standstill	parent	1	0	0	nan	1	1	
+34778	30184	standstill	fresh	1	0	0	nan	1	1	bf 0.6736
+34778	30184	standstill	fromParent	1	0	0	nan	1	1	
+34778	30184	standstill	kick	1	0	0	nan	1	1	
+35815	34802	standstill	parent	1	0	0	nan	1	1	
+35815	34802	standstill	fresh	1	0	0	nan	1	1	bf 0.6359
+35815	34802	standstill	fromParent	1	0	0	nan	1	1	
+35815	34802	standstill	kick	1	0	0	nan	1	1	
+36076	34957	standstill	parent	1	0	0	nan	1	1	
+36076	34957	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+36076	34957	standstill	fromParent	1	0	0	nan	1	1	
+36076	34957	standstill	kick	1	0	0	nan	1	1	
+36632	34949	standstill	parent	1	0	0	nan	1	1	
+36632	34949	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+36632	34949	standstill	fromParent	1	0	0	nan	1	1	
+36632	34949	standstill	kick	1	0	0	nan	1	1	
+36856	34802	standstill	parent	1	0	0	nan	1	1	
+36856	34802	standstill	fresh	1	0	0	nan	1	1	bf 0.6402
+36856	34802	standstill	fromParent	1	0	0	nan	1	1	
+36856	34802	standstill	kick	1	0	0	nan	1	1	
+36898	35036	standstill	parent	1	0	0	nan	1	1	
+36898	35036	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+36898	35036	standstill	fromParent	1	0	0	nan	1	1	
+36898	35036	standstill	kick	1	0	0	nan	1	1	
+37630	36250	standstill	parent	1	0	0	nan	1	1	
+37630	36250	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+37630	36250	standstill	fromParent	1	0	0	nan	1	1	
+37630	36250	standstill	kick	1	0	0	nan	1	1	
+37879	36596	standstill	parent	1	0	0	nan	1	1	
+37879	36596	standstill	fresh	1	0	0	nan	1	1	bf 0.6498
+37879	36596	standstill	fromParent	1	0	0	nan	1	1	
+37879	36596	standstill	kick	1	0	0	nan	1	1	
+38149	36077	standstill	parent	1	0	0	nan	1	1	
+38149	36077	standstill	fresh	1	0	0	nan	1	1	bf 0.6365
+38149	36077	standstill	fromParent	1	0	0	nan	1	1	
+38149	36077	standstill	kick	1	0	0	nan	1	1	
+38433	38220	standstill	parent	1	0	0	nan	1	1	
+38433	38220	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+38433	38220	standstill	fromParent	1	0	0	nan	1	1	
+38433	38220	standstill	kick	1	0	0	nan	1	1	
+38785	38290	standstill	parent	1	0	0	nan	1	1	
+38785	38290	standstill	fresh	1	0	0	nan	1	1	bf 0.6415
+38785	38290	standstill	fromParent	1	0	0	nan	1	1	
+38785	38290	standstill	kick	1	0	0	nan	1	1	
+38946	35585	standstill	parent	1	0	0	nan	1	1	
+38946	35585	standstill	fresh	1	0	0	nan	1	1	bf 0.6309
+38946	35585	standstill	fromParent	1	0	0	nan	1	1	
+38946	35585	standstill	kick	1	0	0	nan	1	1	
+38981	38103	standstill	parent	1	0	0	nan	1	1	
+38981	38103	standstill	fresh	1	0	0	nan	1	1	bf 0.6746
+38981	38103	standstill	fromParent	1	0	0	nan	1	1	
+38981	38103	standstill	kick	1	0	0	nan	1	1	
+39037	37530	standstill	parent	1	0	0	nan	1	1	
+39037	37530	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+39037	37530	standstill	fromParent	1	0	0	nan	1	1	
+39037	37530	standstill	kick	1	0	0	nan	1	1	
+39197	38277	standstill	parent	1	0	0	nan	1	1	
+39197	38277	standstill	fresh	1	0	0	nan	1	1	bf 0.6416
+39197	38277	standstill	fromParent	1	0	0	nan	1	1	
+39197	38277	standstill	kick	1	0	0	nan	1	1	
+41129	38215	standstill	parent	1	0	0	nan	1	1	
+41129	38215	standstill	fresh	1	0	0	nan	1	1	bf 0.6254
+41129	38215	standstill	fromParent	1	0	0	nan	1	1	
+41129	38215	standstill	kick	1	0	0	nan	1	1	
+41195	40288	standstill	parent	1	0	0	nan	1	1	
+41195	40288	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+41195	40288	standstill	fromParent	1	0	0	nan	1	1	
+41195	40288	standstill	kick	1	0	0	nan	1	1	
+41842	40018	standstill	parent	1	0	0	nan	1	1	
+41842	40018	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+41842	40018	standstill	fromParent	1	0	0	nan	1	1	
+41842	40018	standstill	kick	1	0	0	nan	1	1	
+42867	40567	standstill	parent	1	0	0	nan	1	1	
+42867	40567	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+42867	40567	standstill	fromParent	1	0	0	nan	1	1	
+42867	40567	standstill	kick	1	0	0	nan	1	1	
+43705	39828	standstill	parent	1	0	0	nan	1	1	
+43705	39828	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+43705	39828	standstill	fromParent	1	0	0	nan	1	1	
+43705	39828	standstill	kick	1	0	0	nan	1	1	
+44448	43127	standstill	parent	1	0	0	nan	1	1	
+44448	43127	standstill	fresh	1	0	0	nan	1	1	bf 0.7882
+44448	43127	standstill	fromParent	1	0	0	nan	1	1	
+44448	43127	standstill	kick	1	0	0	nan	1	1	
+44724	43143	standstill	parent	1	0	0	nan	1	1	
+44724	43143	standstill	fresh	1	0	0	nan	1	1	bf 0.9396
+44724	43143	standstill	fromParent	1	0	0	nan	1	1	
+44724	43143	standstill	kick	1	0	0	nan	1	1	
+44905	43571	standstill	parent	1	0	0	nan	1	1	
+44905	43571	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+44905	43571	standstill	fromParent	1	0	0	nan	1	1	
+44905	43571	standstill	kick	1	0	0	nan	1	1	
+46213	45626	standstill	parent	1	0	0	nan	1	1	
+46213	45626	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+46213	45626	standstill	fromParent	1	0	0	nan	1	1	
+46213	45626	standstill	kick	1	0	0	nan	1	1	
+47007	43143	standstill	parent	1	0	0	nan	1	1	
+47007	43143	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+47007	43143	standstill	fromParent	1	0	0	nan	1	1	
+47007	43143	standstill	kick	1	0	0	nan	1	1	
+48222	45974	standstill	parent	1	0	0	nan	1	1	
+48222	45974	standstill	fresh	1	0	0	nan	1	1	bf 0.1001
+48222	45974	standstill	fromParent	1	0	0	nan	1	1	
+48222	45974	standstill	kick	1	0	0	nan	1	1	
+48465	47026	standstill	parent	1	0	0	nan	1	1	
+48465	47026	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+48465	47026	standstill	fromParent	1	0	0	nan	1	1	
+48465	47026	standstill	kick	1	0	0	nan	1	1	
+49104	47501	standstill	parent	1	0	0	nan	1	1	
+49104	47501	standstill	fresh	1	0	0	nan	1	1	bf 0.754
+49104	47501	standstill	fromParent	1	0	0	nan	1	1	
+49104	47501	standstill	kick	1	0	0	nan	1	1	
+49442	47026	standstill	parent	1	0	0	nan	1	1	
+49442	47026	standstill	fresh	1	0	0	nan	1	1	bf 0.6207
+49442	47026	standstill	fromParent	1	0	0	nan	1	1	
+49442	47026	standstill	kick	1	0	0	nan	1	1	
+49798	47501	standstill	parent	1	0	0	nan	1	1	
+49798	47501	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+49798	47501	standstill	fromParent	1	0	0	nan	1	1	
+49798	47501	standstill	kick	1	0	0	nan	1	1	
+51631	50598	standstill	parent	1	0	0	nan	1	1	
+51631	50598	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+51631	50598	standstill	fromParent	1	0	0	nan	1	1	
+51631	50598	standstill	kick	1	0	0	nan	1	1	
+51668	50598	standstill	parent	1	0	0	nan	1	1	
+51668	50598	standstill	fresh	1	0	0	nan	1	1	bf 0.6411
+51668	50598	standstill	fromParent	1	0	0	nan	1	1	
+51668	50598	standstill	kick	1	0	0	nan	1	1	
+51710	50788	standstill	parent	1	0	0	nan	1	1	
+51710	50788	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+51710	50788	standstill	fromParent	1	0	0	nan	1	1	
+51710	50788	standstill	kick	1	0	0	nan	1	1	
+51816	50788	standstill	parent	1	0	0	nan	1	1	
+51816	50788	standstill	fresh	1	0	0	nan	1	1	bf 0.6457
+51816	50788	standstill	fromParent	1	0	0	nan	1	1	
+51816	50788	standstill	kick	1	0	0	nan	1	1	
+51979	50732	standstill	parent	1	0	0	nan	1	1	
+51979	50732	standstill	fresh	1	0	0	nan	1	1	bf 0.6109
+51979	50732	standstill	fromParent	1	0	0	nan	1	1	
+51979	50732	standstill	kick	1	0	0	nan	1	1	
+51985	50732	standstill	parent	1	0	0	nan	1	1	
+51985	50732	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+51985	50732	standstill	fromParent	1	0	0	nan	1	1	
+51985	50732	standstill	kick	1	0	0	nan	1	1	
+52098	51373	standstill	parent	1	0	0	nan	1	1	
+52098	51373	standstill	fresh	1	0	0	nan	1	1	bf 0.7034
+52098	51373	standstill	fromParent	1	0	0	nan	1	1	
+52098	51373	standstill	kick	1	0	0	nan	1	1	
+52586	51373	standstill	parent	1	0	0	nan	1	1	
+52586	51373	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+52586	51373	standstill	fromParent	1	0	0	nan	1	1	
+52586	51373	standstill	kick	1	0	0	nan	1	1	
+52788	51846	standstill	parent	1	0	0	nan	1	1	
+52788	51846	standstill	fresh	1	0	0	nan	1	1	bf 0.6032
+52788	51846	standstill	fromParent	1	0	0	nan	1	1	
+52788	51846	standstill	kick	1	0	0	nan	1	1	
+52807	51667	standstill	parent	1	0	0	nan	1	1	
+52807	51667	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+52807	51667	standstill	fromParent	1	0	0	nan	1	1	
+52807	51667	standstill	kick	1	0	0	nan	1	1	
+53504	51683	standstill	parent	1	0	0	nan	1	1	
+53504	51683	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+53504	51683	standstill	fromParent	1	0	0	nan	1	1	
+53504	51683	standstill	kick	1	0	0	nan	1	1	
+54019	52626	standstill	parent	1	0	0	nan	1	1	
+54019	52626	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+54019	52626	standstill	fromParent	1	0	0	nan	1	1	
+54019	52626	standstill	kick	1	0	0	nan	1	1	
+54598	53346	standstill	parent	1	0	0	nan	1	1	
+54598	53346	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+54598	53346	standstill	fromParent	1	0	0	nan	1	1	
+54598	53346	standstill	kick	1	0	0	nan	1	1	
+55693	50795	standstill	parent	1	0	0	nan	1	1	
+55693	50795	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+55693	50795	standstill	fromParent	1	0	0	nan	1	1	
+55693	50795	standstill	kick	1	0	0	nan	1	1	
+55728	50795	standstill	parent	1	0	0	nan	1	1	
+55728	50795	standstill	fresh	1	0	0	nan	1	1	bf 0.8168
+55728	50795	standstill	fromParent	1	0	0	nan	1	1	
+55728	50795	standstill	kick	1	0	0	nan	1	1	
+55824	52338	standstill	parent	1	0	0	nan	1	1	
+55824	52338	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+55824	52338	standstill	fromParent	1	0	0	nan	1	1	
+55824	52338	standstill	kick	1	0	0	nan	1	1	
+56205	55173	standstill	parent	1	0	0	nan	1	1	
+56205	55173	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+56205	55173	standstill	fromParent	1	0	0	nan	1	1	
+56205	55173	standstill	kick	1	0	0	nan	1	1	
+56676	53346	standstill	parent	1	0	0	nan	1	1	
+56676	53346	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+56676	53346	standstill	fromParent	1	0	0	nan	1	1	
+56676	53346	standstill	kick	1	0	0	nan	1	1	
+56962	53346	standstill	parent	1	0	0	nan	1	1	
+56962	53346	standstill	fresh	1	0	0	nan	1	1	bf 0.6723
+56962	53346	standstill	fromParent	1	0	0	nan	1	1	
+56962	53346	standstill	kick	1	0	0	nan	1	1	
+56987	55521	standstill	parent	2	0	0	nan	1	1	
+56987	55521	standstill	fresh	2	0	0	nan	1	1	bf 0.6528
+56987	55521	standstill	fromParent	2	0	0	nan	1	1	
+56987	55521	standstill	kick	2	0	0	nan	1	1	
+58045	52338	standstill	parent	1	0	0	nan	1	1	
+58045	52338	standstill	fresh	1	0	0	nan	1	1	bf 0.6162
+58045	52338	standstill	fromParent	1	0	0	nan	1	1	
+58045	52338	standstill	kick	1	0	0	nan	1	1	
+58155	56242	standstill	parent	1	0	0	nan	1	1	
+58155	56242	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+58155	56242	standstill	fromParent	1	0	0	nan	1	1	
+58155	56242	standstill	kick	1	0	0	nan	1	1	
+58268	56242	standstill	parent	1	0	0	nan	1	1	
+58268	56242	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+58268	56242	standstill	fromParent	1	0	0	nan	1	1	
+58268	56242	standstill	kick	1	0	0	nan	1	1	
+59088	57857	standstill	parent	1	0	0	nan	1	1	
+59088	57857	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+59088	57857	standstill	fromParent	1	0	0	nan	1	1	
+59088	57857	standstill	kick	1	0	0	nan	1	1	
+59387	58511	standstill	parent	1	0	0	nan	1	1	
+59387	58511	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+59387	58511	standstill	fromParent	1	0	0	nan	1	1	
+59387	58511	standstill	kick	1	0	0	nan	1	1	
+59452	57398	standstill	parent	1	0	0	nan	1	1	
+59452	57398	standstill	fresh	1	0	0	nan	1	1	bf 0.7402
+59452	57398	standstill	fromParent	1	0	0	nan	1	1	
+59452	57398	standstill	kick	1	0	0	nan	1	1	
+59877	57076	standstill	parent	1	0	0	nan	1	1	
+59877	57076	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+59877	57076	standstill	fromParent	1	0	0	nan	1	1	
+59877	57076	standstill	kick	1	0	0	nan	1	1	
+60105	59411	standstill	parent	1	0	0	nan	1	1	
+60105	59411	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+60105	59411	standstill	fromParent	1	0	0	nan	1	1	
+60105	59411	standstill	kick	1	0	0	nan	1	1	
+60507	57076	standstill	parent	1	0	0	nan	1	1	
+60507	57076	standstill	fresh	1	0	0	nan	1	1	bf 0.646
+60507	57076	standstill	fromParent	1	0	0	nan	1	1	
+60507	57076	standstill	kick	1	0	0	nan	1	1	
+61149	60426	standstill	parent	2	0	0	nan	1	1	
+61149	60426	standstill	fresh	2	0	0	nan	1	1	bf 0.65
+61149	60426	standstill	fromParent	2	0	0	nan	1	1	
+61149	60426	standstill	kick	2	0	0	nan	1	1	
+63162	58702	standstill	parent	1	0	0	nan	1	1	
+63162	58702	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+63162	58702	standstill	fromParent	1	0	0	nan	1	1	
+63162	58702	standstill	kick	1	0	0	nan	1	1	
+63174	56225	standstill	parent	1	0	0	nan	1	1	
+63174	56225	standstill	fresh	1	0	0	nan	1	1	bf 0.7445
+63174	56225	standstill	fromParent	1	0	0	nan	1	1	
+63174	56225	standstill	kick	1	0	0	nan	1	1	
+63715	61599	standstill	parent	1	0	0	nan	1	1	
+63715	61599	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+63715	61599	standstill	fromParent	1	0	0	nan	1	1	
+63715	61599	standstill	kick	1	0	0	nan	1	1	
+63848	62589	standstill	parent	1	0	0	nan	1	1	
+63848	62589	standstill	fresh	1	0	0	nan	1	1	bf 0.6506
+63848	62589	standstill	fromParent	1	0	0	nan	1	1	
+63848	62589	standstill	kick	1	0	0	nan	1	1	
+63882	62589	standstill	parent	1	0	0	nan	1	1	
+63882	62589	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+63882	62589	standstill	fromParent	1	0	0	nan	1	1	
+63882	62589	standstill	kick	1	0	0	nan	1	1	
+64484	63450	standstill	parent	1	0	0	nan	1	1	
+64484	63450	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+64484	63450	standstill	fromParent	1	0	0	nan	1	1	
+64484	63450	standstill	kick	1	0	0	nan	1	1	
+64799	62806	standstill	parent	1	0	0	nan	1	1	
+64799	62806	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+64799	62806	standstill	fromParent	1	0	0	nan	1	1	
+64799	62806	standstill	kick	1	0	0	nan	1	1	
+65208	60659	standstill	parent	1	0	0	nan	1	1	
+65208	60659	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+65208	60659	standstill	fromParent	1	0	0	nan	1	1	
+65208	60659	standstill	kick	1	0	0	nan	1	1	
+65542	63582	standstill	parent	1	0	0	nan	1	1	
+65542	63582	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+65542	63582	standstill	fromParent	1	0	0	nan	1	1	
+65542	63582	standstill	kick	1	0	0	nan	1	1	
+65805	62952	standstill	parent	1	0	0	nan	1	1	
+65805	62952	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+65805	62952	standstill	fromParent	1	0	0	nan	1	1	
+65805	62952	standstill	kick	1	0	0	nan	1	1	
+66444	65074	standstill	parent	1	0	0	nan	1	1	
+66444	65074	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+66444	65074	standstill	fromParent	1	0	0	nan	1	1	
+66444	65074	standstill	kick	1	0	0	nan	1	1	
+66538	64861	standstill	parent	1	0	0	nan	1	1	
+66538	64861	standstill	fresh	1	0	0	nan	1	1	bf 0.643
+66538	64861	standstill	fromParent	1	0	0	nan	1	1	
+66538	64861	standstill	kick	1	0	0	nan	1	1	
+66702	66245	standstill	parent	1	0	0	nan	1	1	
+66702	66245	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+66702	66245	standstill	fromParent	1	0	0	nan	1	1	
+66702	66245	standstill	kick	1	0	0	nan	1	1	
+66865	61904	standstill	parent	1	0	0	nan	1	1	
+66865	61904	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+66865	61904	standstill	fromParent	1	0	0	nan	1	1	
+66865	61904	standstill	kick	1	0	0	nan	1	1	
+67312	67003	standstill	parent	1	0	0	nan	1	1	
+67312	67003	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+67312	67003	standstill	fromParent	1	0	0	nan	1	1	
+67312	67003	standstill	kick	1	0	0	nan	1	1	
+67546	66864	standstill	parent	1	0	0	nan	1	1	
+67546	66864	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+67546	66864	standstill	fromParent	1	0	0	nan	1	1	
+67546	66864	standstill	kick	1	0	0	nan	1	1	
+67825	63796	standstill	parent	1	0	0	nan	1	1	
+67825	63796	standstill	fresh	1	0	0	nan	1	1	bf 0.65
+67825	63796	standstill	fromParent	1	0	0	nan	1	1	
+67825	63796	standstill	kick	1	0	0	nan	1	1	
+68300	64442	standstill	parent	1	0	0	nan	1	1	
+68300	64442	standstill	fresh	1	0	0	nan	1	1	bf 1
+68300	64442	standstill	fromParent	1	0	0	nan	1	1	
+68300	64442	standstill	kick	1	0	0	nan	1	1	
+6187	5795	slow	parent	1	0	0	nan	1	1	
+6187	5795	slow	fresh	1	0	0	nan	1	1	bf 0.6461
+6187	5795	slow	fromParent	1	0	0	nan	1	1	
+6187	5795	slow	kick	1	0	0	nan	1	1	
+7770	7285	slow	parent	1	0	0	nan	1	1	
+7770	7285	slow	fresh	1	0	0	nan	1	1	bf 0.65
+7770	7285	slow	fromParent	1	0	0	nan	1	1	
+7770	7285	slow	kick	1	0	0	nan	1	1	
+8972	8328	slow	parent	1	0	0	nan	1	1	
+8972	8328	slow	fresh	1	0	0	nan	1	1	bf 0.65
+8972	8328	slow	fromParent	1	0	0	nan	1	1	
+8972	8328	slow	kick	1	0	0	nan	1	1	
+14361	13585	slow	parent	1	0	0	nan	1	1	
+14361	13585	slow	fresh	1	0	0	nan	1	1	bf 0.6436
+14361	13585	slow	fromParent	1	0	0	nan	1	1	
+14361	13585	slow	kick	1	0	0	nan	1	1	
+14612	11490	slow	parent	1	0	0	nan	1	1	
+14612	11490	slow	fresh	1	0	0	nan	1	1	bf 0.65
+14612	11490	slow	fromParent	1	0	0	nan	1	1	
+14612	11490	slow	kick	1	0	0	nan	1	1	
+14933	11490	slow	parent	1	0	0	nan	1	1	
+14933	11490	slow	fresh	1	0	0	nan	1	1	bf 0.65
+14933	11490	slow	fromParent	1	0	0	nan	1	1	
+14933	11490	slow	kick	1	0	0	nan	1	1	
+16390	14918	slow	parent	1	0	0	nan	1	1	
+16390	14918	slow	fresh	1	0	0	nan	1	1	bf 0.6698
+16390	14918	slow	fromParent	1	0	0	nan	1	1	
+16390	14918	slow	kick	1	0	0	nan	1	1	
+16961	15693	slow	parent	1	0	0	nan	1	1	
+16961	15693	slow	fresh	1	0	0	nan	1	1	bf 0.65
+16961	15693	slow	fromParent	1	0	0	nan	1	1	
+16961	15693	slow	kick	1	0	0	nan	1	1	
+17061	15693	slow	parent	1	0	0	nan	1	1	
+17061	15693	slow	fresh	1	0	0	nan	1	1	bf 0.7242
+17061	15693	slow	fromParent	1	0	0	nan	1	1	
+17061	15693	slow	kick	1	0	0	nan	1	1	
+17609	16512	slow	parent	1	0	0	nan	1	1	
+17609	16512	slow	fresh	1	0	0	nan	1	1	bf 0.65
+17609	16512	slow	fromParent	1	0	0	nan	1	1	
+17609	16512	slow	kick	1	0	0	nan	1	1	
+17633	16867	slow	parent	1	0	0	nan	1	1	
+17633	16867	slow	fresh	1	0	0	nan	1	1	bf 0.6418
+17633	16867	slow	fromParent	1	0	0	nan	1	1	
+17633	16867	slow	kick	1	0	0	nan	1	1	
+17636	16512	slow	parent	1	0	0	nan	1	1	
+17636	16512	slow	fresh	1	0	0	nan	1	1	bf 0.6138
+17636	16512	slow	fromParent	1	0	0	nan	1	1	
+17636	16512	slow	kick	1	0	0	nan	1	1	
+17652	14676	slow	parent	1	0	0	nan	1	1	
+17652	14676	slow	fresh	1	0	0	nan	1	1	bf 0.6207
+17652	14676	slow	fromParent	1	0	0	nan	1	1	
+17652	14676	slow	kick	1	0	0	nan	1	1	
+18312	17739	slow	parent	1	0	0	nan	1	1	
+18312	17739	slow	fresh	1	0	0	nan	1	1	bf 0.65
+18312	17739	slow	fromParent	1	0	0	nan	1	1	
+18312	17739	slow	kick	1	0	0	nan	1	1	
+19518	19245	slow	parent	1	0	0	nan	1	1	
+19518	19245	slow	fresh	1	0	0	nan	1	1	bf 0.65
+19518	19245	slow	fromParent	1	0	0	nan	1	1	
+19518	19245	slow	kick	1	0	0	nan	1	1	
+19829	19245	slow	parent	1	0	0	nan	1	1	
+19829	19245	slow	fresh	1	0	0	nan	1	1	bf 0.65
+19829	19245	slow	fromParent	1	0	0	nan	1	1	
+19829	19245	slow	kick	1	0	0	nan	1	1	
+20386	19705	slow	parent	1	0	0	nan	1	1	
+20386	19705	slow	fresh	1	0	0	nan	1	1	bf 1
+20386	19705	slow	fromParent	1	0	0	nan	1	1	
+20386	19705	slow	kick	1	0	0	nan	1	1	
+20576	20189	slow	parent	1	0	0	nan	1	1	
+20576	20189	slow	fresh	1	0	0	nan	1	1	bf 1
+20576	20189	slow	fromParent	1	0	0	nan	1	1	
+20576	20189	slow	kick	1	0	0	nan	1	1	
+21012	20000	slow	parent	1	0	0	nan	1	1	
+21012	20000	slow	fresh	1	0	0	nan	1	1	bf 0.65
+21012	20000	slow	fromParent	1	0	0	nan	1	1	
+21012	20000	slow	kick	1	0	0	nan	1	1	
+26692	26203	slow	parent	1	0	0	nan	1	1	
+26692	26203	slow	fresh	1	0	0	nan	1	1	bf 0.65
+26692	26203	slow	fromParent	1	0	0	nan	1	1	
+26692	26203	slow	kick	1	0	0	nan	1	1	
+27536	26599	slow	parent	1	0	0	nan	1	1	
+27536	26599	slow	fresh	1	0	0	nan	1	1	bf 0.65
+27536	26599	slow	fromParent	1	0	0	nan	1	1	
+27536	26599	slow	kick	1	0	0	nan	1	1	
+31002	30460	slow	parent	1	0	0	nan	1	1	
+31002	30460	slow	fresh	1	0	0	nan	1	1	bf 0.65
+31002	30460	slow	fromParent	1	0	0	nan	1	1	
+31002	30460	slow	kick	1	0	0	nan	1	1	
+31108	28597	slow	parent	1	0	0	nan	1	1	
+31108	28597	slow	fresh	1	0	0	nan	1	1	bf 0.65
+31108	28597	slow	fromParent	1	0	0	nan	1	1	
+31108	28597	slow	kick	1	0	0	nan	1	1	
+34261	33183	slow	parent	1	0	0	nan	1	1	
+34261	33183	slow	fresh	1	0	0	nan	1	1	bf 0.65
+34261	33183	slow	fromParent	1	0	0	nan	1	1	
+34261	33183	slow	kick	1	0	0	nan	1	1	
+35744	32442	slow	parent	1	0	0	nan	1	1	
+35744	32442	slow	fresh	1	0	0	nan	1	1	bf 0.65
+35744	32442	slow	fromParent	1	0	0	nan	1	1	
+35744	32442	slow	kick	1	0	0	nan	1	1	
+35998	34957	slow	parent	1	0	0	nan	1	1	
+35998	34957	slow	fresh	1	0	0	nan	1	1	bf 0.65
+35998	34957	slow	fromParent	1	0	0	nan	1	1	
+35998	34957	slow	kick	1	0	0	nan	1	1	
+36249	34802	slow	parent	1	0	0	nan	1	1	
+36249	34802	slow	fresh	1	0	0	nan	1	1	bf 0.65
+36249	34802	slow	fromParent	1	0	0	nan	1	1	
+36249	34802	slow	kick	1	0	0	nan	1	1	
+36305	35682	slow	parent	1	0	0	nan	1	1	
+36305	35682	slow	fresh	1	0	0	nan	1	1	bf 0.65
+36305	35682	slow	fromParent	1	0	0	nan	1	1	
+36305	35682	slow	kick	1	0	0	nan	1	1	
+36446	35876	slow	parent	1	0	0	nan	1	1	
+36446	35876	slow	fresh	1	0	0	nan	1	1	bf 0.65
+36446	35876	slow	fromParent	1	0	0	nan	1	1	
+36446	35876	slow	kick	1	0	0	nan	1	1	
+38002	36250	slow	parent	1	0	0	nan	1	1	
+38002	36250	slow	fresh	1	0	0	nan	1	1	bf 0.6468
+38002	36250	slow	fromParent	1	0	0	nan	1	1	
+38002	36250	slow	kick	1	0	0	nan	1	1	
+38010	36250	slow	parent	1	0	0	nan	1	1	
+38010	36250	slow	fresh	1	0	0	nan	1	1	bf 0.65
+38010	36250	slow	fromParent	1	0	0	nan	1	1	
+38010	36250	slow	kick	1	0	0	nan	1	1	
+38667	38277	slow	parent	1	0	0	nan	1	1	
+38667	38277	slow	fresh	1	0	0	nan	1	1	bf 0.65
+38667	38277	slow	fromParent	1	0	0	nan	1	1	
+38667	38277	slow	kick	1	0	0	nan	1	1	
+39208	37530	slow	parent	1	0	0	nan	1	1	
+39208	37530	slow	fresh	1	0	0	nan	1	1	bf 0.6451
+39208	37530	slow	fromParent	1	0	0	nan	1	1	
+39208	37530	slow	kick	1	0	0	nan	1	1	
+40334	39167	slow	parent	2	0	0	nan	1	1	
+40334	39167	slow	fresh	2	0	0	nan	1	1	bf 0.6332
+40334	39167	slow	fromParent	2	0	0	nan	1	1	
+40334	39167	slow	kick	2	0	0	nan	1	1	
+40799	40567	slow	parent	1	0	0	nan	1	1	
+40799	40567	slow	fresh	1	0	0	nan	1	1	bf 0.6679
+40799	40567	slow	fromParent	1	0	0	nan	1	1	
+40799	40567	slow	kick	1	0	0	nan	1	1	
+43704	36592	slow	parent	1	0	0	nan	1	1	
+43704	36592	slow	fresh	1	0	0	nan	1	1	bf 0.65
+43704	36592	slow	fromParent	1	0	0	nan	1	1	
+43704	36592	slow	kick	1	0	0	nan	1	1	
+48304	46008	slow	parent	1	0	0	nan	1	1	
+48304	46008	slow	fresh	1	0	0	nan	1	1	bf 0.629
+48304	46008	slow	fromParent	1	0	0	nan	1	1	
+48304	46008	slow	kick	1	0	0	nan	1	1	
+48547	47419	slow	parent	1	0	0	nan	1	1	
+48547	47419	slow	fresh	1	0	0	nan	1	1	bf 0.7854
+48547	47419	slow	fromParent	1	0	0	nan	1	1	
+48547	47419	slow	kick	1	0	0	nan	1	1	
+48836	45218	slow	parent	1	0	0	nan	1	1	
+48836	45218	slow	fresh	1	0	0	nan	1	1	bf 0.9823
+48836	45218	slow	fromParent	1	0	0	nan	1	1	
+48836	45218	slow	kick	1	0	0	nan	1	1	
+49749	47079	slow	parent	1	0	0	nan	1	1	
+49749	47079	slow	fresh	1	0	0	nan	1	1	bf 0.5641
+49749	47079	slow	fromParent	1	0	0	nan	1	1	
+49749	47079	slow	kick	1	0	0	nan	1	1	
+49898	48267	slow	parent	1	0	0	nan	1	1	
+49898	48267	slow	fresh	1	0	0	nan	1	1	bf 0.65
+49898	48267	slow	fromParent	1	0	0	nan	1	1	
+49898	48267	slow	kick	1	0	0	nan	1	1	
+50363	48775	slow	parent	1	0	0	nan	1	1	
+50363	48775	slow	fresh	1	0	0	nan	1	1	bf 0.65
+50363	48775	slow	fromParent	1	0	0	nan	1	1	
+50363	48775	slow	kick	1	0	0	nan	1	1	
+51257	50072	slow	parent	1	0	0	nan	1	1	
+51257	50072	slow	fresh	1	0	0	nan	1	1	bf 0.6264
+51257	50072	slow	fromParent	1	0	0	nan	1	1	
+51257	50072	slow	kick	1	0	0	nan	1	1	
+52684	51846	slow	parent	1	0	0	nan	1	1	
+52684	51846	slow	fresh	1	0	0	nan	1	1	bf 0.65
+52684	51846	slow	fromParent	1	0	0	nan	1	1	
+52684	51846	slow	kick	1	0	0	nan	1	1	
+53268	50317	slow	parent	1	0	0	nan	1	1	
+53268	50317	slow	fresh	1	0	0	nan	1	1	bf 1
+53268	50317	slow	fromParent	1	0	0	nan	1	1	
+53268	50317	slow	kick	1	0	0	nan	1	1	
+54553	53259	slow	parent	1	0	0	nan	1	1	
+54553	53259	slow	fresh	1	0	0	nan	1	1	bf 0.5921
+54553	53259	slow	fromParent	1	0	0	nan	1	1	
+54553	53259	slow	kick	1	0	0	nan	1	1	
+54924	53346	slow	parent	1	0	0	nan	1	1	
+54924	53346	slow	fresh	1	0	0	nan	1	1	bf 0.65
+54924	53346	slow	fromParent	1	0	0	nan	1	1	
+54924	53346	slow	kick	1	0	0	nan	1	1	
+55165	53697	slow	parent	1	0	0	nan	1	1	
+55165	53697	slow	fresh	1	0	0	nan	1	1	bf 0.65
+55165	53697	slow	fromParent	1	0	0	nan	1	1	
+55165	53697	slow	kick	1	0	0	nan	1	1	
+55511	53346	slow	parent	1	0	0	nan	1	1	
+55511	53346	slow	fresh	1	0	0	nan	1	1	bf 0.6638
+55511	53346	slow	fromParent	1	0	0	nan	1	1	
+55511	53346	slow	kick	1	0	0	nan	1	1	
+55636	53664	slow	parent	2	0	0	nan	1	1	
+55636	53664	slow	fresh	2	0	0	nan	1	1	bf 0.6328
+55636	53664	slow	fromParent	2	0	0	nan	1	1	
+55636	53664	slow	kick	2	0	0	nan	1	1	
+56089	54259	slow	parent	1	0	0	nan	1	1	
+56089	54259	slow	fresh	1	0	0	nan	1	1	bf 0.65
+56089	54259	slow	fromParent	1	0	0	nan	1	1	
+56089	54259	slow	kick	1	0	0	nan	1	1	
+57699	56505	slow	parent	1	0	0	nan	1	1	
+57699	56505	slow	fresh	1	0	0	nan	1	1	bf 0.6105
+57699	56505	slow	fromParent	1	0	0	nan	1	1	
+57699	56505	slow	kick	1	0	0	nan	1	1	
+58113	55357	slow	parent	2	0	0	nan	1	1	
+58113	55357	slow	fresh	2	0	0	nan	1	1	bf 0.657
+58113	55357	slow	fromParent	2	0	0	nan	1	1	
+58113	55357	slow	kick	2	0	0	nan	1	1	
+58483	57682	slow	parent	1	0	0	nan	1	1	
+58483	57682	slow	fresh	1	0	0	nan	1	1	bf 0.65
+58483	57682	slow	fromParent	1	0	0	nan	1	1	
+58483	57682	slow	kick	1	0	0	nan	1	1	
+58841	53621	slow	parent	2	0	0	nan	1	1	
+58841	53621	slow	fresh	2	0	0	nan	1	1	bf 0.7445
+58841	53621	slow	fromParent	2	0	0	nan	1	1	
+58841	53621	slow	kick	2	0	0	nan	1	1	
+59086	55521	slow	parent	2	0	0	nan	1	1	
+59086	55521	slow	fresh	2	0	0	nan	1	1	bf 0.6148
+59086	55521	slow	fromParent	2	0	0	nan	1	1	
+59086	55521	slow	kick	2	0	0	nan	1	1	
+60088	56861	slow	parent	1	0	0	nan	1	1	
+60088	56861	slow	fresh	1	0	0	nan	1	1	bf 1
+60088	56861	slow	fromParent	1	0	0	nan	1	1	
+60088	56861	slow	kick	1	0	0	nan	1	1	
+60169	56861	slow	parent	1	0	0	nan	1	1	
+60169	56861	slow	fresh	1	0	0	nan	1	1	bf 0.7402
+60169	56861	slow	fromParent	1	0	0	nan	1	1	
+60169	56861	slow	kick	1	0	0	nan	1	1	
+60659	59129	slow	parent	1	0	0	nan	1	1	
+60659	59129	slow	fresh	1	0	0	nan	1	1	bf 0.65
+60659	59129	slow	fromParent	1	0	0	nan	1	1	
+60659	59129	slow	kick	1	0	0	nan	1	1	
+60845	59447	slow	parent	1	0	0	nan	1	1	
+60845	59447	slow	fresh	1	0	0	nan	1	1	bf 0.6079
+60845	59447	slow	fromParent	1	0	0	nan	1	1	
+60845	59447	slow	kick	1	0	0	nan	1	1	
+62086	58702	slow	parent	1	0	0	nan	1	1	
+62086	58702	slow	fresh	1	0	0	nan	1	1	bf 0.65
+62086	58702	slow	fromParent	1	0	0	nan	1	1	
+62086	58702	slow	kick	1	0	0	nan	1	1	
+62487	59152	slow	parent	1	0	0	nan	1	1	
+62487	59152	slow	fresh	1	0	0	nan	1	1	bf 0.65
+62487	59152	slow	fromParent	1	0	0	nan	1	1	
+62487	59152	slow	kick	1	0	0	nan	1	1	
+62543	58702	slow	parent	1	0	0	nan	1	1	
+62543	58702	slow	fresh	1	0	0	nan	1	1	bf 0.65
+62543	58702	slow	fromParent	1	0	0	nan	1	1	
+62543	58702	slow	kick	1	0	0	nan	1	1	
+62576	61381	slow	parent	1	0	0	nan	1	1	
+62576	61381	slow	fresh	1	0	0	nan	1	1	bf 0.65
+62576	61381	slow	fromParent	1	0	0	nan	1	1	
+62576	61381	slow	kick	1	0	0	nan	1	1	
+62823	59152	slow	parent	1	0	0	nan	1	1	
+62823	59152	slow	fresh	1	0	0	nan	1	1	bf 0.65
+62823	59152	slow	fromParent	1	0	0	nan	1	1	
+62823	59152	slow	kick	1	0	0	nan	1	1	
+62968	61759	slow	parent	1	0	0	nan	1	1	
+62968	61759	slow	fresh	1	0	0	nan	1	1	bf 0.65
+62968	61759	slow	fromParent	1	0	0	nan	1	1	
+62968	61759	slow	kick	1	0	0	nan	1	1	
+63560	62823	slow	parent	1	0	0	nan	1	1	
+63560	62823	slow	fresh	1	0	0	nan	1	1	bf 0.6247
+63560	62823	slow	fromParent	1	0	0	nan	1	1	
+63560	62823	slow	kick	1	0	0	nan	1	1	
+63671	62458	slow	parent	2	0	0	nan	1	1	
+63671	62458	slow	fresh	2	0	0	nan	1	1	bf 0.7445
+63671	62458	slow	fromParent	2	0	0	nan	1	1	
+63671	62458	slow	kick	2	0	0	nan	1	1	
+63750	63011	slow	parent	1	0	0	nan	1	1	
+63750	63011	slow	fresh	1	0	0	nan	1	1	bf 0.65
+63750	63011	slow	fromParent	1	0	0	nan	1	1	
+63750	63011	slow	kick	1	0	0	nan	1	1	
+63991	63693	slow	parent	1	0	0	nan	1	1	
+63991	63693	slow	fresh	1	0	0	nan	1	1	bf 1
+63991	63693	slow	fromParent	1	0	0	nan	1	1	
+63991	63693	slow	kick	1	0	0	nan	1	1	
+64437	61938	slow	parent	1	0	0	nan	1	1	
+64437	61938	slow	fresh	1	0	0	nan	1	1	bf 0.7402
+64437	61938	slow	fromParent	1	0	0	nan	1	1	
+64437	61938	slow	kick	1	0	0	nan	1	1	
+66182	61759	slow	parent	1	0	0	nan	1	1	
+66182	61759	slow	fresh	1	0	0	nan	1	1	bf 0.6655
+66182	61759	slow	fromParent	1	0	0	nan	1	1	
+66182	61759	slow	kick	1	0	0	nan	1	1	
+67114	65558	slow	parent	1	0	0	nan	1	1	
+67114	65558	slow	fresh	1	0	0	nan	1	1	bf 0.65
+67114	65558	slow	fromParent	1	0	0	nan	1	1	
+67114	65558	slow	kick	1	0	0	nan	1	1	
+67494	62952	slow	parent	1	0	0	nan	1	1	
+67494	62952	slow	fresh	1	0	0	nan	1	1	bf 0.65
+67494	62952	slow	fromParent	1	0	0	nan	1	1	
+67494	62952	slow	kick	1	0	0	nan	1	1	
+68932	64861	slow	parent	1	0	0	nan	1	1	
+68932	64861	slow	fresh	1	0	0	nan	1	1	bf 0.8786
+68932	64861	slow	fromParent	1	0	0	nan	1	1	
+68932	64861	slow	kick	1	0	0	nan	1	1	
+69254	63796	slow	parent	1	0	0	nan	1	1	
+69254	63796	slow	fresh	1	0	0	nan	1	1	bf 0.65
+69254	63796	slow	fromParent	1	0	0	nan	1	1	
+69254	63796	slow	kick	1	0	0	nan	1	1	
+6145	5981	moving	parent	1	0	0	nan	1	1	
+6145	5981	moving	fresh	1	0	0	nan	1	1	bf 0.7612
+6145	5981	moving	fromParent	1	0	0	nan	1	1	
+6145	5981	moving	kick	1	0	0	nan	1	1	
+6212	5398	moving	parent	1	0	0	nan	1	1	
+6212	5398	moving	fresh	1	0	0	nan	1	1	bf 0.8011
+6212	5398	moving	fromParent	1	0	0	nan	1	1	
+6212	5398	moving	kick	1	0	0	nan	1	1	
+6520	6434	moving	parent	1	0	0	nan	1	1	
+6520	6434	moving	fresh	1	0	0	nan	1	1	bf 0.65
+6520	6434	moving	fromParent	1	0	0	nan	1	1	
+6520	6434	moving	kick	1	0	0	nan	1	1	
+8334	7868	moving	parent	1	0	0	nan	1	1	
+8334	7868	moving	fresh	1	0	0	nan	1	1	bf 0.65
+8334	7868	moving	fromParent	1	0	0	nan	1	1	
+8334	7868	moving	kick	1	0	0	nan	1	1	
+9283	8946	moving	parent	1	0	0	nan	1	1	
+9283	8946	moving	fresh	1	0	0	nan	1	1	bf 0.5967
+9283	8946	moving	fromParent	1	0	0	nan	1	1	
+9283	8946	moving	kick	1	0	0	nan	1	1	
+10079	8328	moving	parent	1	0	0	nan	1	1	
+10079	8328	moving	fresh	1	0	0	nan	1	1	bf 0.65
+10079	8328	moving	fromParent	1	0	0	nan	1	1	
+10079	8328	moving	kick	1	0	0	nan	1	1	
+11293	9679	moving	parent	1	0	0	nan	1	1	
+11293	9679	moving	fresh	1	0	0	nan	1	1	bf 0.65
+11293	9679	moving	fromParent	1	0	0	nan	1	1	
+11293	9679	moving	kick	1	0	0	nan	1	1	
+11876	8293	moving	parent	1	0	0	nan	1	1	
+11876	8293	moving	fresh	1	0	0	nan	1	1	bf 0.65
+11876	8293	moving	fromParent	1	0	0	nan	1	1	
+11876	8293	moving	kick	1	0	0	nan	1	1	
+12772	11770	moving	parent	1	0	0	nan	1	1	
+12772	11770	moving	fresh	1	0	0	nan	1	1	bf 0.65
+12772	11770	moving	fromParent	1	0	0	nan	1	1	
+12772	11770	moving	kick	1	0	0	nan	1	1	
+13198	11770	moving	parent	1	0	0	nan	1	1	
+13198	11770	moving	fresh	1	0	0	nan	1	1	bf 0.65
+13198	11770	moving	fromParent	1	0	0	nan	1	1	
+13198	11770	moving	kick	1	0	0	nan	1	1	
+13362	11770	moving	parent	1	0	0	nan	1	1	
+13362	11770	moving	fresh	1	0	0	nan	1	1	bf 0.65
+13362	11770	moving	fromParent	1	0	0	nan	1	1	
+13362	11770	moving	kick	1	0	0	nan	1	1	
+13398	12462	moving	parent	1	0	0	nan	1	1	
+13398	12462	moving	fresh	1	0	0	nan	1	1	bf 0.6323
+13398	12462	moving	fromParent	1	0	0	nan	1	1	
+13398	12462	moving	kick	1	0	0	nan	1	1	
+13445	11548	moving	parent	1	0	0	nan	1	1	
+13445	11548	moving	fresh	1	0	0	nan	1	1	bf 0.64
+13445	11548	moving	fromParent	1	0	0	nan	1	1	
+13445	11548	moving	kick	1	0	0	nan	1	1	
+13503	12808	moving	parent	1	0	0	nan	1	1	
+13503	12808	moving	fresh	1	0	0	nan	1	1	bf 0.65
+13503	12808	moving	fromParent	1	0	0	nan	1	1	
+13503	12808	moving	kick	1	0	0	nan	1	1	
+13717	11770	moving	parent	1	0	0	nan	1	1	
+13717	11770	moving	fresh	1	0	0	nan	1	1	bf 0.8819
+13717	11770	moving	fromParent	1	0	0	nan	1	1	
+13717	11770	moving	kick	1	0	0	nan	1	1	
+14300	13585	moving	parent	1	0	0	nan	1	1	
+14300	13585	moving	fresh	1	0	0	nan	1	1	bf 0.6726
+14300	13585	moving	fromParent	1	0	0	nan	1	1	
+14300	13585	moving	kick	1	0	0	nan	1	1	
+14729	13585	moving	parent	1	0	0	nan	1	1	
+14729	13585	moving	fresh	1	0	0	nan	1	1	bf 0.65
+14729	13585	moving	fromParent	1	0	0	nan	1	1	
+14729	13585	moving	kick	1	0	0	nan	1	1	
+15648	15269	moving	parent	1	0	0	nan	1	1	
+15648	15269	moving	fresh	1	0	0	nan	1	1	bf 0.65
+15648	15269	moving	fromParent	1	0	0	nan	1	1	
+15648	15269	moving	kick	1	0	0	nan	1	1	
+16087	15833	moving	parent	1	0	0	nan	1	1	
+16087	15833	moving	fresh	1	0	0	nan	1	1	bf 0.65
+16087	15833	moving	fromParent	1	0	0	nan	1	1	
+16087	15833	moving	kick	1	0	0	nan	1	1	
+16493	14983	moving	parent	1	0	0	nan	1	1	
+16493	14983	moving	fresh	1	0	0	nan	1	1	bf 0.6477
+16493	14983	moving	fromParent	1	0	0	nan	1	1	
+16493	14983	moving	kick	1	0	0	nan	1	1	
+16524	15336	moving	parent	1	0	0	nan	1	1	
+16524	15336	moving	fresh	1	0	0	nan	1	1	bf 0.65
+16524	15336	moving	fromParent	1	0	0	nan	1	1	
+16524	15336	moving	kick	1	0	0	nan	1	1	
+17377	16512	moving	parent	1	0	0	nan	1	1	
+17377	16512	moving	fresh	1	0	0	nan	1	1	bf 0.65
+17377	16512	moving	fromParent	1	0	0	nan	1	1	
+17377	16512	moving	kick	1	0	0	nan	1	1	
+17679	16512	moving	parent	1	0	0	nan	1	1	
+17679	16512	moving	fresh	1	0	0	nan	1	1	bf 0.65
+17679	16512	moving	fromParent	1	0	0	nan	1	1	
+17679	16512	moving	kick	1	0	0	nan	1	1	
+18154	16852	moving	parent	1	0	0	nan	1	1	
+18154	16852	moving	fresh	1	0	0	nan	1	1	bf 0.65
+18154	16852	moving	fromParent	1	0	0	nan	1	1	
+18154	16852	moving	kick	1	0	0	nan	1	1	
+18296	17391	moving	parent	1	0	0	nan	1	1	
+18296	17391	moving	fresh	1	0	0	nan	1	1	bf 0.5858
+18296	17391	moving	fromParent	1	0	0	nan	1	1	
+18296	17391	moving	kick	1	0	0	nan	1	1	
+19420	18296	moving	parent	1	0	0	nan	1	1	
+19420	18296	moving	fresh	1	0	0	nan	1	1	bf 0.6342
+19420	18296	moving	fromParent	1	0	0	nan	1	1	
+19420	18296	moving	kick	1	0	0	nan	1	1	
+19452	19273	moving	parent	1	0	0	nan	1	1	
+19452	19273	moving	fresh	1	0	0	nan	1	1	bf 0.6503
+19452	19273	moving	fromParent	1	0	0	nan	1	1	
+19452	19273	moving	kick	1	0	0	nan	1	1	
+19705	18296	moving	parent	1	0	0	nan	1	1	
+19705	18296	moving	fresh	1	0	0	nan	1	1	bf 0.65
+19705	18296	moving	fromParent	1	0	0	nan	1	1	
+19705	18296	moving	kick	1	0	0	nan	1	1	
+19785	16922	moving	parent	1	0	0	nan	1	1	
+19785	16922	moving	fresh	1	0	0	nan	1	1	bf 0.65
+19785	16922	moving	fromParent	1	0	0	nan	1	1	
+19785	16922	moving	kick	1	0	0	nan	1	1	
+19824	19705	moving	parent	1	0	0	nan	1	1	
+19824	19705	moving	fresh	1	0	0	nan	1	1	bf 1
+19824	19705	moving	fromParent	1	0	0	nan	1	1	
+19824	19705	moving	kick	1	0	0	nan	1	1	
+20000	19245	moving	parent	1	0	0	nan	1	1	
+20000	19245	moving	fresh	1	0	0	nan	1	1	bf 1
+20000	19245	moving	fromParent	1	0	0	nan	1	1	
+20000	19245	moving	kick	1	0	0	nan	1	1	
+20382	19391	moving	parent	1	0	0	nan	1	1	
+20382	19391	moving	fresh	1	0	0	nan	1	1	bf 0.65
+20382	19391	moving	fromParent	1	0	0	nan	1	1	
+20382	19391	moving	kick	1	0	0	nan	1	1	
+20516	19285	moving	parent	1	0	0	nan	1	1	
+20516	19285	moving	fresh	1	0	0	nan	1	1	bf 0.65
+20516	19285	moving	fromParent	1	0	0	nan	1	1	
+20516	19285	moving	kick	1	0	0	nan	1	1	
+21238	19916	moving	parent	1	0	0	nan	1	1	
+21238	19916	moving	fresh	1	0	0	nan	1	1	bf 0.5872
+21238	19916	moving	fromParent	1	0	0	nan	1	1	
+21238	19916	moving	kick	1	0	0	nan	1	1	
+21999	21499	moving	parent	1	0	0	nan	1	1	
+21999	21499	moving	fresh	1	0	0	nan	1	1	bf 0.6454
+21999	21499	moving	fromParent	1	0	0	nan	1	1	
+21999	21499	moving	kick	1	0	0	nan	1	1	
+26014	24932	moving	parent	1	0	0	nan	1	1	
+26014	24932	moving	fresh	1	0	0	nan	1	1	bf 0.65
+26014	24932	moving	fromParent	1	0	0	nan	1	1	
+26014	24932	moving	kick	1	0	0	nan	1	1	
+26552	26491	moving	parent	1	0	0	nan	1	1	
+26552	26491	moving	fresh	1	0	0	nan	1	1	bf 0.7448
+26552	26491	moving	fromParent	1	0	0	nan	1	1	
+26552	26491	moving	kick	1	0	0	nan	1	1	
+27115	26599	moving	parent	1	0	0	nan	1	1	
+27115	26599	moving	fresh	1	0	0	nan	1	1	bf 0.65
+27115	26599	moving	fromParent	1	0	0	nan	1	1	
+27115	26599	moving	kick	1	0	0	nan	1	1	
+27149	24832	moving	parent	1	0	0	nan	1	1	
+27149	24832	moving	fresh	1	0	0	nan	1	1	bf 0.65
+27149	24832	moving	fromParent	1	0	0	nan	1	1	
+27149	24832	moving	kick	1	0	0	nan	1	1	
+27598	26491	moving	parent	1	0	0	nan	1	1	
+27598	26491	moving	fresh	1	0	0	nan	1	1	bf 0.65
+27598	26491	moving	fromParent	1	0	0	nan	1	1	
+27598	26491	moving	kick	1	0	0	nan	1	1	
+28404	27256	moving	parent	1	0	0	nan	1	1	
+28404	27256	moving	fresh	1	0	0	nan	1	1	bf 0.65
+28404	27256	moving	fromParent	1	0	0	nan	1	1	
+28404	27256	moving	kick	1	0	0	nan	1	1	
+29066	27644	moving	parent	1	0	0	nan	1	1	
+29066	27644	moving	fresh	1	0	0	nan	1	1	bf 0.65
+29066	27644	moving	fromParent	1	0	0	nan	1	1	
+29066	27644	moving	kick	1	0	0	nan	1	1	
+29730	27644	moving	parent	1	0	0	nan	1	1	
+29730	27644	moving	fresh	1	0	0	nan	1	1	bf 0.6452
+29730	27644	moving	fromParent	1	0	0	nan	1	1	
+29730	27644	moving	kick	1	0	0	nan	1	1	
+30043	29596	moving	parent	1	0	0	nan	1	1	
+30043	29596	moving	fresh	1	0	0	nan	1	1	bf 0.65
+30043	29596	moving	fromParent	1	0	0	nan	1	1	
+30043	29596	moving	kick	1	0	0	nan	1	1	
+30117	26087	moving	parent	1	0	0	nan	1	1	
+30117	26087	moving	fresh	1	0	0	nan	1	1	bf 0.65
+30117	26087	moving	fromParent	1	0	0	nan	1	1	
+30117	26087	moving	kick	1	0	0	nan	1	1	
+30209	29664	moving	parent	1	0	0	nan	1	1	
+30209	29664	moving	fresh	1	0	0	nan	1	1	bf 0.65
+30209	29664	moving	fromParent	1	0	0	nan	1	1	
+30209	29664	moving	kick	1	0	0	nan	1	1	
+30246	29596	moving	parent	1	0	0	nan	1	1	
+30246	29596	moving	fresh	1	0	0	nan	1	1	bf 0.6157
+30246	29596	moving	fromParent	1	0	0	nan	1	1	
+30246	29596	moving	kick	1	0	0	nan	1	1	
+31066	30862	moving	parent	1	0	0	nan	1	1	
+31066	30862	moving	fresh	1	0	0	nan	1	1	bf 0.6445
+31066	30862	moving	fromParent	1	0	0	nan	1	1	
+31066	30862	moving	kick	1	0	0	nan	1	1	
+31330	29596	moving	parent	1	0	0	nan	1	1	
+31330	29596	moving	fresh	1	0	0	nan	1	1	bf 0.65
+31330	29596	moving	fromParent	1	0	0	nan	1	1	
+31330	29596	moving	kick	1	0	0	nan	1	1	
+31482	30862	moving	parent	1	0	0	nan	1	1	
+31482	30862	moving	fresh	1	0	0	nan	1	1	bf 0.65
+31482	30862	moving	fromParent	1	0	0	nan	1	1	
+31482	30862	moving	kick	1	0	0	nan	1	1	
+31851	31023	moving	parent	1	0	0	nan	1	1	
+31851	31023	moving	fresh	1	0	0	nan	1	1	bf 0.65
+31851	31023	moving	fromParent	1	0	0	nan	1	1	
+31851	31023	moving	kick	1	0	0	nan	1	1	
+32021	30309	moving	parent	1	0	0	nan	1	1	
+32021	30309	moving	fresh	1	0	0	nan	1	1	bf 0.65
+32021	30309	moving	fromParent	1	0	0	nan	1	1	
+32021	30309	moving	kick	1	0	0	nan	1	1	
+32242	31640	moving	parent	1	0	0	nan	1	1	
+32242	31640	moving	fresh	1	0	0	nan	1	1	bf 0.6482
+32242	31640	moving	fromParent	1	0	0	nan	1	1	
+32242	31640	moving	kick	1	0	0	nan	1	1	
+32410	31636	moving	parent	1	0	0	nan	1	1	
+32410	31636	moving	fresh	1	0	0	nan	1	1	bf 0.65
+32410	31636	moving	fromParent	1	0	0	nan	1	1	
+32410	31636	moving	kick	1	0	0	nan	1	1	
+32466	28597	moving	parent	1	0	0	nan	1	1	
+32466	28597	moving	fresh	1	0	0	nan	1	1	bf 0.6658
+32466	28597	moving	fromParent	1	0	0	nan	1	1	
+32466	28597	moving	kick	1	0	0	nan	1	1	
+32476	28597	moving	parent	1	0	0	nan	1	1	
+32476	28597	moving	fresh	1	0	0	nan	1	1	bf 0.6548
+32476	28597	moving	fromParent	1	0	0	nan	1	1	
+32476	28597	moving	kick	1	0	0	nan	1	1	
+32502	30184	moving	parent	1	0	0	nan	1	1	
+32502	30184	moving	fresh	1	0	0	nan	1	1	bf 0.6367
+32502	30184	moving	fromParent	1	0	0	nan	1	1	
+32502	30184	moving	kick	1	0	0	nan	1	1	
+32631	30184	moving	parent	1	0	0	nan	1	1	
+32631	30184	moving	fresh	1	0	0	nan	1	1	bf 0.65
+32631	30184	moving	fromParent	1	0	0	nan	1	1	
+32631	30184	moving	kick	1	0	0	nan	1	1	
+32755	32021	moving	parent	1	0	0	nan	1	1	
+32755	32021	moving	fresh	1	0	0	nan	1	1	bf 0.65
+32755	32021	moving	fromParent	1	0	0	nan	1	1	
+32755	32021	moving	kick	1	0	0	nan	1	1	
+33190	32182	moving	parent	1	0	0	nan	1	1	
+33190	32182	moving	fresh	1	0	0	nan	1	1	bf 0.65
+33190	32182	moving	fromParent	1	0	0	nan	1	1	
+33190	32182	moving	kick	1	0	0	nan	1	1	
+33585	31904	moving	parent	1	0	0	nan	1	1	
+33585	31904	moving	fresh	1	0	0	nan	1	1	bf 0.65
+33585	31904	moving	fromParent	1	0	0	nan	1	1	
+33585	31904	moving	kick	1	0	0	nan	1	1	
+33679	32442	moving	parent	1	0	0	nan	1	1	
+33679	32442	moving	fresh	1	0	0	nan	1	1	bf 0.65
+33679	32442	moving	fromParent	1	0	0	nan	1	1	
+33679	32442	moving	kick	1	0	0	nan	1	1	
+33773	31851	moving	parent	1	0	0	nan	1	1	
+33773	31851	moving	fresh	1	0	0	nan	1	1	bf 0.65
+33773	31851	moving	fromParent	1	0	0	nan	1	1	
+33773	31851	moving	kick	1	0	0	nan	1	1	
+33879	32925	moving	parent	1	0	0	nan	1	1	
+33879	32925	moving	fresh	1	0	0	nan	1	1	bf 0.6499
+33879	32925	moving	fromParent	1	0	0	nan	1	1	
+33879	32925	moving	kick	1	0	0	nan	1	1	
+34637	32925	moving	parent	1	0	0	nan	1	1	
+34637	32925	moving	fresh	1	0	0	nan	1	1	bf 0.65
+34637	32925	moving	fromParent	1	0	0	nan	1	1	
+34637	32925	moving	kick	1	0	0	nan	1	1	
+34724	32317	moving	parent	1	0	0	nan	1	1	
+34724	32317	moving	fresh	1	0	0	nan	1	1	bf 0.6496
+34724	32317	moving	fromParent	1	0	0	nan	1	1	
+34724	32317	moving	kick	1	0	0	nan	1	1	
+34868	33450	moving	parent	1	0	0	nan	1	1	
+34868	33450	moving	fresh	1	0	0	nan	1	1	bf 0.8267
+34868	33450	moving	fromParent	1	0	0	nan	1	1	
+34868	33450	moving	kick	1	0	0	nan	1	1	
+35113	33705	moving	parent	1	0	0	nan	1	1	
+35113	33705	moving	fresh	1	0	0	nan	1	1	bf 0.6416
+35113	33705	moving	fromParent	1	0	0	nan	1	1	
+35113	33705	moving	kick	1	0	0	nan	1	1	
+35322	35110	moving	parent	1	0	0	nan	1	1	
+35322	35110	moving	fresh	1	0	0	nan	1	1	bf 0.65
+35322	35110	moving	fromParent	1	0	0	nan	1	1	
+35322	35110	moving	kick	1	0	0	nan	1	1	
+35543	32317	moving	parent	1	0	0	nan	1	1	
+35543	32317	moving	fresh	1	0	0	nan	1	1	bf 0.65
+35543	32317	moving	fromParent	1	0	0	nan	1	1	
+35543	32317	moving	kick	1	0	0	nan	1	1	
+35544	33905	moving	parent	1	0	0	nan	1	1	
+35544	33905	moving	fresh	1	0	0	nan	1	1	bf 0.6618
+35544	33905	moving	fromParent	1	0	0	nan	1	1	
+35544	33905	moving	kick	1	0	0	nan	1	1	
+35655	33267	moving	parent	1	0	0	nan	1	1	
+35655	33267	moving	fresh	1	0	0	nan	1	1	bf 0.6499
+35655	33267	moving	fromParent	1	0	0	nan	1	1	
+35655	33267	moving	kick	1	0	0	nan	1	1	
+35730	34949	moving	parent	1	0	0	nan	1	1	
+35730	34949	moving	fresh	1	0	0	nan	1	1	bf 0.65
+35730	34949	moving	fromParent	1	0	0	nan	1	1	
+35730	34949	moving	kick	1	0	0	nan	1	1	
+35876	34555	moving	parent	1	0	0	nan	1	1	
+35876	34555	moving	fresh	1	0	0	nan	1	1	bf 0.65
+35876	34555	moving	fromParent	1	0	0	nan	1	1	
+35876	34555	moving	kick	1	0	0	nan	1	1	
+36077	35685	moving	parent	1	0	0	nan	1	1	
+36077	35685	moving	fresh	1	0	0	nan	1	1	bf 0.7876
+36077	35685	moving	fromParent	1	0	0	nan	1	1	
+36077	35685	moving	kick	1	0	0	nan	1	1	
+36155	33755	moving	parent	4	0	0	nan	1	1	
+36155	33755	moving	fresh	4	0	0	nan	1	1	bf 0.6131
+36155	33755	moving	fromParent	4	0	0	nan	1	1	
+36155	33755	moving	kick	4	0	0	nan	1	1	
+36397	33455	moving	parent	1	0	0	nan	1	1	
+36397	33455	moving	fresh	1	0	0	nan	1	1	bf 0.6039
+36397	33455	moving	fromParent	1	0	0	nan	1	1	
+36397	33455	moving	kick	1	0	0	nan	1	1	
+36573	33455	moving	parent	1	0	0	nan	1	1	
+36573	33455	moving	fresh	1	0	0	nan	1	1	bf 0.6039
+36573	33455	moving	fromParent	1	0	0	nan	1	1	
+36573	33455	moving	kick	1	0	0	nan	1	1	
+36959	35733	moving	parent	1	0	0	nan	1	1	
+36959	35733	moving	fresh	1	0	0	nan	1	1	bf 0.65
+36959	35733	moving	fromParent	1	0	0	nan	1	1	
+36959	35733	moving	kick	1	0	0	nan	1	1	
+37035	32761	moving	parent	1	0	0	nan	1	1	
+37035	32761	moving	fresh	1	0	0	nan	1	1	bf 0.6444
+37035	32761	moving	fromParent	1	0	0	nan	1	1	
+37035	32761	moving	kick	1	0	0	nan	1	1	
+37988	36077	moving	parent	1	0	0	nan	1	1	
+37988	36077	moving	fresh	1	0	0	nan	1	1	bf 0.6474
+37988	36077	moving	fromParent	1	0	0	nan	1	1	
+37988	36077	moving	kick	1	0	0	nan	1	1	
+38130	36077	moving	parent	1	0	0	nan	1	1	
+38130	36077	moving	fresh	1	0	0	nan	1	1	bf 0.6474
+38130	36077	moving	fromParent	1	0	0	nan	1	1	
+38130	36077	moving	kick	1	0	0	nan	1	1	
+38250	37727	moving	parent	1	0	0	nan	1	1	
+38250	37727	moving	fresh	1	0	0	nan	1	1	bf 0.65
+38250	37727	moving	fromParent	1	0	0	nan	1	1	
+38250	37727	moving	kick	1	0	0	nan	1	1	
+38290	36250	moving	parent	1	0	0	nan	1	1	
+38290	36250	moving	fresh	1	0	0	nan	1	1	bf 0.65
+38290	36250	moving	fromParent	1	0	0	nan	1	1	
+38290	36250	moving	kick	1	0	0	nan	1	1	
+38974	38290	moving	parent	1	0	0	nan	1	1	
+38974	38290	moving	fresh	1	0	0	nan	1	1	bf 0.65
+38974	38290	moving	fromParent	1	0	0	nan	1	1	
+38974	38290	moving	kick	1	0	0	nan	1	1	
+39424	38674	moving	parent	1	0	0	nan	1	1	
+39424	38674	moving	fresh	1	0	0	nan	1	1	bf 0.65
+39424	38674	moving	fromParent	1	0	0	nan	1	1	
+39424	38674	moving	kick	1	0	0	nan	1	1	
+39887	38103	moving	parent	1	0	0	nan	1	1	
+39887	38103	moving	fresh	1	0	0	nan	1	1	bf 0.6207
+39887	38103	moving	fromParent	1	0	0	nan	1	1	
+39887	38103	moving	kick	1	0	0	nan	1	1	
+39990	38103	moving	parent	1	0	0	nan	1	1	
+39990	38103	moving	fresh	1	0	0	nan	1	1	bf 0.65
+39990	38103	moving	fromParent	1	0	0	nan	1	1	
+39990	38103	moving	kick	1	0	0	nan	1	1	
+40473	40018	moving	parent	1	0	0	nan	1	1	
+40473	40018	moving	fresh	1	0	0	nan	1	1	bf 0.65
+40473	40018	moving	fromParent	1	0	0	nan	1	1	
+40473	40018	moving	kick	1	0	0	nan	1	1	
+40771	38215	moving	parent	1	0	0	nan	1	1	
+40771	38215	moving	fresh	1	0	0	nan	1	1	bf 0.65
+40771	38215	moving	fromParent	1	0	0	nan	1	1	
+40771	38215	moving	kick	1	0	0	nan	1	1	
+41207	39445	moving	parent	1	0	0	nan	1	1	
+41207	39445	moving	fresh	1	0	0	nan	1	1	bf 0.65
+41207	39445	moving	fromParent	1	0	0	nan	1	1	
+41207	39445	moving	kick	1	0	0	nan	1	1	
+41574	40567	moving	parent	1	0	0	nan	1	1	
+41574	40567	moving	fresh	1	0	0	nan	1	1	bf 0.5513
+41574	40567	moving	fromParent	1	0	0	nan	1	1	
+41574	40567	moving	kick	1	0	0	nan	1	1	
+41818	41491	moving	parent	1	0	0	nan	1	1	
+41818	41491	moving	fresh	1	0	0	nan	1	1	bf 0.8948
+41818	41491	moving	fromParent	1	0	0	nan	1	1	
+41818	41491	moving	kick	1	0	0	nan	1	1	
+42926	39445	moving	parent	1	0	0	nan	1	1	
+42926	39445	moving	fresh	1	0	0	nan	1	1	bf 0.65
+42926	39445	moving	fromParent	1	0	0	nan	1	1	
+42926	39445	moving	kick	1	0	0	nan	1	1	
+43632	42148	moving	parent	1	0	0	nan	1	1	
+43632	42148	moving	fresh	1	0	0	nan	1	1	bf 0.6565
+43632	42148	moving	fromParent	1	0	0	nan	1	1	
+43632	42148	moving	kick	1	0	0	nan	1	1	
+43918	43863	moving	parent	1	0	0	nan	1	1	
+43918	43863	moving	fresh	1	0	0	nan	1	1	bf 0.65
+43918	43863	moving	fromParent	1	0	0	nan	1	1	
+43918	43863	moving	kick	1	0	0	nan	1	1	
+44243	42148	moving	parent	1	0	0	nan	1	1	
+44243	42148	moving	fresh	1	0	0	nan	1	1	bf 0.6794
+44243	42148	moving	fromParent	1	0	0	nan	1	1	
+44243	42148	moving	kick	1	0	0	nan	1	1	
+45838	44959	moving	parent	1	0	0	nan	1	1	
+45838	44959	moving	fresh	1	0	0	nan	1	1	bf 0.65
+45838	44959	moving	fromParent	1	0	0	nan	1	1	
+45838	44959	moving	kick	1	0	0	nan	1	1	
+45901	45132	moving	parent	1	0	0	nan	1	1	
+45901	45132	moving	fresh	1	0	0	nan	1	1	bf 0.6579
+45901	45132	moving	fromParent	1	0	0	nan	1	1	
+45901	45132	moving	kick	1	0	0	nan	1	1	
+47004	46008	moving	parent	1	0	0	nan	1	1	
+47004	46008	moving	fresh	1	0	0	nan	1	1	bf 0.6274
+47004	46008	moving	fromParent	1	0	0	nan	1	1	
+47004	46008	moving	kick	1	0	0	nan	1	1	
+47036	45626	moving	parent	1	0	0	nan	1	1	
+47036	45626	moving	fresh	1	0	0	nan	1	1	bf 0.65
+47036	45626	moving	fromParent	1	0	0	nan	1	1	
+47036	45626	moving	kick	1	0	0	nan	1	1	
+47331	44721	moving	parent	1	0	0	nan	1	1	
+47331	44721	moving	fresh	1	0	0	nan	1	1	bf 0.65
+47331	44721	moving	fromParent	1	0	0	nan	1	1	
+47331	44721	moving	kick	1	0	0	nan	1	1	
+48482	44073	moving	parent	1	0	0	nan	1	1	
+48482	44073	moving	fresh	1	0	0	nan	1	1	bf 1
+48482	44073	moving	fromParent	1	0	0	nan	1	1	
+48482	44073	moving	kick	1	0	0	nan	1	1	
+48601	47026	moving	parent	1	0	0	nan	1	1	
+48601	47026	moving	fresh	1	0	0	nan	1	1	bf 0.65
+48601	47026	moving	fromParent	1	0	0	nan	1	1	
+48601	47026	moving	kick	1	0	0	nan	1	1	
+49712	48746	moving	parent	1	0	0	nan	1	1	
+49712	48746	moving	fresh	1	0	0	nan	1	1	bf 0.6095
+49712	48746	moving	fromParent	1	0	0	nan	1	1	
+49712	48746	moving	kick	1	0	0	nan	1	1	
+50936	46489	moving	parent	2	0	0	nan	1	1	
+50936	46489	moving	fresh	2	0	0	nan	1	1	bf 0.658
+50936	46489	moving	fromParent	2	0	0	nan	1	1	
+50936	46489	moving	kick	2	0	0	nan	1	1	
+51373	49952	moving	parent	1	0	0	nan	1	1	
+51373	49952	moving	fresh	1	0	0	nan	1	1	bf 0.65
+51373	49952	moving	fromParent	1	0	0	nan	1	1	
+51373	49952	moving	kick	1	0	0	nan	1	1	
+51567	49813	moving	parent	1	0	0	nan	1	1	
+51567	49813	moving	fresh	1	0	0	nan	1	1	bf 0.6035
+51567	49813	moving	fromParent	1	0	0	nan	1	1	
+51567	49813	moving	kick	1	0	0	nan	1	1	
+52093	49813	moving	parent	1	0	0	nan	1	1	
+52093	49813	moving	fresh	1	0	0	nan	1	1	bf 0.65
+52093	49813	moving	fromParent	1	0	0	nan	1	1	
+52093	49813	moving	kick	1	0	0	nan	1	1	
+52310	50732	moving	parent	1	0	0	nan	1	1	
+52310	50732	moving	fresh	1	0	0	nan	1	1	bf 0.65
+52310	50732	moving	fromParent	1	0	0	nan	1	1	
+52310	50732	moving	kick	1	0	0	nan	1	1	
+52466	51373	moving	parent	1	0	0	nan	1	1	
+52466	51373	moving	fresh	1	0	0	nan	1	1	bf 0.6446
+52466	51373	moving	fromParent	1	0	0	nan	1	1	
+52466	51373	moving	kick	1	0	0	nan	1	1	
+52549	49952	moving	parent	1	0	0	nan	1	1	
+52549	49952	moving	fresh	1	0	0	nan	1	1	bf 0.6238
+52549	49952	moving	fromParent	1	0	0	nan	1	1	
+52549	49952	moving	kick	1	0	0	nan	1	1	
+52683	49952	moving	parent	1	0	0	nan	1	1	
+52683	49952	moving	fresh	1	0	0	nan	1	1	bf 0.6294
+52683	49952	moving	fromParent	1	0	0	nan	1	1	
+52683	49952	moving	kick	1	0	0	nan	1	1	
+52775	50598	moving	parent	1	0	0	nan	1	1	
+52775	50598	moving	fresh	1	0	0	nan	1	1	bf 0.65
+52775	50598	moving	fromParent	1	0	0	nan	1	1	
+52775	50598	moving	kick	1	0	0	nan	1	1	
+53475	51373	moving	parent	1	0	0	nan	1	1	
+53475	51373	moving	fresh	1	0	0	nan	1	1	bf 0.65
+53475	51373	moving	fromParent	1	0	0	nan	1	1	
+53475	51373	moving	kick	1	0	0	nan	1	1	
+53683	50317	moving	parent	1	0	0	nan	1	1	
+53683	50317	moving	fresh	1	0	0	nan	1	1	bf 0.65
+53683	50317	moving	fromParent	1	0	0	nan	1	1	
+53683	50317	moving	kick	1	0	0	nan	1	1	
+53710	51320	moving	parent	2	0	0	nan	1	1	
+53710	51320	moving	fresh	2	0	0	nan	1	1	bf 0.6051
+53710	51320	moving	fromParent	2	0	0	nan	1	1	
+53710	51320	moving	kick	2	0	0	nan	1	1	
+54308	52626	moving	parent	1	0	0	nan	1	1	
+54308	52626	moving	fresh	1	0	0	nan	1	1	bf 1
+54308	52626	moving	fromParent	1	0	0	nan	1	1	
+54308	52626	moving	kick	1	0	0	nan	1	1	
+54503	50795	moving	parent	1	0	0	nan	1	1	
+54503	50795	moving	fresh	1	0	0	nan	1	1	bf 0.65
+54503	50795	moving	fromParent	1	0	0	nan	1	1	
+54503	50795	moving	kick	1	0	0	nan	1	1	
+54942	52757	moving	parent	1	0	0	nan	1	1	
+54942	52757	moving	fresh	1	0	0	nan	1	1	bf 0.7248
+54942	52757	moving	fromParent	1	0	0	nan	1	1	
+54942	52757	moving	kick	1	0	0	nan	1	1	
+55013	48601	moving	parent	1	0	0	nan	1	1	
+55013	48601	moving	fresh	1	0	0	nan	1	1	bf 0.6308
+55013	48601	moving	fromParent	1	0	0	nan	1	1	
+55013	48601	moving	kick	1	0	0	nan	1	1	
+55157	54412	moving	parent	1	0	0	nan	1	1	
+55157	54412	moving	fresh	1	0	0	nan	1	1	bf 0.7226
+55157	54412	moving	fromParent	1	0	0	nan	1	1	
+55157	54412	moving	kick	1	0	0	nan	1	1	
+55467	48601	moving	parent	1	0	0	nan	1	1	
+55467	48601	moving	fresh	1	0	0	nan	1	1	bf 0.65
+55467	48601	moving	fromParent	1	0	0	nan	1	1	
+55467	48601	moving	kick	1	0	0	nan	1	1	
+55528	53880	moving	parent	1	0	0	nan	1	1	
+55528	53880	moving	fresh	1	0	0	nan	1	1	bf 0.65
+55528	53880	moving	fromParent	1	0	0	nan	1	1	
+55528	53880	moving	kick	1	0	0	nan	1	1	
+55698	53664	moving	parent	2	0	0	nan	1	1	
+55698	53664	moving	fresh	2	0	0	nan	1	1	bf 0.6328
+55698	53664	moving	fromParent	2	0	0	nan	1	1	
+55698	53664	moving	kick	2	0	0	nan	1	1	
+55716	54333	moving	parent	2	0	0	nan	1	1	
+55716	54333	moving	fresh	2	0	0	nan	1	1	bf 0.6608
+55716	54333	moving	fromParent	2	0	0	nan	1	1	
+55716	54333	moving	kick	2	0	0	nan	1	1	
+55881	53952	moving	parent	1	0	0	nan	1	1	
+55881	53952	moving	fresh	1	0	0	nan	1	1	bf 0.7805
+55881	53952	moving	fromParent	1	0	0	nan	1	1	
+55881	53952	moving	kick	1	0	0	nan	1	1	
+56006	54333	moving	parent	2	0	0	nan	1	1	
+56006	54333	moving	fresh	2	0	0	nan	1	1	bf 0.6565
+56006	54333	moving	fromParent	2	0	0	nan	1	1	
+56006	54333	moving	kick	2	0	0	nan	1	1	
+56246	55007	moving	parent	1	0	0	nan	1	1	
+56246	55007	moving	fresh	1	0	0	nan	1	1	bf 0.65
+56246	55007	moving	fromParent	1	0	0	nan	1	1	
+56246	55007	moving	kick	1	0	0	nan	1	1	
+56357	55960	moving	parent	2	0	0	nan	1	1	
+56357	55960	moving	fresh	2	0	0	nan	1	1	bf 0.8775
+56357	55960	moving	fromParent	2	0	0	nan	1	1	
+56357	55960	moving	kick	2	0	0	nan	1	1	
+56408	54333	moving	parent	2	0	0	nan	1	1	
+56408	54333	moving	fresh	2	0	0	nan	1	1	bf 0.658
+56408	54333	moving	fromParent	2	0	0	nan	1	1	
+56408	54333	moving	kick	2	0	0	nan	1	1	
+56580	54798	moving	parent	2	0	0	nan	1	1	
+56580	54798	moving	fresh	2	0	0	nan	1	1	bf 0.6635
+56580	54798	moving	fromParent	2	0	0	nan	1	1	
+56580	54798	moving	kick	2	0	0	nan	1	1	
+56637	54333	moving	parent	2	0	0	nan	1	1	
+56637	54333	moving	fresh	2	0	0	nan	1	1	bf 0.6524
+56637	54333	moving	fromParent	2	0	0	nan	1	1	
+56637	54333	moving	kick	2	0	0	nan	1	1	
+56729	55357	moving	parent	2	0	0	nan	1	1	
+56729	55357	moving	fresh	2	0	0	nan	1	1	bf 0.658
+56729	55357	moving	fromParent	2	0	0	nan	1	1	
+56729	55357	moving	kick	2	0	0	nan	1	1	
+57142	53952	moving	parent	1	0	0	nan	1	1	
+57142	53952	moving	fresh	1	0	0	nan	1	1	bf 0.7402
+57142	53952	moving	fromParent	1	0	0	nan	1	1	
+57142	53952	moving	kick	1	0	0	nan	1	1	
+57398	53952	moving	parent	1	0	0	nan	1	1	
+57398	53952	moving	fresh	1	0	0	nan	1	1	bf 0.7402
+57398	53952	moving	fromParent	1	0	0	nan	1	1	
+57398	53952	moving	kick	1	0	0	nan	1	1	
+57682	55007	moving	parent	1	0	0	nan	1	1	
+57682	55007	moving	fresh	1	0	0	nan	1	1	bf 0.6934
+57682	55007	moving	fromParent	1	0	0	nan	1	1	
+57682	55007	moving	kick	1	0	0	nan	1	1	
+58303	57817	moving	parent	2	0	0	nan	1	1	
+58303	57817	moving	fresh	2	0	0	nan	1	1	bf 0.6304
+58303	57817	moving	fromParent	2	0	0	nan	1	1	
+58303	57817	moving	kick	2	0	0	nan	1	1	
+58457	56505	moving	parent	1	0	0	nan	1	1	
+58457	56505	moving	fresh	1	0	0	nan	1	1	bf 0.65
+58457	56505	moving	fromParent	1	0	0	nan	1	1	
+58457	56505	moving	kick	1	0	0	nan	1	1	
+58480	57430	moving	parent	1	0	0	nan	1	1	
+58480	57430	moving	fresh	1	0	0	nan	1	1	bf 0.65
+58480	57430	moving	fromParent	1	0	0	nan	1	1	
+58480	57430	moving	kick	1	0	0	nan	1	1	
+58511	58232	moving	parent	1	0	0	nan	1	1	
+58511	58232	moving	fresh	1	0	0	nan	1	1	bf 0.65
+58511	58232	moving	fromParent	1	0	0	nan	1	1	
+58511	58232	moving	kick	1	0	0	nan	1	1	
+58928	57857	moving	parent	1	0	0	nan	1	1	
+58928	57857	moving	fresh	1	0	0	nan	1	1	bf 0.65
+58928	57857	moving	fromParent	1	0	0	nan	1	1	
+58928	57857	moving	kick	1	0	0	nan	1	1	
+58979	58299	moving	parent	1	0	0	nan	1	1	
+58979	58299	moving	fresh	1	0	0	nan	1	1	bf 0.6147
+58979	58299	moving	fromParent	1	0	0	nan	1	1	
+58979	58299	moving	kick	1	0	0	nan	1	1	
+59129	57682	moving	parent	1	0	0	nan	1	1	
+59129	57682	moving	fresh	1	0	0	nan	1	1	bf 0.8297
+59129	57682	moving	fromParent	1	0	0	nan	1	1	
+59129	57682	moving	kick	1	0	0	nan	1	1	
+59291	58469	moving	parent	1	0	0	nan	1	1	
+59291	58469	moving	fresh	1	0	0	nan	1	1	bf 0.7273
+59291	58469	moving	fromParent	1	0	0	nan	1	1	
+59291	58469	moving	kick	1	0	0	nan	1	1	
+59327	56505	moving	parent	1	0	0	nan	1	1	
+59327	56505	moving	fresh	1	0	0	nan	1	1	bf 0.65
+59327	56505	moving	fromParent	1	0	0	nan	1	1	
+59327	56505	moving	kick	1	0	0	nan	1	1	
+59357	57682	moving	parent	1	0	0	nan	1	1	
+59357	57682	moving	fresh	1	0	0	nan	1	1	bf 0.65
+59357	57682	moving	fromParent	1	0	0	nan	1	1	
+59357	57682	moving	kick	1	0	0	nan	1	1	
+59570	58067	moving	parent	1	0	0	nan	1	1	
+59570	58067	moving	fresh	1	0	0	nan	1	1	bf 0.65
+59570	58067	moving	fromParent	1	0	0	nan	1	1	
+59570	58067	moving	kick	1	0	0	nan	1	1	
+60102	55157	moving	parent	1	0	0	nan	1	1	
+60102	55157	moving	fresh	1	0	0	nan	1	1	bf 0.7167
+60102	55157	moving	fromParent	1	0	0	nan	1	1	
+60102	55157	moving	kick	1	0	0	nan	1	1	
+60184	54200	moving	parent	1	0	0	nan	1	1	
+60184	54200	moving	fresh	1	0	0	nan	1	1	bf 0.65
+60184	54200	moving	fromParent	1	0	0	nan	1	1	
+60184	54200	moving	kick	1	0	0	nan	1	1	
+60548	57076	moving	parent	1	0	0	nan	1	1	
+60548	57076	moving	fresh	1	0	0	nan	1	1	bf 0.6428
+60548	57076	moving	fromParent	1	0	0	nan	1	1	
+60548	57076	moving	kick	1	0	0	nan	1	1	
+60605	58652	moving	parent	1	0	0	nan	1	1	
+60605	58652	moving	fresh	1	0	0	nan	1	1	bf 0.65
+60605	58652	moving	fromParent	1	0	0	nan	1	1	
+60605	58652	moving	kick	1	0	0	nan	1	1	
+60903	57398	moving	parent	1	0	0	nan	1	1	
+60903	57398	moving	fresh	1	0	0	nan	1	1	bf 0.7402
+60903	57398	moving	fromParent	1	0	0	nan	1	1	
+60903	57398	moving	kick	1	0	0	nan	1	1	
+61029	58945	moving	parent	1	0	0	nan	1	1	
+61029	58945	moving	fresh	1	0	0	nan	1	1	bf 0.65
+61029	58945	moving	fromParent	1	0	0	nan	1	1	
+61029	58945	moving	kick	1	0	0	nan	1	1	
+61110	57646	moving	parent	1	0	0	nan	1	1	
+61110	57646	moving	fresh	1	0	0	nan	1	1	bf 0.6478
+61110	57646	moving	fromParent	1	0	0	nan	1	1	
+61110	57646	moving	kick	1	0	0	nan	1	1	
+61268	59661	moving	parent	1	0	0	nan	1	1	
+61268	59661	moving	fresh	1	0	0	nan	1	1	bf 0.65
+61268	59661	moving	fromParent	1	0	0	nan	1	1	
+61268	59661	moving	kick	1	0	0	nan	1	1	
+61323	59661	moving	parent	1	0	0	nan	1	1	
+61323	59661	moving	fresh	1	0	0	nan	1	1	bf 0.65
+61323	59661	moving	fromParent	1	0	0	nan	1	1	
+61323	59661	moving	kick	1	0	0	nan	1	1	
+61802	60986	moving	parent	1	0	0	nan	1	1	
+61802	60986	moving	fresh	1	0	0	nan	1	1	bf 0.7209
+61802	60986	moving	fromParent	1	0	0	nan	1	1	
+61802	60986	moving	kick	1	0	0	nan	1	1	
+62131	60964	moving	parent	1	0	0	nan	1	1	
+62131	60964	moving	fresh	1	0	0	nan	1	1	bf 0.5584
+62131	60964	moving	fromParent	1	0	0	nan	1	1	
+62131	60964	moving	kick	1	0	0	nan	1	1	
+62180	60354	moving	parent	1	0	0	nan	1	1	
+62180	60354	moving	fresh	1	0	0	nan	1	1	bf 0.65
+62180	60354	moving	fromParent	1	0	0	nan	1	1	
+62180	60354	moving	kick	1	0	0	nan	1	1	
+62384	58604	moving	parent	2	0	0	nan	1	1	
+62384	58604	moving	fresh	2	0	0	nan	1	1	bf 0.6644
+62384	58604	moving	fromParent	2	0	0	nan	1	1	
+62384	58604	moving	kick	2	0	0	nan	1	1	
+62421	61904	moving	parent	1	0	0	nan	1	1	
+62421	61904	moving	fresh	1	0	0	nan	1	1	bf 0.65
+62421	61904	moving	fromParent	1	0	0	nan	1	1	
+62421	61904	moving	kick	1	0	0	nan	1	1	
+62758	61933	moving	parent	1	0	0	nan	1	1	
+62758	61933	moving	fresh	1	0	0	nan	1	1	bf 0.65
+62758	61933	moving	fromParent	1	0	0	nan	1	1	
+62758	61933	moving	kick	1	0	0	nan	1	1	
+62795	55157	moving	parent	1	0	0	nan	1	1	
+62795	55157	moving	fresh	1	0	0	nan	1	1	bf 0.7167
+62795	55157	moving	fromParent	1	0	0	nan	1	1	
+62795	55157	moving	kick	1	0	0	nan	1	1	
+62934	59513	moving	parent	1	0	0	nan	1	1	
+62934	59513	moving	fresh	1	0	0	nan	1	1	bf 0.7402
+62934	59513	moving	fromParent	1	0	0	nan	1	1	
+62934	59513	moving	kick	1	0	0	nan	1	1	
+63491	60743	moving	parent	1	0	0	nan	1	1	
+63491	60743	moving	fresh	1	0	0	nan	1	1	bf 0.65
+63491	60743	moving	fromParent	1	0	0	nan	1	1	
+63491	60743	moving	kick	1	0	0	nan	1	1	
+63572	62757	moving	parent	1	0	0	nan	1	1	
+63572	62757	moving	fresh	1	0	0	nan	1	1	bf 0.7883
+63572	62757	moving	fromParent	1	0	0	nan	1	1	
+63572	62757	moving	kick	1	0	0	nan	1	1	
+63723	62146	moving	parent	1	0	0	nan	1	1	
+63723	62146	moving	fresh	1	0	0	nan	1	1	bf 0.65
+63723	62146	moving	fromParent	1	0	0	nan	1	1	
+63723	62146	moving	kick	1	0	0	nan	1	1	
+63785	63103	moving	parent	1	0	0	nan	1	1	
+63785	63103	moving	fresh	1	0	0	nan	1	1	bf 0.65
+63785	63103	moving	fromParent	1	0	0	nan	1	1	
+63785	63103	moving	kick	1	0	0	nan	1	1	
+63952	63852	moving	parent	1	0	0	nan	1	1	
+63952	63852	moving	fresh	1	0	0	nan	1	1	bf 0.65
+63952	63852	moving	fromParent	1	0	0	nan	1	1	
+63952	63852	moving	kick	1	0	0	nan	1	1	
+64169	61938	moving	parent	1	0	0	nan	1	1	
+64169	61938	moving	fresh	1	0	0	nan	1	1	bf 0.7402
+64169	61938	moving	fromParent	1	0	0	nan	1	1	
+64169	61938	moving	kick	1	0	0	nan	1	1	
+64185	63856	moving	parent	1	0	0	nan	1	1	
+64185	63856	moving	fresh	1	0	0	nan	1	1	bf 0.65
+64185	63856	moving	fromParent	1	0	0	nan	1	1	
+64185	63856	moving	kick	1	0	0	nan	1	1	
+64468	62589	moving	parent	1	0	0	nan	1	1	
+64468	62589	moving	fresh	1	0	0	nan	1	1	bf 0.6518
+64468	62589	moving	fromParent	1	0	0	nan	1	1	
+64468	62589	moving	kick	1	0	0	nan	1	1	
+64619	62806	moving	parent	1	0	0	nan	1	1	
+64619	62806	moving	fresh	1	0	0	nan	1	1	bf 0.6403
+64619	62806	moving	fromParent	1	0	0	nan	1	1	
+64619	62806	moving	kick	1	0	0	nan	1	1	
+64718	63011	moving	parent	1	0	0	nan	1	1	
+64718	63011	moving	fresh	1	0	0	nan	1	1	bf 0.65
+64718	63011	moving	fromParent	1	0	0	nan	1	1	
+64718	63011	moving	kick	1	0	0	nan	1	1	
+64768	62823	moving	parent	1	0	0	nan	1	1	
+64768	62823	moving	fresh	1	0	0	nan	1	1	bf 0.6908
+64768	62823	moving	fromParent	1	0	0	nan	1	1	
+64768	62823	moving	kick	1	0	0	nan	1	1	
+64896	62499	moving	parent	1	0	0	nan	1	1	
+64896	62499	moving	fresh	1	0	0	nan	1	1	bf 1
+64896	62499	moving	fromParent	1	0	0	nan	1	1	
+64896	62499	moving	kick	1	0	0	nan	1	1	
+64929	62589	moving	parent	1	0	0	nan	1	1	
+64929	62589	moving	fresh	1	0	0	nan	1	1	bf 0.8832
+64929	62589	moving	fromParent	1	0	0	nan	1	1	
+64929	62589	moving	kick	1	0	0	nan	1	1	
+65543	65063	moving	parent	1	0	0	nan	1	1	
+65543	65063	moving	fresh	1	0	0	nan	1	1	bf 0.7517
+65543	65063	moving	fromParent	1	0	0	nan	1	1	
+65543	65063	moving	kick	1	0	0	nan	1	1	
+65817	62952	moving	parent	1	0	0	nan	1	1	
+65817	62952	moving	fresh	1	0	0	nan	1	1	bf 0.65
+65817	62952	moving	fromParent	1	0	0	nan	1	1	
+65817	62952	moving	kick	1	0	0	nan	1	1	
+66093	65761	moving	parent	1	0	0	nan	1	1	
+66093	65761	moving	fresh	1	0	0	nan	1	1	bf 0.65
+66093	65761	moving	fromParent	1	0	0	nan	1	1	
+66093	65761	moving	kick	1	0	0	nan	1	1	
+66098	64169	moving	parent	1	0	0	nan	1	1	
+66098	64169	moving	fresh	1	0	0	nan	1	1	bf 0.7402
+66098	64169	moving	fromParent	1	0	0	nan	1	1	
+66098	64169	moving	kick	1	0	0	nan	1	1	
+66195	64853	moving	parent	1	0	0	nan	1	1	
+66195	64853	moving	fresh	1	0	0	nan	1	1	bf 0.65
+66195	64853	moving	fromParent	1	0	0	nan	1	1	
+66195	64853	moving	kick	1	0	0	nan	1	1	
+66239	60207	moving	parent	1	0	0	nan	1	1	
+66239	60207	moving	fresh	1	0	0	nan	1	1	bf 0.7402
+66239	60207	moving	fromParent	1	0	0	nan	1	1	
+66239	60207	moving	kick	1	0	0	nan	1	1	
+66588	64861	moving	parent	1	0	0	nan	1	1	
+66588	64861	moving	fresh	1	0	0	nan	1	1	bf 0.65
+66588	64861	moving	fromParent	1	0	0	nan	1	1	
+66588	64861	moving	kick	1	0	0	nan	1	1	
+66658	65787	moving	parent	1	0	0	nan	1	1	
+66658	65787	moving	fresh	1	0	0	nan	1	1	bf 0.8776
+66658	65787	moving	fromParent	1	0	0	nan	1	1	
+66658	65787	moving	kick	1	0	0	nan	1	1	
+66886	65960	moving	parent	1	0	0	nan	1	1	
+66886	65960	moving	fresh	1	0	0	nan	1	1	bf 0.65
+66886	65960	moving	fromParent	1	0	0	nan	1	1	
+66886	65960	moving	kick	1	0	0	nan	1	1	
+66941	64739	moving	parent	1	0	0	nan	1	1	
+66941	64739	moving	fresh	1	0	0	nan	1	1	bf 0.65
+66941	64739	moving	fromParent	1	0	0	nan	1	1	
+66941	64739	moving	kick	1	0	0	nan	1	1	
+66947	64739	moving	parent	1	0	0	nan	1	1	
+66947	64739	moving	fresh	1	0	0	nan	1	1	bf 0.65
+66947	64739	moving	fromParent	1	0	0	nan	1	1	
+66947	64739	moving	kick	1	0	0	nan	1	1	
+67206	66729	moving	parent	1	0	0	nan	1	1	
+67206	66729	moving	fresh	1	0	0	nan	1	1	bf 0.6935
+67206	66729	moving	fromParent	1	0	0	nan	1	1	
+67206	66729	moving	kick	1	0	0	nan	1	1	
+67489	64442	moving	parent	1	0	0	nan	1	1	
+67489	64442	moving	fresh	1	0	0	nan	1	1	bf 0.577
+67489	64442	moving	fromParent	1	0	0	nan	1	1	
+67489	64442	moving	kick	1	0	0	nan	1	1	
+67550	65887	moving	parent	1	0	0	nan	1	1	
+67550	65887	moving	fresh	1	0	0	nan	1	1	bf 0.65
+67550	65887	moving	fromParent	1	0	0	nan	1	1	
+67550	65887	moving	kick	1	0	0	nan	1	1	
+67913	67114	moving	parent	1	0	0	nan	1	1	
+67913	67114	moving	fresh	1	0	0	nan	1	1	bf 0.8642
+67913	67114	moving	fromParent	1	0	0	nan	1	1	
+67913	67114	moving	kick	1	0	0	nan	1	1	
+68154	67287	moving	parent	2	0	0	nan	1	1	
+68154	67287	moving	fresh	2	0	0	nan	1	1	bf 0.6414
+68154	67287	moving	fromParent	2	0	0	nan	1	1	
+68154	67287	moving	kick	2	0	0	nan	1	1	
+68198	67246	moving	parent	1	0	0	nan	1	1	
+68198	67246	moving	fresh	1	0	0	nan	1	1	bf 0.65
+68198	67246	moving	fromParent	1	0	0	nan	1	1	
+68198	67246	moving	kick	1	0	0	nan	1	1	
+68372	67246	moving	parent	1	0	0	nan	1	1	
+68372	67246	moving	fresh	1	0	0	nan	1	1	bf 0.65
+68372	67246	moving	fromParent	1	0	0	nan	1	1	
+68372	67246	moving	kick	1	0	0	nan	1	1	
+68438	67246	moving	parent	1	0	0	nan	1	1	
+68438	67246	moving	fresh	1	0	0	nan	1	1	bf 0.6261
+68438	67246	moving	fromParent	1	0	0	nan	1	1	
+68438	67246	moving	kick	1	0	0	nan	1	1	
+68805	66796	moving	parent	1	0	0	nan	1	1	
+68805	66796	moving	fresh	1	0	0	nan	1	1	bf 0.65
+68805	66796	moving	fromParent	1	0	0	nan	1	1	
+68805	66796	moving	kick	1	0	0	nan	1	1	
+68847	64034	moving	parent	1	0	0	nan	1	1	
+68847	64034	moving	fresh	1	0	0	nan	1	1	bf 0.1073
+68847	64034	moving	fromParent	1	0	0	nan	1	1	
+68847	64034	moving	kick	1	0	0	nan	1	1	
+68971	64366	moving	parent	1	0	0	nan	1	1	
+68971	64366	moving	fresh	1	0	0	nan	1	1	bf 1
+68971	64366	moving	fromParent	1	0	0	nan	1	1	
+68971	64366	moving	kick	1	0	0	nan	1	1	

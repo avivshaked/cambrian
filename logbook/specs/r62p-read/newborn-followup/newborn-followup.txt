@@ -1,0 +1,183 @@
+newborn-followup-read.py  run D:\Projects\experiments\evolution-simulator\runs\r62p-t3-6201\2026-10-26-034325-a9cd635c  frames D:\Projects\experiments\evolution-simulator\scratch\newborn-ledger\full\grazer-frames.tsv  reads brain,early,joints
+to 24000 s, window 10 s; everything below is ASSOCIATION in recorded data, not cause
+DEFINITIONS
+  grazer, bred, ate, first speed, the exclusions and the diff: genome-diff-read.py's, loaded from its source (see this file's docstring)
+  standstill: first speed < 0.01 m/s;  slow: 0.01 to < 0.03;  moving: >= 0.03;  all among bred grazers with a first speed and structure diff count 0
+  joint coordinate: an entry of a pose row's q (radians for a hinge or twist; three components of a rotation vector for a spherical joint)
+  unchanged: every joint coordinate differs by at most TOL = 0.01 rad between the child's first two pose frames. TOL is far above float32 resolution (about 1e-7) and the solver's settling jitter, and far below a stroke (a joint range is tens of degrees, 0.01 rad is 0.57 degrees); the share is also printed at 0.001, 0.05 and 0.1
+  near zero (amplitude): |amplitude| <= EPS = 0.05; amplitude is a neuron's multiplier on a value in [-1, 1] (Brain.cs:544)
+bred grazers (p >= 0) 2565; with both genomes 2565; young and alive, left out 8; with a first speed 2003; without 554
+POPULATION n 997: standstill 117; slow 76; moving 804
+  slow in the earlier reads' sense (< 0.03): 193 (README: 997 and 193)
+  check: children whose first pair here gives a different speed from genome-diff-read.py's: 0 (should be 0)
+
+====================================================================================================
+1. JOINTS: stroke or stuck  (association; two frames 10 s apart)
+====================================================================================================
+  bed floor y: fields/bed.f32, 300x300 cells of 1 m, index (int(x/cell))*nz + int(z/cell), as scripts/guide.py reads it
+  read 1056 of the 1056 wanted frame times from poses.bin; 1994 body-frames kept
+  children whose two frames hold different numbers of joint coordinates, left out: 7
+
+  Per group. 'rigid' bodies have no joint coordinate (q empty) and are left out of the joint columns.
+  group           n   pose  rigid jointed unch@0.001  unch@TOL unch@0.05  unch@0.1          
+  standstill    117    116      0     116     0.172     0.259     0.612     0.819
+  slow           76     75      0      75     0.107     0.200     0.440     0.600
+  moving        804    799      1     798     0.000     0.033     0.140     0.279
+
+  Joint coordinate change between the two frames, per jointed child (radians): largest over its coordinates
+  group       jointed        Q1    median        Q3   med max|q|
+  standstill      116  0.008142   0.03282   0.06846       0.3112
+  slow             75   0.02031   0.05745    0.2469       0.2978
+  moving          798   0.08785    0.2093    0.4016       0.2246
+  (max|q| is the largest joint coordinate magnitude at the second frame; a value near a joint's limit would hint at a joint pinned against it, but the limits are not read here)
+
+  The root, from the pose rows
+  group           n   med age f0   med root y med height/bed   Q1..Q3 h/bed   med turn
+  standstill    116        4.5 s      -2.52 m        22.47 m   21.40..23.34  0.058 rad
+  slow           75        5.5 s      -2.80 m        22.27 m   20.66..23.51  0.155 rad
+  moving        799        5.0 s      -4.31 m        20.71 m   19.18..22.42  1.009 rad
+  height/bed is y at the first frame minus the bed's floor y at the root's x and z (y is up); the bed is from fields/bed.f32. turn is the root quaternion's angle between the two frames.
+
+  Root height from the frame table (needs no pose stream; raw y, y up) and its change between the same two frames
+  group           n     med y f0   med |dy| (m)    Q3 |dy| (m)
+  standstill    117        -2.50          0.001          0.002
+  slow           76        -2.78          0.003          0.040
+  moving        804        -4.29          0.047          0.200
+
+  Joint change against whether the body moved (association): jointed children only
+  group       n jointed      unch   changed share unch
+  standstill        116        30        86     0.259
+  slow               75        15        60     0.200
+  moving            798        26       772     0.033
+
+  READING (inference, to be checked by eye): a standstill child whose joints are unchanged is silent at both frames; one
+  whose joints changed but whose root did not move may be stroking against something, or only settling to a held bend.
+  Two frames 10 s apart cannot see a stroke inside the interval: equal coordinates at both frames are evidence of
+  silence, not proof, because a full stroke cycle shorter than 10 s can return to the same angle (a joint driven by an
+  oscillator of period dividing 10 s would read as unchanged). A change is not proof of a stroke either. Pose rows hold
+  no part orientations, so this is the joint coordinate q, not a computed part-to-parent rotation.
+
+====================================================================================================
+2. BRAIN: which brain change  (association)
+====================================================================================================
+  check: children whose kinds' sum differs from the diff's own brain sum: 0 of 997 (should be 0)
+  children whose genome has a central brain (the node neurons are then unused): 997 of 997
+  (a child's neuron location: power = neuron d < dof of the node's joint, which drives the joint; bend = the next dof neurons; other = the rest; global = the unused global brain; central = a central brain's units and links)
+
+  2a. Share of children with any change of each kind / median summed relative change over all members / median over those that changed
+      (a changed name counts 1.0, as in genome-diff-read.py)
+  kind                 | standstill (n 117)         | slow (n 76)                | moving (n 804)            
+  frequency            | 0.000         0         -  | 0.000         0         -  | 0.000         0         - 
+  phase                | 0.000         0         -  | 0.000         0         -  | 0.000         0         - 
+  amplitude            | 0.000         0         -  | 0.000         0         -  | 0.000         0         - 
+  bias                 | 0.000         0         -  | 0.000         0         -  | 0.000         0         - 
+  op                   | 0.000         0         -  | 0.000         0         -  | 0.000         0         - 
+  input_kind           | 0.000         0         -  | 0.000         0         -  | 0.000         0         - 
+  channel              | 0.000         0         -  | 0.000         0         -  | 0.000         0         - 
+  input_const          | 0.000         0         -  | 0.000         0         -  | 0.000         0         - 
+  weight               | 0.000         0         -  | 0.000         0         -  | 0.000         0         - 
+  index                | 0.000         0         -  | 0.000         0         -  | 0.000         0         - 
+  central_unit_bias    | 0.222         0     0.375  | 0.316         0     0.281  | 0.266         0     0.363 
+  central_link_weight  | 1.000      2.44      2.44  | 1.000      2.38      2.38  | 1.000      2.38      2.38 
+  ANY kind             | 1.000      2.45      2.45  | 1.000      2.54      2.54  | 1.000      2.55      2.55 
+
+  2b. Where the change sits, and whether it can act (Brain.cs): share with any change at each location, and with any LIVE change
+      live = not on a global-brain neuron, not on node neurons when a central brain exists, and not a frequency, phase (non-oscillator child op) or input change on an oscillator neuron
+  location                   | standstill   | slow         | moving      
+  power                      |        0.000 |        0.000 |        0.000
+  bend                       |        0.000 |        0.000 |        0.000
+  other                      |        0.000 |        0.000 |        0.000
+  global                     |        0.000 |        0.000 |        0.000
+  central                    |        1.000 |        1.000 |        1.000
+  ANY LIVE change            |        1.000 |        1.000 |        1.000
+  no live change at all      |        0.000 |        0.000 |        0.000
+  median live summed change  |         2.45 |         2.54 |         2.55
+
+  2c. Joint-driving (power) neurons: the first dof neurons of each node whose joint has dof > 0 (Brain.cs:481-493)
+      osc_zero: the genome has power neurons that are oscillators, and every one has |amplitude| <= EPS = 0.05
+      dead: every power neuron is an oscillator whose |amplitude| + bias can never exceed its joint's threshold, so its power is never above 0 (EffectorDrive.cs:282-285); a non-oscillator power neuron is unknown and keeps a genome from being 'dead'. A static bound only.
+                                     | standstill   | slow         | moving      
+  child: has any power neuron        |        - (0) |        - (0) |        - (0)
+  child: has an oscillator power neuron |        - (0) |        - (0) |        - (0)
+  child: osc_zero                    |        - (0) |        - (0) |        - (0)
+  parent: osc_zero                   |        - (0) |        - (0) |        - (0)
+  child osc_zero, parent not         |        - (0) |        - (0) |        - (0)
+  child: dead                        |        - (0) |        - (0) |        - (0)
+  parent: dead                       |        - (0) |        - (0) |        - (0)
+  child dead, parent not             |        - (0) |        - (0) |        - (0)
+  child: no power neuron, parent has |        - (0) |        - (0) |        - (0)
+  child: all power neurons non-osc   |        - (0) |        - (0) |        - (0)
+  largest oscillator power amplitude (both have an oscillator power neuron):
+    child, median                    |            - |            - |            -
+    parent, median                   |            - |            - |            -
+    share child < half of parent     |            - |            - |            -
+
+  READING (inference): 2a says which parameter kinds co-occur with standstill, 2b whether the change could act at all,
+  2c whether the child's drive neurons are statically silent where the parent's were not. An oscillator at amplitude
+  near zero holds its joint at its bias, so its joint does not stroke; but a non-oscillator drive neuron (a Sum of
+  joint-angle inputs, as the founder genomes have) can be silent at rest and start only from a disturbance, and this
+  read cannot tell that from outside. The bend neurons (second dof neurons) shape the held angle, not the power.
+
+====================================================================================================
+3. EARLY: bred grazers with no first speed  (association)
+====================================================================================================
+  n 554 (README: 554). Cause is the death row's field c (LineageEvent.cs:860: starved, diverged, eaten, aged, withered); a body with no death row by --end is 'alive at end'.
+  age at death = death row t minus birth row t, seconds; the first frame is the first table frame at or after birth.
+
+  no first speed (n 554)
+    cause               n   share    age Q1   age med    age Q3  ate share
+    starved           507   0.915       6.0       8.0      15.5      0.250
+    eaten              35   0.063       9.2      13.0     137.2      1.000
+    aged               11   0.020     394.2     479.0     873.2      0.909
+    alive at end        1   0.002         -         -         -      1.000
+    all               554               6.0       8.5      16.0      0.312
+
+  for comparison: standstill (n 117)
+    cause               n   share    age Q1   age med    age Q3  ate share
+    starved           115   0.983      24.5      27.0      30.5      0.278
+    eaten               2   0.017     116.2     117.5     118.8      1.000
+    all               117              24.5      27.0      32.0      0.291
+
+  for comparison: slow (n 76)
+    cause               n   share    age Q1   age med    age Q3  ate share
+    starved            71   0.934      23.5      27.5      37.2      0.366
+    eaten               2   0.026      85.5     146.5     207.5      1.000
+    aged                2   0.026     715.6     826.2     936.9      1.000
+    alive at end        1   0.013         -         -         -      1.000
+    all                76              23.8      27.5      42.8      0.408
+
+  for comparison: moving (n 804)
+    cause               n   share    age Q1   age med    age Q3  ate share
+    starved           566   0.704      22.0      27.5      72.4      0.473
+    eaten             118   0.147      93.6     216.0     410.6      1.000
+    aged               94   0.117     676.0     863.0    1307.4      1.000
+    alive at end       26   0.032         -         -         -      1.000
+    all               804              23.0      40.0     346.9      0.629
+
+  Age at death against the first frame's time (the frame table has frames 10 s apart on the world clock)
+  one frame and no pair means the body died within 10 s of its first frame
+  class                                         n    age Q1   age med    age Q3   med death-f0
+  one frame, no pair                          333       6.5       9.5      13.5            4.5
+  no frame at all                             126       5.0       5.5       6.5              -
+  first frame at age >= window                 95      26.8      43.0     211.0           33.0
+  age at the first frame, where there is one: n 428, Q1/median/Q3 3.5 / 7.0 / 10.0
+  of the no-speed, dead with no frame at all (died before the first 10 s tick after birth): 126
+
+  Where it was at its first frame: horizontal distance to the nearest living leaf, dleafh (m), and the 3D distance dleaf3
+  set                         n       Q1   median       Q3    <0.3 m    >1.4 m     med d3
+  no first speed            428     0.32     0.50     0.73     0.217     0.030       1.41
+    no speed, starved       384     0.32     0.51     0.73     0.214     0.034       1.43
+    no speed, eaten          32     0.34     0.42     0.68     0.219     0.000       1.22
+    no speed, aged           11     0.28     0.59     0.71     0.273     0.000       1.10
+    no speed, alive at end      1     0.29     0.29     0.29     1.000     0.000       1.49
+  moving                    804     0.30     0.51     0.71     0.245     0.017       1.43
+  slow                       76     0.41     0.58     0.81     0.145     0.026       1.42
+  standstill                117     0.29     0.47     0.78     0.265     0.017       1.47
+  first-frame body fraction bf, median: no speed 1.000, moving 1.000;  reserve J median: no speed 2.9, moving 12.6
+
+  READING (inference): the classes say how many of the no-speed bodies died before they could be measured at all and how
+  many had one frame. dleafh against the moving group asks whether they were born further from food; it is a split, not
+  a cause. The comparison sets differ in survival by construction (a body must live to a second frame to have a speed), so
+  any difference in the first-frame place can come from who survives long enough to be counted.
+
+All of the above is association in recorded data. Nothing here separates a cause from what travels with it.
