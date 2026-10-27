@@ -1,0 +1,58 @@
+=== brain-birth bench: D:\Projects\experiments\evolution-simulator\runs\r62p-t3-6201\2026-10-26-034325-a9cd635c
+  config 10105b672f132a19 (recorded Stored hash a9cd635c6257af36 does not match the settings in this file (10105b672f132a19). The file was edited after it was written, which is fine — but results filed under the stored hash were produced by different settings.)
+  dt 0.01 s, seconds 60 (6000 steps, measured over the last half), parent-warm 60 s (6000 steps), eps 0.05, kick 0.05, seed 1
+  senses: held-sampled. The body is held at rest and the physics step is never called; Senses.Sample() runs each step, joint angle and rate, flow, scent, contact, damage and bed read 0, depth and up read the placement (root at y -20 m), chemical and energy read the constant 0.5, and the drive-envelope senses are live (Drive.Drive each step)
+  ids 393 rows; genomes found 628 of 628; birth fractions found 393 of 393
+  swim: parentSwim (the parent at size 1) and childSwim (the child at its birth fraction) each swim alone in still water for 60 s (6000 steps) under their own brain, with physics on (the probe's Swim, Variant.BrainWorld, root at y -20 m, no glass, no contact). netSpeed, pathSpeed and horizontal are over the last half of the swim; early is the root's net horizontal speed over 0 to 10 s
+  wrote brain-birth.tsv (2358 rows) and brain-birth-channels.tsv, per channel mean, range, RMS and rate
+
+== standstill (children 117)
+  variant       n   silent  settled  skipped
+  parent        117   100.0%   100.0%        0
+  fresh         117   100.0%   100.0%        0
+  fromParent    117   100.0%   100.0%        0
+  kick          117   100.0%   100.0%        0
+  silent under fresh with a parent that is not silent: 0
+    made active by fromParent: 0 of 0 (skipped 0)
+    made active by kick: 0 of 0 (skipped 0)
+
+== slow (children 76)
+  variant       n   silent  settled  skipped
+  parent         76   100.0%   100.0%        0
+  fresh          76   100.0%   100.0%        0
+  fromParent     76   100.0%   100.0%        0
+  kick           76   100.0%   100.0%        0
+  silent under fresh with a parent that is not silent: 0
+    made active by fromParent: 0 of 0 (skipped 0)
+    made active by kick: 0 of 0 (skipped 0)
+
+== moving (children 200)
+  variant       n   silent  settled  skipped
+  parent        200   100.0%   100.0%        0
+  fresh         200   100.0%   100.0%        0
+  fromParent    200   100.0%   100.0%        0
+  kick          200   100.0%   100.0%        0
+  silent under fresh with a parent that is not silent: 0
+    made active by fromParent: 0 of 0 (skipped 0)
+    made active by kick: 0 of 0 (skipped 0)
+
+== swim alone, standstill (children 117)
+  variant         n  median netSpeed  median early  netSpeed<0.03  no-number (skipped/nojoint/lost)
+  childSwim      117          0.21674       0.16108            6.0%  0/0/0
+  parentSwim     117          0.25396       0.19469            2.6%  0/0/0
+
+== swim alone, slow (children 76)
+  variant         n  median netSpeed  median early  netSpeed<0.03  no-number (skipped/nojoint/lost)
+  childSwim       76          0.18069       0.15651           14.5%  0/0/0
+  parentSwim      76          0.25293       0.19333            3.9%  0/0/0
+
+== swim alone, moving (children 200)
+  variant         n  median netSpeed  median early  netSpeed<0.03  no-number (skipped/nojoint/lost)
+  childSwim      200          0.20413       0.15888            7.0%  0/0/0
+  parentSwim     200          0.25293       0.19248            1.5%  0/0/0
+
+== children, in the world against alone (alone slow = early under 0.03 m/s)
+                          slow alone   not slow alone
+  slow in the world                4              189   (groups standstill and slow)
+  moving in the world              0              200   (group moving)
+  measure: early for 393 rows, netSpeed for 0; left out: 0 with no swim number (skipped, no joint or lost), 0 in another group

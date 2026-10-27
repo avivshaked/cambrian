@@ -46,11 +46,44 @@ which do swim, settle the same way here. So this bench cannot separate a slow ch
 the stroke is a loop closed through the body rather than a rhythm the brain makes on its own (inference). On that
 reading, a newborn's slowness lies in how its brain and its body meet, not in the state its brain starts from.
 
+## Swimming alone: the slow children move like the movers
+
+The bench's swim variant (`--swim`, the same day, approved by the coordinator) puts each child, fresh at its birth size,
+and its parent alone in still water under their own brains, with physics on, through the probe's own `Swim`. Each is
+placed at a root depth of 20 m with no glass and no contact, for 60 s. `early` is the root's net horizontal speed over
+0 to 10 s, the swim's analogue of the world's first speed. The outputs are `bench-swim.txt` and `brain-birth-swim.tsv`.
+The run took 34 s on one core.
+
+| Group, in the world | Children | Median early speed alone (m/s) | Quartiles | Parents' median alone |
+|---|---|---|---|---|
+| standstill | 117 | 0.161 | 0.146 to 0.183 | 0.195 |
+| slow | 76 | 0.157 | 0.095 to 0.174 | 0.193 |
+| moving | 200 | 0.159 | 0.121 to 0.174 | 0.192 |
+
+| Children | Slow alone (early under 0.03 m/s) | Not slow alone |
+|---|---|---|
+| slow in the world (standstill and slow) | 4 | 189 |
+| moving in the world | 0 | 200 |
+
+**189 of the 193 children that were slow in the world move alone as fast as the movers do.** The body and brain a slow
+newborn inherits move it when it is alone. So the slowness comes from the world it is born into, not from its genome
+(inference, bounded below).
+
+**Two limits bound this.**
+- **Moving is not yet stroking.** The median dominant frequency alone is 0.06 Hz in every group, a period of about 16 s,
+  which hardly reads as a stroke. The probe's solver keeps the tissue's excess density, so a body sinks, and a sinking
+  body can glide sideways. Some of the 0.16 m/s may be glide rather than swimming. A passive control, the same bodies
+  with the brain off, separates the two. It has not been run.
+- **The depth differs.** In the world the standstill children sat at a root height of about -2.5 m, and the movers at
+  about -4.3 m (`logbook/specs/r62p-read/newborn-followup/`). Here every body starts at -20 m. The brain reads depth, and
+  its constant drive in the held bench came from the senses it was given. Starting each child at its own recorded height
+  is the second check.
+
 ## What comes next
 
-The next read swims the same children and parents alone in still water under their own brains, with physics on. A slow
-child that also swims slowly alone carries its slowness in its genome and body. One that swims well alone was slowed by
-the world it was born into (inference). The coordinator approved the variant on 2026-10-27.
+The two checks above go together: a passive control and a start at the child's recorded height. If the slow children
+still move alone once glide is taken out and the depth matches, the cause is in the world's other inputs: contact with
+the parent or with leaves at birth, the current, or the smells and light a newborn senses there (inference).
 
 ## Sources
 
@@ -62,3 +95,6 @@ the world it was born into (inference). The coordinator approved the variant on 
 | the forward config's 8 fields | `scripts/reads/config-forward.py`'s output |
 | the senses a held body reads | `src/Evosim.SwimProbe/BrainBirth.cs`, its class comment |
 | the stroke is a loop through the body | inference, not measured |
+| early speeds and the 2x2 alone | `bench-swim.txt`, `brain-birth-swim.tsv` |
+| the world's root heights | `logbook/specs/r62p-read/newborn-followup/newborn-followup.txt` |
+| glide may carry part of the speed alone | inference, from the 0.06 Hz frequency; not measured |
