@@ -11,7 +11,8 @@ so grazer, bred, the first speed, the exclusions (bred grazers whose own or whos
 genomes.jsonl.gz; a living grazer born in the last 60 s before --end) and the diff are that script's, unchanged. If the
 marker is missing the whole script runs with its output discarded.
 
-OUT is a tab-separated file with a header, "id parent group firstSpeed". It holds every standstill and every slow child,
+OUT is a tab-separated file with a header, "id parent group firstSpeed y0". y0 is the child's root y (the frame
+table's y column) at its earliest frame, metres, or nan when it has no frame. It holds every standstill and every slow child,
 and --movers moving children drawn at random, with random.Random(seed), from the sorted moving ids. Rows are written
 standstill, slow, moving, each sorted by id, so the same inputs give the same file.
 
@@ -104,12 +105,39 @@ chosen = [(i, "standstill") for i in GM["standstill"]]
 chosen += [(i, "slow") for i in GM["slow"]]
 chosen += [(i, "moving") for i in drawn]
 
+# ------------------------------------------------------------------ y0: the child's root y at its first frame
+# genome-diff-read.py keeps only (t, x, z) of each frame, so the table is read again here for the chosen ids: the y
+# column at the child's earliest t (a tie keeps the first row). A child with no frame, or an unreadable one, gets nan.
+wanted = {i for i, _ in chosen}
+first = {}
+with open(A.frames, encoding="utf-8") as f:
+    fhead = f.readline().rstrip("\n").split("\t")
+    fcol = {n: c for c, n in enumerate(fhead)}
+    for line in f:
+        p = line.rstrip("\n").split("\t")
+        if len(p) < len(fhead):
+            continue
+        try:
+            i = int(p[fcol["id"]])
+            if i not in wanted:
+                continue
+            t, y = float(p[fcol["t"]]), float(p[fcol["y"]])
+        except ValueError:
+            continue
+        if i not in first or t < first[i][0]:
+            first[i] = (t, y)
+
+
+def y0_text(i):
+    return "%.4f" % first[i][1] if i in first else "nan"
+
+
 out_dir = os.path.dirname(os.path.abspath(A.out))
 os.makedirs(out_dir, exist_ok=True)
 with open(A.out, "w", encoding="utf-8", newline="\n") as f:
-    f.write("id\tparent\tgroup\tfirstSpeed\n")
+    f.write("id\tparent\tgroup\tfirstSpeed\ty0\n")
     for i, g in chosen:
-        f.write("%d\t%d\t%s\t%.6f\n" % (i, parent_of(i), g, speeds[i]))
+        f.write("%d\t%d\t%s\t%.6f\t%s\n" % (i, parent_of(i), g, speeds[i], y0_text(i)))
 
 print("brain-birth-ids.py  run %s  frames %s" % (A.run, A.frames))
 print("to %.0f s, window %g s, seed %d; bred grazers %d, young and alive left out %d, with a first speed %d" % (
@@ -117,3 +145,5 @@ print("to %.0f s, window %g s, seed %d; bred grazers %d, young and alive left ou
 print("population (structure diff 0) n %d: %s" % (len(pop), "; ".join("%s %d" % (g, len(GM[g])) for g in GROUPS)))
 print("wrote %s: %d rows (standstill %d, slow %d, moving %d of %d drawn with random.Random(%d))" % (
     A.out, len(chosen), len(GM["standstill"]), len(GM["slow"]), len(drawn), len(moving), A.seed))
+print("y0 (root y at the child's earliest frame, m): %d of %d rows have one" % (
+    sum(1 for i, _ in chosen if i in first), len(chosen)))

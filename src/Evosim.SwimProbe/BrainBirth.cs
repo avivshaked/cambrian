@@ -78,13 +78,17 @@ namespace Evosim.SwimProbe
         private const double SettledWindowSeconds = 1.0;
 
         private static readonly string[] VariantNames = { "parent", "fresh", "fromParent", "kick" };
-        private static readonly string[] SwimNames = { "parentSwim", "childSwim" };
+        // 0 and 1 run with --swim; 2 and 3 only with --swim --passive (the same bodies, brain off). Entries of a run
+        // without --passive stay null in RowResult.Swims.
+        private static readonly string[] SwimNames = { "parentSwim", "childSwim", "parentPassive", "childPassive" };
+        private const int ParentSwim = 0, ChildSwim = 1, ParentPassive = 2, ChildPassive = 3;
 
         private const double SlowSpeed = 0.03;              // m/s, under this a swim counts as slow
 
         public static int Run(
             string run, string idsFile, string outDir, double seconds, double parentWarm, double kick, ulong seed,
-            double eps, string configPath, double dt, int threads, bool swim = false)
+            double eps, string configPath, double dt, int threads, bool swim = false, bool passive = false,
+            bool birthHeight = false)
         {
             if (run == null || idsFile == null || outDir == null)
             {
@@ -117,11 +121,13 @@ namespace Evosim.SwimProbe
                 Seed = seed,
                 Eps = eps,
                 Swim = swim,
+                Passive = swim && passive,
+                BirthHeight = swim && birthHeight,
             };
 
             // --swim: Program.Swim reads the probe's statics, which Main has not set on this path. Set them from this
             // bench's config, solver and step, once, before any thread starts; they are only read afterwards.
-            if (swim) Program.ConfigureForBench(config, solver, dt);
+            if (swim) Program.ConfigureForBench(config, solver, dt, birthHeight ? -0.05 : -2.0);
 
             List<IdRow> rows = ReadIds(idsFile);
 
@@ -151,8 +157,29 @@ namespace Evosim.SwimProbe
             if (swim)
             {
                 Console.WriteLine(FormattableString.Invariant(
-                    $"  swim: parentSwim (the parent at size 1) and childSwim (the child at its birth fraction) each swim alone in still water for {seconds} s ({cx.Steps} steps) under their own brain, with physics on (the probe's Swim, Variant.BrainWorld, root at y {StartHeight} m, no glass, no contact). netSpeed, pathSpeed and horizontal are over the last half of the swim; early is the root's net horizontal speed over 0 to 10 s"));
-                if (seconds < 10.0) Console.WriteLine("  note: --seconds is under 10, so early is blank and the 2x2 uses netSpeed");
+                    $"  swim: parentSwim (the parent at size 1) and childSwim (the child at its birth fraction) each swim alone in still water for {seconds} s ({cx.Steps} steps) under their own brain, with physics on (the probe's Swim, Variant.BrainWorld, no glass, no contact). netSpeed, pathSpeed and horizontal are over the last half of the swim; early is the root's net horizontal speed over 0 to 10 s"));
+                if (seconds < 10.0) Console.WriteLine("  note: --seconds is under 10, so early and dyFirst10 are blank and the 2x2 uses netSpeed");
+                if (cx.Passive)
+                {
+                    Console.WriteLine(
+                        "  passive: parentPassive and childPassive are the same bodies at the same start, stepped through the probe's Swim with Variant.Passive (the brain is not stepped, the drive signal is zero; drag, contact and joint torques act as in Swim's hand-written loop)");
+                }
+
+                if (cx.BirthHeight)
+                {
+                    int have = 0;
+                    foreach (IdRow row in rows) if (!double.IsNaN(row.Y0)) have++;
+                    Console.WriteLine(FormattableString.Invariant(
+                        $"  start: --birth-height. Each swim and passive body starts at its row's y0 (the parent at its child's y0), {have} of {rows.Count} rows have one; a row without y0 keeps {StartHeight} m and says so in its note. Swim clamps the start to [-40, -2] m, and says so in the note when it does"));
+                }
+                else
+                {
+                    Console.WriteLine(FormattableString.Invariant(
+                        $"  start: root at y {StartHeight} m for every swim and passive body (no --birth-height)"));
+                }
+
+                Console.WriteLine(
+                    "  columns after early: totalMass kg (effective, added mass folded in) and totalVolume m3 of the Creature; excessDensity kg/m3, the tissue excess density Fluid.Apply uses for the body (TissueExcessDensity x ExcessDensityFactor); netBuoyancy N, up positive, the vertical force of one Fluid.Apply on the body at its start, at rest in still water; dyFirst10 m, the root's vertical displacement over 0 to 10 s, up positive; bodyLength m, the probe's measure on the body as built");
             }
 
             var results = new RowResult[rows.Count];
@@ -190,7 +217,7 @@ namespace Evosim.SwimProbe
             public int Steps, WarmSteps;
             public double Kick, Eps;
             public ulong Seed;
-            public bool Swim;
+            public bool Swim, Passive, BirthHeight;
         }
 
         /// <summary>A failure that stops the whole bench instead of becoming a skipped row.</summary>
@@ -204,6 +231,7 @@ namespace Evosim.SwimProbe
             public long Id, Parent;
             public string Group;
             public string FirstSpeed;
+            public double Y0 = double.NaN;   // the child's root y at its first frame; NaN when the ids file has no y0 column or a blank
         }
 
         private sealed class Stats
@@ -335,20 +363,49 @@ namespace Evosim.SwimProbe
             // brain with physics on. A failure to build above (parentWhy, childWhy) is the same failure here.
             if (cx.Swim)
             {
-                result.Swims[0] = parentWhy != null ? Skip("parentSwim", parentWhy) : SwimOne(cx, "parentSwim", parentRow, 1f, "");
-                result.Swims[1] = childWhy != null ? Skip("childSwim", childWhy) : SwimOne(cx, "childSwim", childRow, fraction, bfNote);
+                // The start: -20 m, or with --birth-height the child's y0 for both bodies (a row without one keeps -20 m
+                // and says so). The same start and the same bodies for the passive runs.
+                double start = StartHeight;
+                string startNote = "";
+                if (cx.BirthHeight)
+                {
+                    if (double.IsNaN(row.Y0)) startNote = FormattableString.Invariant($"y0 nan, start {StartHeight} m");
+                    else start = row.Y0;
+                }
+
+                for (int s = 0; s < SwimNames.Length; s++)
+                {
+                    bool passive = s == ParentPassive || s == ChildPassive;
+                    if (passive && !cx.Passive) continue;
+                    bool parent = s == ParentSwim || s == ParentPassive;
+                    string why = parent ? parentWhy : childWhy;
+                    result.Swims[s] = why != null
+                        ? Skip(SwimNames[s], why)
+                        : SwimOne(
+                            cx, SwimNames[s], parent ? parentRow : childRow, parent ? 1f : fraction,
+                            JoinNote(parent ? "" : bfNote, startNote), passive, start);
+                }
             }
 
             return result;
         }
 
-        private static VariantResult SwimOne(Context cx, string name, string genomeRow, float fraction, string note)
+        private static string JoinNote(string a, string b) =>
+            a.Length == 0 ? b : b.Length == 0 ? a : a + "; " + b;
+
+        private static VariantResult SwimOne(
+            Context cx, string name, string genomeRow, float fraction, string note, bool passive, double start)
         {
             try
             {
-                Program.SwimAloneResult swum = Program.SwimAlone(DevelopBody(cx, genomeRow, fraction), cx.Steps);
+                Program.SwimAloneResult swum = Program.SwimAlone(DevelopBody(cx, genomeRow, fraction), cx.Steps, passive, start);
                 string why = swum.NoJoints ? "no actuated degree of freedom" : swum.Lost ? "lost: the body went non-finite" : "";
-                return new VariantResult { Name = name, Swim = swum, Note = note.Length == 0 ? why : why.Length == 0 ? note : note + "; " + why };
+                if (Math.Abs(swum.StartUsed - start) > 1e-9)
+                {
+                    why = JoinNote(FormattableString.Invariant($"start {start:0.###} m clamped to {swum.StartUsed:0.###} m"), why);
+                }
+
+                return new VariantResult { Name = name, Swim = swum, Note = JoinNote(note, why) };
             }
             catch (Exception ex) when (!(ex is FatalBench))
             {
@@ -577,6 +634,7 @@ namespace Evosim.SwimProbe
             string[] head = lines[0].Split('\t');
             int ci = Array.IndexOf(head, "id"), cp = Array.IndexOf(head, "parent"), cg = Array.IndexOf(head, "group");
             int cs = Array.IndexOf(head, "firstSpeed");
+            int cy = Array.IndexOf(head, "y0");   // optional: an ids file written before it existed stays readable
             if (ci < 0 || cp < 0 || cg < 0)
             {
                 throw new InvalidDataException("the ids file needs columns id, parent and group; it has " + lines[0]);
@@ -600,6 +658,11 @@ namespace Evosim.SwimProbe
                     Parent = parent,
                     Group = p[cg],
                     FirstSpeed = cs >= 0 && cs < p.Length ? p[cs] : "",
+                    Y0 = cy >= 0 && cy < p.Length &&
+                         double.TryParse(p[cy], NumberStyles.Float, Inv, out double y0) &&
+                         !double.IsNaN(y0) && !double.IsInfinity(y0)
+                        ? y0
+                        : double.NaN,
                 });
             }
 
@@ -659,8 +722,9 @@ namespace Evosim.SwimProbe
             // The swim columns come after note, so every earlier column keeps its place. They are blank for the four
             // held variants, and the held measures are "-" for the two swim variants.
             main.Append("id\tparent\tgroup\tvariant\tdof\tactive\tmaxP2P\tmedianHz\tsilent\tsettled\tnote");
-            main.Append("\tnetSpeed\tpathSpeed\thorizontal\tdominantHz\tdominantAmp\tearly\n");
-            const string NoSwim = "\t\t\t\t\t\t";   // six empty swim columns
+            main.Append("\tnetSpeed\tpathSpeed\thorizontal\tdominantHz\tdominantAmp\tearly");
+            main.Append("\ttotalMass\ttotalVolume\texcessDensity\tnetBuoyancy\tdyFirst10\tbodyLength\n");
+            const string NoSwim = "\t\t\t\t\t\t\t\t\t\t\t\t";   // twelve empty swim columns (six swim, six size and buoyancy)
 
             var channels = new StringBuilder();
             channels.Append("id\tvariant\tchannel\tmean\tp2p\trms\thz\tactive\n");
@@ -705,24 +769,34 @@ namespace Evosim.SwimProbe
 
                     if (v.Skipped)
                     {
-                        main.Append("-\t-\t-\t-\t-\t-\t").Append(v.Note).Append("\t\t\t\t\t\t\n");
+                        main.Append("-\t-\t-\t-\t-\t-\t").Append(v.Note).Append(NoSwim).Append('\n');
                         continue;
                     }
 
-                    // a swim that has no number (no joints, or the body was lost) leaves its six columns blank
+                    // a swim that has no number (no joints, or the body was lost) leaves its six swim columns blank.
+                    // The buoyancy and size columns are read before any step, so a lost body keeps them; a body with no
+                    // joint was not measured and leaves them blank; dyFirst10 needs the swim itself.
                     Program.SwimAloneResult w = v.Swim;
                     bool has = !w.NoJoints && !w.Lost;
+                    bool sized = !w.NoJoints;
                     main.Append(w.Dof.ToString(Inv)).Append("\t-\t-\t-\t-\t-\t").Append(v.Note).Append('\t')
                         .Append(has ? F(w.NetSpeed, "0.#####") : "").Append('\t')
                         .Append(has ? F(w.PathSpeed, "0.#####") : "").Append('\t')
                         .Append(has ? F(w.Horizontal, "0.####") : "").Append('\t')
                         .Append(has ? F(w.DominantHz, "0.##") : "").Append('\t')
                         .Append(has ? F(w.DominantAmp, "0.###") : "").Append('\t')
-                        .Append(has && !double.IsNaN(w.Early) ? F(w.Early, "0.#####") : "").Append('\n');
+                        .Append(has && !double.IsNaN(w.Early) ? F(w.Early, "0.#####") : "").Append('\t')
+                        .Append(sized ? F(w.TotalMass, "0.######") : "").Append('\t')
+                        .Append(sized ? F(w.TotalVolume, "0.########") : "").Append('\t')
+                        .Append(sized ? F(w.Excess, "0.####") : "").Append('\t')
+                        .Append(sized ? F(w.NetBuoyancy, "0.#######") : "").Append('\t')
+                        .Append(has && !double.IsNaN(w.Dy10) ? F(w.Dy10, "0.#####") : "").Append('\t')
+                        .Append(sized ? F(w.BodyLength, "0.#####") : "").Append('\n');
                 }
             }
 
-            int perRow = VariantNames.Length + (rows.Count > 0 && results[0].Swims[0] != null ? SwimNames.Length : 0);
+            int perRow = VariantNames.Length;
+            if (rows.Count > 0) foreach (VariantResult v in results[0].Swims) if (v != null) perRow++;
             var utf8 = new UTF8Encoding(false);
             File.WriteAllText(Path.Combine(outDir, "brain-birth.tsv"), main.ToString(), utf8);
             File.WriteAllText(Path.Combine(outDir, "brain-birth-channels.tsv"), channels.ToString(), utf8);
@@ -814,13 +888,16 @@ namespace Evosim.SwimProbe
                 Console.WriteLine();
                 Console.WriteLine($"== swim alone, {group} (children {members.Count})");
                 Console.WriteLine(FormattableString.Invariant(
-                    $"  variant         n  median netSpeed  median early  netSpeed<{SlowSpeed}  no-number (skipped/nojoint/lost)"));
+                    $"  variant         n  median netSpeed  median early  netSpeed<{SlowSpeed}  median netBuoyancy N  median dyFirst10 m  median bodyLength m  no-number (skipped/nojoint/lost)"));
 
-                // childSwim first, then parentSwim, as the brief orders them
-                foreach (int s in new[] { 1, 0 })
+                // childSwim first, then parentSwim, then the passive pair beside them when --passive ran
+                foreach (int s in new[] { ChildSwim, ParentSwim, ChildPassive, ParentPassive })
                 {
                     var net = new List<double>();
                     var early = new List<double>();
+                    var buoy = new List<double>();
+                    var dy = new List<double>();
+                    var length = new List<double>();
                     int n = 0, slow = 0, skipped = 0, noJoint = 0, lost = 0;
                     foreach (int k in members)
                     {
@@ -834,10 +911,32 @@ namespace Evosim.SwimProbe
                         net.Add(r.Swim.NetSpeed);
                         if (!double.IsNaN(r.Swim.Early)) early.Add(r.Swim.Early);
                         if (r.Swim.NetSpeed < SlowSpeed) slow++;
+                        buoy.Add(r.Swim.NetBuoyancy);
+                        if (!double.IsNaN(r.Swim.Dy10)) dy.Add(r.Swim.Dy10);
+                        length.Add(r.Swim.BodyLength);
                     }
 
+                    if (n + skipped + noJoint + lost == 0) continue;   // a variant this run did not make (no --passive)
+
                     Console.WriteLine(
-                        $"  {SwimNames[s],-12} {n,5} {F(Median(net), "0.#####"),16} {F(Median(early), "0.#####"),13} {Pct(slow, n),15}  {skipped}/{noJoint}/{lost}");
+                        $"  {SwimNames[s],-13} {n,5} {F(Median(net), "0.#####"),16} {F(Median(early), "0.#####"),13} {Pct(slow, n),15} {F(Median(buoy), "0.#####"),19} {F(Median(dy), "0.#####"),18} {F(Median(length), "0.#####"),19}  {skipped}/{noJoint}/{lost}");
+                }
+
+                // each child's own-brain speed minus its passive speed, over the children that have both numbers
+                var diffs = new List<double>();
+                int diffNet = 0;
+                foreach (int k in members)
+                {
+                    double d = OwnOverPassive(results[k], out bool viaNet);
+                    if (double.IsNaN(d)) continue;
+                    diffs.Add(d);
+                    if (viaNet) diffNet++;
+                }
+
+                if (results[members[0]].Swims[ChildPassive] != null)
+                {
+                    Console.WriteLine(FormattableString.Invariant(
+                        $"  child own brain minus child passive, early m/s: n {diffs.Count}, median {F(Median(diffs), "0.#####")}, quartiles {F(Quantile(diffs, 0.25), "0.#####")} to {F(Quantile(diffs, 0.75), "0.#####")} (netSpeed in place of early for {diffNet})"));
                 }
             }
 
@@ -869,6 +968,68 @@ namespace Evosim.SwimProbe
             Console.WriteLine($"  moving in the world     {movingSlow,10}   {movingFast,14}   (group moving)");
             Console.WriteLine(
                 $"  measure: early for {slowSlow + slowFast + movingSlow + movingFast - usedNet} rows, netSpeed for {usedNet}; left out: {noNumber} with no swim number (skipped, no joint or lost), {otherGroup} in another group");
+
+            // The same 2x2 on the difference, own brain over passive: alone slow = the child's own-brain speed less its
+            // passive speed (early, or netSpeed for both where either early is blank) under SlowSpeed. Printed with --passive.
+            if (rows.Count == 0 || results[0].Swims[ChildPassive] == null) return;
+
+            int diffSlowSlow = 0, diffSlowFast = 0, diffMovingSlow = 0, diffMovingFast = 0, diffUsedNet = 0, diffOther = 0, diffNone = 0;
+            for (int k = 0; k < rows.Count; k++)
+            {
+                double diff = OwnOverPassive(results[k], out bool viaNet);
+                if (double.IsNaN(diff)) { diffNone++; continue; }
+
+                bool inWorldSlow;
+                if (rows[k].Group == "standstill" || rows[k].Group == "slow") inWorldSlow = true;
+                else if (rows[k].Group == "moving") inWorldSlow = false;
+                else { diffOther++; continue; }
+
+                if (viaNet) diffUsedNet++;
+                bool overSlow = diff < SlowSpeed;
+                if (inWorldSlow) { if (overSlow) diffSlowSlow++; else diffSlowFast++; }
+                else { if (overSlow) diffMovingSlow++; else diffMovingFast++; }
+            }
+
+            Console.WriteLine();
+            Console.WriteLine(FormattableString.Invariant(
+                $"== children, in the world against own brain over passive (slow alone = own-brain speed minus passive speed under {SlowSpeed} m/s)"));
+            Console.WriteLine("                          slow alone   not slow alone");
+            Console.WriteLine($"  slow in the world       {diffSlowSlow,10}   {diffSlowFast,14}   (groups standstill and slow)");
+            Console.WriteLine($"  moving in the world     {diffMovingSlow,10}   {diffMovingFast,14}   (group moving)");
+            Console.WriteLine(
+                $"  measure: early for {diffSlowSlow + diffSlowFast + diffMovingSlow + diffMovingFast - diffUsedNet} rows, netSpeed for {diffUsedNet}; left out: {diffNone} where the own-brain or the passive swim has no number, {diffOther} in another group");
+        }
+
+        /// <summary>
+        /// A child's own-brain speed less its passive speed, m/s: early less early, or netSpeed less netSpeed (and
+        /// <paramref name="viaNet"/> true) where either early is blank. NaN when either swim has no number or the row
+        /// has no passive swim.
+        /// </summary>
+        private static double OwnOverPassive(RowResult result, out bool viaNet)
+        {
+            viaNet = false;
+            VariantResult own = result.Swims[ChildSwim], passive = result.Swims[ChildPassive];
+            if (!HasSwimNumber(own) || !HasSwimNumber(passive)) return double.NaN;
+
+            if (!double.IsNaN(own.Swim.Early) && !double.IsNaN(passive.Swim.Early))
+            {
+                return own.Swim.Early - passive.Swim.Early;
+            }
+
+            viaNet = true;
+            return own.Swim.NetSpeed - passive.Swim.NetSpeed;
+        }
+
+        /// <summary>The p-th quantile by linear interpolation between order statistics (type 7); NaN when empty.</summary>
+        private static double Quantile(List<double> values, double p)
+        {
+            if (values.Count == 0) return double.NaN;
+            var sorted = new List<double>(values);
+            sorted.Sort();
+            double at = p * (sorted.Count - 1);
+            int lo = (int)Math.Floor(at);
+            int hi = Math.Min(sorted.Count - 1, lo + 1);
+            return sorted[lo] + (at - lo) * (sorted[hi] - sorted[lo]);
         }
 
         private static string Pct(int k, int n) =>
