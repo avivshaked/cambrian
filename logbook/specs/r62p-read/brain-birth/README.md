@@ -251,13 +251,27 @@ pool by a `SenseLight` setting. No such setting exists in `src/`, `CreatureSense
 t3's pool does not offer it. So no genome here reads light, and a genome that did would read 0. This is recorded, not
 fixed.
 
-## What comes next
+## Where the chase stops
 
-The carrion scent reproduces part of the world's split, and the other senses the bench can set reproduce none of it. Two
-things are not known: the scent each newborn actually read, and whether the leaf scent's direction, which every brain
-reads and the bench cannot set, adds to it. The senses a newborn read in the world are recorded nowhere. A reader-only
-option on the farm's film window could record them, with the drive each brain put out, over each newborn's first
-seconds (inference: designed, not built).
+The owner ruled at about 18:00 UTC on 2026-10-27 that newborns which freeze are acceptable: if they survive, sorting
+them is what selection is for. The chase stops here, with four findings and one gap.
+- **The carrion scent is the one sense that splits the groups, and it does so partway.** At full scent alone, 62% of
+  the slow-in-the-world genomes stop, against 32% of the movers. No other sense the bench can set separates them.
+- **Newborns are born among the dead.** Every newborn in every group has about 50 remains within the scent's 10 m
+  range at its first frame, the nearest about 2 m away.
+- **The energy sense reads about 0 for every young body.** A newborn holds about 15 s of reserve against a 3,000 s
+  scale, and on the bench that costs it about a third of its swimming speed. The scale is a world rule.
+- **Photo was ruled and never built** (D154).
+
+That the world's scent is strong at every birth, and that the standstill genomes answer it by stopping, is inference.
+The scent each newborn actually read was never measured.
+
+**The gap is an instrument.** A recorder of what each newborn senses and drives is written on branch `t3-senses`, at
+t3's own commit `9a6d593e` (`src/Evosim.Farm/SensesRecorder.cs`, `Evosim.Farm --film-window ... --senses <ids|all>`).
+It is not compiled and has never run. One limit bounds any later use. t3, and every world of round 62 since, stepped
+its brains on the graphics card, while the film window steps on the CPU. So a window of such a run is a cousin from its
+first step, and its newborns are not the recorded ones. A faithful window of a card run needs the card engine in the
+film window, and none is built.
 
 ## Sources
 
