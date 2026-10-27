@@ -162,6 +162,10 @@ The root file's rules still apply. The entries below were moved word for word, s
     for 16 to 21, rather than pinned from inside once it runs.
   - The GPU (RTX 4090) is read by `nvidia-smi`. WARN at 80 °C or a hardware slowdown; HOT at 85 °C or a
     thermal slowdown (clock event reasons 0x20 or 0x40).
+  - **Afterburner's log reports the GPU at 0 °C.** On 2026-10-27, during `r62cf`, `nvidia-smi` read 49 °C
+    at 92 % while the log's GPU temperature column held 0, so `heat-watch.py`'s "GPU max" is blind. A card
+    run's GPU heat is covered by its own heat stop, which reads `nvidia-smi`. The heat watch covers the CPU
+    only.
   - The CPU's temperature comes from MSI Afterburner, which the owner starts. While it runs, its
     monitoring shared memory (`MAHMSharedMemory`) holds every core's temperature and the package's,
     and the check opens it read-only. WARN at 90 °C, HOT at 95 °C, on the hottest reading. The
