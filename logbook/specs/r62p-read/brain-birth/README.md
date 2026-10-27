@@ -122,13 +122,69 @@ same brain and body swim (inference).
 One line of `bench-checks.txt`'s header is stale: it still says Swim clamps the start to [-40, -2] m. For this run the
 top was -0.05 m (`Program.ConfigureForBench`, `_startTop`), and no row's note reports a clamp.
 
+## The sense sweep: energy slows every newborn, and freezes none
+
+What differs between the world and still water alone is what a newborn senses and touches. The bench fed every brain
+the chemical and energy senses at one constant, 0.5, with no current. In the world the energy sense is
+tanh(SecondsOfReserve / EnergyFullScaleSeconds), and t3's scale is 3,000 s. Newborns hold about 15 s of reserve at
+their first frame, so their energy sense reads 0.00 to 0.01, in every group. There is no reserve gate on the drive:
+work is billed after the fact in metabolism, and the reserve reaches the brain only through that sense. The first-frame
+reserve is also the same in each group, with medians of 14.9 s standstill, 14.1 s slow and 15.0 s moving.
+
+The sweep ran later the same day (`--sense-sweep 0,0.25,0.75,1 --current 0.02`, each child at its recorded height;
+`bench-sweep.txt`, `brain-birth-sweep.tsv`). It took 2.5 minutes on one core. The build was branch `brain-birth` at
+`66d40da0`; the run log names `0da3ee8d`, which differs only in one method's name. The arms are:
+- `childSwim@v`: chemical and energy both at v. One constant feeds both channels, so this arm moves them together.
+- `childSwimReserve`: the energy sense from the child's own first-frame reserve (`ids-y0-s0.tsv`'s S0 column, from
+  `scripts/reads/brain-birth-add-s0.py`), with chemical held at 0.5. This is the world's energy sense.
+- `childSwimCurrent`: a uniform current of 0.02 m/s along x. It runs on the probe's own step loop. That loop in still
+  water, `childSwimLoop0`, reproduces the world step bit for bit in all 393 rows, so the comparison is clean.
+
+| Arm | standstill (117) | slow (76) | moving (200) |
+|---|---|---|---|
+| childSwim, both at 0.5 | 0.141 | 0.129 | 0.138 |
+| both at 0 | 0.078 | 0.073 | 0.099 |
+| both at 0.25 | 0.121 | 0.109 | 0.123 |
+| both at 0.75 | 0.150 | 0.138 | 0.148 |
+| both at 1 | 0.157 | 0.145 | 0.152 |
+| own reserve, chemical 0.5 | 0.081 | 0.079 | 0.098 |
+| current 0.02 m/s, relative to the water | 0.144 | 0.132 | 0.141 |
+
+The table gives the median early speed alone, in m/s.
+
+| Arm | Slow in the world, slow alone | Moving in the world, slow alone |
+|---|---|---|
+| both at 0.5 | 10 of 193 | 1 of 200 |
+| both at 0 | 26 of 193 | 6 of 200 |
+| own reserve, chemical 0.5 | 31 of 193 | 10 of 200 |
+| current 0.02 m/s | 8 of 193 | 0 of 200 |
+
+**The energy sense matters, but it does not freeze anyone.** At the world's own energy sense, every group swims more
+slowly alone: the standstill children by 43%, the slow ones by 39% and the movers by 29%. Even so, 162 of the 193
+children that were slow in the world still swim alone at their recorded reserve. Slow-alone children are about three
+times as common among the slow-in-world as among the movers, at 0.5 and at the recorded reserve alike. The energy sense
+changes the speed of every newborn alike. It does not pick out the ones that stop in the world. So it does not explain
+the split.
+
+**The chemical sense adds little.** The reserve arm holds chemical at 0.5 and puts energy near 0, and it lands where
+the sweep puts both at 0. So most of the sweep's effect is the energy channel's (inference: the sweep cannot vary
+chemical alone).
+
+**The current is ruled out.** In 0.02 m/s of water the children swim alone at the same speeds as in still water.
+
+**One finding stands on its own.** With a scale of 3,000 s and a newborn reserve of about 15 s, the energy sense reads
+almost 0 for every young body. On this bench that costs a newborn about a third of its swimming speed. Whether the
+scale should fit a young body's reserve is a world rule, so it is the owner's to rule; it is set out here as a possible
+finding, not as a fix.
+
 ## What comes next
 
-What differs between the world and still water alone is what a newborn senses and touches. That means the chemical and
-energy senses (a constant 0.5 here), the smell of leaves, light by depth, the current of 0.02 m/s, and contact with its
-parent or with leaves at birth (inference). A brain whose drive is a loop through the body can be held at a fixed point
-by a sense that saturates a unit on that loop (inference). The cheapest next read sweeps those senses in the same
-bench, with each child at its own height.
+None of the senses the bench can set reproduces the world's standstill. The energy sense, the chemical sense, depth and
+the current are each ruled out as the cause, alone. What is left is what a newborn touches and smells in the world and
+not alone. The first is contact with its parent, with other bodies or with leaves at birth; the bench runs with
+creature contact off. The second is the smell of leaves and light by depth, which the bench reads as nothing. The next read would place each
+child beside its parent, or on its recorded neighbours, and see which brings back the standstill (inference: not yet
+designed).
 
 ## Sources
 
@@ -146,4 +202,9 @@ bench, with each child at its own height.
 | passive bodies hold still; buoyancy 0; lengths | `bench-checks.txt`, `brain-birth-checks.tsv` |
 | speeds at the recorded height; the second 2x2 | `bench-checks.txt` |
 | heights in the world | `newborn-height.txt` |
-| a world sense holds the drive at a fixed point | inference, not measured |
+| a world sense holds the drive at a fixed point | inference, not measured; the sweep rules out energy, chemical and current |
+| no reserve gate on the drive | `src/Evosim.Core` (EffectorDrive, World.Observe, PendingWorkJoules in metabolism), read by hand |
+| first-frame reserve by group | `scratch/newborn-ledger/full/grazer-frames.tsv`'s S, first row per child; `ids-y0-s0.tsv` |
+| sweep, reserve and current speeds; the 2x2s | `bench-sweep.txt`, `brain-birth-sweep.tsv` |
+| the loop control matches the world step bit for bit | `brain-birth-sweep.tsv`, childSwim against childSwimLoop0, every column |
+| chemical adds little | inference, from the reserve arm against the sweep at 0 |
