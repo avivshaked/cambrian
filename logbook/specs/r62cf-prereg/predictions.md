@@ -86,19 +86,31 @@ These are guesses unless marked measured.
 
 - **D222.** Under reading (a), two or three of the new worlds pass (guess). Under reading (b), all three pass (guess). `r62sm-s100-6201`'s born share
   was 0.828, its best cohort 1.26, its chain 17 and its intake over upkeep 1.81 (measured).
-- **Moves are rare.** In `r62sm-s100-6201`, r60-read counts 7 grazer migrants in 24,000 s at a 100 s stride (measured,
-  `logbook/specs/r62sm-read/24000/r60-read-3000.txt`). At a 10 s stride I expect under 30 moves a world, and under 2% of
-  bred grazers ever moving (guess). A grazer lives a median of about 68 s (measured), shorter than a crossing between
-  oases at its speed, so few live to make one (inference).
-- **Moves are long.** The median move is over 30 m, since the islands are 5 m columns grouped into 9 islands across a
-  300 m square (guess).
-- **Open water.** About half of grazer fixes are over open water, as about half of all the living are at 24,000 s,
-  0.49 to 0.55 on the islands (measured for all the living, a guess for grazers).
+The fourth seed is already measured. The moves read ran on `r62sm-s100-6201`
+(`logbook/specs/r62cf-prereg/moves-test/r62sm-s100-6201.txt`), and its count agrees with r60-read's in every year:
+
+| `r62sm-s100-6201`, 10 s stride | Measured |
+|---|---|
+| moves in 24,000 s | 14, by 12 grazers |
+| bred grazers that ever move | 9 of 3,465, 0.003 |
+| moves per 1,000 grazer-seconds | 0.012 |
+| distance, quartiles | 13, 16 and 34 m |
+| crossing time, quartiles | 60, 90 and 142 s |
+| the largest move | 143 m in 510 s |
+| open-water share of grazer fixes | 0.18, against 0.38 for all the living |
+
+- **Moves stay rare.** Each new world has under 30 moves, and under 1% of bred grazers ever move (guess, from the
+  measured seed). A grazer lives a median of about 68 s (measured), against a median crossing of 90 s, so few live to
+  make one (inference).
+- **Moves are short.** The median move is 10 to 40 m, mostly between neighbouring islands (guess, from the measured
+  seed).
+- **Grazers keep to the oases.** Their open-water share is 0.15 to 0.25, under all the living's (guess, from the
+  measured seed).
 
 ## What a result would mean
 
-**If the settings are confirmed and moves are rare:** grazers make a living, each on its own oasis, and the world has
-oases without migration. The aim is grazers that travel between oases. So the next design question, the owner's, is
+**If the settings are confirmed and moves are rare,** as the measured seed already shows: grazers make a living, each
+on its own oasis, and the world has oases without migration. The aim is grazers that travel between oases. So the next design question, the owner's, is
 what makes a crossing worth its cost: food that runs out on an oasis, a season that moves it, or a longer life
 (inference).
 
