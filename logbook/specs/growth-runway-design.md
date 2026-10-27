@@ -259,6 +259,8 @@ was with nearly every body resized once. The harness applies size every `GrowthS
 and 18 % of the wall (a guess that scales today's cost by the count). Raising `GrowthStepSeconds` while bodies climb,
 or resizing only on a 5 % change of length, keeps it near today's.
 
+The guess was too high. Growth group 1 measured growth at 0.4 to 0.5 % of the wall at every T, with no divergence through founding (`logbook/specs/r62gr-read/24000/README.md`), so the planned timing of a fresh world at T = 0 and 60 was dropped on 2026-10-27.
+
 ## The screens that set the numbers
 
 The owner ruled that the time to adulthood and the founders' threshold are settled by measurement, not chosen. Two
