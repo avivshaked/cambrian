@@ -25,8 +25,8 @@ namespace Evosim.SwimProbe
             typeof(DynamicsWorld).GetMethod("JointTorques", BindingFlags.NonPublic | BindingFlags.Instance);
 
         /// <summary>The limb's half-extents: the same length and chord, and the stick as thick as it is wide.</summary>
-        private static readonly Float3 Paddle = new Float3(0.2f, 0.01f, 0.2f);
-        private static readonly Float3 Stick = new Float3(0.2f, (float)Math.Sqrt(0.002), (float)Math.Sqrt(0.002));
+        internal static readonly Float3 Paddle = new Float3(0.2f, 0.01f, 0.2f);
+        internal static readonly Float3 Stick =new Float3(0.2f, (float)Math.Sqrt(0.002), (float)Math.Sqrt(0.002));
 
         public static int Run(double seconds, double push, double omega, double stroke, double hertz, string outDir)
         {

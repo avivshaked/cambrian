@@ -106,6 +106,14 @@ namespace Evosim.Farm.Tests
             Assert.True(Built(new Dictionary<string, string> { { "EVOSIM_SHAPED_ADDED_MASS", "1" } }).Fluid.ShapedAddedMass);
         }
 
+        /// <summary>D231: <c>EVOSIM_STROKE_ASSEMBLY</c> reaches the fluid config, and unset it is off.</summary>
+        [Fact]
+        public void TheStrokeAssemblySwitchReachesTheFluidConfigAndIsOffWhenUnset()
+        {
+            Assert.False(Built(new Dictionary<string, string>()).Fluid.StrokePushesAssembly);
+            Assert.True(Built(new Dictionary<string, string> { { "EVOSIM_STROKE_ASSEMBLY", "1" } }).Fluid.StrokePushesAssembly);
+        }
+
         /// <summary>D228's mirrored joint: <c>EVOSIM_REFLECT_MIRRORED_ANCHORS</c> reaches the development limits, and unset it is off.</summary>
         [Fact]
         public void TheReflectMirroredAnchorsSwitchReachesTheDevelopmentLimitsAndIsOffWhenUnset()

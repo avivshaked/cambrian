@@ -45,7 +45,8 @@ namespace Evosim.SwimProbe
             string configPath = null;   // a config the build reads, when the run's own predates a tunable
             bool finBench = false;      // D229's fin-law bench: no run, two bodies of equal volume, the law off and on
             double finPush = 0.3, finOmega = 2.0, finStroke = 0.8, finHertz = 1.0;
-            bool brainBirth = false;    // the brain-at-birth bench: held bodies, child and parent brains, fresh or carried
+            bool assemblyBench = false; // D231's bench: a blade welded beyond a link, a flat blade and a stick, three laws, four powers
+            bool brainBirth = false;   // the brain-at-birth bench: held bodies, child and parent brains, fresh or carried
             bool swim = false;          // --brain-birth only: also swim each child and parent alone under its own brain
             bool passive = false;       // --brain-birth --swim only: also step the same bodies with the brain off (Variant.Passive)
             bool birthHeight = false;   // --brain-birth --swim only: start each body at its row's y0, not at -20 m
@@ -99,6 +100,7 @@ namespace Evosim.SwimProbe
                     case "--eps": eps = double.Parse(args[++i], Inv); break;
                     case "--seed": seed = ulong.Parse(args[++i], Inv); break;
                     case "--fin-bench": finBench = true; break;
+                    case "--assembly-bench": assemblyBench = true; break;
                     case "--fin-push": finPush = double.Parse(args[++i], Inv); break;
                     case "--fin-omega": finOmega = double.Parse(args[++i], Inv); break;
                     case "--fin-stroke": finStroke = double.Parse(args[++i], Inv); break;
@@ -108,6 +110,7 @@ namespace Evosim.SwimProbe
             }
 
             if (finBench) return FinBench.Run(seconds, finPush, finOmega, finStroke, finHertz, outDir);
+            if (assemblyBench) return AssemblyBench.Run(seconds, finPush, finOmega, finHertz, outDir);
 
             if (swim && !brainBirth)
             {

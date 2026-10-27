@@ -128,6 +128,33 @@ namespace Evosim.Core.Tests
             Assert.Equal(2, mirroredParts);
         }
 
+        /// <summary>
+        /// D234: with the switch on a mirrored part, and a child of a mirrored part, reflect their joint drive
+        /// and no other part does; with it off nothing does. The scaled and the cut copies of a body keep the flag.
+        /// </summary>
+        [Fact]
+        public void AMirroredPartReflectsItsDriveUnderTheSwitchAndNothingDoesWithoutIt()
+        {
+            Genome genome = Chain3(new Bool3(true, false, false), Bool3.None);
+            Phenotype off = Developer.Develop(genome, Off);
+            Phenotype on = Developer.Develop(genome, On);
+
+            Assert.Equal(5, on.PartCount);
+            Assert.DoesNotContain(off.Parts, p => p.ReflectedDrive);
+
+            int reflected = 0;
+            for (int i = 0; i < on.PartCount; i++)
+            {
+                Assert.Equal(on.Parts[i].Mirrored, on.Parts[i].ReflectedDrive);
+                if (on.Parts[i].ReflectedDrive) reflected++;
+            }
+
+            Assert.Equal(2, reflected);
+
+            Phenotype scaled = on.Scaled(0.5f);
+            for (int i = 0; i < on.PartCount; i++) Assert.Equal(on.Parts[i].ReflectedDrive, scaled.Parts[i].ReflectedDrive);
+        }
+
         // root -> a -> b, a Box root and two Link nodes whose anchors sit off every axis, so a
         // reflection in any plane moves the joint.
         private static Genome Chain3(Bool3 firstReflect, Bool3 secondReflect)

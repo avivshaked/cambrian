@@ -292,8 +292,10 @@ namespace Evosim.Dynamics
                 if (_readsFlow)
                 {
                     Mat3 rotation = Mat3.Read(_body.RotationMatrix, 9 * b);
-                    Vec3 local = rotation.TransposedTimes(
-                        Vec3.Read(_body.RelativeVelocity, 3 * b));
+                    // D234: a reflected part reads the flow in the frame its geometry stands in, the component
+                    // along the reflection's normal negated (Creature.FrameNormalOf). Unchanged elsewhere.
+                    Vec3 local = _body.ReflectFrameVector(b, rotation.TransposedTimes(
+                        Vec3.Read(_body.RelativeVelocity, 3 * b)));
 
                     int at = b * 3;
                     _flow[at] = Clamp((float)(local.X / flowScale));
@@ -313,13 +315,17 @@ namespace Evosim.Dynamics
                     {
                         // Against the joint's own upper limit, so a hinge free to swing a little and
                         // one free to swing a lot both report "at the stop" as 1.
-                        double limit = System.Math.Abs(_body.LimitHi[offset + d]);
+                        // D234: a reflected degree of freedom reads the signed angle and rate against the signed
+                        // upper stop, so a twin moving as the mirror image of its original reports what the
+                        // original does. The sign is exactly 1 on every other degree of freedom.
+                        double sign = _body.DofSign(b, d);
+                        double limit = System.Math.Abs(_body.SignedLimitHi(offset + d, sign));
 
                         _angle[offset + d] = limit > 1e-6
-                            ? Clamp((float)(_body.Q[offset + d] / limit))
+                            ? Clamp((float)(sign * _body.Q[offset + d] / limit))
                             : 0f;
 
-                        _rate[offset + d] = Clamp((float)(_body.Qd[offset + d] / rateScale));
+                        _rate[offset + d] = Clamp((float)(sign * _body.Qd[offset + d] / rateScale));
                     }
 
                     if (_readsDrive) SampleDrive(b, offset + d);
@@ -341,7 +347,7 @@ namespace Evosim.Dynamics
 
             Float3 g = LeafScent.GradientAt(px, py, pz);
             Mat3 rotation = Mat3.Read(_body.RotationMatrix, 9 * b);
-            Vec3 local = rotation.TransposedTimes(new Vec3(g.X, g.Y, g.Z));
+            Vec3 local = _body.ReflectFrameVector(b, rotation.TransposedTimes(new Vec3(g.X, g.Y, g.Z)));   // D234, as the flow
             double length = local.Magnitude;
             int at = 3 * b;
             if (length > 0 && strength > 0f)

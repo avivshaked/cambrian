@@ -130,6 +130,7 @@ namespace Evosim.Dynamics
             WritePanels(panelSets, panels);
             RefreshLinkReach();
             if (LinkCoreHalf != null) WriteLinkCores();
+            if (StrokeAssemblyParts != null) WriteStrokeAssembly();   // D231: the strips follow the new sizes
 
             // Torque per unit of signal is read from Power, which growth scales only when the world
             // asks for it (RunConfig.JuvenileStrengthScales, D241: Phenotype.ScaledFor) — so this is
@@ -200,6 +201,8 @@ namespace Evosim.Dynamics
                 Lift[i] = part.Lift;
                 Power[i] = part.Power;
                 JointGenes[i] = part.Drive;
+                MirrorMask[i] = MirrorMaskOf(part);   // D234; zero unless the part reflects its drive
+                FrameNormal[i] = FrameNormalOf(part); // D234; -1 unless the part reflects its drive
 
                 // D111's lever, from the half-extent the link has now, so a grown body's arm is
                 // the built body's to the bit.
@@ -286,8 +289,19 @@ namespace Evosim.Dynamics
                         ? part.JointLimits[d]
                         : new Float2(-1f, 1f);
 
-                    LimitLo[at + d] = limit.X;
-                    LimitHi[at + d] = limit.Y;
+                    // D234: a reflected degree of freedom stops at the mirror image of the genome's stops,
+                    // [-hi, -lo], because the limit spring acts on the stored angle and the drive and the
+                    // senses read it with its sign reversed (Creature.Twin.cs).
+                    if (DofSign(i, d) < 0)
+                    {
+                        LimitLo[at + d] = -limit.Y;
+                        LimitHi[at + d] = -limit.X;
+                    }
+                    else
+                    {
+                        LimitLo[at + d] = limit.X;
+                        LimitHi[at + d] = limit.Y;
+                    }
 
                     // The two-body reduced inertia about this axis through the anchor, taken at
                     // the rest configuration. It is a LOWER bound on the inertia the relative

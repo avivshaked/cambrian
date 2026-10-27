@@ -231,6 +231,13 @@ namespace Evosim.Core
         /// so a world whose bodies reflect is a new realisation from its first mirrored birth.
         /// <c>logbook/specs/mirrored-anchor-finding.md</c>.
         /// </para>
+        /// <para>
+        /// <b>The drive follows the geometry (D234).</b> With the switch on, a mirrored part also carries
+        /// <see cref="PhenotypePart.ReflectedDrive"/>, and the solver reflects its joint drive: the angle,
+        /// rate, target and torque of each degree of freedom whose axis the reflection reverses are
+        /// negated, and its stops become <c>[-hi, -lo]</c>. The same brain signal then bends and beats a
+        /// pair as mirror images rather than in a seesaw. There is no switch of its own.
+        /// </para>
         /// </remarks>
         [Tunable("development")]
         public bool ReflectMirroredAnchors { get; set; }

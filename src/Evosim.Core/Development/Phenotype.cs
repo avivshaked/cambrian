@@ -477,6 +477,7 @@ namespace Evosim.Core
                     DistanceFromRoot = part.DistanceFromRoot * linear,
                     Rotation = part.Rotation,
                     Mirrored = part.Mirrored,
+                    ReflectedDrive = part.ReflectedDrive,
                     CellTypeId = part.CellTypeId,
                     ShapeId = part.ShapeId,
 
@@ -630,6 +631,7 @@ namespace Evosim.Core
                     DistanceFromRoot = part.DistanceFromRoot,
                     Rotation = part.Rotation,
                     Mirrored = part.Mirrored,
+                    ReflectedDrive = part.ReflectedDrive,
                     CellTypeId = part.CellTypeId,
                     ShapeId = part.ShapeId,
                     Form = part.Form,
@@ -788,6 +790,7 @@ namespace Evosim.Core
                     DistanceFromRoot = part.DistanceFromRoot,
                     Rotation = part.Rotation,
                     Mirrored = part.Mirrored,
+                    ReflectedDrive = part.ReflectedDrive,
                     CellTypeId = part.CellTypeId,
                     ShapeId = part.ShapeId,
                     Form = part.Form,
