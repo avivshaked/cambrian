@@ -177,14 +177,41 @@ almost 0 for every young body. On this bench that costs a newborn about a third 
 scale should fit a young body's reserve is a world rule, and so the owner's to rule. It is set out here as a possible
 finding.
 
+## In the world: the joints barely move, and nothing touches them
+
+The run recorded its own pose stream every 10 s, with each body's joint coordinates. A reader takes each newborn's
+first two frames from it, with its parent's in the same two frames, and measures how far apart they are and what lies
+near them (`scripts/reads/newborn-joints-read.py`, `newborn-joints.txt`, `newborn-joints.tsv`). The world is a 300 m
+torus, and the distances are root to root.
+
+| Group | Children | Median largest joint change (stream units) | Joints still (under 1e-4) | Median root move (m) | Median distance to parent (m) | Any body within 1 m |
+|---|---|---|---|---|---|---|
+| standstill | 116 | 0.033 | 11% | 0.05 | 3.9 | 5% |
+| slow | 75 | 0.057 | 7% | 0.18 | 3.9 | 7% |
+| moving | 199 | 0.200 | 0% | 1.61 | 3.8 | 8% |
+
+**Nothing holds them.** A standstill newborn lies as far from its parent as a mover does, about 3.9 m. Only 1 of 117
+has its parent within 1 m, and only 5% have any living body within 1 m, against 8% of the movers. Contact with the
+parent or another body cannot explain the standstill (inference: distances run root to root, and the stream does not
+say whether leaves are among its bodies).
+
+**Their joints move, but a sixth as far.** Only 18 of the 191 children that were slow in the world have joints that
+hold still to 1e-4 between the two frames. The rest change by a median of 0.03 to 0.06, against 0.20 for the movers.
+Every parent's joints move, so a still child sits beside a swimming parent. The joint coordinates are presumably
+radians; the state stream's spec names no unit.
+
+So the standstill newborn drives weakly rather than being held. That puts the cause on the brain's side: something it
+senses in the world and not alone (inference). A joint pinned at its limit by a saturated drive would hold still, and
+at most 18 children do.
+
 ## What comes next
 
 None of the senses the bench can set reproduces the world's standstill. The energy sense, the chemical sense, depth and
-the current are each ruled out as the cause, alone. What is left is what a newborn touches and smells in the world and
-not alone. The first is contact with its parent, with other bodies or with leaves at birth; the bench runs with
-creature contact off. The second is the smell of leaves and light by depth, which the bench reads as nothing. The next read would place each
-child beside its parent, or on its recorded neighbours, and see which brings back the standstill (inference: not yet
-designed).
+the current are each ruled out as the cause, alone, and the pose stream rules out contact with other bodies. What is
+left is what a newborn senses in the world and not alone: the smell of leaves, light, the world's chemical field in
+place of a constant, and several of these together. Telling them apart needs either the senses each newborn read in
+the world, which nothing records, or a film window at a finer frame rate that shows the form of the weak drive
+(inference: neither is designed yet).
 
 ## Sources
 
@@ -208,3 +235,6 @@ designed).
 | sweep, reserve and current speeds; the 2x2s | `bench-sweep.txt`, `brain-birth-sweep.tsv` |
 | the loop control matches the world step bit for bit | `brain-birth-sweep.tsv`, childSwim against childSwimLoop0, every column |
 | chemical adds little | inference, from the reserve arm against the sweep at 0 |
+| joint change, root move and distances in the world | `newborn-joints.txt`, `newborn-joints.tsv` |
+| the torus's size | `newborn-joints.txt`'s world line, derived from `config.json` as `World.cs` derives it |
+| the drive is weak, not held; the cause is a sense | inference, from the joint change and the distances |

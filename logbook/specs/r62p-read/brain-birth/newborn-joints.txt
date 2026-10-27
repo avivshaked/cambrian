@@ -1,0 +1,44 @@
+newborn-joints-read: 393 ids from D:\Projects\experiments\evolution-simulator\logbook\specs\r62p-read\brain-birth\ids-y0-s0.tsv
+stream D:\Projects\experiments\evolution-simulator\runs\r62p-t3-6201\2026-10-26-034325-a9cd635c\poses.bin: version 4, 2401 frames in all, 2397 read, last read t=23960 s (--end 24000)
+world: torus 300.000 m (x) by 300.000 m (z), from config.json worldAreaSquareMetres=90000, horizontalPatches=9, patchesAcross=3 (World.cs 1729-1736); worldShape=Box
+units: maxAbsDq and rmsDq are in the stream's joint-coordinate units (the solver's own; presumed radians, unconfirmed); distances in metres
+other bodies for nearest/nWithin1m: live bodies only (remains left out)
+children with one frame in range: 0 (left out of the summary); with none: 0 (also left out)
+
+group standstill: 117 ids, 117 with two frames, 116 of those with joints (dq stats on these)
+  maxAbsDq median 3.282e-02, quartiles 8.142e-03 .. 6.846e-02
+  maxAbsDq under 1e-4: 11.2% (13/116); under 1e-2: 25.9% (30/116)
+  rootMove median 5.351e-02 m
+  parentDist1 median 3.902e+00 m (parent in frame 1 for 117 of 117)
+  nWithin1m >= 1: 5.1% (6/117)
+  parent within 1 m: 0.9% (1/117) of those with a parent in frame 1 (0.9% (1/117) of all with two frames)
+  parentMaxAbsDq median 2.276e-01; parents under 1e-4: 0.0% (0/116) (of 116 with a parent compared)
+
+group slow: 76 ids, 76 with two frames, 75 of those with joints (dq stats on these)
+  maxAbsDq median 5.745e-02, quartiles 2.031e-02 .. 2.469e-01
+  maxAbsDq under 1e-4: 6.7% (5/75); under 1e-2: 20.0% (15/75)
+  rootMove median 1.826e-01 m
+  parentDist1 median 3.947e+00 m (parent in frame 1 for 75 of 76)
+  nWithin1m >= 1: 6.6% (5/76)
+  parent within 1 m: 0.0% (0/75) of those with a parent in frame 1 (0.0% (0/76) of all with two frames)
+  parentMaxAbsDq median 2.744e-01; parents under 1e-4: 0.0% (0/74) (of 74 with a parent compared)
+
+group moving: 200 ids, 200 with two frames, 199 of those with joints (dq stats on these)
+  maxAbsDq median 2.005e-01, quartiles 8.790e-02 .. 3.748e-01
+  maxAbsDq under 1e-4: 0.0% (0/199); under 1e-2: 3.0% (6/199)
+  rootMove median 1.610e+00 m
+  parentDist1 median 3.837e+00 m (parent in frame 1 for 200 of 200)
+  nWithin1m >= 1: 8.0% (16/200)
+  parent within 1 m: 0.5% (1/200) of those with a parent in frame 1 (0.5% (1/200) of all with two frames)
+  parentMaxAbsDq median 2.040e-01; parents under 1e-4: 0.0% (0/197) (of 197 with a parent compared)
+
+2x2: group against whether the child's joints held still (maxAbsDq < 1e-4)
+                                            still        moved
+  slow in the world (standstill+slow)           18          173
+  moving                                        0          199
+
+2x2, slow in the world only: child against parent (still = maxAbsDq < 1e-4)
+                                     parent still parent moved
+  child still                                   0           18
+  child moved                                   0          170
+  (3 slow-in-the-world children left out here: parent missing from a frame or without joints)
