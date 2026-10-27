@@ -160,6 +160,10 @@ The root file's rules still apply. The entries below were moved word for word, s
     reads. A process's start burst lands wherever Windows puts it, so a helper is launched already pinned
     and at below-normal priority, for example `cmd /c start /b /wait /belownormal /affinity 3F0000 <command>`
     for 16 to 21, rather than pinned from inside once it runs.
+    The same evening, at 19:05:58, a watch look beside `r62cf` read 89 °C for one second, 1 °C under the card
+    run's heat stop. Its temperature and pace reads were pinned, but `sweep-orphans.ps1` and a
+    `Get-Process`/`Get-CimInstance` read started unpinned. Every helper beside a card run counts, the
+    sweep and the process and memory reads included. Each is started pinned and below normal, one at a time.
   - The GPU (RTX 4090) is read by `nvidia-smi`. WARN at 80 °C or a hardware slowdown; HOT at 85 °C or a
     thermal slowdown (clock event reasons 0x20 or 0x40).
   - **Afterburner's log reports the GPU at 0 °C.** On 2026-10-27, during `r62cf`, `nvidia-smi` read 49 °C
