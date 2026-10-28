@@ -1,0 +1,114 @@
+{
+  "format": 1,
+  "name": "leaf-direction-sparse-w10",
+  "description": "leaf-direction-sparse-w10 is leaf-direction-sparse-w9 on the r63b build's world config format (fat's energy sense and reserve cap, D245 and D247, and D251's island blooms and far smell; sense.energyHalfScaleSeconds, sense.energySenseSquash, world.islandBloom, world.islandBloomAmplitudeMax, world.islandBloomAmplitudeMin, world.islandBloomHoldsTotal, world.islandBloomPeriodMaxSeconds, world.islandBloomPeriodMinSeconds, world.islandFarSmell, world.islandFarSmellBandMetres, world.islandFarSmellGain, world.islandFarSmellReachMetres and world.reserveCapForm, each at the default that leaves the world as it was): its world config is d17282b4a0caf9db's successor 8ce712345604e770. Every other setting as leaf-direction-sparse-w9, whose description was: leaf-direction-sparse-w9 is leaf-direction-sparse-w8 on main's world config format after integration branch 2 (D243, D248; development.shapeIds, fluid.strokePushesAssembly, growth.growthAdultSeconds, growth.growthReserveMaxSeconds, growth.growthReserveMinSeconds, growth.growthReserveStartSeconds, growth.juvenileStrengthScales, mutation.formChance and mutation.growthReserveChance, each at the default that leaves the world as it was): its world config is ba387b3293d820e0's successor d17282b4a0caf9db. Every other setting as leaf-direction-sparse-w8, whose description was: leaf-direction-sparse-w8 is leaf-direction-sparse-w7 on the pace build's world config format (physics.paceFactor, D239, at 1, which leaves the world as it was): its world config is cd9cc88c0054cf90's successor ba387b3293d820e0. Every other setting as leaf-direction-sparse-w7, whose description was: leaf-direction-sparse on integration-1's world config format (mouth.killSwallowsBody, D232, at false, which leaves the world as it was): leaf-direction-sparse-w5's config with mouth.killSwallowsBody (D232) that integration-1 added, at false, and the 45 tunables the round-62 build added, the 27 coral keys (D194's branching coral; coral.reefShape at Mushroom and its dials at their defaults), development.reflectMirroredAnchors (D228), development.scaleLengthensOnce (D199), feeding.plantsKeepMatter (D206), feeding.plantsKeepOwnFirst (D207), field.corpseHalfLifeSeconds (D212), fluid.shapedAddedMass (D229), mouth.biteDamageScale (D226), mouth.biteTakesStore (D224), mouth.contactEating (D219, D220), mouth.intakeReachFromMouth (D214), mouth.intakeScale, mouth.remainsWindowSeconds (D220), physics.dragLimitAtEveryStep (D196, D199), physics.dragLimitByWeldedBody (D199), world.contactShape (D228), world.matterBurialDesertPerSecond (D190), world.readAcrossSeams (D204) and world.seedOverrides (D192), at their defaults, which leave the world as leaf-direction-sparse-w5's. Every other setting as leaf-direction-sparse-w5, whose description was: leaf-direction-sparse on round 60's world config format: its world config is 3fd98985cdf68008's with world.matterIslandGlassMarginMetres (D185) at 0, which leaves the tank as it was, and every other setting is leaf-direction-sparse's, whose description was: The leaf tank's second pair (D173), the direction form of the leaf smell, sensed to 6 m: as leaf-direction (D169), with 31 of r58-s3j's living leaves to the 20 m tank in place of 62. The search stops when eaten, averaged over 5 generations, gains no more than 5% in 10, never before generation 20 and at 60 at most (D172); the exam swims every generation's top and the last elites under its own brain, no brain and the smell knocked out.",
+  "seed": "0x1",
+  "world": {
+    "config": "rounds/nursery/configs/8ce712345604e770.json",
+    "configHash": "8ce712345604e770",
+    "overrides": {
+      "AgeHazardBaseSeconds": 0,
+      "AgeRepairExponent": 0,
+      "AgeingPerBirth": 0,
+      "AgeingPerWound": 0,
+      "BedShoreDepthMetres": 0,
+      "BedShoreFadeMetres": 0,
+      "BedTiltMetres": 0,
+      "Fluid.SpinDragCoefficient": 0.5,
+      "Fluid.TurningDrag": "Spin",
+      "FoundingTricklePerSecond": 0,
+      "FoundingTricklePoolCount": 0,
+      "FoundingTricklePoolHash": "",
+      "FoundingTricklePoolShare": 0,
+      "InitialMatterPerCubicMetre": 0,
+      "LeafScent": "Direction",
+      "LeafScentRangeMetres": 6,
+      "MatterBudgetUnits": 0,
+      "MatterIslandWavelengthMetres": 0,
+      "ReefCover": 0,
+      "UnbittenDeathsLeaveNoCorpse": true,
+      "WorldAreaSquareMetres": 400
+    }
+  },
+  "bodies": {
+    "source": "pool",
+    "founders": 0,
+    "trunk": null,
+    "pool": "rounds/nursery/pools/6a27d8acada28e03.tsv",
+    "keep": null
+  },
+  "setup": {
+    "seconds": 1800,
+    "dt": 0.01,
+    "tankSize": 8,
+    "floorClosed": true,
+    "birthsHeld": true,
+    "snow": null,
+    "carrion": {
+      "count": 0,
+      "joules": 40
+    },
+    "start": {
+      "aboveBed": 11.5
+    },
+    "purse": {
+      "rule": "grown",
+      "seconds": 3830
+    }
+  },
+  "leaves": {
+    "pool": "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz",
+    "count": 31,
+    "spentUnitsPerCubicMetre": 0.004237
+  },
+  "search": {
+    "population": 48,
+    "draws": 8,
+    "generations": 60,
+    "elites": 8,
+    "tournament": 3,
+    "perBody": true,
+    "evolve": "brain",
+    "evolveEnvelope": false,
+    "crossover": {
+      "rate": 0.5,
+      "baseShare": 0.7,
+      "mutationByDistance": 0.785
+    },
+    "stop": {
+      "measure": "eaten",
+      "window": 5,
+      "gain": 0.05,
+      "over": 10,
+      "floor": 20
+    }
+  },
+  "reward": {
+    "class": "WeightedSum",
+    "parameters": {
+      "weights": {
+        "eaten": 1
+      }
+    }
+  },
+  "exam": {
+    "episodes": 32,
+    "salt": "0x62656e6368",
+    "controls": [
+      {
+        "kind": "own"
+      },
+      {
+        "kind": "brainless"
+      },
+      {
+        "kind": "knockout",
+        "channels": [
+          "LeafScent",
+          "LeafScentDirection"
+        ]
+      }
+    ],
+    "pool": "tops"
+  }
+}

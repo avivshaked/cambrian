@@ -15,7 +15,7 @@ namespace Evosim.Nursery.Tests
     public class RecipeTests : IDisposable
     {
         private static readonly string Root = Recipe.RepoRootAbove(AppContext.BaseDirectory);
-        private static readonly string Baseline = Path.Combine(Root, "rounds", "nursery", "brain2-w9.json");
+        private static readonly string Baseline = Path.Combine(Root, "rounds", "nursery", "brain2-w10.json");
         private readonly string _dir = Path.Combine(AppContext.BaseDirectory, "recipes-" + Guid.NewGuid().ToString("N"));
 
         public RecipeTests() => Directory.CreateDirectory(_dir);
@@ -44,13 +44,13 @@ namespace Evosim.Nursery.Tests
 
         /// <summary>A child of the baseline with these members, as JSON text without its braces.</summary>
         private string Child(string members) =>
-            Write("child.json", "{\"base\": \"rounds/nursery/brain2-w9.json\", " + members + "}");
+            Write("child.json", "{\"base\": \"rounds/nursery/brain2-w10.json\", " + members + "}");
 
         [Fact]
         public void TheBaselineReads()
         {
             Recipe r = Recipe.Load(Baseline);
-            Assert.Equal("brain2-w9", r.Name);
+            Assert.Equal("brain2-w10", r.Name);
             Assert.Equal(1UL, r.Seed);
             Assert.Equal(0x62656E6368UL, r.ExamSalt);
             Assert.Equal(new[] { 0, 1, 3, 4, 8, 10 }, r.Keep);
@@ -68,7 +68,7 @@ namespace Evosim.Nursery.Tests
             RunConfig c = r.EpisodeConfig(File.ReadAllText(r.ConfigFullPath));
             Assert.Equal(0.5f, c.WorkCostMultiplier);
             Assert.Equal(0, c.MinimumPopulation);
-            Assert.Equal("78091b3deb236e74", c.Hash());   // main's config after integration branch 2 (brain2-w9); brain2-w8's was 1cea30702d4a20c3, the pace build's config; brain2-w7's was be80a0d1eadbfa1d, round 62's migrated config; brain2-w5's was a6d278da00ff70f2, brain2-w4's was 092790eff1a559d3, brain2-w3's 3adad91928939beb, brain2-w2's de49694b78ed5db7 and pilot-deep-brain2's 87d66e98fed542c2 is reference entry 1's, on brain2.json's build
+            Assert.Equal("2950156a342c9bc5", c.Hash());   // the r63b build's config (brain2-w10); brain2-w10's was 78091b3deb236e74, main's config after integration branch 2; brain2-w8's was 1cea30702d4a20c3, the pace build's config; brain2-w7's was be80a0d1eadbfa1d, round 62's migrated config; brain2-w5's was a6d278da00ff70f2, brain2-w4's was 092790eff1a559d3, brain2-w3's 3adad91928939beb, brain2-w2's de49694b78ed5db7 and pilot-deep-brain2's 87d66e98fed542c2 is reference entry 1's, on brain2.json's build
             Assert.Equal(0f, c.Fluid.WaterHoldSeconds);
         }
 
@@ -79,19 +79,19 @@ namespace Evosim.Nursery.Tests
         [Fact]
         public void TheBaseFromD152HoldsTheWaterAndTakesSixteenATank()
         {
-            // The recipe on file, brain2-w5-t16-hold, is on the world config round 62's build refuses, so its members are read from the file and put under brain2-w9.
+            // The recipe on file, brain2-w5-t16-hold, is on the world config round 62's build refuses, so its members are read from the file and put under brain2-w10.
             string onFile = File.ReadAllText(Path.Combine(Root, "rounds", "nursery", "brain2-w5-t16-hold.json")).Replace("\r\n", "\n");
             Assert.Contains("\"base\": \"rounds/nursery/brain2-w5.json\"", onFile);
-            Recipe r = Recipe.Load(Write("brain2-w9-t16-hold.json", onFile.Replace("\"base\": \"rounds/nursery/brain2-w5.json\"", "\"base\": \"rounds/nursery/brain2-w9.json\"")));
+            Recipe r = Recipe.Load(Write("brain2-w10-t16-hold.json", onFile.Replace("\"base\": \"rounds/nursery/brain2-w5.json\"", "\"base\": \"rounds/nursery/brain2-w10.json\"")));
             Assert.Equal("brain2-w5-t16-hold", r.Name);
             Assert.Equal(16, r.TankSize);
-            Assert.Equal("220192064e01e1c1", r.ConfigHash);   // brain2-w9's world config, main's move of 613ca725c30288c0, which was the pace build's move of b2885199f9213276
+            Assert.Equal("6bbbf7131b54bde6", r.ConfigHash);   // brain2-w10's world config, the r63b build's move of 220192064e01e1c1, which was main's move of 613ca725c30288c0, which was the pace build's move of b2885199f9213276
 
             RunConfig c = r.EpisodeConfig(File.ReadAllText(r.ConfigFullPath));
             Assert.Equal(0.5f, c.Fluid.WaterHoldSeconds);
             Assert.Equal(0.5f, c.WorkCostMultiplier);
             Assert.Equal(0.5, Evosim.Dynamics.SolverConfig.From(c, 0.01).WaterHoldSeconds);
-            Assert.Equal("0807cf064abdfffd", c.Hash());   // main's config after integration branch 2 (brain2-w5-t16-hold on brain2-w9); on brain2-w8 it was f9b472daeb18a422, the pace build's config; on brain2-w7 it was 4c150ba07e111462, round 62's migrated config; brain2-w5-t16-hold's was 04d6be15c0799fdf, brain2-w4-t16-hold's was 341514ba3a32a0d2, brain2-w3-t16-hold's 30cd14a1abe5122a
+            Assert.Equal("b5214c1a61949c76", c.Hash());   // the r63b build's config (brain2-w5-t16-hold on brain2-w10); on brain2-w10 it was 0807cf064abdfffd, main's config after integration branch 2; on brain2-w8 it was f9b472daeb18a422, the pace build's config; on brain2-w7 it was 4c150ba07e111462, round 62's migrated config; brain2-w5-t16-hold's was 04d6be15c0799fdf, brain2-w4-t16-hold's was 341514ba3a32a0d2, brain2-w3-t16-hold's 30cd14a1abe5122a
         }
 
         [Fact]
@@ -122,7 +122,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal("brain2-short", r.Name);
             Assert.Equal(3, r.Search.Generations);
             Assert.Equal(96, r.Search.Population);          // kept from the base
-            Assert.Equal("220192064e01e1c1", r.ConfigHash);  // kept from the base's world
+            Assert.Equal("6bbbf7131b54bde6", r.ConfigHash);  // kept from the base's world
             Assert.Equal(0.25f, r.EpisodeConfig(File.ReadAllText(r.ConfigFullPath)).WorkCostMultiplier);
             Assert.DoesNotContain("\"base\"", r.Canonical());
         }
@@ -223,7 +223,7 @@ namespace Evosim.Nursery.Tests
         [InlineData("\"draws\": 16", "\"draws\": 1000", "search.draws")]
         [InlineData("\"elites\": 8", "\"elites\": 96", "search.elites")]
         [InlineData("\"perBody\": true", "\"perBody\": false", "search.crossover")]
-        [InlineData("\"configHash\": \"220192064e01e1c1\"", "\"configHash\": \"0000000000000000\"", "hashes to 220192064e01e1c1")]
+        [InlineData("\"configHash\": \"6bbbf7131b54bde6\"", "\"configHash\": \"0000000000000000\"", "hashes to 6bbbf7131b54bde6")]
         [InlineData("\"WorkCostMultiplier\": 0.5", "\"WorkCostMultiplier\": 0.5, \"NoSuchKnob\": 1", "NoSuchKnob")]
         [InlineData("\"WorkCostMultiplier\": 0.5", "\"WorkCostMultiplier\": true", "WorkCostMultiplier")]
         [InlineData("\"WorkCostMultiplier\": 0.5", "\"MinimumPopulation\": 3", "MinimumPopulation")]
@@ -256,7 +256,7 @@ namespace Evosim.Nursery.Tests
         [InlineData("\"WorkCostMultiplier\": 0.5", "\"WorkCostMultiplier\": 0.5, \"MaximumPopulation\": 2.5", "MaximumPopulation")]
         [InlineData("\"config\": \"rounds/", "\"config\": \"D:/rounds/", "relative to the repository root")]
         [InlineData("\"format\": 1", "\"format\": 2", "recipe.format")]
-        [InlineData("\"name\": \"brain2-w9\"", "\"name\": \"brain2 w9\"", "recipe.name")]
+        [InlineData("\"name\": \"brain2-w10\"", "\"name\": \"brain2 w10\"", "recipe.name")]
         public void AFaultIsRefused(string from, string to, string said)
         {
             Assert.Contains(said, Refusal(Variant(from, to)));
@@ -340,7 +340,7 @@ namespace Evosim.Nursery.Tests
 
         // ---------------------------------------------------------------- D178
 
-        private static readonly string Leaf = Path.Combine(Root, "rounds", "nursery", "leaf-direction-sparse-w9.json");
+        private static readonly string Leaf = Path.Combine(Root, "rounds", "nursery", "leaf-direction-sparse-w10.json");
         private const string Keep = "\"keep\": null\n  },";
         private const string Kept = "\"keep\": null,\n    \"brains\": \"kept\"\n  },";
 
