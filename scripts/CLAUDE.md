@@ -133,6 +133,7 @@ belongs to a run that has ended, so it can be stopped by its process id (2026-10
   founders simply never age out, so `gen min = 0` persists in a world whose floor stopped firing at
   t=400 and whose traits are entirely inherited. Read `floor` and `*Inherited` together: floor 0 plus
   82-of-88 inherited is a lineage, whatever the generation minimum says.
+- **A hex mask above 0x7FFFFFFF passed on the command line turns negative.** `-Mask 0xFFC00000` binds as Int32 -4194304, and setting `ProcessorAffinity` from it fails with "The parameter is incorrect" (2026-10-28, a bench launch). Pass the mask in decimal (4290772992 for 22 to 31), or give a default with the `L` suffix inside the script.
 - **PowerShell scripts need a UTF-8 BOM.** Windows PowerShell reads a BOM-less `.ps1` as ANSI, so
   an em-dash inside a double-quoted string becomes three bytes that terminate the string and the
   file will not parse — the error points at the following token and says nothing about encoding.
