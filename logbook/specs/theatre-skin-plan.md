@@ -147,6 +147,15 @@ board's photographs, most of which are flash-lit.
   stronger markings.
 - **Caution**: the owner accepted the fixed look (back light 0.4) as the default for films on 2026-10-23. This is an
   option for close shots, never a change to that default.
+- **The algal blades' colour and flutter** (the owner's ruling of 2026-10-28). The broad blades take trial d of the
+  photographed ramp, `EVOSIM_THEATRE_ALGA_RAMP_PHOTO` 1 with `EVOSIM_THEATRE_ALGA_RAMP_STOP_A` 0.0697,0.0755,0.0169 and
+  `_STOP_B` 0.0280,0.0303,0.0068. In the film's water light the blades' pixels then read hue 107°, saturation 0.40 and
+  lightness 0.29, where the first cut read 115°, 0.52 and 0.39. Trial b is the fallback if d reads too dull in motion. It
+  has the same hue at lightness 0.36, with stops 0.2325,0.2516,0.0563 and 0.0935,0.1011,0.0226. The target came from
+  underwater photographs of green algae in natural light, and the strobe-lit ones were left out because a flash restores
+  the red that water removes. Their sources and licences are in `logbook/specs/theatre-underwater-refs.tsv`. The blades'
+  flutter is 0.4 of its first cut, with its noise at 1. It needs the arc at 2 with its room at 0.20, so the leaves are
+  drawn past their colliders by that much.
 
 ## 4. MOTION (`EVOSIM_THEATRE_RIPPLE`)
 
