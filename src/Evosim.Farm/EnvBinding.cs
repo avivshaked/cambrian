@@ -301,6 +301,21 @@ namespace Evosim.Farm
             Num("EVOSIM_MATTER_BURIAL", D.MatterBurialPerSecond, (s, v) => s.MatterBurial = v),
             // D190: the desert's own burial, outside the islands' influx; below 0 is the recorded world.
             Num("EVOSIM_MATTER_BURIAL_DESERT", D.MatterBurialDesertPerSecond, (s, v) => s.MatterBurialDesert = v),
+            // D251: each fed island's influx on a cycle of its own ("none" or "cycles"), the bounds its period
+            // and amplitude are drawn between, and whether the world's total influx is held constant. Unset
+            // is none, the recorded world; the holds-total flag is read only under cycles.
+            Custom("EVOSIM_ISLAND_BLOOM", (s, env) => s.IslandBloom = IslandBloomOf(env, "EVOSIM_ISLAND_BLOOM")),
+            Num("EVOSIM_BLOOM_PERIOD_MIN", D.IslandBloomPeriodMinSeconds, (s, v) => s.BloomPeriodMin = v),
+            Num("EVOSIM_BLOOM_PERIOD_MAX", D.IslandBloomPeriodMaxSeconds, (s, v) => s.BloomPeriodMax = v),
+            Num("EVOSIM_BLOOM_AMPLITUDE_MIN", D.IslandBloomAmplitudeMin, (s, v) => s.BloomAmplitudeMin = v),
+            Num("EVOSIM_BLOOM_AMPLITUDE_MAX", D.IslandBloomAmplitudeMax, (s, v) => s.BloomAmplitudeMax = v),
+            FlagOn("EVOSIM_BLOOM_HOLDS_TOTAL", (s, v) => s.BloomHoldsTotal = v),
+            // D251: the far smell ("none" or "leaves") and its gain, band and reach. Unset is none, the
+            // recorded world; the three numbers are read only under leaves.
+            Custom("EVOSIM_FAR_SMELL", (s, env) => s.IslandFarSmell = IslandFarSmellOf(env, "EVOSIM_FAR_SMELL")),
+            Num("EVOSIM_FAR_SMELL_GAIN", D.IslandFarSmellGain, (s, v) => s.FarSmellGain = v),
+            Num("EVOSIM_FAR_SMELL_BAND", D.IslandFarSmellBandMetres, (s, v) => s.FarSmellBand = v),
+            Num("EVOSIM_FAR_SMELL_REACH", D.IslandFarSmellReachMetres, (s, v) => s.FarSmellReach = v),
             Num("EVOSIM_DT", DefaultPhysicsStepSeconds, (s, v) => s.PhysicsDt = v),
 
             // D239: how many seconds of physics one world second holds. 1 is the recorded world;
@@ -928,6 +943,16 @@ namespace Evosim.Farm
             config.MatterInfluxAt = s.MatterInfluxAt;
             config.MatterBurialPerSecond = s.MatterBurial;
             config.MatterBurialDesertPerSecond = s.MatterBurialDesert;
+            config.IslandBloom = s.IslandBloom;
+            config.IslandBloomPeriodMinSeconds = s.BloomPeriodMin;
+            config.IslandBloomPeriodMaxSeconds = s.BloomPeriodMax;
+            config.IslandBloomAmplitudeMin = s.BloomAmplitudeMin;
+            config.IslandBloomAmplitudeMax = s.BloomAmplitudeMax;
+            config.IslandBloomHoldsTotal = s.BloomHoldsTotal;
+            config.IslandFarSmell = s.IslandFarSmell;
+            config.IslandFarSmellGain = s.FarSmellGain;
+            config.IslandFarSmellBandMetres = s.FarSmellBand;
+            config.IslandFarSmellReachMetres = s.FarSmellReach;
             config.SpeciesDriftThreshold = s.SpeciesTheta;
             config.HorizontalPatches = s.Patches;
             config.PatchesAcross = s.PatchesAcross;
@@ -1477,6 +1502,38 @@ namespace Evosim.Farm
             }
         }
 
+        private static IslandBloom IslandBloomOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrWhiteSpace(raw)) return IslandBloom.None;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "none": return IslandBloom.None;
+                case "cycles": return IslandBloom.Cycles;
+
+                default:
+                    throw new ArgumentException(
+                        name + " is '" + raw + "', which is not an island bloom. Known: none, cycles.");
+            }
+        }
+
+        private static IslandFarSmell IslandFarSmellOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrWhiteSpace(raw)) return IslandFarSmell.None;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "none": return IslandFarSmell.None;
+                case "leaves": return IslandFarSmell.Leaves;
+
+                default:
+                    throw new ArgumentException(
+                        name + " is '" + raw + "', which is not an island far smell. Known: none, leaves.");
+            }
+        }
+
         private static MatterInflux MatterInfluxOf(Lookup env, string name)
         {
             string raw = env(name);
@@ -1860,6 +1917,20 @@ namespace Evosim.Farm
         public MatterInflux MatterInfluxAt;
         public float MatterBurial;
         public float MatterBurialDesert;
+
+        /// <summary>D251's island cycles, <c>EVOSIM_ISLAND_BLOOM</c>; none is the recorded world.</summary>
+        public IslandBloom IslandBloom;
+        public float BloomPeriodMin;
+        public float BloomPeriodMax;
+        public float BloomAmplitudeMin;
+        public float BloomAmplitudeMax;
+        public bool BloomHoldsTotal;
+
+        /// <summary>D251's far smell, <c>EVOSIM_FAR_SMELL</c>; none is the recorded world.</summary>
+        public IslandFarSmell IslandFarSmell;
+        public float FarSmellGain;
+        public float FarSmellBand;
+        public float FarSmellReach;
         public float PhysicsDt;
 
         /// <summary>D239's pace factor k, <c>EVOSIM_PACE_FACTOR</c>; 1 is the recorded world.</summary>

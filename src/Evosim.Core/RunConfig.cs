@@ -1925,6 +1925,93 @@ namespace Evosim.Core
         private float _matterIslandGlassMarginMetres;
 
         /// <summary>
+        /// D251: whether each fed island's influx follows a slow cycle of its own. Default
+        /// <see cref="Evosim.Core.IslandBloom.None"/>, the steady influx every recorded world has.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Under <see cref="Evosim.Core.IslandBloom.Cycles"/> island k's share of each step's influx is
+        /// multiplied by <c>max(0, 1 + A_k sin(2π t / P_k + φ_k))</c>, where its period P, amplitude A and
+        /// phase φ are drawn once from the bounds below on a seed stream of their own
+        /// (<see cref="World.IslandBloomIndex"/>). The schedule is a pure function of the seed and the
+        /// clock and a checkpoint carries nothing for it; D151's light season is the precedent. It acts on
+        /// the influx only: the seeding at t = 0 and D190's burial are as they were. It needs the islands'
+        /// influx (<see cref="MatterInfluxAt"/> Islands with <see cref="MatterInfluxPerSecond"/> above 0)
+        /// and is refused without it.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public IslandBloom IslandBloom { get; set; } = IslandBloom.None;
+
+        /// <summary>The shortest island cycle, s. Each island draws its period uniformly between this and the longest. D251.</summary>
+        [Tunable("world", Unit = "s")]
+        public float IslandBloomPeriodMinSeconds { get; set; } = 2500f;
+
+        /// <summary>The longest island cycle, s. D251.</summary>
+        [Tunable("world", Unit = "s")]
+        public float IslandBloomPeriodMaxSeconds { get; set; } = 6000f;
+
+        /// <summary>
+        /// The smallest cycle amplitude A in <c>1 + A sin(...)</c>. Each island draws its amplitude
+        /// uniformly between this and the largest. Above 1 an island's factor is clamped at 0 for part of
+        /// its cycle. D251.
+        /// </summary>
+        [Tunable("world")]
+        public float IslandBloomAmplitudeMin { get; set; } = 0.8f;
+
+        /// <summary>The largest cycle amplitude. D251.</summary>
+        [Tunable("world")]
+        public float IslandBloomAmplitudeMax { get; set; } = 1.0f;
+
+        /// <summary>
+        /// D251: true, the default under cycles, holds the world's total influx constant, so one island's
+        /// bloom is another's lean time: each cell takes <c>joules × w f / Σ (w f)</c>. False lets the total
+        /// move with the cycles: each takes <c>joules × w f / Σ w</c>.
+        /// </summary>
+        [Tunable("world")]
+        public bool IslandBloomHoldsTotal { get; set; } = true;
+
+        /// <summary>
+        /// D251: whether a fed island smells from further away than its leaves do. Default
+        /// <see cref="Evosim.Core.IslandFarSmell.None"/>, the leaf smell every recorded world has.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Under <see cref="Evosim.Core.IslandFarSmell.Leaves"/>, island k of the influx plan adds to the
+        /// leaf-smell grid, at every cell whose centre lies at level distance d (x and z only) from the
+        /// island's centroid, <c>H_k × max(0, 1 − max(0, d − (r_k + B)) / R)</c>, with
+        /// <c>H_k = G × L_k</c>. G is <see cref="IslandFarSmellGain"/>, B
+        /// <see cref="IslandFarSmellBandMetres"/>, R <see cref="IslandFarSmellReachMetres"/>, r_k the plan's
+        /// <see cref="GridField.IslandPlan.IslandRadius"/> and L_k the lit leaf area of the sources whose
+        /// nearest island edge is island k's and within B (<see cref="World.IslandBloomLeafArea"/>). It is a
+        /// second pass after the leaves' own fill, derived from the same sources, so a checkpoint carries
+        /// nothing new. It needs <see cref="LeafScent"/> and the islands' influx and is refused without them.
+        /// It does not need <see cref="IslandBloom"/>. <c>EVOSIM_FAR_SMELL</c>.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public IslandFarSmell IslandFarSmell { get; set; } = IslandFarSmell.None;
+
+        /// <summary>
+        /// The far smell's gain G: an island's flat height is this times its banded lit leaf area, in the
+        /// leaf smell's own units. D251. <c>EVOSIM_FAR_SMELL_GAIN</c>.
+        /// </summary>
+        [Tunable("world")]
+        public float IslandFarSmellGain { get; set; } = 0.005f;
+
+        /// <summary>
+        /// The far smell's band B, metres: the flat top reaches this far past the plan's radius, and a leaf
+        /// standing within this of an island's edge counts towards its height. D251.
+        /// <c>EVOSIM_FAR_SMELL_BAND</c>.
+        /// </summary>
+        [Tunable("world", Unit = "m")]
+        public float IslandFarSmellBandMetres { get; set; } = 10f;
+
+        /// <summary>The far smell's reach R, metres: past the flat top it falls to 0 over this. D251. <c>EVOSIM_FAR_SMELL_REACH</c>.</summary>
+        [Tunable("world", Unit = "m")]
+        public float IslandFarSmellReachMetres { get; set; } = 30f;
+
+        /// <summary>
         /// Named seeds that take a category of draws off the world's seed (D192), each written
         /// <c>name=value</c>. Empty, the default, draws everything from the world's seed, which is
         /// every recorded world.
@@ -4744,6 +4831,32 @@ namespace Evosim.Core
         /// <see cref="RunConfig.SharedSpace"/>, because a cell is a place.
         /// </remarks>
         Grid = 2,
+    }
+
+    /// <summary>
+    /// D251: whether each fed island's influx follows a slow cycle of its own. See
+    /// <see cref="RunConfig.IslandBloom"/>.
+    /// </summary>
+    public enum IslandBloom
+    {
+        /// <summary>The islands' influx is steady, as every recorded world has it.</summary>
+        None = 0,
+
+        /// <summary>D251: each fed island's influx follows a slow cycle of its own.</summary>
+        Cycles = 1,
+    }
+
+    /// <summary>
+    /// D251: whether a fed island smells from further away than its leaves do. See
+    /// <see cref="RunConfig.IslandFarSmell"/>.
+    /// </summary>
+    public enum IslandFarSmell
+    {
+        /// <summary>The leaf smell is the leaves' own cones alone, as every recorded world has it.</summary>
+        None = 0,
+
+        /// <summary>D251: each fed island adds a flat top and a falling skirt, by its leaves' lit area, to the leaf smell.</summary>
+        Leaves = 1,
     }
 
     /// <summary>

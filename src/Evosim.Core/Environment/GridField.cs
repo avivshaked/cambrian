@@ -1726,6 +1726,61 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// D251: lays <paramref name="joules"/> by an island plan with each island's share scaled by
+        /// its own factor. A separate loop from <see cref="DepositIslands"/>, which the world without
+        /// a bloom keeps, so that world's arithmetic is not touched. Returns what was laid.
+        /// </summary>
+        /// <param name="plan">The plan, made by this field.</param>
+        /// <param name="joules">The income handed in.</param>
+        /// <param name="islandFactors">One factor at or above 0 per island, in label order.</param>
+        /// <param name="holdsTotal">
+        /// True: each cell takes <c>joules × w × f / Σ (w × f)</c>, the sum over every plan cell in the
+        /// plan's order in double, so the total laid is the joules handed in to the rounding. False:
+        /// each takes <c>joules × w × f / WeightSum</c>, and the total laid moves with the cycles.
+        /// </param>
+        /// <remarks>
+        /// A denominator that is not above 0 (every island at factor 0, with the total held) lays nothing
+        /// that step and returns 0.
+        /// </remarks>
+        public double DepositIslandsBloomed(IslandPlan plan, double joules, double[] islandFactors, bool holdsTotal)
+        {
+            if (plan == null) throw new ArgumentNullException(nameof(plan));
+            if (islandFactors == null) throw new ArgumentNullException(nameof(islandFactors));
+            if (!ReferenceEquals(plan.Field, this))
+                throw new ArgumentException("An island plan is laid on the field that made it.", nameof(plan));
+            if (islandFactors.Length != plan.IslandCount)
+                throw new ArgumentException("One factor per island, in label order.", nameof(islandFactors));
+            if (!(joules > 0d) || !(plan.WeightSum > 0d)) return 0d;
+
+            int[] cells = plan.Cells;
+            float[] weights = plan.Weights;
+            int[] cellIsland = plan.CellIslands;
+
+            double denominator = plan.WeightSum;
+            if (holdsTotal)
+            {
+                denominator = 0d;
+                for (int i = 0; i < cells.Length; i++)
+                {
+                    denominator += (double)weights[i] * islandFactors[cellIsland[i]];
+                }
+            }
+
+            if (!(denominator > 0d)) return 0d;
+
+            double placed = 0d;
+            for (int i = 0; i < cells.Length; i++)
+            {
+                double each = joules * weights[i] * islandFactors[cellIsland[i]] / denominator;
+                _stock[cells[i]] += each;
+                placed += each;
+            }
+
+            _total += placed;
+            return placed;
+        }
+
+        /// <summary>
         /// Lays <paramref name="joules"/> by an island plan: each of its cells takes
         /// <c>joules × weight / sum</c>. Returns what was laid, which is what the running total
         /// moved by, so a caller counting an influx counts exactly what arrived.
@@ -1774,7 +1829,130 @@ namespace Evosim.Core
                 Weights = weights;
                 WeightSum = weightSum;
                 ColumnCount = columnCount;
+                LabelIslands();
             }
+
+            /// <summary>
+            /// D251's labels: the plan's own island columns joined into islands by an 8-connected flood
+            /// fill, scanned in column order (<c>ix</c> outer, <c>iz</c> inner), each unlabelled island
+            /// column opening the next label. No wrap across the box's seams: the glass margin keeps
+            /// islands off the faces, so a seam runs through desert. A function of the plan alone, never
+            /// of any stock, so a plan made on a resumed world labels the same.
+            /// </summary>
+            private void LabelIslands()
+            {
+                GridField f = Field;
+                int nx = f._nx, nz = f._nz;
+                double cell = f.CellMetres;
+                var label = new int[f._layerStride];
+                for (int i = 0; i < label.Length; i++) label[i] = -1;
+
+                var columns = new List<int>();
+                var cx = new List<double>();
+                var cz = new List<double>();
+                var stack = new Stack<int>();
+                int count = 0;
+
+                for (int ix = 0; ix < nx; ix++)
+                {
+                    for (int iz = 0; iz < nz; iz++)
+                    {
+                        int start = ix * nz + iz;
+                        if (!IsIsland[start] || label[start] >= 0) continue;
+
+                        int n = 0;
+                        double sx = 0d, sz = 0d;
+                        label[start] = count;
+                        stack.Push(start);
+
+                        while (stack.Count > 0)
+                        {
+                            int column = stack.Pop();
+                            int x = column / nz, z = column % nz;
+                            n++;
+                            sx += (x + 0.5) * cell;
+                            sz += (z + 0.5) * cell;
+
+                            for (int dx = -1; dx <= 1; dx++)
+                            {
+                                int ox = x + dx;
+                                if (ox < 0 || ox >= nx) continue;
+
+                                for (int dz = -1; dz <= 1; dz++)
+                                {
+                                    int oz = z + dz;
+                                    if ((dx == 0 && dz == 0) || oz < 0 || oz >= nz) continue;
+
+                                    int other = ox * nz + oz;
+                                    if (!IsIsland[other] || label[other] >= 0) continue;
+
+                                    label[other] = count;
+                                    stack.Push(other);
+                                }
+                            }
+                        }
+
+                        columns.Add(n);
+                        cx.Add(sx / n);
+                        cz.Add(sz / n);
+                        count++;
+                    }
+                }
+
+                ColumnIslands = label;
+                IslandColumnCounts = columns.ToArray();
+                IslandCentreX = cx.ToArray();
+                IslandCentreZ = cz.ToArray();
+                IslandRadiusMetres = new double[count];
+                for (int k = 0; k < count; k++)
+                {
+                    IslandRadiusMetres[k] = Math.Sqrt(IslandColumnCounts[k] * cell * cell / Math.PI);
+                }
+
+                CellIslands = new int[Cells.Length];
+                for (int i = 0; i < Cells.Length; i++) CellIslands[i] = label[Cells[i] % f._layerStride];
+            }
+
+            /// <summary>Per column of the <c>_nx × _nz</c> plane, its island's label, or −1 in the desert.</summary>
+            internal int[] ColumnIslands { get; private set; }
+
+            /// <summary>Per plan cell, parallel to <see cref="Cells"/>, the island it lies in.</summary>
+            internal int[] CellIslands { get; private set; }
+
+            /// <summary>How many islands the plan holds: its 8-connected groups of island columns.</summary>
+            public int IslandCount => IslandColumnCounts.Length;
+
+            /// <summary>The island a column belongs to, in scan-order labels from 0, or −1 in the desert.</summary>
+            public int IslandOfColumn(int ix, int iz) => ColumnIslands[ix * Field._nz + iz];
+
+            /// <summary>The island of a column by its index into the <c>_nx × _nz</c> plane (<see cref="GridField.ColumnIndexAt"/>), or −1 in the desert.</summary>
+            public int IslandOfColumnIndex(int column) => ColumnIslands[column];
+
+            /// <summary>The island of each of the plan's cells, in the order of the plan's cells.</summary>
+            public int IslandOfCell(int planCell) => CellIslands[planCell];
+
+            /// <summary>A copy of every plan cell's island, parallel to the plan's cells.</summary>
+            public int[] CopyCellIslands() => (int[])CellIslands.Clone();
+
+            /// <summary>How many columns island <paramref name="island"/> holds.</summary>
+            public int IslandColumns(int island) => IslandColumnCounts[island];
+
+            /// <summary>Island <paramref name="island"/>'s centroid in x, m: the mean of its column centres.</summary>
+            public double IslandX(int island) => IslandCentreX[island];
+
+            /// <summary>Island <paramref name="island"/>'s centroid in z, m: the mean of its column centres.</summary>
+            public double IslandZ(int island) => IslandCentreZ[island];
+
+            /// <summary>
+            /// Island <paramref name="island"/>'s effective radius, m: <c>sqrt(columns × cell² / π)</c>, the
+            /// radius of the disc of the same area.
+            /// </summary>
+            public double IslandRadius(int island) => IslandRadiusMetres[island];
+
+            private int[] IslandColumnCounts { get; set; }
+            private double[] IslandCentreX { get; set; }
+            private double[] IslandCentreZ { get; set; }
+            private double[] IslandRadiusMetres { get; set; }
 
             internal GridField Field { get; }
             internal int[] Cells { get; }

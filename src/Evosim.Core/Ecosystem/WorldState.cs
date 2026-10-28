@@ -1067,7 +1067,7 @@ namespace Evosim.Core
             FillScent();
 
             // D167: from the sources the last fill took, as the live field was.
-            LeafScent?.FillSources(_leafSources, _leafSourceCount);
+            if (LeafScent != null) FillLeafScentFromSources();
 
             StateVersionRead = version;
         }

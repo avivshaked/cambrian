@@ -250,6 +250,13 @@ namespace Evosim.Core
                 return this;
             }
 
+            public Writer Value(double value)
+            {
+                Separate();
+                _sb.Append(value.ToString("R", Invariant));
+                return this;
+            }
+
             public Writer Value(int value)
             {
                 Separate();

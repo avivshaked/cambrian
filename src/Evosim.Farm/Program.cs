@@ -509,7 +509,7 @@ namespace Evosim.Farm
             Manifest.Write(dir, manifest, ending: null);
 
             var report = new Report(outPath, config, migrating: exchange != null);
-            report.Begin(settings, config, space, manifest.EngineVersion, engineToken);
+            report.Begin(settings, config, space, manifest.EngineVersion, engineToken, world);
             report.Flush();
 
             FarmConsole.Out.WriteLine(report.Text.TrimEnd());
