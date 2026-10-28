@@ -58,7 +58,7 @@ namespace Evosim.Farm.Tests
         /// world, filed under a new name. <c>scratch/r45-build</c>'s regress is what says the
         /// world did not move — every shared field of a 1,000 s run identical at every sample.
         /// </remarks>
-        private const string Round42ConfigHash = "b93ff45881bd1c89";
+        private const string Round42ConfigHash = "ff745694fbbe9747";
 
         /// <summary>Round 42 seed 1's environment, from <c>rounds/launch-r42.ps1</c>.</summary>
         /// <remarks>

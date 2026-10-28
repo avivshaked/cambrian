@@ -101,12 +101,22 @@ namespace Evosim.Farm
         /// recorded run), or the gpu engine's <c>gpu single 4090 g32 classes 2/4/8/16</c>.
         /// </param>
         public void Begin(
-            EnvSettings s, RunConfig config, SpaceFacts space, string engineVersion, string engine = null)
+            EnvSettings s, RunConfig config, SpaceFacts space, string engineVersion, string engine = null,
+            World world = null)
         {
             _text.AppendLine("# Evolution run — " + s.Irradiance.ToString("0", Inv) + " W/m2");
             _text.AppendLine();
             _text.AppendLine(HeaderLine(s, config, space, engineVersion, engine));
             _text.AppendLine();
+
+            // D251, only in a world whose islands bloom: the draws each island got.
+            string islands = IslandBloomLine(world);
+            if (islands.Length > 0)
+            {
+                _text.AppendLine(islands);
+                _text.AppendLine();
+            }
+
             _text.AppendLine(TableHeader());
         }
 
@@ -508,6 +518,10 @@ namespace Evosim.Farm
                 // can mutate the gene, so every other line is what it was.
                 ClimbToken(config) +
                 (config.JuvenileStrengthScales ? " · juvenile strength scaled" : "") +
+
+                // D251's island cycles, only when on, so every other line is what it was. Each island's own
+                // figures are the world's and come on a line of their own (IslandBloomLine).
+                IslandBloomToken(config) +
                 " · configHash `" + config.Hash() + "`" +
                 // D159's exchange, after the hash because it is a farm setting and no part of the
                 // config, and only in a migrating world, so every other line is what it was. A lone
@@ -515,6 +529,44 @@ namespace Evosim.Farm
                 (s.MigrateEvery > 0f
                     ? " · exchange every " + F(s.MigrateEvery) + " s x " + s.MigrateCount.ToString(Inv)
                     : "");
+        }
+
+        /// <summary>
+        /// D251's header token: the bloom's name, its bounds and whether the total is held. Empty unless
+        /// the islands' influx is on cycles.
+        /// </summary>
+        public static string IslandBloomToken(RunConfig config)
+        {
+            if (config.IslandBloom != IslandBloom.Cycles) return "";
+
+            return " · island bloom " + config.IslandBloom.ToString().ToLowerInvariant() +
+                   " period " + F(config.IslandBloomPeriodMinSeconds) + "-" + F(config.IslandBloomPeriodMaxSeconds) + " s" +
+                   " amplitude " + F(config.IslandBloomAmplitudeMin) + "-" + F(config.IslandBloomAmplitudeMax) +
+                   (config.IslandBloomHoldsTotal ? " holds the total" : " lets the total move");
+        }
+
+        /// <summary>
+        /// D251's islands, one line: each island's period, amplitude and phase with its column count and
+        /// centroid, in label order. Empty unless the world's islands are on cycles.
+        /// </summary>
+        public static string IslandBloomLine(World world)
+        {
+            if (world == null || !world.HasIslandBloom) return "";
+
+            GridField.IslandPlan plan = world.IslandInflux;
+            var line = new StringBuilder("island bloom, " + F(plan.IslandCount) + " islands (label: P s, A, phase rad, columns, centre x z m):");
+            for (int k = 0; k < plan.IslandCount; k++)
+            {
+                line.Append(k == 0 ? " " : "; ")
+                    .Append(F(k)).Append(": P ").Append(world.IslandBloomPeriods[k].ToString("0.#", Inv))
+                    .Append(", A ").Append(world.IslandBloomAmplitudes[k].ToString("0.###", Inv))
+                    .Append(", phase ").Append(world.IslandBloomPhases[k].ToString("0.###", Inv))
+                    .Append(", ").Append(F(plan.IslandColumns(k))).Append(" columns")
+                    .Append(", at ").Append(plan.IslandX(k).ToString("0.#", Inv))
+                    .Append(" ").Append(plan.IslandZ(k).ToString("0.#", Inv));
+            }
+
+            return line.ToString();
         }
 
         /// <summary>

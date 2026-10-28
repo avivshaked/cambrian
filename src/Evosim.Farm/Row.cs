@@ -1084,6 +1084,26 @@ namespace Evosim.Farm
                 for (int p = 0; p < alivePerPatch.Length; p++) w.Value(alivePerPatch[p]);
                 w.EndArray();
 
+                // D251, only in a world whose islands bloom: one entry per island in label order. The
+                // factor each island's influx was last laid by (the clock as the step advanced it, which
+                // is the sample's clock), and the lit leaf area standing in its columns, written only
+                // where the world has a leaf smell and so gathers the sources it is summed from.
+                if (world.HasIslandBloom)
+                {
+                    double[] bloomFactor = world.IslandBloomFactorsAt(world.ElapsedSeconds);
+                    w.BeginArray("bloomFactor");
+                    for (int k = 0; k < bloomFactor.Length; k++) w.Value(bloomFactor[k]);
+                    w.EndArray();
+
+                    if (world.LeafScent != null)
+                    {
+                        double[] bloomLeafArea = world.IslandBloomLeafArea();
+                        w.BeginArray("bloomLeafArea");
+                        for (int k = 0; k < bloomLeafArea.Length; k++) w.Value(bloomLeafArea[k]);
+                        w.EndArray();
+                    }
+                }
+
                 w.BeginArray("floorStockByFloorDecile");
                 for (int d = 0; d < floorDecileShares.Length; d++) w.Value(floorDecileShares[d]);
                 w.EndArray();

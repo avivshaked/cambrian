@@ -250,6 +250,17 @@ namespace Evosim.Core
         public const ulong FloorPoolIndex = ulong.MaxValue - 11UL;
 
         /// <summary>
+        /// D251's seed slot: each fed island's cycle. Island k draws its period, amplitude and phase,
+        /// in that order, from <c>new Rng(SeedFor(SeedFor(Seed, IslandBloomIndex), k))</c>. Stateless,
+        /// as <see cref="AgeDeathIndex"/> is: the draws are a function of the world's seed and the
+        /// island's label and are taken once at construction, so a checkpoint carries nothing for them
+        /// and the state's layout does not move. Drawn from by no world whose
+        /// <see cref="RunConfig.IslandBloom"/> is <see cref="Evosim.Core.IslandBloom.None"/>, which is
+        /// every recorded world.
+        /// </summary>
+        public const ulong IslandBloomIndex = ulong.MaxValue - 12UL;
+
+        /// <summary>
         /// The stream behind <see cref="ConceptionOrder.Shuffled"/> — D072. Constructed for every
         /// world and drawn from by none but a shuffled one.
         /// </summary>
@@ -361,6 +372,71 @@ namespace Evosim.Core
         public GridField.IslandPlan IslandInflux => _islandInflux;
 
         private readonly GridField.IslandPlan _islandInflux;
+
+        // D251. One entry per island of _islandInflux, in label order; null unless IslandBloom is Cycles.
+        private readonly double[] _bloomPeriods;
+        private readonly double[] _bloomAmplitudes;
+        private readonly double[] _bloomPhases;
+
+        // Reused each step: the factors the influx is laid by.
+        private readonly double[] _bloomFactors;
+
+        /// <summary>True when D251's island cycles are on: <see cref="RunConfig.IslandBloom"/> is Cycles.</summary>
+        public bool HasIslandBloom => _bloomPeriods != null;
+
+        /// <summary>Each island's period P, s, in label order. Empty without the cycles.</summary>
+        public IReadOnlyList<double> IslandBloomPeriods => _bloomPeriods ?? Array.Empty<double>();
+
+        /// <summary>Each island's amplitude A, in label order. Empty without the cycles.</summary>
+        public IReadOnlyList<double> IslandBloomAmplitudes => _bloomAmplitudes ?? Array.Empty<double>();
+
+        /// <summary>Each island's phase φ, radians, in label order. Empty without the cycles.</summary>
+        public IReadOnlyList<double> IslandBloomPhases => _bloomPhases ?? Array.Empty<double>();
+
+        /// <summary>
+        /// D251's factor: <c>max(0, 1 + A sin(2π t / P + φ))</c>, in double.
+        /// </summary>
+        public static double IslandBloomFactor(double seconds, double period, double amplitude, double phase) =>
+            Math.Max(0d, 1d + amplitude * Math.Sin(2d * Math.PI * seconds / period + phase));
+
+        /// <summary>Island <paramref name="island"/>'s factor at clock value <paramref name="seconds"/>.</summary>
+        public double IslandBloomFactorAt(int island, double seconds) =>
+            IslandBloomFactor(seconds, _bloomPeriods[island], _bloomAmplitudes[island], _bloomPhases[island]);
+
+        /// <summary>
+        /// Every island's factor at clock value <paramref name="seconds"/>, in label order. Empty without
+        /// the cycles. The influx lays by the factors at <see cref="ElapsedSeconds"/> as the step has
+        /// advanced it, so a sample taken between steps reads the factors the last influx was laid by.
+        /// </summary>
+        public double[] IslandBloomFactorsAt(double seconds)
+        {
+            if (_bloomPeriods == null) return Array.Empty<double>();
+            var factors = new double[_bloomPeriods.Length];
+            for (int k = 0; k < factors.Length; k++) factors[k] = IslandBloomFactorAt(k, seconds);
+            return factors;
+        }
+
+        /// <summary>
+        /// The lit leaf area standing in each island's columns, m², in label order: the area (the fourth
+        /// float) of every source of the last leaf fill (<see cref="CopyLeafSources"/>), counted towards
+        /// the island of the plan column its x and z fall in. A source over the desert counts towards
+        /// none. Empty without the cycles.
+        /// </summary>
+        public double[] IslandBloomLeafArea()
+        {
+            if (_bloomPeriods == null) return Array.Empty<double>();
+            var area = new double[_bloomPeriods.Length];
+            var grid = (GridField)Matter;
+
+            for (int i = 0; i < _leafSourceCount; i++)
+            {
+                int column = grid.ColumnIndexAt(_leafSources[4 * i], _leafSources[4 * i + 2]);
+                int island = _islandInflux.IslandOfColumnIndex(column);
+                if (island >= 0) area[island] += _leafSources[4 * i + 3];
+            }
+
+            return area;
+        }
 
         /// <summary>The shade map's mean over the live columns, 1 with no map. For the header.</summary>
         public float MeanShade { get; } = 1f;
@@ -1821,6 +1897,7 @@ namespace Evosim.Core
 
             ValidateVent(config, patchCount);
             ValidateMatterInflux(config, patchCount);
+            ValidateIslandBloom(config);
 
             Field = new LightField(
                 Light, config.WorldAreaSquareMetres, config.LightLayerMetres,
@@ -2039,6 +2116,25 @@ namespace Evosim.Core
                         "its threshold, so the matter was seeded as uniform water and there is no island " +
                         "for the influx to land on.",
                         nameof(config));
+                }
+
+                // D251. Each island's cycle, drawn once from the seed and the island's label alone.
+                if (config.IslandBloom == IslandBloom.Cycles)
+                {
+                    int islands = _islandInflux.IslandCount;
+                    _bloomPeriods = new double[islands];
+                    _bloomAmplitudes = new double[islands];
+                    _bloomPhases = new double[islands];
+                    _bloomFactors = new double[islands];
+                    ulong stream = Rng.SeedFor(seed, IslandBloomIndex);
+
+                    for (int k = 0; k < islands; k++)
+                    {
+                        var draw = new Rng(Rng.SeedFor(stream, (ulong)k));
+                        _bloomPeriods[k] = draw.Range(config.IslandBloomPeriodMinSeconds, config.IslandBloomPeriodMaxSeconds);
+                        _bloomAmplitudes[k] = draw.Range(config.IslandBloomAmplitudeMin, config.IslandBloomAmplitudeMax);
+                        _bloomPhases[k] = (double)draw.NextFloat() * (2d * Math.PI);
+                    }
                 }
             }
 
@@ -2958,6 +3054,39 @@ namespace Evosim.Core
         /// one, the same rule <see cref="ValidateVent"/> follows.
         /// </para>
         /// </remarks>
+        private static void ValidateIslandBloom(RunConfig config)
+        {
+            if (config.IslandBloom != IslandBloom.Cycles) return;
+
+            if (!(config.MatterInfluxPerSecond > 0f) || config.MatterInfluxAt != MatterInflux.Islands)
+            {
+                throw new ArgumentException(
+                    "IslandBloom is Cycles, but the cycles act on the islands' influx and this world has " +
+                    "none (it needs MatterInfluxAt Islands and MatterInfluxPerSecond > 0).",
+                    nameof(config));
+            }
+
+            float pmin = config.IslandBloomPeriodMinSeconds, pmax = config.IslandBloomPeriodMaxSeconds;
+            if (!(pmin > 0f) || !(pmax > 0f) || float.IsInfinity(pmin) || float.IsInfinity(pmax) || pmin > pmax)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"IslandBloom is Cycles and the period bounds are {pmin} and {pmax} s. ") +
+                    "Both are finite and above 0, and the least is not above the greatest.",
+                    nameof(config));
+            }
+
+            float amin = config.IslandBloomAmplitudeMin, amax = config.IslandBloomAmplitudeMax;
+            if (!(amin >= 0f) || !(amax >= 0f) || float.IsInfinity(amin) || float.IsInfinity(amax) || amin > amax)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"IslandBloom is Cycles and the amplitude bounds are {amin} and {amax}. ") +
+                    "Both are finite and not below 0, and the least is not above the greatest.",
+                    nameof(config));
+            }
+        }
+
         private static void ValidateMatterInflux(RunConfig config, int patchCount)
         {
             if (!(config.MatterInfluxPerSecond > 0f)) return;
@@ -3554,6 +3683,21 @@ namespace Evosim.Core
                 // D175. In the island seeding's cells and shares; what is counted is what was laid.
                 if (Config.MatterInfluxAt == MatterInflux.Islands)
                 {
+                    // D251. Each island's share scaled by its cycle, read at ElapsedSeconds as Step has
+                    // already advanced it (the clock after this step's own advance). Off, the line below.
+                    if (_bloomPeriods != null)
+                    {
+                        double t = ElapsedSeconds;
+                        for (int k = 0; k < _bloomFactors.Length; k++)
+                        {
+                            _bloomFactors[k] = IslandBloomFactor(t, _bloomPeriods[k], _bloomAmplitudes[k], _bloomPhases[k]);
+                        }
+
+                        MatterInfluxedTotal += grid.DepositIslandsBloomed(
+                            _islandInflux, amount, _bloomFactors, Config.IslandBloomHoldsTotal);
+                        return;
+                    }
+
                     MatterInfluxedTotal += grid.DepositIslands(_islandInflux, amount);
                     return;
                 }
