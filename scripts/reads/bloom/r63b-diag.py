@@ -12,6 +12,9 @@ and against the factor, and the mean lit leaf area over the island's footprint.
        python -I scripts/reads/bloom/r63b-diag.py producers RUN [RUN ...]
 producers: per island, producer births on it by the bloom factor's quarter at birth, their endowment and life, and the
 share of on-island parents' offspring that land on the island.
+       python -I scripts/reads/bloom/r63b-diag.py production RUN [RUN ...]
+production (POST HOC, exploratory): the births' bloom-quarter split held within each sixth of the season, and what a
+production gate would read: producer births per 100 s against the bloom factor, on gate 2's islands and bar.
 windows: per window of --width seconds, the grazers' fewest and mean count, their births and their deaths, counted as
 g2-read.py counts them (its RunRead, imported, so the grazer is the same body there and here).
 leaves: per island, the lit leaf area against the bloom factor, from stats' bloomLeafArea and bloomFactor: the leaf
@@ -21,6 +24,7 @@ the leaf area's rate of change, which tracks the factor if the leaves integrate 
 import argparse
 from collections import Counter
 import importlib.util
+import math
 import os
 import sys
 
@@ -305,9 +309,91 @@ def producers(path):
                   f"{e:8.1f} {life:7.0f} {share:6.2f} ({stay[q][1]})  {top}")
 
 
+def production(path, year=6000.0, season_bins=6, bin_s=100.0):
+    """POST HOC, exploratory: not a pre-registered gate. Per island, (1) producer births on it by bloom quarter within
+    each sixth of the 6,000 s season, so a season that happens to line up with an island's bloom cannot make the
+    quarter split; (2) what a production gate would read: producer births per 100 s on the island against its bloom
+    factor at the best lag from 0 to 3,000 s, on gate 2's own islands (5 columns or more, mean lit leaf 1 m2 or more),
+    with gate 2's 0.5 bar."""
+    import gzip
+    import json
+    rr = run_read(path)
+    w = rr.w
+    islands = [i for i in g2.parse_islands(open(os.path.dirname(w.dir) + ".md", encoding="utf-8").read())]
+    lay = json.load(open(os.path.join(w.dir, "fields", "layout.json")))["matter"]
+    nx, nz, cell = lay["cellsX"], lay["cellsZ"], float(lay["cellMetres"])
+    owner = {}
+    for isl in islands:
+        d = sorted(((((ix + 0.5) * cell - isl["cx"]) ** 2 + ((iz + 0.5) * cell - isl["cz"]) ** 2, ix, iz)
+                    for ix in range(nx) for iz in range(nz)))
+        for _, ix, iz in d[:isl["columns"]]:
+            owner[(ix, iz)] = isl["k"]
+    where = lambda x, z: owner.get((int(x // cell), int(z // cell)))
+    born = {}
+    with open(os.path.join(w.dir, "lineage.jsonl"), encoding="utf-8") as f:
+        for line in f:
+            if '"e":"b"' in line and '"pho":1' in line:
+                r = json.loads(line)
+                if r["t"] >= 6000:
+                    born[r["id"]] = r["t"]
+    place = {}
+    with gzip.open(os.path.join(w.dir, "positions.jsonl.gz"), "rt") as f:
+        for line in f:
+            row = json.loads(line)
+            if row["t"] < 6000:
+                continue
+            for b in row["b"]:
+                if b[0] in born and b[0] not in place:
+                    place[b[0]] = where(b[1], b[3])
+    by_t = {round(s["t"]): s for s in rr.stats if "bloomFactor" in s and s["t"] >= 6000}
+    ts = sorted(by_t)
+    nb = int((rr.end - 6000) / bin_s)
+    print(f"\n## {rr.name} (POST HOC, exploratory)")
+    print(f"   {'isl':>3} {'cols':>4} {'leaf':>6} {'raw q4/q1':>9} {'season-held q4/q1':>17} {'seasons':>7} "
+          f"{'prod lag s':>10} {'prod r':>6} {'reaches 0.5':>11}")
+    reach = judged = 0
+    for isl in islands:
+        k = isl["k"]
+        fs = sorted(by_t[t]["bloomFactor"][k] for t in ts)
+        cuts = [fs[len(fs) * q // 4] for q in (1, 2, 3)]
+        quarter = lambda v: sum(v >= c for c in cuts)
+        season = lambda t: int((t % year) / (year / season_bins))
+        time_in = [[0] * 4 for _ in range(season_bins)]
+        for t in ts:
+            time_in[season(t)][quarter(by_t[t]["bloomFactor"][k])] += 10
+        cnt = [[0] * 4 for _ in range(season_bins)]
+        series = [0] * nb
+        for i, t in born.items():
+            if place.get(i) != k:
+                continue
+            tt = int(round(t / 10.0)) * 10
+            if tt in by_t:
+                cnt[season(tt)][quarter(by_t[tt]["bloomFactor"][k])] += 1
+            j = int((t - 6000) / bin_s)
+            if 0 <= j < nb:
+                series[j] += 1
+        rate = lambda s, q: cnt[s][q] / time_in[s][q] if time_in[s][q] else None
+        raw1 = sum(cnt[s][0] for s in range(season_bins)) / max(1, sum(time_in[s][0] for s in range(season_bins)))
+        raw4 = sum(cnt[s][3] for s in range(season_bins)) / max(1, sum(time_in[s][3] for s in range(season_bins)))
+        ratios = [rate(s, 3) / rate(s, 0) for s in range(season_bins)
+                  if rate(s, 0) and rate(s, 3) is not None and time_in[s][0] >= 200 and time_in[s][3] >= 200]
+        held = (math.exp(sum(math.log(r) for r in ratios if r > 0) / len(ratios))) if ratios else None
+        fac = [by_t.get(int(6000 + j * bin_s), {}).get("bloomFactor", [None] * len(islands))[k] for j in range(nb)]
+        leaf = sum(by_t[t]["bloomLeafArea"][k] for t in ts) / len(ts)
+        lag, r = g2.best_lag(fac, series, bin_s, 0, nb - 1, max_lag=3000.0)
+        ok = isl["columns"] >= 5 and leaf >= 1.0
+        judged += ok
+        hit = ok and r is not None and r >= 0.5
+        reach += hit
+        print(f"   {k:3d} {isl['columns']:4d} {leaf:6.1f} {(raw4 / raw1 if raw1 else 0):9.2f} "
+              f"{(f'{held:.2f}' if held else '-'):>17} {len(ratios):7d} {lag if lag is not None else '-':>10} "
+              f"{(f'{r:.3f}' if r is not None else '-'):>6} {('yes' if hit else 'no') if ok else 'not judged':>11}")
+    print(f"   what a production gate would read: {reach} of {judged} judged islands reach 0.5 (post hoc, not a pass)")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("what", choices=("windows", "leaves", "energy", "matter", "producers"))
+    ap.add_argument("what", choices=("windows", "leaves", "energy", "matter", "producers", "production"))
     ap.add_argument("--at", type=float, default=9000.0)
     ap.add_argument("runs", nargs="+")
     ap.add_argument("--width", type=float, default=1500.0)
@@ -323,6 +409,9 @@ def main():
     elif a.what == "producers":
         for p in a.runs:
             producers(p)
+    elif a.what == "production":
+        for p in a.runs:
+            production(p)
     else:
         which = {int(x) for x in a.islands.split(",") if x.strip()}
         for p in a.runs:
