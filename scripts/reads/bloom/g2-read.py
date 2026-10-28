@@ -1,7 +1,7 @@
 """G2's read: the bloom screen's gates and story material, per run, and the ranking across runs.
 
 Usage: python -I scripts/reads/bloom/g2-read.py RUN [RUN ...] [--traits TSV | --traits ARM=TSV ...]
-                                               [--islands-from RUN] [--report FILE]
+                                               [--islands-from RUN | --islands-from ARM=RUN ...] [--report FILE]
                                                [--end 24000] [--from 6000] [--window 3000] [--upkeep-w 0.908]
                                                [--floor-measure mean|fewest|d244] [--crossing-gap 10]
                                                [--floors 30,40]
@@ -1030,7 +1030,7 @@ def read_run(path, a, traits_map, islands_from):
     for n_ in w.notes:
         print(f"   note: {n_}")
 
-    islands, why = read_islands_for(rr, a.report, islands_from)
+    islands, why = read_islands_for(rr, a.report, islands_from.get(rr.name) or islands_from.get(None))
     print(f"   {why}" + (f": {len(islands)} islands" if islands else ""))
     cell = float(R["r61"].r59.find(w.config, "fieldMatterCellMetres") or CELL_DEFAULT)
     shape = R["r61"].r59.find(w.config, "worldShape")
@@ -1189,7 +1189,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("runs", nargs="*")
     ap.add_argument("--traits", action="append", default=[], help="PATH for one run, or ARM=PATH (repeatable); ARM is the run's name")
-    ap.add_argument("--islands-from", default=None, help="a sibling run of the same seed whose report carries the island plan (arm A)")
+    ap.add_argument("--islands-from", action="append", default=[],
+                    help="RUN for every run read, or ARM=RUN (repeatable): a sibling run of the same seed whose report "
+                         "carries the island plan (arm A); ARM is the run's name, and the plan differs by seed")
     ap.add_argument("--report", default=None, help="the run's report file, where it is not <arm folder>.md")
     ap.add_argument("--end", type=float, default=24000.0)
     ap.add_argument("--from", dest="t_from", type=float, default=6000.0)
@@ -1220,9 +1222,16 @@ def main():
             traits_map[None] = t
     if None in traits_map and len(a.runs) > 1:
         ap.error("--traits PATH names one table, which fits one run; give ARM=PATH for each of several")
+    islands_map = {}
+    for t in a.islands_from:
+        if "=" in t and not os.path.exists(t):
+            k, v = t.split("=", 1)
+            islands_map[k] = v
+        else:
+            islands_map[None] = t
     print(f"== G2's read: floor measure {a.floor_measure}, crossing gap {a.crossing_gap:g} m; windows of {a.window:g} s from {a.t_from:g} to {a.end:g} s; floor {a.floors[0]:g} (D244), sensitivity at "
           f"{('%g' % a.floors[1]) if len(a.floors) > 1 else '-'}; spec logbook/specs/bloom-build/g2-read-spec.md")
-    results = [read_run(r, a, traits_map, a.islands_from) for r in a.runs]
+    results = [read_run(r, a, traits_map, islands_map) for r in a.runs]
     print("\n######## summary")
     for r in results:
         p = r["parts"]
