@@ -16,7 +16,8 @@ namespace Evosim.Nursery
     /// <remarks>
     /// <para>
     /// <b>Nothing is swum.</b> The tool reads the config and the pool, grafts each genome on its root (by default where the first graft stood, on
-    /// the top face toward the front, pointing up; <c>--anchor</c>, <c>--axis</c>, <c>--area</c> and <c>--slenderness</c> name another), and writes three files into <c>--out</c>: the config, named by its hash as
+    /// the top face toward the front, pointing up; <c>--anchor</c>, <c>--axis</c>, <c>--area</c> and <c>--slenderness</c> name another; <c>--mirror x|y|z</c> makes it a mirrored pair, which needs the
+    /// config's <c>development.reflectMirroredAnchors</c>, and <c>--pair-links first|split</c> says where the pair's smell links go), and writes three files into <c>--out</c>: the config, named by its hash as
     /// <c>rounds/nursery/configs/</c> names its files; the pool, named by the first 16 hex digits of its SHA-256 as <c>rounds/nursery/pools/</c>
     /// names its files, each body's index kept; and <c>graft.tsv</c>, one row a genome saying what the graft moved. A genome the graft refuses
     /// stops the tool with nothing written, so a pool is grafted whole or not at all.
@@ -29,7 +30,7 @@ namespace Evosim.Nursery
     public static class NoseGraftCli
     {
         public const string Usage = "usage: Evosim.Nursery --graft-nose <pool.tsv> --config <config.json> --out <dir> " +
-            "[--anchor x,y,z] [--axis x,y,z] [--area m2] [--slenderness s]";
+            "[--anchor x,y,z] [--axis x,y,z] [--area m2] [--slenderness s] [--mirror x|y|z] [--pair-links first|split]";
 
         /// <summary>Where the nose stands on the root, in its normalised box coordinates, and the way it points.</summary>
         public static readonly Float3 Anchor = new Float3(0f, 1f, -0.7f), Axis = new Float3(0f, 1f, 0f);
@@ -40,7 +41,8 @@ namespace Evosim.Nursery
 
         public static int Run(string[] args, TextWriter stdout, TextWriter stderr)
         {
-            string pool = null, config = null, outDir = null, anchorArg = null, axisArg = null, areaArg = null, slenderArg = null;
+            string pool = null, config = null, outDir = null, anchorArg = null, axisArg = null, areaArg = null, slenderArg = null,
+                mirrorArg = null, pairArg = null;
             for (int i = 0; i < args.Length; i++)
             {
                 if (i + 1 >= args.Length) { stderr.WriteLine(Usage); return 2; }
@@ -53,6 +55,8 @@ namespace Evosim.Nursery
                     case "--axis": if (axisArg != null) goto twice; axisArg = args[++i]; break;
                     case "--area": if (areaArg != null) goto twice; areaArg = args[++i]; break;
                     case "--slenderness": if (slenderArg != null) goto twice; slenderArg = args[++i]; break;
+                    case "--mirror": if (mirrorArg != null) goto twice; mirrorArg = args[++i]; break;
+                    case "--pair-links": if (pairArg != null) goto twice; pairArg = args[++i]; break;
                     default: stderr.WriteLine("unknown " + args[i] + "\n" + Usage); return 2;
                 }
 
@@ -73,6 +77,12 @@ namespace Evosim.Nursery
                 Float3 axis = axisArg == null ? Axis : Vector(axisArg, "--axis");
                 float area = areaArg == null ? 0f : float.Parse(areaArg, NumberStyles.Float, Inv);
                 float slenderness = slenderArg == null ? 0f : float.Parse(slenderArg, NumberStyles.Float, Inv);
+                int mirror = mirrorArg == null ? -1 : mirrorArg == "x" ? 0 : mirrorArg == "y" ? 1 : mirrorArg == "z" ? 2
+                    : throw new FormatException($"--mirror takes x, y or z, not {mirrorArg}");
+                NosePairLinks pairLinks = pairArg == null || pairArg == "first" ? NosePairLinks.First
+                    : pairArg == "split" ? NosePairLinks.Split
+                    : throw new FormatException($"--pair-links takes first or split, not {pairArg}");
+                if (pairArg != null && mirror < 0) throw new FormatException("--pair-links needs --mirror");
 
                 RunConfig world = RunConfigJson.Read(File.ReadAllText(config));
                 if (world.CellTypes.Contains(CellTypeIds.Nose)) throw new InvalidDataException($"{config}'s table already lists the nose");
@@ -94,7 +104,8 @@ namespace Evosim.Nursery
                     NoseGraftResult graft;
                     try
                     {
-                        graft = NoseGraft.Graft(genome, world.CellTypes, genome.RootIndex, anchor, axis, area, world.Development, world.Shapes, slenderness);
+                        graft = NoseGraft.Graft(genome, world.CellTypes, genome.RootIndex, anchor, axis, area, world.Development, world.Shapes, slenderness,
+                            mirror, pairLinks);
                     }
                     catch (Exception e) when (e is ArgumentException || e is InvalidOperationException)
                     {
@@ -125,7 +136,8 @@ namespace Evosim.Nursery
             File.WriteAllText(Path.Combine(outDir, poolName + ".tsv"), poolText, utf8);
             File.WriteAllText(Path.Combine(outDir, "graft.tsv"), report.ToString(), utf8);
             stdout.WriteLine($"config {configOut}.json: {config} with the nose appended to its table");
-            stdout.WriteLine($"pool {poolName}.tsv: {pool}, every genome grafted");
+            stdout.WriteLine($"pool {poolName}.tsv: {pool}, every genome grafted" +
+                (mirrorArg == null ? "" : $" with a pair mirrored in {mirrorArg}, links {pairArg ?? "first"}"));
             stdout.Write(report.ToString());
             return 0;
         }

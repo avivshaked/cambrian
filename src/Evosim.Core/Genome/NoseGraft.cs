@@ -15,6 +15,9 @@ namespace Evosim.Core
         /// <summary>The nose part's path id, which its smell ports hash.</summary>
         public ulong NosePath { get; internal set; }
 
+        /// <summary>A mirrored pair's twin nose's path id; 0 when the graft is one nose.</summary>
+        public ulong TwinPath { get; internal set; }
+
         /// <summary>The nose's surface area as developed, m².</summary>
         public float NoseArea { get; internal set; }
 
@@ -61,6 +64,16 @@ namespace Evosim.Core
     /// so the developed nose has <c>area</c>, at the genome's own adult scale.
     /// </para>
     /// </remarks>
+    /// <summary>Where a mirrored pair's moved smell links go (<see cref="NoseGraft.Graft"/>).</summary>
+    public enum NosePairLinks
+    {
+        /// <summary>Every moved link onto the first nose; the twin's ports are read by nothing.</summary>
+        First,
+
+        /// <summary>Each moved link onto both noses at half its weight.</summary>
+        Split,
+    }
+
     public static class NoseGraft
     {
         /// <summary>The nose's length over its width, unless the caller names another.</summary>
@@ -75,6 +88,12 @@ namespace Evosim.Core
         /// <param name="limits">The world's development limits. Null is the default.</param>
         /// <param name="shapes">The world's shapes. Null is the standard table.</param>
         /// <param name="slenderness">The nose's length over its width. Zero or less is <see cref="Slenderness"/>.</param>
+        /// <param name="mirror">
+        /// An axis of the host's frame (0, 1, 2) to reflect the nose's edge in, so development makes a mirrored pair, or -1 for
+        /// one nose. The pair needs <see cref="DevelopmentLimits.ReflectMirroredAnchors"/> (D228), without which the twin is
+        /// stacked on the first, and an anchor off the mirror plane, without which the two coincide.
+        /// </param>
+        /// <param name="pairLinks">Where a pair's moved smell links go. One nose takes them all whatever this says.</param>
         public static NoseGraftResult Graft(
             Genome genome,
             CellTypeRegistry cellTypes,
@@ -84,7 +103,9 @@ namespace Evosim.Core
             float area = 0f,
             DevelopmentLimits limits = null,
             PartShapeRegistry shapes = null,
-            float slenderness = 0f)
+            float slenderness = 0f,
+            int mirror = -1,
+            NosePairLinks pairLinks = NosePairLinks.First)
         {
             if (!(slenderness > 0f)) slenderness = Slenderness;
             if (genome == null) throw new ArgumentNullException(nameof(genome));
@@ -110,6 +131,14 @@ namespace Evosim.Core
                 if (!(c >= -1f && c <= 1f))
                     throw new ArgumentException($"The anchor {parentAnchor} is outside the host's box.", nameof(parentAnchor));
             }
+
+            bool pair = mirror >= 0;
+            if (mirror < -1 || mirror > 2)
+                throw new ArgumentOutOfRangeException(nameof(mirror), mirror, "The mirror is an axis, 0, 1 or 2, or -1 for none.");
+            if (pair && !(limits != null && limits.ReflectMirroredAnchors))
+                throw new ArgumentException("A mirrored pair needs the world's development.reflectMirroredAnchors (D228); without it the twin is stacked on the first nose.", nameof(mirror));
+            if (pair && mirror != along && Component(parentAnchor, mirror) == 0f)
+                throw new ArgumentException($"The anchor {parentAnchor} is on the mirror plane, so the twin would stand where the first nose stands.", nameof(parentAnchor));
 
             if (!(area > 0f)) area = nose.ReferenceAreaSquareMetres;
 
@@ -147,15 +176,16 @@ namespace Evosim.Core
                 Child = noseIndex,
                 ParentAnchor = parentAnchor,
                 ChildAnchor = new Float3(-axis.X, -axis.Y, -axis.Z),
+                Reflect = new Bool3(mirror == 0, mirror == 1, mirror == 2),
             });
             grafted.NumberEdges();
 
             Phenotype after = null;
-            PhenotypePart nosePart = null;
+            PhenotypePart nosePart = null, twinPart = null;
             for (int pass = 0; pass < 4; pass++)
             {
                 after = Developer.Develop(grafted, limits, null, shapes, cellTypes: cellTypes);
-                nosePart = TheNose(after);
+                (nosePart, twinPart) = TheNoses(after, pair);
                 float ratio = nosePart.SurfaceArea / area;
                 if (Math.Abs(ratio - 1f) < 1e-4f) break;
                 float s = (float)Math.Sqrt(area / nosePart.SurfaceArea);
@@ -166,8 +196,9 @@ namespace Evosim.Core
                 throw new InvalidOperationException($"The nose develops at {nosePart.SurfaceArea} m², not {area} m²; a limit holds its size.");
 
             // Every old part is still there, at its index, with its path and its tissue.
-            if (after.Parts.Count != before.Parts.Count + 1)
-                throw new InvalidOperationException($"The graft took the body from {before.Parts.Count} parts to {after.Parts.Count}; it adds one or none.");
+            int added = pair ? 2 : 1;
+            if (after.Parts.Count != before.Parts.Count + added)
+                throw new InvalidOperationException($"The graft took the body from {before.Parts.Count} parts to {after.Parts.Count}; it adds {added}.");
             for (int i = 0; i < before.Parts.Count; i++)
             {
                 PhenotypePart was = before.Parts[i], now = after.Parts[i];
@@ -175,8 +206,10 @@ namespace Evosim.Core
                     throw new InvalidOperationException($"Part {i} is not the part it was after the graft.");
             }
 
-            if (nosePart.Index != before.Parts.Count)
+            if (nosePart.Index != before.Parts.Count || (pair && twinPart.Index != before.Parts.Count + 1))
                 throw new InvalidOperationException("The nose did not develop last.");
+            if (pair && Math.Abs(twinPart.SurfaceArea / nosePart.SurfaceArea - 1f) >= 1e-4f)
+                throw new InvalidOperationException($"The twin develops at {twinPart.SurfaceArea} m², not the first nose's {nosePart.SurfaceArea} m².");
             if (!Same(MouthPoint.Local(before, before.Parts[0].Index), MouthPoint.Local(after, after.Parts[0].Index)))
                 throw new InvalidOperationException("The graft moved the root's mouth.");
 
@@ -193,7 +226,16 @@ namespace Evosim.Core
             }
 
             ulong hostPath = before.Parts[hostPart].PathId;
-            var result = new NoseGraftResult { Genome = grafted, NoseNode = noseIndex, NosePath = nosePart.PathId, NoseArea = nosePart.SurfaceArea };
+            var result = new NoseGraftResult
+            {
+                Genome = grafted, NoseNode = noseIndex, NosePath = nosePart.PathId, TwinPath = pair ? twinPart.PathId : 0UL,
+                NoseArea = nosePart.SurfaceArea,
+            };
+
+            // Onto the first nose at the link's weight, or onto both at half of it.
+            var targets = pair && pairLinks == NosePairLinks.Split
+                ? new[] { (Path: nosePart.PathId, Share: 0.5f), (Path: twinPart.PathId, Share: 0.5f) }
+                : new[] { (Path: nosePart.PathId, Share: 1f) };
             var kept = new List<BrainLink>();
             var made = new List<BrainLink>();
             var byPair = new Dictionary<(ulong From, ulong To), BrainLink>();
@@ -207,16 +249,20 @@ namespace Evosim.Core
 
                 result.LinksMoved++;
                 if (smell.Channel == SensorChannel.LeafScentDirection && smell.Path != hostPath) result.DirectionLinksReframed++;
-                ulong from = BrainIds.Port(nosePart.PathId, smell.Channel, smell.Index);
-                if (byPair.TryGetValue((from, link.To), out BrainLink into))
+                foreach ((ulong path, float share) in targets)
                 {
-                    into.Weight += link.Weight;
-                    continue;
-                }
+                    ulong from = BrainIds.Port(path, smell.Channel, smell.Index);
+                    float weight = link.Weight * share;
+                    if (byPair.TryGetValue((from, link.To), out BrainLink into))
+                    {
+                        into.Weight += weight;
+                        continue;
+                    }
 
-                var moved = new BrainLink { From = from, To = link.To, Weight = link.Weight };
-                byPair[(from, link.To)] = moved;
-                made.Add(moved);
+                    var moved = new BrainLink { From = from, To = link.To, Weight = weight };
+                    byPair[(from, link.To)] = moved;
+                    made.Add(moved);
+                }
             }
 
             grafted.Brain.Links.Clear();
@@ -231,17 +277,22 @@ namespace Evosim.Core
             return result;
         }
 
-        private static PhenotypePart TheNose(Phenotype body)
+        // The nose, and a pair's twin: the one whose frame is reflected.
+        private static (PhenotypePart Nose, PhenotypePart Twin) TheNoses(Phenotype body, bool pair)
         {
-            PhenotypePart found = null;
+            var found = new List<PhenotypePart>();
             foreach (PhenotypePart part in body.Parts)
             {
-                if (part.CellTypeId != CellTypeIds.Nose) continue;
-                if (found != null) throw new InvalidOperationException("The graft developed more than one nose.");
-                found = part;
+                if (part.CellTypeId == CellTypeIds.Nose) found.Add(part);
             }
 
-            return found ?? throw new InvalidOperationException("The nose did not develop: a limit pruned it.");
+            if (found.Count == 0) throw new InvalidOperationException("The nose did not develop: a limit pruned it.");
+            if (found.Count != (pair ? 2 : 1))
+                throw new InvalidOperationException($"The graft developed {found.Count} noses, not {(pair ? 2 : 1)}.");
+            if (!pair) return (found[0], null);
+            if (found[0].Mirrored == found[1].Mirrored)
+                throw new InvalidOperationException("The pair's two noses are both reflected or both not.");
+            return found[0].Mirrored ? (found[1], found[0]) : (found[0], found[1]);
         }
 
         private static int AxisIndex(Float3 axis)

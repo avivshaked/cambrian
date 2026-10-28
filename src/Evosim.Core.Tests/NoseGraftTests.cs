@@ -117,11 +117,12 @@ namespace Evosim.Core.Tests
         /// edges, both sides of the joint at one world point, the nose unturned in the host's frame, its base on the face and its whole
         /// footprint inside it.
         /// </summary>
-        private PhenotypePart AssertStandsOn(string name, Genome grafted, int along, float sign)
+        private PhenotypePart AssertStandsOn(
+            string name, Genome grafted, int along, float sign, DevelopmentLimits limits = null, int fromEnd = 0)
         {
             const float tolerance = 1e-5f;
-            Phenotype body = Developer.Develop(grafted, cellTypes: Table);
-            PhenotypePart host = body.Parts[0], nose = body.Parts[body.Parts.Count - 1];
+            Phenotype body = Developer.Develop(grafted, limits, cellTypes: Table);
+            PhenotypePart host = body.Parts[0], nose = body.Parts[body.Parts.Count - 1 - fromEnd];
             Assert.Equal(ShapeIds.Box, host.ShapeId);
             Assert.Equal(ShapeIds.Box, nose.ShapeId);
             Assert.Equal(0, nose.ParentIndex);
@@ -148,6 +149,120 @@ namespace Evosim.Core.Tests
                 $"{name}: the joint is at {fromHost} on the host and {fromNose} on the nose");
             _out.WriteLine($"{name}: host {h}, nose centre {c} in the host's frame, half-extents {n}");
             return nose;
+        }
+
+        // ------------------------------------------------------------------ a mirrored pair
+
+        /// <summary>Development that reflects a mirrored edge's anchors (D228), which a pair needs.</summary>
+        private static readonly DevelopmentLimits Reflecting = new DevelopmentLimits { ReflectMirroredAnchors = true };
+
+        /// <summary>Two short snouts on the front face, either side of the middle, mirrored in x.</summary>
+        private static readonly Float3 FrontSide = new Float3(0.5f, 0.6f, -1f);
+
+        private static NoseGraftResult Pair(Genome g, NosePairLinks links = NosePairLinks.First) =>
+            NoseGraft.Graft(g, Table, g.RootIndex, FrontSide, Forward, SnoutArea, Reflecting, slenderness: SnoutSlenderness,
+                mirror: 0, pairLinks: links);
+
+        /// <summary>
+        /// A pair mirrored in x: two snouts of the one size, each standing on the front face, their centres mirror images in
+        /// the host's x, apart, the second reflected and reading through its reflected frame (D234), every old part kept.
+        /// </summary>
+        [Fact]
+        public void AMirroredPairStandsOnTheFrontFaceAsMirrorImages()
+        {
+            foreach ((string name, Genome genome) in Founders())
+            {
+                NoseGraftResult graft = Pair(genome);
+                Phenotype before = Developer.Develop(genome, Reflecting, cellTypes: Table);
+                Phenotype body = Developer.Develop(graft.Genome, Reflecting, cellTypes: Table);
+                Assert.Equal(before.Parts.Count + 2, body.Parts.Count);
+                for (int i = 0; i < before.Parts.Count; i++) Assert.Equal(before.Parts[i].PathId, body.Parts[i].PathId);
+                Assert.Equal(MouthPoint.Local(before, 0), MouthPoint.Local(body, 0));
+
+                PhenotypePart twin = AssertStandsOn(name, graft.Genome, 2, -1f, Reflecting, 0);
+                PhenotypePart first = AssertStandsOn(name, graft.Genome, 2, -1f, Reflecting, 1);
+                Assert.Equal(CellTypeIds.Nose, first.CellTypeId);
+                Assert.Equal(CellTypeIds.Nose, twin.CellTypeId);
+                Assert.False(first.Mirrored);
+                Assert.True(twin.Mirrored);
+                Assert.True(twin.ReflectedDrive);
+                Assert.Equal(graft.NosePath, first.PathId);
+                Assert.Equal(graft.TwinPath, twin.PathId);
+                Assert.NotEqual(graft.NosePath, graft.TwinPath);
+                Assert.Equal(first.HalfExtents, twin.HalfExtents);
+                Assert.InRange(twin.SurfaceArea, SnoutArea * 0.999f, SnoutArea * 1.001f);
+
+                PhenotypePart host = body.Parts[0];
+                Float3 a = host.Rotation.Conjugate.Rotate(first.Position - host.Position);
+                Float3 b = host.Rotation.Conjugate.Rotate(twin.Position - host.Position);
+                Assert.InRange(a.X + b.X, -1e-5f, 1e-5f);
+                Assert.InRange(a.Y - b.Y, -1e-5f, 1e-5f);
+                Assert.InRange(a.Z - b.Z, -1e-5f, 1e-5f);
+                Assert.True(Math.Abs(a.X) > first.HalfExtents.X, $"{name}: the pair overlaps, centres at x = ±{Math.Abs(a.X)}");
+            }
+        }
+
+        /// <summary>
+        /// A pair's moved links: onto the first nose alone, as the one-nose graft moves them, or onto both at half weight,
+        /// so that each (channel, index, target) carries the one-nose graft's weight summed over the two.
+        /// </summary>
+        [Fact]
+        public void APairsLinksGoToTheFirstNoseOrSplitInHalves()
+        {
+            foreach ((string name, Genome genome) in Founders())
+            {
+                NoseGraftResult one = NoseGraft.Graft(genome, Table, genome.RootIndex, FrontSide, Forward, SnoutArea, Reflecting,
+                    slenderness: SnoutSlenderness);
+                NoseGraftResult first = Pair(genome, NosePairLinks.First);
+                NoseGraftResult split = Pair(genome, NosePairLinks.Split);
+                Assert.Equal(0UL, one.TwinPath);
+                Assert.Equal(one.LinksMoved, first.LinksMoved);
+                Assert.Equal(one.LinksMade, first.LinksMade);
+                Assert.Equal(2 * one.LinksMade, split.LinksMade);
+
+                Dictionary<(SensorChannel, int, ulong), double> Weights(NoseGraftResult r, Phenotype body)
+                {
+                    Dictionary<ulong, BrainPort> ports = CentralWiring.AllPorts(body);
+                    var w = new Dictionary<(SensorChannel, int, ulong), double>();
+                    int count = r.TwinPath == 0 ? 1 : 2;
+                    foreach (BrainLink l in r.Genome.Brain.Links)
+                    {
+                        if (!ports.TryGetValue(l.From, out BrainPort port) || !port.Channel.IsSmell()) continue;
+                        Assert.True(port.Part >= body.Parts.Count - count, $"{name}: a smell link reads part {port.Part}, not a nose");
+                        var key = (port.Channel, port.Index, l.To);
+                        w[key] = (w.TryGetValue(key, out double v) ? v : 0) + l.Weight;
+                    }
+
+                    return w;
+                }
+
+                var single = Weights(one, Developer.Develop(one.Genome, Reflecting, cellTypes: Table));
+                Phenotype splitBody = Developer.Develop(split.Genome, Reflecting, cellTypes: Table);
+                var halves = Weights(split, splitBody);
+                Assert.Equal(single.Count, halves.Count);
+                foreach (var kv in single) Assert.Equal(kv.Value, halves[kv.Key], 5);
+
+                // Under First the twin's ports are read by nothing.
+                Phenotype firstBody = Developer.Develop(first.Genome, Reflecting, cellTypes: Table);
+                Dictionary<ulong, BrainPort> firstPorts = CentralWiring.AllPorts(firstBody);
+                int twinIndex = firstBody.Parts.Count - 1;
+                Assert.DoesNotContain(first.Genome.Brain.Links, l => firstPorts.TryGetValue(l.From, out BrainPort p) && p.Part == twinIndex);
+            }
+        }
+
+        [Fact]
+        public void APairIsRefusedWithoutReflectedAnchorsOrOnTheMirrorPlane()
+        {
+            List<(string Name, Genome Genome)> founders = Founders();
+            if (founders.Count == 0) return;
+            Genome g = founders[0].Genome;
+
+            Assert.Throws<ArgumentException>(() => NoseGraft.Graft(g, Table, 0, FrontSide, Forward, SnoutArea, null,
+                slenderness: SnoutSlenderness, mirror: 0));
+            Assert.Throws<ArgumentException>(() => NoseGraft.Graft(g, Table, 0, Front, Forward, SnoutArea, Reflecting,
+                slenderness: SnoutSlenderness, mirror: 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => NoseGraft.Graft(g, Table, 0, FrontSide, Forward, SnoutArea, Reflecting,
+                slenderness: SnoutSlenderness, mirror: 3));
         }
 
         [Fact]
