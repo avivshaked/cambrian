@@ -223,6 +223,59 @@ namespace Evosim.Dynamics.Tests
             Assert.True(old.Senses.Read(0, SensorChannel.LeafScent, 0) > 0f);
         }
 
+        /// <summary>
+        /// D234: a mirrored twin's nose reads the leaf's direction in its frame reflected, as every other part
+        /// reads it, so two noses mirrored in x among leaves mirrored in x read the same direction.
+        /// </summary>
+        [Fact]
+        public void TwinNosesMirroredInXReadTheSameDirection()
+        {
+            var cell = new NoseCell(leafNoise: 0f, carrionNoise: 0f, chemicalNoise: 0f);
+            SolverConfig config = TestBodies.Water(0.01);
+            config.LeafScentHalfScaleSquareMetres = Half;
+            config.Nose = cell;
+
+            Genome g = TestBodies.Box(new Float3(0.2f, 0.2f, 0.2f));
+            g.Nodes.Add(new MorphNode
+            {
+                Dimensions = new Float3(0.15f, 0.05f, 0.05f), CellTypeId = CellTypeIds.Nose, ShapeId = ShapeIds.Box,
+                JointType = JointType.Fixed, JointLimits = Array.Empty<Float2>(), RecursiveLimit = 1,
+            });
+            g.Nodes[0].Edges.Add(new MorphEdge
+            {
+                Child = 1, ParentAnchor = new Float3(1f, 0.3f, 0.2f), ChildAnchor = new Float3(-1f, 0f, 0f),
+                Orientation = Quat.FromEuler(0.2f, 0.3f, 0.1f), Scale = Float3.One, Reflect = new Bool3(true, false, false),
+            });
+            foreach (MorphNode n in g.Nodes) n.Neurons = new[] { EverySmell() };
+
+            var limits = new DevelopmentLimits { MaxParts = 64, ReflectMirroredAnchors = true };
+            Phenotype body = Developer.Develop(g, limits, cellTypes: Table(cell));
+            Assert.Equal(3, body.Parts.Count);
+
+            var c = new Creature(0, body, config);
+            c.PlaceAsDeveloped(new Vec3(20, -10, 20), body);
+
+            // Two leaves mirrored in the plane x = 20, which is a cell boundary of the field.
+            var leaf = new ScentField(40f, 40f, 20f, range: 8f, cell: 1f);
+            leaf.FillSources(new[] { 17f, -9.6f, 20.7f, 0.5f, 23f, -9.6f, 20.7f, 0.5f }, 2);
+            c.Senses.LeafScent = leaf;
+            c.Senses.Sample();
+
+            Vec3 a = Tip(c, 1), b = Tip(c, 2);
+            _out.WriteLine($"tips ({a.X:0.####}, {a.Y:0.####}, {a.Z:0.####}) and ({b.X:0.####}, {b.Y:0.####}, {b.Z:0.####})");
+            Assert.Equal(40.0 - a.X, b.X, 5);
+
+            float x1 = c.Senses.Read(1, SensorChannel.LeafScentDirection, 0);
+            Assert.True(Math.Abs(x1) > 0.01f, $"the original reads {x1} along its x, too little to tell a flip");
+            for (int axis = 0; axis < 3; axis++)
+            {
+                float one = c.Senses.Read(1, SensorChannel.LeafScentDirection, axis);
+                float two = c.Senses.Read(2, SensorChannel.LeafScentDirection, axis);
+                _out.WriteLine($"axis {axis}: original {one:0.######}, twin {two:0.######}");
+                Assert.Equal(one, two, 4);
+            }
+        }
+
         [Fact]
         public void ASniffIsHeldThroughThePhysicsStepsUntilTheNext()
         {

@@ -496,8 +496,9 @@ namespace Evosim.Dynamics
 
             if (!_readsLeafDirection) return;
 
+            // D234: reflected as SampleLeaf reflects it, and the noise drawn in the frame the part reads.
             Float3 g = LeafScent.GradientAt(tx, ty, tz);
-            Vec3 local = rotation.TransposedTimes(new Vec3(g.X, g.Y, g.Z));
+            Vec3 local = _body.ReflectFrameVector(b, rotation.TransposedTimes(new Vec3(g.X, g.Y, g.Z)));
             if (noisy)
             {
                 double spread = _nose.GradientSigma(NoseSmell.Leaf, s, area, length);
