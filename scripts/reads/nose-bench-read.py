@@ -31,7 +31,8 @@ lineages. Then the three marks, each with its numbers and PASS or FAIL (or NO DA
            its means, and the read says how often); mean and SE over lineages. The chosen noise is the largest z at which the difference is
            at least 2 SE, or "none".
   parity   at the chosen noise, N1 a100 under own against N0 under own, on the energy return, paired the same way: pass when N1's mean is at
-           least N0's minus 2 SE of the difference.
+           least N0's minus 2 SE of the difference. With --parity-at Z, at noise Z instead (0 for a nose that reads its field exactly,
+           which has no size pair).
 And, not marks, the knockout's cost under N0 and under each N1 a100: own minus knockout on eaten and energy return, paired the same way.
 Reads only, and writes nothing but its printout. Python 3 standard library.
 """
@@ -50,6 +51,8 @@ SE_BAR = 2.0
 ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
 ap.add_argument('batches', nargs='+', help='batch dirs, or label=dir')
 ap.add_argument('--seconds', type=float, default=1800.0, help="the episode's length, for a body that died (default 1800)")
+ap.add_argument('--parity-at', type=int, default=None, metavar='Z',
+                help='the parity mark at this noise (z in per cent, 0 for none) instead of the chosen one, for a noise with no size pair')
 args = ap.parse_args()
 
 NAN = float('nan')
@@ -316,6 +319,9 @@ mark('size (eaten under own at a200 minus at a050, at least %g SE)' % SE_BAR,
 
 # ---------------------------------------------------------------- parity
 lines = []
+if args.parity_at is not None:
+    chosen, anydata = args.parity_at, True
+    lines.append('at z%03d, as --parity-at names, not the chosen noise' % chosen)
 if not anydata:
     status = 'NO DATA'
     lines.append('no size result, so no chosen noise')
