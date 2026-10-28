@@ -34,11 +34,14 @@ follows it.
 ### G1, the bloom build (D251)
 
 - G0 holds.
-- The flood fill finds the 9 islands of `r62cf`'s map.
+- The flood fill finds the 11 islands of `r62cf`'s map.
 - Inside an island the far smell adds no gradient. There, the leaf-smell direction with the switch on equals the
   direction with it off.
-- The far smell's strength G is set from the census of `r62cf`. Grove strength must keep a p10 to p90 spread of at
-  least 0.3 on the s/(s+k) scale.
+- The far smell's strength G is set from the census of `r62cf`: G = 0.005, with a grove band B = 10 m beyond each
+  island's edge and a reach R = 30 m beyond the band (`scratch/bloom-census/read-band10.txt`). With the switch on, the
+  p10 to p90 spread of grazers' smell strength on islands narrows by no more than 0.05. Today's spread is already
+  narrow, since most grazers read near saturation.
+- All 11 islands of the plan's map cycle, the two single-column fragments included.
 
 ### G2, the bloom screen (D251)
 
