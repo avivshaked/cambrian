@@ -4,6 +4,11 @@ Usage: python -I scripts/reads/bloom/r63b-diag.py windows RUN [RUN ...] [--width
        python -I scripts/reads/bloom/r63b-diag.py energy RUN [RUN ...] [--at 9000]
 energy: of the grazers alive at --at, the share whose brain has a link from the root's energy port (its id computed as
 CentralBrain.cs's BrainIds.Port does), the links per wired brain, their weights, and how many go to a hidden unit.
+       python -I scripts/reads/bloom/r63b-diag.py matter RUN [RUN ...]
+matter: per island of 5 columns or more, the spent-matter density over its columns (the nearest N cells to its centre,
+N its column count; the top three 5 m layers) from fields/ every 100 s: its best lag and r against the bloom factor, its
+mean in the factor's top and bottom quarter over the half-saturation K, the leaves' best lag and r against the matter
+and against the factor, and the mean lit leaf area over the island's footprint.
 windows: per window of --width seconds, the grazers' fewest and mean count, their births and their deaths, counted as
 g2-read.py counts them (its RunRead, imported, so the grazer is the same body there and here).
 leaves: per island, the lit leaf area against the bloom factor, from stats' bloomLeafArea and bloomFactor: the leaf
@@ -125,9 +130,69 @@ def energy(paths, at):
               f"{mabs:8.3f} {mw:7.3f} {hidden:9d}")
 
 
+def matter(path, layers=3):
+    """Per judged island: the spent-matter density over it (fields/*.matter.f32, J per 5 m cell, the top `layers`
+    layers where the islands' leaves stand), against its bloom factor and its lit leaf area."""
+    import glob
+    import struct
+    rr = run_read(path)
+    w = rr.w
+    rep = os.path.join(os.path.dirname(w.dir) + ".md")
+    islands = g2.parse_islands(open(rep, encoding="utf-8").read())
+    lay = __import__("json").load(open(os.path.join(w.dir, "fields", "layout.json")))["matter"]
+    nx, nz, cell = lay["cellsX"], lay["cellsZ"], float(lay["cellMetres"])
+    jpu = float(g2.load_reads()["r61"].r59.find(w.config, "joulesPerUnit") or 100.0)
+    K = float(g2.load_reads()["r61"].r59.find(w.config, "uptakeHalfSaturation"))
+    vol = cell ** 3
+    cells = {}
+    for isl in islands:
+        d = sorted(((((ix + 0.5) * cell - isl["cx"]) ** 2 + ((iz + 0.5) * cell - isl["cz"]) ** 2, ix, iz)
+                    for ix in range(nx) for iz in range(nz)))
+        cells[isl["k"]] = [(ix, iz) for _, ix, iz in d[:isl["columns"]]]
+    by_t = {round(s["t"]): s for s in rr.stats if "bloomFactor" in s}
+    files = sorted(glob.glob(os.path.join(w.dir, "fields", "*.matter.f32")))
+    ts, dens = [], {k: [] for k in cells}
+    for f in files:
+        t = int(os.path.basename(f).split(".")[0])
+        if t < 6000 or t not in by_t:
+            continue
+        data = open(f, "rb").read()
+        v = struct.unpack("<%df" % (len(data) // 4), data)
+        ts.append(t)
+        for k, cs in cells.items():
+            tot = sum(v[(iy * nx + ix) * nz + iz] for ix, iz in cs for iy in range(layers))
+            dens[k].append(tot / jpu / (len(cs) * layers * vol))
+    step = ts[1] - ts[0]
+    ul = [by_t[t].get("uptakeLimitedShare") for t in ts]
+    ul = [x for x in ul if x is not None]
+    print(f"\n## {rr.name}: matter over each island, top {layers} layers, units/m3 (K = {K:g}); fields every {step} s "
+          f"from 6000 s; uptake-limited share of leaves, whole world: mean {sum(ul) / len(ul):.2f}" if ul else "")
+    print(f"   {'isl':>3} {'cols':>4} {'f->matter lag r':>15} {'peak/K':>6} {'trough/K':>8} {'pk/tr':>5} "
+          f"{'matter->leaf lag r':>18} {'f->leaf lag r':>13} {'leaf/footprint':>14}")
+    for isl in islands:
+        k = isl["k"]
+        if isl["columns"] < 5:
+            continue
+        f = [by_t[t]["bloomFactor"][k] for t in ts]
+        L = [by_t[t]["bloomLeafArea"][k] for t in ts]
+        m = dens[k]
+        lag, r = g2.best_lag(f, m, step, 0, len(ts) - 1, max_lag=3000.0)
+        ml, mr = g2.best_lag(m, L, step, 0, len(ts) - 1, max_lag=3000.0)
+        fl, fr = g2.best_lag(f, L, step, 0, len(ts) - 1, max_lag=3000.0)
+        s = int((lag or 0) / step)
+        pairs = sorted((f[i], m[i + s]) for i in range(len(ts) - s))
+        q = max(1, len(pairs) // 4)
+        lo = sum(x for _, x in pairs[:q]) / q
+        hi = sum(x for _, x in pairs[-q:]) / q
+        foot = sum(L) / len(L) / (isl["columns"] * cell * cell)
+        fmt = lambda a, b: f"{a if a is not None else '-':>5} {b if b is None else round(b, 2)!s:>5}"
+        print(f"   {k:3d} {isl['columns']:4d} {fmt(lag, r):>15} {hi / K:6.3g} {lo / K:8.3g} {(hi / lo if lo > 0 else 0):5.2f} "
+              f"{fmt(ml, mr):>18} {fmt(fl, fr):>13} {foot:14.2f}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("what", choices=("windows", "leaves", "energy"))
+    ap.add_argument("what", choices=("windows", "leaves", "energy", "matter"))
     ap.add_argument("--at", type=float, default=9000.0)
     ap.add_argument("runs", nargs="+")
     ap.add_argument("--width", type=float, default=1500.0)
@@ -137,6 +202,9 @@ def main():
         windows(a.runs, a.width)
     elif a.what == "energy":
         energy(a.runs, a.at)
+    elif a.what == "matter":
+        for p in a.runs:
+            matter(p)
     else:
         which = {int(x) for x in a.islands.split(",") if x.strip()}
         for p in a.runs:
