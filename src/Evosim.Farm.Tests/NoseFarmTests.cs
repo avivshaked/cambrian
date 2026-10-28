@@ -302,7 +302,7 @@ namespace Evosim.Farm.Tests
         }
 
         [Fact]
-        public void TheHeaderSaysTheNoseIsOnAndTheCardRefusesIt()
+        public void TheHeaderSaysTheNoseIsOnAndTheCardDoesNotRefuseIt()
         {
             RunConfig config = SmellingWorld();
             string token = Report.RoundFiftyNineToken(config);
@@ -314,8 +314,15 @@ namespace Evosim.Farm.Tests
             SolverConfig solver = SolverConfig.From(config, 0.02);
             solver.TankRadiusMetres = 5.0;
             Assert.NotNull(solver.Nose);
-            var refused = Assert.Throws<NotSupportedException>(() => GpuWorld.Refuse(solver));
-            Assert.Contains("nose", refused.Message);
+            try
+            {
+                GpuWorld.Refuse(solver);
+            }
+            catch (NotSupportedException other)
+            {
+                // The card carries the nose (D235): whatever else it refuses of this world, it is not the nose.
+                Assert.DoesNotContain("nose", other.Message);
+            }
 
             // Without the nose in the table, the card's refusal is not the nose's.
             config.CellTypes = CellTypeRegistry.Standard;

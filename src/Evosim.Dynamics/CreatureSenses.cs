@@ -237,6 +237,33 @@ namespace Evosim.Dynamics
             _ramp = new float[dof];
         }
 
+        /// <summary>True where this link is a nose in a world whose table lists the nose (D235); false everywhere in a world without one.</summary>
+        public bool IsNose(int link) => _nose != null && link >= 0 && link < _isNose.Length && _isNose[link];
+
+        /// <summary>
+        /// One link's held smell readings exactly as the last <see cref="Sniff"/> (or the last
+        /// <see cref="Sample"/> that found the link not finite) left them: the chemical, the carrion
+        /// scent, the leaf strength and the leaf direction's three. The card's port copies these into
+        /// its kernel for a nose link (D235), so it reads the floats the solver's brain would. A link
+        /// out of range reads zeros.
+        /// </summary>
+        public void HeldSmell(int link, out float chemical, out float scent, out float leaf,
+                              out float directionX, out float directionY, out float directionZ)
+        {
+            if (link < 0 || link >= _leaf.Length)
+            {
+                chemical = scent = leaf = directionX = directionY = directionZ = 0f;
+                return;
+            }
+
+            chemical = _chemical[link];
+            scent = _scent[link];
+            leaf = _leaf[link];
+            directionX = _leafDirection[3 * link];
+            directionY = _leafDirection[3 * link + 1];
+            directionZ = _leafDirection[3 * link + 2];
+        }
+
         /// <summary>Reads the body. Call once per step, before <c>Brain.Step</c>.</summary>
         public void Sample()
         {
