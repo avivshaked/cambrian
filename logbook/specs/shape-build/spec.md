@@ -177,3 +177,50 @@ The review changed three of the plans above. The filtered tests passed: Core 118
 - **The silhouette of the box-like member is 7.3 % under the box's.** At exponents of 0.1 the 98 surface points stand about 5 % inside the box's corners. The test asserts the hull lies inside the true hull, which the 1 % comparison above cannot.
 
 The build's resolution is 24 cells a face edge, on a lattice of 25 points. Its worst error against the reference is 1.22 % over 170 cases. A family member nearest the box gives M 0.85 % under the box's caliper value, with a lever equal to the reach. A mirrored twin's cached M and I1 equal values computed from the solver's own anchor and axes, with reflection on and off.
+
+## Step 3's plan: the card (written against nose at 0cb43c60)
+
+The plan was written while round 63b's screen held the machine, from the source alone. Nothing was built.
+
+**What the card already takes from the host.** It packs each body whole at a slot fill and again at every resize. From the host it copies:
+
+- the contact reach (`c.LinkReach`);
+- the buoyancy arm (`c.BuoyancyArm`);
+- the contact radius;
+- the panels;
+- the mass and the inertia.
+
+So the step-1 fixes reach the card with no kernel change. Only the fin law reads the shape inside the kernel, and only in two places:
+
+- the powered stroke, once per size class in `gpu-kernel.template`;
+- the swing push, around line 5800.
+
+**The changes.**
+
+1. **`FarmGpu.Open`.** It refuses a family world only when `ContactShape` is a true shape. The card packs every core as a box's half-extents, so a family part there would touch as its box. Under sphere contact the refusal is lifted.
+2. **`gpu-runner.template`, the packing.**
+   - The family gets shape code 3.
+   - Two per-degree columns are added, `FamMass` and `FamMoment`, sized like `StrokeMass`. They are allocated whenever `shapedMass` is on, so `ClassSet`'s constructor takes no new parameter. b9's port edits that signature and the call that builds it.
+   - At packing, a family link's degrees take `(Real)c.FamilyAddedMass[d]` and `(Real)c.FamilyFirstMoment[d]`.
+   - The `else` branch keeps its refusal for any other shape.
+3. **`gpu-kernel.template`, the powered stroke.** With shape code 3, each degree adds `q · FamMoment` and `q · FamMass` to two new sums, in the host's order. Here `q` is `sv · omega · sv · omega · (1 − along · along)`, as the host writes it in `Fluid.Apply`. Then:
+   - the push is `cfg.LimbPush · familySum`;
+   - the lever is `AssemblyLeverOf(familySum, familyMass, linkReach)`;
+   - the `LeverOf · ShapedAddedMass` line is not entered;
+   - the half-extents are not read for code 3.
+4. **The swing push.** The host refuses a family limb under the swing push when the body is built (`RefuseFamilyStroke`), so code 3 never reaches it. Add one guard that names D255, so that a future path cannot read code 3 as a box.
+5. **Regenerate** both precisions (`GpuKernelSourceTests`, `EVOSIM_GPU_REGENERATE=1`). Run the accelerator tests in the slot the coordinator gives.
+
+**Merging with b9.** b9's port lands first. Its hunks sit beside four of mine:
+- the column lists near lines 75 and 381;
+- the `ClassSet` constructor and its call;
+- the packing near line 2521.
+
+None of them touches the fin-law lines. I rebase `shape-build` on main once the nose lands, make the edits above on the merged templates, and regenerate once.
+
+**Tests.**
+- Family-free bit for bit: the existing accelerator and fixture tests pass unchanged.
+- Family on the card: a one-limb family body under the powered stroke, with the fin law on, gives the same digest on the card in double as on the host, step for step, for 2,000 steps. It also gives the same digest at groups 32 and 64.
+- The refusal test is moved, to refuse the family only under true-shape contact.
+
+**Machine time.** Regeneration and the filtered card tests take about 30 minutes in a slot with nothing else on the card. G0's identity sitting with the family on takes about 1.5 hours, booked by the coordinator.
