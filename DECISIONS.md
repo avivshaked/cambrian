@@ -9819,3 +9819,16 @@ in any condition set for the world.
 - Any film with a grafted nose uses the short graft. The long one read to the owner as a Pinocchio nose, and no evolved body has one.
 
 **Why.** A thin sheet in a current flexes, and the world simulates it as rigid. Drawing the flex moves a leaf's edge, not the swimmer's shape, so it misleads no reading of how a body swims. That is the line D252 keeps for limbs.
+
+### D254
+**The work aims at one film of a grazer world, through gates with numbers** · 2026-10-28
+
+**Status:** ruled by the owner on 2026-10-28, who asked for a plan with thresholds towards that milestone rather than tangents. The plan is `logbook/specs/grazer-film-plan.md`. It supersedes D251's clause that a screen of drifting young follows if no arm moves grazers.
+
+**Decision.**
+- The milestone is a film that tells a cohesive story and looks amazing, from a rich world in which grazers survive and evolve.
+- Migration is welcome but not required. Crossings are counted as story material, not gated. The gates are survival (D244's floor and D222's tests), evolution (a heritable grazer trait shifting by at least one founder standard deviation), and a story of at least five filmable beats.
+- A feature that passes its gate goes into the combined round without a further ruling, and one that fails is left out.
+- Work that does not feed the film is parked until the film is made: the curriculum's calibration, the structural-mutation follow-ups, the unpaid grip, the room's merges, the mirrored-twin film, and theatre dials the film does not need. The owner agreed to the parking reluctantly, wanting a rich world.
+
+**Why.** Each piece now in hand (blooms, fat, the nose, the shape family, the theatre's look) had been moving on its own clock. One milestone with pass marks orders them, and it lets a failure drop a feature instead of stopping the film.
