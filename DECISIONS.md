@@ -9777,3 +9777,45 @@ in any condition set for the world.
 - The 4,500 s check runs A' and B' first, since a cap that binds may also trim grazers' small reserves.
 
 **Why.** Step 0 measured every living body in `r62cf`'s worlds at 12,000 and 24,000 s. Under D247's cap form, s = 1,000 s binds 0.0 to 0.1 % of bodies and 3,000 s binds none. Reserves are small: leaves, 96-97 % of the living, hold a median of 28 to 42 J against a 1,000 s cap near 180 J. D247's arm A is "fat with room to buy", and in this world that holds at 300 s, where the cap binds 2 to 8 %. Keeping A and B as ruled keeps the owner's arms. The record is `logbook/specs/fat-step0/`.
+
+### D251
+**Each fed island blooms on its own clock, a bloom smells from further, and fat is screened inside that world** · 2026-10-28
+
+**Status:** ruled by the owner on the morning of 2026-10-28, who proposed islands with cadences of their own and then agreed the coordinator's recommendations for them. It supersedes D247's ten-world screen and D250's added arms. Fat stays as D247 built it, and its card sitting still comes first. The screen's dial values are the coordinator's, under the delegation of 2026-10-25.
+
+**Decision.**
+- Each fed island's influx is multiplied by its own slow cycle, 1 + A·sin(2πt/P + φ). Each island draws its period P, amplitude A and phase φ from world-level bounds, on a seed stream of its own. The schedule is then a pure function of the seed and the clock and needs no checkpoint state. D151's light season is the precedent.
+- A switch holds the world's total influx constant, so one island's bloom is another's lean time and the population need not crash. The screen runs with it on.
+- Grazers need a way to find a bloom. A blooming island can be smelled from further away than a single leaf: its pull reaches tens of metres and grows with the island's current richness. It is added to today's leaf-smell channel, so no brain gains an input. The builder drafts the form and the coordinator rules on it.
+- The screen has four arms on two seeds: (A) today's world; (B) the cycles alone; (C) the cycles and the far smell; (D) as C, with fat. D244's floor applies, so a window with fewer than 30 grazers is not judged. The read counts crossings per grazer life and how fast grazers gather at the island now blooming.
+- If no arm moves grazers, a second screen tries young that drift with the current for a while after birth, the way most sea animals reach new patches.
+- The water between the groves is left to fill (HANDOFF's open-water question). The owner judged it no bad thing in a world of moving blooms, and matter fading with distance waits for a separate question on matter entropy.
+
+**Why.** Fat's step 0 showed that grazers already carry enough to cross, so nothing gives a fed grazer a reason to leave. Light seasons dim every island at once and give no better place to go. Islands out of step always leave one rich somewhere. The `r60-patchiness` study found that a crowd follows a slowly drifting fountain without crossing, while a fountain that jumps needs a crossing (`logbook/specs/r60-patchiness/report.txt`). Out-of-step islands make the rich place jump. Smell reaches 6 m against gaps of 20 to 30 m between groves, so without a longer reach a grazer has no way to learn where the bloom is. In `r62cf` grazers lived a median 60 to 67 s, and a crossing took 140 to 230 s. The cycle's period must be long against both, so that lineages, not only individuals, can track it (inference).
+
+### D252
+**Limbs take richer shapes through D233's family, and the water's push on them is tabulated ahead of time** · 2026-10-28
+
+**Status:** ruled by the owner on 2026-10-28. The owner asked for shapes more complex than a stick, with the water's response precomputed and the collision kept simple, and agreed the coordinator's recommendation. It answers HANDOFF's paddle-width question: the theatre does not draw a limb wider than its physics, and D242 holds for limbs.
+
+**Decision.**
+- The route is D233's shape family, which is on main and off in every world. A family limb can taper, flatten and widen towards its tip, so a paddle exists only where the world grows one.
+- The fin law takes family parts through the table that `logbook/specs/shape-family-build.md` drafted. It holds the strip integral and its lever at the reference size for about 64 swing directions on the half-sphere. A step reads it by interpolation, and a resize scales it. It is accepted if it stays within 2 % of slicing over the bench forms.
+- Contact stays on spheres, as every recorded world has it. Contact on the true shape stays behind its switch.
+- A screen with the family and D229's shaped added mass both on follows the build. Turning them on in a round stays the owner's.
+- `PADDLE_WIDTH` is not taken into the film.
+
+**Why.** The owner's idea and the drafted piece are the same design: shape genes, a precomputed water response, and a simple collider. A limb drawn wider than its physics would show a swimmer a shape it does not swim with. A family limb with the table is drawn as it is, and the water feels it as it is.
+
+### D253
+**The theatre's leaves may bend past their box, with a noisy flutter, in the photographs' colours** · 2026-10-28
+
+**Status:** ruled by the owner on 2026-10-28 from `scratch/owner/leaf-bend-past-the-box/`. It is an exception to D242 for leaves only, and changes the theatre only.
+
+**Decision.**
+- A broad leaf may be drawn up to a fifth of its length outside its collider (`ALGA_ARC_ROOM` 0.20), so that it can bend and flutter in the current.
+- The flutter gets noise: each blade its own rhythm and amplitude, under a slow gust, so blades do not move in step.
+- The algae's colours move towards the owner's reference photographs: sea lettuce yellow-green and muted, not the neon green the owner found unrealistic.
+- Any film with a grafted nose uses the short graft. The long one read to the owner as a Pinocchio nose, and no evolved body has one.
+
+**Why.** A thin sheet in a current flexes, and the world simulates it as rigid. Drawing the flex moves a leaf's edge, not the swimmer's shape, so it misleads no reading of how a body swims. That is the line D252 keeps for limbs.
