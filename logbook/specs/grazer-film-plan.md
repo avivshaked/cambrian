@@ -34,13 +34,13 @@ follows it.
 ### G1, the bloom build (D251)
 
 - G0 holds.
-- The flood fill finds the 11 islands of `r62cf`'s map.
+- The flood fill finds the 11 islands of `r62cf`'s map, 8 of which hold leaves.
 - Inside an island the far smell adds no gradient. There, the leaf-smell direction with the switch on equals the
   direction with it off.
 - The far smell's strength G is set from the census of `r62cf`: G = 0.005, with a grove band B = 10 m beyond each
-  island's edge and a reach R = 30 m beyond the band (`scratch/bloom-census/read-band10.txt`). With the switch on, the
-  p10 to p90 spread of grazers' smell strength on islands narrows by no more than 0.05. Today's spread is already
-  narrow, since most grazers read near saturation.
+  island's edge and a reach R = 30 m beyond the band (`scratch/bloom-census/read-band10.txt`). On the grove grid,
+  which is every island column's centre at heights of 2, 6, 10, 14 and 20 m, smell strength keeps a p10 to p90 spread
+  of at least 0.3 on the s/(s+k) scale. The census reads 0.62 at 12,000 s and 0.51 at 24,000 s at that G.
 - All 11 islands of the plan's map cycle, the two single-column fragments included.
 
 ### G2, the bloom screen (D251)
@@ -51,7 +51,7 @@ Fat's crowd re-record and card sitting come first. Each arm is judged in windows
 | Test | Threshold | Kind |
 |---|---|---|
 | Grazers survive | at least 30 grazers alive in every judged window (D244), and D222's tests pass | gate |
-| The bloom reaches the food | each island's lit leaf area follows its influx factor, with a correlation of at least 0.5 at the best lag | gate for B to D |
+| The bloom reaches the food | on each island of at least 5 columns with a mean lit leaf area of at least 1 m², the leaf area follows the influx factor, with a correlation of at least 0.5 at the best lag | gate for B to D |
 | Grazers evolve | at least one heritable grazer trait shifts by at least one founder standard deviation between the first and last windows. The traits are body mass, part count, limb push, and the brain's mean drive | gate |
 | The world is rich | at least three grazer clades each hold 10 % of grazers in some window, and something eats grazers or their remains | reported |
 | Story material | crossings between islands, crowds at blooms, busts and recoveries, all counted | reported |
