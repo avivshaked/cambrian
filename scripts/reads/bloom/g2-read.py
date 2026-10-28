@@ -642,6 +642,15 @@ def gate1(rr, a, ns):
         print(f"   d244: the run reaches {count_max} grazers at its largest sample (floor {floor:g}); n/j = not judged")
     floor_ok = not window_fail
     print(f"   the floor in every judged window ({measure}): {'PASS' if floor_ok else 'FAIL - ' + '; '.join(window_fail)}")
+    # The same floor read at the sensitivity (40), as the spec asks: the window means (or fewest) against it.
+    also = a.floors[1] if len(a.floors) > 1 else None
+    floor_ok_also = None
+    if also is not None and measure in ("mean", "fewest"):
+        key = "cmean" if measure == "mean" else "cmin"
+        short = [f"{r['win'][0]:g}-{r['win'][1]:g} {fmt(r[key], '{:.1f}')}" for r in rows
+                 if r["win"][0] >= survive_from - 1e-9 and (r[key] is None or r[key] < also)]
+        floor_ok_also = not short and floor_ok
+        print(f"   the floor at {also:g}, a sensitivity ({measure}): {'PASS' if floor_ok_also else 'FAIL - under ' + str(also) + ': ' + ', '.join(short)}")
 
     # ---- the whole-run D222
     m = d222_measures(rr, ns)
@@ -670,6 +679,10 @@ def gate1(rr, a, ns):
         print(f"   {name}: {'PASS' if ok else 'FAIL'}" + ("" if ok else " - " + "; ".join(why)))
     g1 = bool(floor_ok and out.get("floor"))
     print(f"   gate 1: {'PASS' if g1 else 'FAIL'} (the floor in every judged window, and D222 at {floor:g})")
+    if floor_ok_also is not None and "also" in out:
+        print(f"   gate 1 at {a.floors[1]:g}, a sensitivity: {'PASS' if (floor_ok_also and out['also']) else 'FAIL'} "
+              f"(floor {'PASS' if floor_ok_also else 'FAIL'}, D222 {'PASS' if out['also'] else 'FAIL'})")
+    out["floor_also"] = floor_ok_also
     return g1, out, m
 
 
@@ -1213,7 +1226,11 @@ def main():
     print("\n######## summary")
     for r in results:
         p = r["parts"]
-        print(f"   {r['name']}: gate 1 {verdict_word(r['g1'])} (at 40 {verdict_word(r['g1_all'].get('also'))}, strict "
+        fa = r['g1_all'].get('floor_also')
+        d40 = r['g1_all'].get('also')
+        at40 = None if d40 is None else (bool(d40) and (fa is None or bool(fa)))
+        print(f"   {r['name']}: gate 1 {verdict_word(r['g1'])} (at 40 {verdict_word(at40)}: floor {verdict_word(fa)}, "
+              f"D222 {verdict_word(d40)}; D222 strict "
               f"{verdict_word(r['g1_all'].get('strict'))}), gate 2 {verdict_word(r['g2'])}, gate 3 {verdict_word(r['g3'])}; "
               f"story: crossings {p['crossings']}, crowd islands {p['crowd islands']}, recoveries {p['recoveries']}, "
               f"largest shift {fmt(p['largest shift'], '{:.2f}')}")
