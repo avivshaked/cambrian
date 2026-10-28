@@ -9,6 +9,9 @@ matter: per island of 5 columns or more, the spent-matter density over its colum
 N its column count; the top three 5 m layers) from fields/ every 100 s: its best lag and r against the bloom factor, its
 mean in the factor's top and bottom quarter over the half-saturation K, the leaves' best lag and r against the matter
 and against the factor, and the mean lit leaf area over the island's footprint.
+       python -I scripts/reads/bloom/r63b-diag.py producers RUN [RUN ...]
+producers: per island, producer births on it by the bloom factor's quarter at birth, their endowment and life, and the
+share of on-island parents' offspring that land on the island.
 windows: per window of --width seconds, the grazers' fewest and mean count, their births and their deaths, counted as
 g2-read.py counts them (its RunRead, imported, so the grazer is the same body there and here).
 leaves: per island, the lit leaf area against the bloom factor, from stats' bloomLeafArea and bloomFactor: the leaf
@@ -16,6 +19,7 @@ area's mean and its relative spread, Pearson's r at the best lag from 0 to 6000 
 the leaf area's rate of change, which tracks the factor if the leaves integrate the influx. Reads files only.
 """
 import argparse
+from collections import Counter
 import importlib.util
 import os
 import sys
@@ -131,8 +135,9 @@ def energy(paths, at):
 
 
 def matter(path, layers=3):
-    """Per judged island: the spent-matter density over it (fields/*.matter.f32, J per 5 m cell, the top `layers`
-    layers where the islands' leaves stand), against its bloom factor and its lit leaf area."""
+    """Per judged island: the spent-matter density over it (fields/*.matter.f32, units per 5 m cell, the top `layers`
+    layers where the islands' leaves stand), against its bloom factor and its lit leaf area. The grid holds units, not
+    joules: MatterInfluxPerSecond deposits units, and Fix() reads the edible stock over the cell volume as units/m3."""
     import glob
     import struct
     rr = run_read(path)
@@ -141,7 +146,6 @@ def matter(path, layers=3):
     islands = g2.parse_islands(open(rep, encoding="utf-8").read())
     lay = __import__("json").load(open(os.path.join(w.dir, "fields", "layout.json")))["matter"]
     nx, nz, cell = lay["cellsX"], lay["cellsZ"], float(lay["cellMetres"])
-    jpu = float(g2.load_reads()["r61"].r59.find(w.config, "joulesPerUnit") or 100.0)
     K = float(g2.load_reads()["r61"].r59.find(w.config, "uptakeHalfSaturation"))
     vol = cell ** 3
     cells = {}
@@ -161,7 +165,7 @@ def matter(path, layers=3):
         ts.append(t)
         for k, cs in cells.items():
             tot = sum(v[(iy * nx + ix) * nz + iz] for ix, iz in cs for iy in range(layers))
-            dens[k].append(tot / jpu / (len(cs) * layers * vol))
+            dens[k].append(tot / (len(cs) * layers * vol))
     step = ts[1] - ts[0]
     ul = [by_t[t].get("uptakeLimitedShare") for t in ts]
     ul = [x for x in ul if x is not None]
@@ -190,9 +194,120 @@ def matter(path, layers=3):
               f"{fmt(ml, mr):>18} {fmt(fl, fr):>13} {foot:14.2f}")
 
 
+def producers(path):
+    """Per judged island: the producers (lineage pho 1) born on it from 6000 s, binned by the island's bloom factor at
+    their birth into the factor's quarters over the span: births per 1000 s of time in that quarter, the mean endowment,
+    the mean life, and for parents standing on the island, the share of their offspring that land on it. A body's place
+    is its first fix in positions.jsonl.gz (every 10 s); a parent's is its last fix at or before the child's first."""
+    import gzip
+    import json
+    rr = run_read(path)
+    w = rr.w
+    islands = [i for i in g2.parse_islands(open(os.path.dirname(w.dir) + ".md", encoding="utf-8").read()) if i["columns"] >= 5]
+    lay = json.load(open(os.path.join(w.dir, "fields", "layout.json")))["matter"]
+    nx, nz, cell = lay["cellsX"], lay["cellsZ"], float(lay["cellMetres"])
+    owner = {}
+    for isl in islands:
+        d = sorted(((((ix + 0.5) * cell - isl["cx"]) ** 2 + ((iz + 0.5) * cell - isl["cz"]) ** 2, ix, iz)
+                    for ix in range(nx) for iz in range(nz)))
+        for _, ix, iz in d[:isl["columns"]]:
+            owner[(ix, iz)] = isl["k"]
+    where = lambda x, z: owner.get((int(x // cell), int(z // cell)))
+    born, died, bites = {}, {}, []
+    gz = rr.gset
+    gborn = {i: rr.w.born[i][0] for i in gz}
+    with open(os.path.join(w.dir, "lineage.jsonl"), encoding="utf-8") as f:
+        for line in f:
+            if '"e":"b"' in line and '"pho":1' in line:
+                r = json.loads(line)
+                born[r["id"]] = (r["t"], r["p"], r.get("endow", 0.0))
+            elif '"e":"d"' in line:
+                r = json.loads(line)
+                died[r["id"]] = (r["t"], r.get("c", "?"))
+            elif '"e":"k"' in line:
+                r = json.loads(line)
+                bites.append((r["t"], r["id"], r.get("by"), r.get("tj", 0.0), r.get("rj", 0.0)))
+    last, first, parent_at, gfirst = {}, {}, {}, {}
+    with gzip.open(os.path.join(w.dir, "positions.jsonl.gz"), "rt") as f:
+        for line in f:
+            row = json.loads(line)
+            for b in row["b"]:
+                i = b[0]
+                if i in born and i not in first:
+                    first[i] = (b[1], b[3])
+                    p = born[i][1]
+                    if p in last:
+                        parent_at[i] = last[p]
+                elif i in gz and i not in gfirst:
+                    gfirst[i] = (b[1], b[3])
+                last[i] = (b[1], b[3])
+    by_t = {round(s["t"]): s for s in rr.stats if "bloomFactor" in s}
+    end = rr.end
+    print(f"\n## {rr.name}: producers born on each island from 6000 s, by the island's bloom factor at birth (quarters)")
+    print(f"   {'isl':>3} {'q':>1} {'f range':>11} {'births/ks':>9} {'endow J':>8} {'life s':>7} {'kids on isl':>11}")
+    for isl in islands:
+        k = isl["k"]
+        fs = sorted(by_t[t]["bloomFactor"][k] for t in by_t if t >= 6000)
+        cuts = [fs[len(fs) * q // 4] for q in (1, 2, 3)]
+        quarter = lambda v: sum(v >= c for c in cuts)
+        time_in = [0] * 4
+        for t in by_t:
+            if t >= 6000:
+                time_in[quarter(by_t[t]["bloomFactor"][k])] += 10
+        rows = [[] for _ in range(4)]
+        stay = [[0, 0] for _ in range(4)]
+        for i, (t, p, endow) in born.items():
+            if t < 6000 or i not in first:
+                continue
+            tt = int(round(t / 10.0)) * 10
+            if tt not in by_t:
+                continue
+            q = quarter(by_t[tt]["bloomFactor"][k])
+            if where(*first[i]) == k:
+                dt, cause = died.get(i, (end, "alive"))
+                rows[q].append((endow, dt - t, cause))
+            if i in parent_at and where(*parent_at[i]) == k:
+                stay[q][1] += 1
+                stay[q][0] += where(*first[i]) == k
+        bq = [[0, 0.0, 0.0, 0] for _ in range(4)]   # bites, tissue J, reserve J, bites by a grazer
+        for t, vid, by, tj, rj in bites:
+            if t < 6000 or vid not in first or where(*first[vid]) != k:
+                continue
+            tt = int(round(t / 10.0)) * 10
+            if tt not in by_t:
+                continue
+            q = quarter(by_t[tt]["bloomFactor"][k])
+            bq[q][0] += 1
+            bq[q][1] += tj
+            bq[q][2] += rj
+            bq[q][3] += by in gz
+        gq = [0] * 4
+        for i, t in gborn.items():
+            tt = int(round(t / 10.0)) * 10
+            if t >= 6000 and i in gfirst and where(*gfirst[i]) == k and tt in by_t:
+                gq[quarter(by_t[tt]["bloomFactor"][k])] += 1
+        print(f"   {'':3} {'':1} {'':11} bites/ks  tissue J/bite  reserve J/bite  by grazers  grazer births/ks")
+        for q in range(4):
+            n = bq[q][0]
+            print(f"   {k:3d} {q + 1:1d} {'':11} {n * 1000.0 / time_in[q] if time_in[q] else 0:8.2f} "
+                  f"{(bq[q][1] / n if n else 0):13.2f} {(bq[q][2] / n if n else 0):15.2f} "
+                  f"{(bq[q][3] / n if n else 0):11.2f} {gq[q] * 1000.0 / time_in[q] if time_in[q] else 0:17.2f}")
+        for q in range(4):
+            n = len(rows[q])
+            lo = fs[0] if q == 0 else cuts[q - 1]
+            hi = fs[-1] if q == 3 else cuts[q]
+            e = sum(r[0] for r in rows[q]) / n if n else 0
+            life = sum(r[1] for r in rows[q]) / n if n else 0
+            share = stay[q][0] / stay[q][1] if stay[q][1] else float("nan")
+            causes = Counter(r[2] for r in rows[q])
+            top = " ".join(f"{c} {v / n:.2f}" for c, v in causes.most_common(3)) if n else ""
+            print(f"   {k:3d} {q + 1:1d} {lo:5.2f}-{hi:<5.2f} {n * 1000.0 / time_in[q] if time_in[q] else 0:9.2f} "
+                  f"{e:8.1f} {life:7.0f} {share:6.2f} ({stay[q][1]})  {top}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("what", choices=("windows", "leaves", "energy", "matter"))
+    ap.add_argument("what", choices=("windows", "leaves", "energy", "matter", "producers"))
     ap.add_argument("--at", type=float, default=9000.0)
     ap.add_argument("runs", nargs="+")
     ap.add_argument("--width", type=float, default=1500.0)
@@ -205,6 +320,9 @@ def main():
     elif a.what == "matter":
         for p in a.runs:
             matter(p)
+    elif a.what == "producers":
+        for p in a.runs:
+            producers(p)
     else:
         which = {int(x) for x in a.islands.split(",") if x.strip()}
         for p in a.runs:

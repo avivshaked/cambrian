@@ -2,8 +2,9 @@
 
 python -I scratch/r60-patchiness/helpers/matter_profile.py <run dir> [seconds,...]
 
-Reads fields/NNNNNNNNN.matter.f32 (the 5 m matter grid, J per cell, layout.json's order) and
-fields/bed.f32. Prints per time: total J and units (100 J/unit), the share per 5 m layer,
+Reads fields/NNNNNNNNN.matter.f32 (the 5 m matter grid, units per cell, layout.json's order; the grid holds
+units, not joules, as MatterInfluxPerSecond deposits them) and fields/bed.f32. Prints per time: the free total in
+units, the share per 5 m layer,
 the share in each column's lowest live cell (the floor), the share in the top 12 m, and the
 column cv of the top-12 m density over live columns.
 """
