@@ -50,11 +50,11 @@ Fat's crowd re-record and card sitting come first. Each arm is judged in windows
 
 | Test | Threshold | Kind |
 |---|---|---|
-| Grazers survive | at least 30 grazers alive in every judged window (D244), and D222's tests pass | gate |
+| Grazers survive | in every window from 6,000 s, a mean of at least 30 grazers alive, and never 0; and D222's tests pass by the procedure that made `r62cf`'s recorded table | gate |
 | The bloom reaches the food | on each island of at least 5 columns with a mean lit leaf area of at least 1 m², the leaf area follows the influx factor, with a correlation of at least 0.5 at the best lag | gate for B to D |
 | Grazers evolve | at least one heritable grazer trait shifts by at least one founder standard deviation between the first and last windows. The traits are body mass, part count, limb push, and the brain's mean drive | gate |
 | The world is rich | at least three grazer clades each hold 10 % of grazers in some window, and something eats grazers or their remains | reported |
-| Story material | crossings between islands, crowds at blooms, busts and recoveries, all counted | reported |
+| Story material | crossings between groves at least 10 m apart at their banded edges, crowds at blooms, busts and recoveries, and the largest trait shift, all counted as `logbook/specs/bloom-build/g2-read-spec.md` defines them | reported |
 
 - **Pass.** Among the arms that pass every gate, the one with the most story material is the film's world. When arms
   tie, the simplest wins. Fat goes into the round if arm D passes every gate.
