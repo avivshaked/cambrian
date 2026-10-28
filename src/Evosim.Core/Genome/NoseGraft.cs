@@ -29,7 +29,8 @@ namespace Evosim.Core
 
         /// <summary>
         /// Of <see cref="LinksMoved"/>, the direction-form links from a part other than the host, whose
-        /// frame is not the nose's: their components are summed on the nose's axes as if it were.
+        /// frame may not be the nose's: each is spread over the nose's three components by the rotation between the
+        /// two frames at rest. That is exact at rest and approximate while the limb moves.
         /// </summary>
         public int DirectionLinksReframed { get; internal set; }
     }
@@ -54,8 +55,13 @@ namespace Evosim.Core
     /// them is moved onto the nose's port of the same channel and index, and links that land on one
     /// (port, target) pair are summed: a body whose parts all read one field read it as the sum of
     /// their weights, and so does the nose. That is exact for a scalar smell read at one point and
-    /// approximate for one read across a body. The direction form is approximate twice over,
-    /// since a limb reads its gradient in its own frame; the result counts those links.
+    /// approximate for one read across a body. The direction form is read in the part's own frame, so a
+    /// link from component j of a part whose frame is not the nose's is spread over the nose's components
+    /// k with weight w·M[j,k], M being the map from what the nose reads at rest to what the part reads at rest
+    /// (<c>Reframe</c>). That is exact at rest, for any uniform gradient, and approximate while a limb moves,
+    /// since the limb's frame turns and the nose's does not; the result counts those links. A link from a part
+    /// whose M is axis-aligned stays one link, and a body whose direction links are all on the host grafts to the
+    /// same genome as before the reframing.
     /// </para>
     /// <para>
     /// <b>The shape is a rhinophore's</b>: a box three times as long as it is wide, standing on
@@ -226,16 +232,20 @@ namespace Evosim.Core
             }
 
             ulong hostPath = before.Parts[hostPart].PathId;
+            var partOf = new Dictionary<ulong, PhenotypePart>();
+            foreach (PhenotypePart part in before.Parts) partOf[part.PathId] = part;
+            var reframeOf = new Dictionary<(ulong From, ulong Nose), double[,]>();
             var result = new NoseGraftResult
             {
                 Genome = grafted, NoseNode = noseIndex, NosePath = nosePart.PathId, TwinPath = pair ? twinPart.PathId : 0UL,
                 NoseArea = nosePart.SurfaceArea,
             };
 
-            // Onto the first nose at the link's weight, or onto both at half of it.
+            // Onto the first nose at the link's weight, or onto both at half of it. Each nose has its own frame (a
+            // twin's is reflected), so a direction link is reframed onto each nose it goes to.
             var targets = pair && pairLinks == NosePairLinks.Split
-                ? new[] { (Path: nosePart.PathId, Share: 0.5f), (Path: twinPart.PathId, Share: 0.5f) }
-                : new[] { (Path: nosePart.PathId, Share: 1f) };
+                ? new[] { (Nose: nosePart, Share: 0.5f), (Nose: twinPart, Share: 0.5f) }
+                : new[] { (Nose: nosePart, Share: 1f) };
             var kept = new List<BrainLink>();
             var made = new List<BrainLink>();
             var byPair = new Dictionary<(ulong From, ulong To), BrainLink>();
@@ -249,19 +259,53 @@ namespace Evosim.Core
 
                 result.LinksMoved++;
                 if (smell.Channel == SensorChannel.LeafScentDirection && smell.Path != hostPath) result.DirectionLinksReframed++;
-                foreach ((ulong path, float share) in targets)
+                foreach ((PhenotypePart nose, float share) in targets)
                 {
-                    ulong from = BrainIds.Port(path, smell.Channel, smell.Index);
-                    float weight = link.Weight * share;
-                    if (byPair.TryGetValue((from, link.To), out BrainLink into))
+                    // A scalar smell moves to the nose's port of the same index. A direction component is read in the
+                    // part's own frame, so it moves to the nose's components in proportion to M (see Reframe).
+                    float shared = link.Weight * share;
+                    double[,] map = null;
+                    if (smell.Channel == SensorChannel.LeafScentDirection)
                     {
-                        into.Weight += weight;
-                        continue;
+                        if (!reframeOf.TryGetValue((smell.Path, nose.PathId), out map))
+                        {
+                            map = Reframe(partOf[smell.Path], nose);
+                            reframeOf[(smell.Path, nose.PathId)] = map;
+                        }
                     }
 
-                    var moved = new BrainLink { From = from, To = link.To, Weight = weight };
-                    byPair[(from, link.To)] = moved;
-                    made.Add(moved);
+                    for (int k = 0; k < (map == null ? 1 : 3); k++)
+                    {
+                        int target = smell.Index;
+                        float weight = shared;
+                        if (map != null)
+                        {
+                            double m = map[smell.Index, k];
+                            if (m == 0.0) continue;
+                            if (Math.Abs(m) != 1.0)
+                            {
+                                if (Math.Abs(shared * m) < MinReframedWeight) continue;
+                                weight = (float)(shared * m);
+                            }
+                            else if (m < 0.0)
+                            {
+                                weight = -shared;
+                            }
+
+                            target = k;
+                        }
+
+                        ulong from = BrainIds.Port(nose.PathId, smell.Channel, target);
+                        if (byPair.TryGetValue((from, link.To), out BrainLink into))
+                        {
+                            into.Weight += weight;
+                            continue;
+                        }
+
+                        var moved = new BrainLink { From = from, To = link.To, Weight = weight };
+                        byPair[(from, link.To)] = moved;
+                        made.Add(moved);
+                    }
                 }
             }
 
@@ -275,6 +319,52 @@ namespace Evosim.Core
                 throw new InvalidOperationException("The grafted genome is not well formed: " + string.Join("; ", issues));
 
             return result;
+        }
+
+        /// <summary>The smallest weight a reframed direction link may carry; a smaller product is dropped.</summary>
+        private const double MinReframedWeight = 1e-7;
+
+        /// <summary>
+        /// The 3 by 3 map M with (what <paramref name="from"/> reads at rest) = M · (what the nose reads at rest) for any uniform
+        /// gradient, taken from the frames <c>CreatureSenses</c> reads in: each part reads <c>F · Rᵀ g</c>, with R the part's
+        /// rest rotation (<see cref="PhenotypePart.Rotation"/>, which the solver poses the part from) and F the
+        /// reflection <c>Creature.ReflectFrameVector</c> applies, which negates x on a part with
+        /// <see cref="PhenotypePart.ReflectedDrive"/> and is the identity elsewhere. So M = F_p Rpᵀ R_n F_n. An entry within
+        /// 1e-6 of 0 or of ±1 is taken as that, so an axis-aligned M carries exactly the weights it multiplies.
+        /// </summary>
+        private static double[,] Reframe(PhenotypePart from, PhenotypePart nose)
+        {
+            double[,] rp = Matrix(from.Rotation), rn = Matrix(nose.Rotation);
+            var m = new double[3, 3];
+            for (int j = 0; j < 3; j++)
+            {
+                for (int k = 0; k < 3; k++)
+                {
+                    double sum = 0.0;
+                    for (int i = 0; i < 3; i++) sum += rp[i, j] * rn[i, k];
+                    if (from.ReflectedDrive && j == 0) sum = -sum;
+                    if (nose.ReflectedDrive && k == 0) sum = -sum;
+                    if (Math.Abs(sum) < 1e-6) sum = 0.0;
+                    else if (Math.Abs(Math.Abs(sum) - 1.0) < 1e-6) sum = sum < 0.0 ? -1.0 : 1.0;
+                    m[j, k] = sum;
+                }
+            }
+
+            return m;
+        }
+
+        /// <summary>The rotation matrix of a unit quaternion, in double.</summary>
+        private static double[,] Matrix(Quat q)
+        {
+            double x = q.X, y = q.Y, z = q.Z, w = q.W;
+            double n = Math.Sqrt(x * x + y * y + z * z + w * w);
+            if (n > 0.0) { x /= n; y /= n; z /= n; w /= n; }
+            return new[,]
+            {
+                { 1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w) },
+                { 2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w) },
+                { 2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y) },
+            };
         }
 
         // The nose, and a pair's twin: the one whose frame is reflected.

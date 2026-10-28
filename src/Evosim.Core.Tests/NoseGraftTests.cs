@@ -276,12 +276,17 @@ namespace Evosim.Core.Tests
                 Phenotype after = Developer.Develop(graft.Genome, cellTypes: Table);
 
                 var smellPorts = new Dictionary<ulong, (SensorChannel, int)>();
+                var partOfPort = new Dictionary<ulong, PhenotypePart>();
                 foreach (PhenotypePart part in before.Parts)
                 {
                     foreach (SensorChannel c in (SensorChannel[])Enum.GetValues(typeof(SensorChannel)))
                     {
                         if (!c.IsSmell()) continue;
-                        for (int i = 0; i < c.IndexCount(); i++) smellPorts[BrainIds.Port(part.PathId, c, i)] = (c, i);
+                        for (int i = 0; i < c.IndexCount(); i++)
+                        {
+                            smellPorts[BrainIds.Port(part.PathId, c, i)] = (c, i);
+                            partOfPort[BrainIds.Port(part.PathId, c, i)] = part;
+                        }
                     }
                 }
 
@@ -294,8 +299,15 @@ namespace Evosim.Core.Tests
                 foreach (BrainLink l in old.Where(l => smellPorts.ContainsKey(l.From)))
                 {
                     (SensorChannel c, int i) = smellPorts[l.From];
-                    var pair = (BrainIds.Port(graft.NosePath, c, i), l.To);
-                    expected[pair] = (expected.TryGetValue(pair, out double w) ? w : 0) + l.Weight;
+                    PhenotypePart nosePart = after.Parts[after.Parts.Count - 1];
+                    for (int k = 0; k < (c == SensorChannel.LeafScentDirection ? 3 : 1); k++)
+                    {
+                        // A direction component moves by the rotation between the part's frame and the nose's, at rest.
+                        double scale = c == SensorChannel.LeafScentDirection ? FrameMap(partOfPort[l.From], nosePart, i, k) : 1.0;
+                        if (Math.Abs(scale) < 1e-6) continue;
+                        var pair = (BrainIds.Port(graft.NosePath, c, c == SensorChannel.LeafScentDirection ? k : i), l.To);
+                        expected[pair] = (expected.TryGetValue(pair, out double w) ? w : 0) + scale * l.Weight;
+                    }
                 }
 
                 List<BrainLink> made = now.Skip(others.Count).ToList();
@@ -353,5 +365,83 @@ namespace Evosim.Core.Tests
         }
 
         private static (ulong, ulong, float) Key(BrainLink l) => (l.From, l.To, l.Weight);
+
+        /// <summary>
+        /// M[j, k]: the part's reading of component j per unit of the nose's reading of component k, for two parts that
+        /// reflect nothing. The part reads Rpᵀ g and the nose Rnᵀ g, so the part's j-th axis expressed in the nose's frame
+        /// is column j of Rnᵀ Rp, and M[j, k] is the k-th entry of it.
+        /// </summary>
+        private static double FrameMap(PhenotypePart part, PhenotypePart nose, int j, int k)
+        {
+            Assert.False(part.ReflectedDrive || nose.ReflectedDrive);
+            var axes = new[] { new Float3(1f, 0f, 0f), new Float3(0f, 1f, 0f), new Float3(0f, 0f, 1f) };
+            Float3 axisInNose = nose.Rotation.Conjugate.Rotate(part.Rotation.Rotate(axes[j]));
+            return k == 0 ? axisInNose.X : k == 1 ? axisInNose.Y : axisInNose.Z;
+        }
+
+        /// <summary>
+        /// A body whose every direction link sits on the host grafts to the genome the move-and-sum rule made before the
+        /// reframing: scalar and host links summed on the nose's port of the same index, in the same order and to the bit.
+        /// </summary>
+        [Fact]
+        public void ABodyWhoseDirectionLinksAreAllOnTheHostGraftsAsItDidBeforeTheReframing()
+        {
+            int checkedBodies = 0, hostDirectionLinks = 0;
+            foreach ((string name, Genome founder) in Founders())
+            {
+                Genome genome = founder.Clone();
+                Phenotype before = Developer.Develop(genome, cellTypes: Table);
+                ulong hostPath = before.Parts[0].PathId;
+                var directionPorts = new HashSet<ulong>();
+                var hostDirection = new HashSet<ulong>();
+                foreach (PhenotypePart part in before.Parts)
+                {
+                    for (int i = 0; i < SensorChannel.LeafScentDirection.IndexCount(); i++)
+                    {
+                        directionPorts.Add(BrainIds.Port(part.PathId, SensorChannel.LeafScentDirection, i));
+                        if (part.PathId == hostPath) hostDirection.Add(BrainIds.Port(part.PathId, SensorChannel.LeafScentDirection, i));
+                    }
+                }
+
+                genome.Brain.Links.RemoveAll(l => directionPorts.Contains(l.From) && !hostDirection.Contains(l.From));
+                hostDirectionLinks += genome.Brain.Links.Count(l => hostDirection.Contains(l.From));
+                NoseGraftResult graft = Graft(genome);
+                Assert.Equal(0, graft.DirectionLinksReframed);
+
+                // The rule as it stood: every smell link onto the nose's port of its own channel and index, summed.
+                var smellPorts = new Dictionary<ulong, (SensorChannel, int)>();
+                foreach (PhenotypePart part in before.Parts)
+                {
+                    foreach (SensorChannel c in (SensorChannel[])Enum.GetValues(typeof(SensorChannel)))
+                    {
+                        if (!c.IsSmell()) continue;
+                        for (int i = 0; i < c.IndexCount(); i++) smellPorts[BrainIds.Port(part.PathId, c, i)] = (c, i);
+                    }
+                }
+
+                var kept = new List<BrainLink>();
+                var made = new List<BrainLink>();
+                var byPair = new Dictionary<(ulong, ulong), BrainLink>();
+                foreach (BrainLink l in genome.Brain.Links)
+                {
+                    if (!smellPorts.TryGetValue(l.From, out var port)) { kept.Add(l); continue; }
+                    ulong from = BrainIds.Port(graft.NosePath, port.Item1, port.Item2);
+                    if (byPair.TryGetValue((from, l.To), out BrainLink into)) { into.Weight += l.Weight; continue; }
+                    var moved = new BrainLink { From = from, To = l.To, Weight = l.Weight };
+                    byPair[(from, l.To)] = moved;
+                    made.Add(moved);
+                }
+
+                Assert.Equal(kept.Concat(made).Select(Key).ToList(), graft.Genome.Brain.Links.Select(Key).ToList());
+                checkedBodies++;
+                _out.WriteLine($"{name}: {graft.LinksMoved} links moved into {graft.LinksMade}, as before");
+            }
+
+            if (Founders().Count > 0)
+            {
+                Assert.True(checkedBodies > 0);
+                Assert.True(hostDirectionLinks > 0, "the host's direction links were not under test");
+            }
+        }
     }
 }
