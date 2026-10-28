@@ -95,6 +95,13 @@ namespace Evosim.Farm
                 return MirrorCensus.Run(args);
             }
 
+            // --grazer-traits <run dir> <out tsv>: one row a grazer genome, built by Developer and its
+            // brain run open-loop, for the bloom screen's evolution gate (GrazerTraits).
+            if (args.Length >= 1 && args[0] == "--grazer-traits")
+            {
+                return GrazerTraits.Run(args);
+            }
+
             // Two worlds in one process on one card: --pair <a.args> <b.args>; or two or more, on the
             // card or on the CPU engine: --group <a.args> <b.args> [<c.args> ...]. Group says what it
             // reads and where each world writes.
