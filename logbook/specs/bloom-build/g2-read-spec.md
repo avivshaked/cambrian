@@ -25,7 +25,10 @@ G2 in `logbook/specs/grazer-film-plan.md` as amended at `bbcd187a`, with the def
 
 ## Gates
 
-1. **Grazers survive.** Ruled by the coordinator on 2026-10-28 after a read of `r62cf-6202`:
+1. **Grazers survive.** Ruled by the coordinator on 2026-10-28 after a read of `r62cf`'s three seeds:
+   - **It is judged from 9,000 s,** in five windows to 24,000 s. In `r62cf` the 6,000 to 9,000 s window held a mean
+     of 21.8 and 26.8 grazers in two seeds of three, while the populations were still building, and every later
+     window held at least 30.6. The read's `--survive-from` defaults to 9,000.
    - Every judged window's mean grazer count over its stats samples is at least 30. The fewest at any sample is
      printed beside it, and the same is read at 40 as a sensitivity.
    - A window whose fewest is 0 fails, since extinction is not survival, however brief.
@@ -46,6 +49,8 @@ G2 in `logbook/specs/grazer-film-plan.md` as amended at `bbcd187a`, with the def
    last judged windows.
    - The traits come from `--grazer-traits`: body mass, part count, limb push, and the brain's mean drive. The drive
      is read in two states, at rest and fed (below), and the gate takes the larger of its two shifts.
+   - **Its windows still start at 6,000 s**, as the coordinator ruled the same day. It needs grazer births, not a
+     survival floor, and the 30-birth rule below covers a thin window, so the shift keeps the full span.
    - The sample is the grazers born in each window. The founder SD is the trait's standard deviation over every
      founder grazer: a grazer whose birth row has `p` −1, or whose source is the floor, the trickle or the pool.
    - **The scale has a floor.** Founders are often clones of a few inocula, so their SD can be near zero, and any
