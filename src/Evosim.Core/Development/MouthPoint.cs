@@ -11,7 +11,8 @@ namespace Evosim.Core
     /// <para>
     /// <b>The mouth is the end of the part away from where it hangs.</b> A part with a parent
     /// points from its joint anchor to its centre, and its mouth is where that line leaves the
-    /// body: the centre of the box's face, the sphere's surface point, the capsule's far tip. The
+    /// body: the centre of the box's face, the sphere's surface point, the capsule's far tip, the
+    /// point where a family part's axis meets its surface (D255). The
     /// root has no joint of its own, so it takes the side opposite its first child; a body of one
     /// part takes the positive end of its longest axis. Every one of those is a function of the
     /// part's own numbers, so the answer is the same on every machine and at every thread count.
@@ -73,7 +74,11 @@ namespace Evosim.Core
         /// direction, at <see cref="SphereShape.Radius"/>. A capsule takes the tip of the cap on
         /// the side the direction's y points to, at <see cref="CapsuleShape.HalfSpan"/> plus
         /// <see cref="CapsuleShape.Radius"/> along its long axis (y), and the positive tip when
-        /// that component is zero. A shape this does not know is read as a box.
+        /// that component is zero. A family part (D233) takes the box's axis rule, the axis the
+        /// direction mostly points through, and the point where that axis through the part's origin
+        /// meets the true surface (<see cref="Superellipsoid.AxisReach"/>): its origin is the centre
+        /// of mass, up to <see cref="Superellipsoid.CentreOffset"/> from the box's centre, so the
+        /// box's face centre would stand off the tip. A shape this does not know is read as a box.
         /// </para>
         /// <para>
         /// Float arithmetic in a fixed order, no randomness and no collections, so the answer is
@@ -107,8 +112,18 @@ namespace Evosim.Core
                 return new Float3(0f, d.Y < 0f ? -tip : tip, 0f);
             }
 
-            // A box, and anything the standard shapes do not name.
             float ax = Math.Abs(d.X), ay = Math.Abs(d.Y), az = Math.Abs(d.Z);
+
+            // D255. A family part: the box's axis rule, the true surface along that axis.
+            if (part.Family != null)
+            {
+                Superellipsoid geometry = part.Family.Geometry;
+                if (ax >= ay && ax >= az) return new Float3(geometry.AxisReach(h, 0, d.X < 0f), 0f, 0f);
+                if (ay >= az) return new Float3(0f, geometry.AxisReach(h, 1, d.Y < 0f), 0f);
+                return new Float3(0f, 0f, geometry.AxisReach(h, 2, d.Z < 0f));
+            }
+
+            // A box, and anything the standard shapes do not name.
 
             if (ax >= ay && ax >= az) return new Float3(d.X < 0f ? -Math.Abs(h.X) : Math.Abs(h.X), 0f, 0f);
             if (ay >= az) return new Float3(0f, d.Y < 0f ? -Math.Abs(h.Y) : Math.Abs(h.Y), 0f);

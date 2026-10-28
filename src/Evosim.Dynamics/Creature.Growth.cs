@@ -131,6 +131,7 @@ namespace Evosim.Dynamics
             RefreshLinkReach();
             if (LinkCoreHalf != null) WriteLinkCores();
             if (StrokeAssemblyParts != null) WriteStrokeAssembly();   // D231: the strips follow the new sizes
+            if (FamilyAddedMass != null) WriteFamilyStroke();         // D255: a family limb's M and I1 follow the scale
 
             // Torque per unit of signal is read from Power, which growth scales only when the world
             // asks for it (RunConfig.JuvenileStrengthScales, D241: Phenotype.ScaledFor) — so this is
@@ -209,11 +210,17 @@ namespace Evosim.Dynamics
                 int thin = part.ThinAxis;
                 BuoyancyOffset[i] = part.BuoyancyOffset;
                 ThinAxis[i] = thin;
+                // D255: a family part's offset is measured in the true surface's distance from the origin along the
+                // thin axis, on the side the offset points to, so that the point at +-1 is on the body: the origin is
+                // the centre of mass, off the box's centre, and the box's half-extent would put the point past a pole.
                 BuoyancyArm[i] = thin < 0
                     ? 0.0
-                    : part.BuoyancyOffset * System.Math.Abs((double)(thin == 0
-                        ? part.HalfExtents.X
-                        : thin == 1 ? part.HalfExtents.Y : part.HalfExtents.Z));
+                    : part.Family != null
+                        ? part.BuoyancyOffset * System.Math.Abs(
+                            (double)part.Family.Geometry.AxisReach(part.HalfExtents, thin, part.BuoyancyOffset < 0f))
+                        : part.BuoyancyOffset * System.Math.Abs((double)(thin == 0
+                            ? part.HalfExtents.X
+                            : thin == 1 ? part.HalfExtents.Y : part.HalfExtents.Z));
                 totalVolume += volume;
 
                 // The builder's own two lines: the plain mass with its floor, then the effective
@@ -400,7 +407,7 @@ namespace Evosim.Dynamics
             for (int i = 0; i < Links; i++)
             {
                 // D233: a family link's reach follows the size through its part's scale, as its core does.
-                if (HasHullCore(i))
+                if (Phenotype.Parts[i].Family != null)
                 {
                     _linkReach[i] = FamilyReach(Phenotype.Parts[i]);
                     continue;

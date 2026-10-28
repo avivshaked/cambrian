@@ -182,6 +182,17 @@ namespace Evosim.Dynamics
                     if (_strokeAnchor[k] == i) members[found++] = k;
                 }
 
+                for (int m = 0; m < found; m++)
+                {
+                    if (Phenotype.Parts[members[m]].Family == null) continue;
+
+                    throw new ArgumentException(
+                        "Part " + members[m] + " is a family part (D233) in the assembly of link " + i + ", and " +
+                        "SolverConfig.StrokePushesAssembly is on. D231's strips have no support function for the " +
+                        "family, and D255 computes a family limb's push alone, so a family part in an assembly " +
+                        "is refused (EVOSIM_STROKE_PUSHES_ASSEMBLY, D255).");
+                }
+
                 Vec3 childAnchor = Vec3.Read(ChildAnchor, 3 * i);
                 Vec3 toOrigin = -childAnchor;
                 double reach = toOrigin.Magnitude;

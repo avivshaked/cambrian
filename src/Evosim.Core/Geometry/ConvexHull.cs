@@ -345,6 +345,14 @@ namespace Evosim.Core
         /// is the safe side for a cap: a hull drawn round the boxes can only be larger than one
         /// drawn round the true surfaces, so the cap can only be looser for a round body and
         /// never bites a shape it should not.
+        ///
+        /// <b>A family part (D233) appends its 98 surface points instead</b> (D255), at its present
+        /// half-extents, the lattice of <see cref="Superellipsoid.ContactCoreCube"/> pushed onto the
+        /// surface and posed by the part's rotation and position. A part's position is its frame's
+        /// origin, which is its centre of mass, and the surface points are in that frame. The hull of
+        /// points on the true surface lies inside the true hull; the box's corners would stand up to
+        /// the taper and the centre's shift outside it.
+        /// </para>
         /// </remarks>
         public static void AppendPartCorners(PhenotypePart part, List<Double3> into)
         {
@@ -356,6 +364,21 @@ namespace Evosim.Core
             Float3 u0 = q.Rotate(new Float3(1f, 0f, 0f));
             Float3 u1 = q.Rotate(new Float3(0f, 1f, 0f));
             Float3 u2 = q.Rotate(new Float3(0f, 0f, 1f));
+
+            if (part.Family != null)
+            {
+                for (int i = 0; i < Superellipsoid.ContactCorePoints; i++)
+                {
+                    Double3 local = part.Family.Geometry.SurfacePointAndNormal(
+                        Superellipsoid.ContactCoreCube(i), part.HalfExtents, out _);
+                    into.Add(new Double3(
+                        c.X + u0.X * local.X + u1.X * local.Y + u2.X * local.Z,
+                        c.Y + u0.Y * local.X + u1.Y * local.Y + u2.Y * local.Z,
+                        c.Z + u0.Z * local.X + u1.Z * local.Y + u2.Z * local.Z));
+                }
+
+                return;
+            }
             var e = new Float3(
                 Math.Abs(part.HalfExtents.X),
                 Math.Abs(part.HalfExtents.Y),

@@ -300,8 +300,21 @@ namespace Evosim.Dynamics
                         // unit vector of dofAxis x axis, and the added mass is the part's for it.
                         // A sphere takes the unshaped line below, whose bits are the shaped value's.
                         PhenotypePart shapedPart = shaped ? body.Phenotype.Parts[i] : null;
-                        bool shapedPush = shaped && shapedPart.ShapeId != ShapeIds.Sphere;
+
+                        // D255: a family limb takes its strip integral, computed at build, in place of D229's
+                        // lines. Not entered for any other part, whose bits are unchanged.
+                        bool family = shaped && shapedPart.Family != null;
+                        if (family && body.FamilyAddedMass == null)
+                        {
+                            throw new System.InvalidOperationException(
+                                "A family limb is stepped under the fin law and this body was built without its " +
+                                "added mass table. A body is built, and resized, under the config it is stepped with (D255).");
+                        }
+
+                        bool shapedPush = shaped && !family && shapedPart.ShapeId != ShapeIds.Sphere;
                         double shapedSum = 0;
+                        double familySum = 0;
+                        double familyMass = 0;
 
                         // D231: a link with parts welded beyond it. Its constants were written at build and
                         // at every resize; nothing is computed or allocated here but the sums.
@@ -328,6 +341,15 @@ namespace Evosim.Dynamics
                             Vec3 dofAxis = rotation * frame.Rotate(Creature.AxisOf(d));
                             double along = Vec3.Dot(dofAxis, axis);
                             swing2 += s * omega * s * omega * (1.0 - along * along);
+
+                            if (family)
+                            {
+                                // q_d as above, times the degree's I1 and M, which were written at build and at
+                                // every resize.
+                                double familyQ = s * omega * s * omega * (1.0 - along * along);
+                                familySum += familyQ * body.FamilyFirstMoment[start + d];
+                                familyMass += familyQ * body.FamilyAddedMass[start + d];
+                            }
 
                             if (shapedPush)
                             {
@@ -359,6 +381,12 @@ namespace Evosim.Dynamics
                             {
                                 push = config.LimbPushCoefficient * assemblySum;
                                 lever = AssemblyLeverOf(assemblySum, assemblyMass, reach);
+                            }
+                            else if (family)
+                            {
+                                // D255: the same law for a family limb, from the strip integral of its true slices.
+                                push = config.LimbPushCoefficient * familySum;
+                                lever = AssemblyLeverOf(familySum, familyMass, reach);
                             }
 
                             force += axis * (-push);

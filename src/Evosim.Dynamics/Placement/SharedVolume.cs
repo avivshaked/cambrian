@@ -843,7 +843,10 @@ namespace Evosim.Dynamics.Placement
                 Float3 h = part.HalfExtents;
 
                 float centre = UnityFloatMath.Sqrt(p.X * p.X + p.Y * p.Y + p.Z * p.Z);
-                float corner = UnityFloatMath.Sqrt(h.X * h.X + h.Y * h.Y + h.Z * h.Z);
+                // D255: a family part's reach about its origin (the centre of mass), not the box's half diagonal.
+                float corner = part.Family != null
+                    ? (float)(part.Family.ReferenceSolidReach * (double)part.FamilyScale)
+                    : UnityFloatMath.Sqrt(h.X * h.X + h.Y * h.Y + h.Z * h.Z);
 
                 radius = UnityFloatMath.Max(radius, centre + corner);
             }
