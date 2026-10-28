@@ -246,10 +246,21 @@ Three additions to the bench, behind flags, so its existing modes keep their out
   - The superellipsoid joins the config's shape table in memory, if the run's table lacks it.
 
   The root keeps its shape, since it has no joint and no push.
+- **Record mode reads the farm's present files.** It reads `poses.jsonl` and plain snapshots today, and the t3 run
+  holds `poses.bin` with its index and gzipped compact snapshots. Snapshots go through `RecordFiles.ReadSnapshot`, and
+  poses through the farm's pose reader or a port of it. A compact snapshot row carries each body's growth fraction, so
+  each body is built at its recorded size rather than at adult size.
 - **The build is timed apart from the step.** One stopwatch around `Developer.Develop` and the body's construction,
   summed over the crowd, is reported as microseconds per body in each arm.
 
-The read, in a quiet slot the coordinator books: the same second of the crowded t3 run, recorded arm then converted arm,
-at the farm's thread count. Each arm has 200 warm-up steps and 2000 timed steps, three repeats each, and the median is
+The read, in a quiet slot the coordinator books: second 20700 of `runs/r62p-t3-6201` (run directory
+`2026-10-26-034325-a9cd635c`), recorded arm then converted arm, at the farm's thread count.
+- That is the run's most crowded snapshot: 9036 bodies alive, by its `stats.jsonl`.
+- Of those, 484 are jointed, with 1061 degrees of freedom between them. They are the only bodies the converted arm
+  changes.
+- So the gate measures the world's pace on the real mix. The bench also reports the step per jointed body, which gives
+  the fin law's cost per limb beside it.
+
+The arms run at the farm's thread count. Each arm has 200 warm-up steps and 2000 timed steps, three repeats each, and the median is
 taken. The gate is the converted arm's step at most 15 % slower than the recorded arm's. The bench counts the bodies it
 refused and the poses it left at rest. The two arms must agree on both counts, or the comparison is of different crowds.
