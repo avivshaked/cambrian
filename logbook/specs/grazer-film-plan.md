@@ -66,6 +66,8 @@ Fat's crowd re-record and card sitting come first. Each arm is judged in windows
 - G0 holds for the card port. The nose is sampled once per sniff, and its readings go to the card as inputs, with no
   new field on the card.
 - The nursery's test in the patch tank, with jointed swimmers, passes its three conditions as D235 ruled them.
+- When a world's table lists the nose, only nose parts smell, so founders without one are blind until noses bud. A
+  round with the nose seeds founders grafted with the snout, and G3's pace sitting is timed on such founders.
 - **Pass.** The nose cell is offered in the round.
 - **Fallback.** If the nose is not through G3 when G7 is ready to launch, the round goes without it.
 
