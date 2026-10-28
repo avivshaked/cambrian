@@ -67,7 +67,10 @@ Fat's crowd re-record and card sitting come first. Each arm is judged in windows
   new field on the card.
 - The nursery's test in the patch tank, with jointed swimmers, passes its three conditions as D235 ruled them.
 - When a world's table lists the nose, only nose parts smell, so founders without one are blind until noses bud. A
-  round with the nose seeds founders grafted with the snout, and G3's pace sitting is timed on such founders.
+  round with the nose seeds founders grafted with the snout, and G3's pace sitting is timed on such founders. The
+  snouted founders are `inocula/nose-snout-r59-tops/`, which are r62cf's ten pool swimmers with the snout, and they are
+  listed in `rounds/r62cf-nose-pool.tsv` (branch `nose-mirror`). The pool's four stomachs stay ungrafted: none of their
+  brains reads a smell.
 - **Pass.** The nose cell is offered in the round.
 - **Fallback.** If the nose is not through G3 when G7 is ready to launch, the round goes without it.
 
