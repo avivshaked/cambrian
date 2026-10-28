@@ -167,3 +167,13 @@ These are taken in slots the coordinator books.
 4. The pace read (section 5).
 
 Steps 1 and 2 need no card and no quiet machine. Step 3 waits for a slot beside b9's kernels.
+
+## As built, steps 1 and 2 (branch shape-build, 0eae73ce)
+
+The review changed three of the plans above. The filtered tests passed: Core 118 and Dynamics 127, after one pin was moved to the new reach.
+
+- **The buoyancy arm is fixed, not shown harmless.** On the bench's paddle and stick the thinnest axis is Y, which is the taper's axis. So offset ±1 put the buoyancy centre up to 16 mm past the narrow pole. The arm is now the offset times the true surface's distance along that axis, on the offset's side.
+- **A family link's contact sphere is the solid's reach under sphere contact too.** The half-diagonal left a taper-4 part's wide end outside its sphere. The founders' bounding radius and the developer's body-reach prune take the same reach.
+- **The silhouette of the box-like member is 7.3 % under the box's.** At exponents of 0.1 the 98 surface points stand about 5 % inside the box's corners. The test asserts the hull lies inside the true hull, which the 1 % comparison above cannot.
+
+The build's resolution is 24 cells a face edge, on a lattice of 25 points. Its worst error against the reference is 1.22 % over 170 cases. A family member nearest the box gives M 0.85 % under the box's caliper value, with a lever equal to the reach. A mirrored twin's cached M and I1 equal values computed from the solver's own anchor and axes, with reflection on and off.
