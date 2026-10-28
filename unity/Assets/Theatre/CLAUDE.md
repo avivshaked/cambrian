@@ -209,6 +209,12 @@ run many steps to a frame, prints the identity verdict at every sample, and quit
   a false colour, and show the pixels move. Light-through terms are zero when the key is behind the camera, and the film's
   shots look down with the key above. Three colour dials in a row were built on a dead term and came out byte-identical
   (`THALLI 2`, `ALGA_BACK_GREY`, `THALLI_SEE`, 2026-10-28).
+- **A render chain does not die with its heat guard.** A guard that trips writes `STOP`, stops the Unity processes it names
+  and exits, while the chain behind it waits in its rest; lifting `STOP` would let that chain render with no guard. After any
+  trip, stop the chain's own process and launch a fresh one, which starts a fresh guard. A worker the guard's pattern does not
+  name runs on through a trip, so the pattern names every worker the chain renders on (2026-10-28).
+- **Gate every launch on its own heat reading.** The launching command reads the temperature and launches only under 80 °C;
+  a reading taken a minute earlier is not the gate (2026-10-28, a launch at 81 °C).
 - **The skin can hide a joint, so every joint is bridged** (`TheatrePalette`'s necks, the
   theatre-joins brief in `logbook/specs/theatre-joins/`). Rounded leaves, sphere parts drawn as
   the genome's ellipsoid, and wavy plate rims all once left gaps where Core's anchors coincide. A
