@@ -1,0 +1,96 @@
+== c-6202 at 12000 s: 11 islands, half scale 1 m2, box 300 m, grove band 10 m
+  island 0   12 columns  centre (  62.1,  159.2)  r_eff  19.8 m  r_far   9.9 m  L     63.1 m2    164 leaves
+  island 1   10 columns  centre (  74.0,  251.0)  r_eff  18.9 m  r_far  16.6 m  L     26.5 m2     61 leaves
+  island 2    7 columns  centre (  73.9,  217.5)  r_eff  17.5 m  r_far   6.4 m  L      0.0 m2      0 leaves
+  island 3    7 columns  centre (  82.5,  166.1)  r_eff  17.5 m  r_far   6.4 m  L     37.8 m2     68 leaves
+  island 4   18 columns  centre ( 100.8,   98.3)  r_eff  22.0 m  r_far  17.2 m  L    124.1 m2    175 leaves
+  island 5    1 columns  centre ( 127.5,   72.5)  r_eff  12.8 m  r_far   0.0 m  L      0.0 m2      0 leaves
+  island 6   25 columns  centre ( 170.5,  148.9)  r_eff  24.1 m  r_far  16.5 m  L    144.2 m2    389 leaves
+  island 7    1 columns  centre ( 192.5,   92.5)  r_eff  12.8 m  r_far   0.0 m  L      0.0 m2      0 leaves
+  island 8    4 columns  centre ( 210.0,  252.5)  r_eff  15.6 m  r_far   7.5 m  L      1.0 m2      2 leaves
+  island 9   20 columns  centre ( 219.0,  104.0)  r_eff  22.6 m  r_far  14.3 m  L     68.1 m2    117 leaves
+  island 10   13 columns  centre ( 247.5,  245.2)  r_eff  20.2 m  r_far  13.6 m  L     60.5 m2    146 leaves
+  nearest neighbour edge gap (centroid distance - both r_eff): median -2.9 m, min -15.7, max 19.4
+  L_k median 37.8 m2, min 0.0, max 144.2
+  grazers 32 (27 on islands, 5 in the desert); leaf smell s on island grid points: p10 0.00 median 0.00 p90 1.45 m2
+  G      edge far (median L)    grazers on islands: strength p10/50/90 island grid: strength p10/50/90    grazers in desert p50/90   desert grid with far > s_off / far > 0.1
+  0        0.00 m2 (str 0.00)    0.52 / 0.74 / 0.84                   0.00 / 0.00 / 0.59                   0.32 / 0.67                  0% /   0%
+  0.002    0.08 m2 (str 0.07)    0.55 / 0.75 / 0.85                   0.04 / 0.18 / 0.62                   0.37 / 0.69                 41% /  15%
+  0.003    0.11 m2 (str 0.10)    0.57 / 0.76 / 0.85                   0.06 / 0.24 / 0.64                   0.39 / 0.70                 43% /  21%
+  0.004    0.15 m2 (str 0.13)    0.58 / 0.77 / 0.85                   0.08 / 0.29 / 0.65                   0.41 / 0.71                 43% /  24%
+  0.005    0.19 m2 (str 0.16)    0.60 / 0.78 / 0.86                   0.10 / 0.33 / 0.66                   0.43 / 0.72                 44% /  27%
+  0.01     0.38 m2 (str 0.27)    0.65 / 0.81 / 0.87                   0.18 / 0.48 / 0.71                   0.53 / 0.76                 45% /  35%
+  0.02     0.76 m2 (str 0.43)    0.73 / 0.84 / 0.89                   0.30 / 0.63 / 0.78                   0.69 / 0.81                 47% /  39%
+  0.05     1.89 m2 (str 0.65)    0.84 / 0.90 / 0.93                   0.52 / 0.80 / 0.88                   0.85 / 0.88                 47% /  41%
+== c-6202 at 24000 s: 11 islands, half scale 1 m2, box 300 m, grove band 10 m
+  island 0   12 columns  centre (  62.1,  159.2)  r_eff  19.8 m  r_far   9.9 m  L    186.7 m2    403 leaves
+  island 1   10 columns  centre (  74.0,  251.0)  r_eff  18.9 m  r_far  16.6 m  L    105.0 m2    234 leaves
+  island 2    7 columns  centre (  73.9,  217.5)  r_eff  17.5 m  r_far   6.4 m  L      2.0 m2      5 leaves
+  island 3    7 columns  centre (  82.5,  166.1)  r_eff  17.5 m  r_far   6.4 m  L    120.3 m2    203 leaves
+  island 4   18 columns  centre ( 100.8,   98.3)  r_eff  22.0 m  r_far  17.2 m  L    355.3 m2    466 leaves
+  island 5    1 columns  centre ( 127.5,   72.5)  r_eff  12.8 m  r_far   0.0 m  L      0.0 m2      0 leaves
+  island 6   25 columns  centre ( 170.5,  148.9)  r_eff  24.1 m  r_far  16.5 m  L    501.5 m2    806 leaves
+  island 7    1 columns  centre ( 192.5,   92.5)  r_eff  12.8 m  r_far   0.0 m  L      0.0 m2      0 leaves
+  island 8    4 columns  centre ( 210.0,  252.5)  r_eff  15.6 m  r_far   7.5 m  L     10.0 m2     19 leaves
+  island 9   20 columns  centre ( 219.0,  104.0)  r_eff  22.6 m  r_far  14.3 m  L    158.3 m2    255 leaves
+  island 10   13 columns  centre ( 247.5,  245.2)  r_eff  20.2 m  r_far  13.6 m  L    231.8 m2    394 leaves
+  nearest neighbour edge gap (centroid distance - both r_eff): median -2.9 m, min -15.7, max 19.4
+  L_k median 120.3 m2, min 0.0, max 501.5
+  grazers 141 (136 on islands, 5 in the desert); leaf smell s on island grid points: p10 0.00 median 0.31 p90 4.59 m2
+  G      edge far (median L)    grazers on islands: strength p10/50/90 island grid: strength p10/50/90    grazers in desert p50/90   desert grid with far > s_off / far > 0.1
+  0        0.00 m2 (str 0.00)    0.74 / 0.85 / 0.88                   0.00 / 0.24 / 0.82                   0.00 / 0.84                  0% /   0%
+  0.002    0.24 m2 (str 0.19)    0.76 / 0.87 / 0.90                   0.15 / 0.50 / 0.84                   0.00 / 0.86                 42% /  31%
+  0.003    0.36 m2 (str 0.27)    0.77 / 0.87 / 0.90                   0.20 / 0.56 / 0.85                   0.01 / 0.87                 44% /  35%
+  0.004    0.48 m2 (str 0.32)    0.78 / 0.88 / 0.91                   0.25 / 0.60 / 0.86                   0.01 / 0.88                 44% /  37%
+  0.005    0.60 m2 (str 0.38)    0.79 / 0.89 / 0.91                   0.30 / 0.64 / 0.86                   0.01 / 0.88                 45% /  38%
+  0.01     1.20 m2 (str 0.55)    0.83 / 0.91 / 0.93                   0.45 / 0.75 / 0.89                   0.02 / 0.91                 47% /  40%
+  0.02     2.41 m2 (str 0.71)    0.87 / 0.93 / 0.95                   0.62 / 0.84 / 0.92                   0.03 / 0.94                 48% /  43%
+  0.05     6.02 m2 (str 0.86)    0.92 / 0.97 / 0.97                   0.80 / 0.92 / 0.96                   0.08 / 0.97                 48% /  45%
+== c-6204 at 12000 s: 11 islands, half scale 1 m2, box 300 m, grove band 10 m
+  island 0   12 columns  centre (  62.1,  159.2)  r_eff  19.8 m  r_far   9.9 m  L     51.5 m2    128 leaves
+  island 1   10 columns  centre (  74.0,  251.0)  r_eff  18.9 m  r_far  16.6 m  L     39.3 m2     43 leaves
+  island 2    7 columns  centre (  73.9,  217.5)  r_eff  17.5 m  r_far   6.4 m  L      0.0 m2      0 leaves
+  island 3    7 columns  centre (  82.5,  166.1)  r_eff  17.5 m  r_far   6.4 m  L     28.2 m2     69 leaves
+  island 4   18 columns  centre ( 100.8,   98.3)  r_eff  22.0 m  r_far  17.2 m  L     64.6 m2     57 leaves
+  island 5    1 columns  centre ( 127.5,   72.5)  r_eff  12.8 m  r_far   0.0 m  L      0.0 m2      0 leaves
+  island 6   25 columns  centre ( 170.5,  148.9)  r_eff  24.1 m  r_far  16.5 m  L    135.8 m2    259 leaves
+  island 7    1 columns  centre ( 192.5,   92.5)  r_eff  12.8 m  r_far   0.0 m  L      0.0 m2      0 leaves
+  island 8    4 columns  centre ( 210.0,  252.5)  r_eff  15.6 m  r_far   7.5 m  L      0.0 m2      0 leaves
+  island 9   20 columns  centre ( 219.0,  104.0)  r_eff  22.6 m  r_far  14.3 m  L     99.0 m2    229 leaves
+  island 10   13 columns  centre ( 247.5,  245.2)  r_eff  20.2 m  r_far  13.6 m  L     57.6 m2    141 leaves
+  nearest neighbour edge gap (centroid distance - both r_eff): median -2.9 m, min -15.7, max 19.4
+  L_k median 39.3 m2, min 0.0, max 135.8
+  grazers 23 (19 on islands, 4 in the desert); leaf smell s on island grid points: p10 0.00 median 0.00 p90 1.40 m2
+  G      edge far (median L)    grazers on islands: strength p10/50/90 island grid: strength p10/50/90    grazers in desert p50/90   desert grid with far > s_off / far > 0.1
+  0        0.00 m2 (str 0.00)    0.47 / 0.65 / 0.78                   0.00 / 0.00 / 0.58                   0.44 / 0.63                  0% /   0%
+  0.002    0.08 m2 (str 0.07)    0.55 / 0.67 / 0.79                   0.04 / 0.16 / 0.61                   0.49 / 0.66                 39% /  12%
+  0.003    0.12 m2 (str 0.11)    0.58 / 0.68 / 0.80                   0.06 / 0.20 / 0.62                   0.51 / 0.67                 39% /  19%
+  0.004    0.16 m2 (str 0.14)    0.60 / 0.69 / 0.80                   0.08 / 0.24 / 0.64                   0.53 / 0.69                 40% /  24%
+  0.005    0.20 m2 (str 0.16)    0.62 / 0.69 / 0.81                   0.10 / 0.28 / 0.65                   0.55 / 0.70                 40% /  28%
+  0.01     0.39 m2 (str 0.28)    0.69 / 0.74 / 0.83                   0.18 / 0.42 / 0.70                   0.63 / 0.74                 41% /  35%
+  0.02     0.79 m2 (str 0.44)    0.74 / 0.80 / 0.86                   0.30 / 0.59 / 0.76                   0.72 / 0.80                 43% /  39%
+  0.05     1.97 m2 (str 0.66)    0.83 / 0.89 / 0.91                   0.52 / 0.77 / 0.87                   0.84 / 0.88                 43% /  41%
+== c-6204 at 24000 s: 11 islands, half scale 1 m2, box 300 m, grove band 10 m
+  island 0   12 columns  centre (  62.1,  159.2)  r_eff  19.8 m  r_far   9.9 m  L    104.4 m2    248 leaves
+  island 1   10 columns  centre (  74.0,  251.0)  r_eff  18.9 m  r_far  16.6 m  L    159.8 m2    211 leaves
+  island 2    7 columns  centre (  73.9,  217.5)  r_eff  17.5 m  r_far   6.4 m  L      0.0 m2      0 leaves
+  island 3    7 columns  centre (  82.5,  166.1)  r_eff  17.5 m  r_far   6.4 m  L     62.6 m2    102 leaves
+  island 4   18 columns  centre ( 100.8,   98.3)  r_eff  22.0 m  r_far  17.2 m  L    228.1 m2    340 leaves
+  island 5    1 columns  centre ( 127.5,   72.5)  r_eff  12.8 m  r_far   0.0 m  L      0.0 m2      0 leaves
+  island 6   25 columns  centre ( 170.5,  148.9)  r_eff  24.1 m  r_far  16.5 m  L    481.2 m2    573 leaves
+  island 7    1 columns  centre ( 192.5,   92.5)  r_eff  12.8 m  r_far   0.0 m  L      0.0 m2      0 leaves
+  island 8    4 columns  centre ( 210.0,  252.5)  r_eff  15.6 m  r_far   7.5 m  L      8.3 m2      6 leaves
+  island 9   20 columns  centre ( 219.0,  104.0)  r_eff  22.6 m  r_far  14.3 m  L    270.4 m2    401 leaves
+  island 10   13 columns  centre ( 247.5,  245.2)  r_eff  20.2 m  r_far  13.6 m  L    118.6 m2    187 leaves
+  nearest neighbour edge gap (centroid distance - both r_eff): median -2.9 m, min -15.7, max 19.4
+  L_k median 104.4 m2, min 0.0, max 481.2
+  grazers 112 (106 on islands, 6 in the desert); leaf smell s on island grid points: p10 0.00 median 0.15 p90 3.92 m2
+  G      edge far (median L)    grazers on islands: strength p10/50/90 island grid: strength p10/50/90    grazers in desert p50/90   desert grid with far > s_off / far > 0.1
+  0        0.00 m2 (str 0.00)    0.74 / 0.84 / 0.88                   0.00 / 0.13 / 0.80                   0.76 / 0.85                  0% /   0%
+  0.002    0.21 m2 (str 0.17)    0.78 / 0.86 / 0.89                   0.14 / 0.41 / 0.82                   0.80 / 0.87                 41% /  29%
+  0.003    0.31 m2 (str 0.24)    0.79 / 0.86 / 0.90                   0.19 / 0.48 / 0.83                   0.82 / 0.88                 42% /  33%
+  0.004    0.42 m2 (str 0.29)    0.79 / 0.87 / 0.90                   0.24 / 0.53 / 0.84                   0.83 / 0.88                 43% /  36%
+  0.005    0.52 m2 (str 0.34)    0.80 / 0.88 / 0.90                   0.28 / 0.58 / 0.84                   0.85 / 0.89                 44% /  37%
+  0.01     1.04 m2 (str 0.51)    0.83 / 0.90 / 0.92                   0.43 / 0.71 / 0.88                   0.89 / 0.91                 46% /  40%
+  0.02     2.09 m2 (str 0.68)    0.87 / 0.93 / 0.94                   0.60 / 0.82 / 0.91                   0.92 / 0.94                 47% /  43%
+  0.05     5.22 m2 (str 0.84)    0.92 / 0.97 / 0.97                   0.79 / 0.91 / 0.96                   0.96 / 0.97                 47% /  45%

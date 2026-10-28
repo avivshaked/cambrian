@@ -1,0 +1,12 @@
+== c-6202 at 12000 s: 2864 leaves, 1122 (39%) inside an island's columns
+  within m of the nearest edge: 0 m 40%  5 m 68%  10 m 87%  15 m 96%  20 m 99%  30 m 100%
+  per island, leaves nearest it (inside its columns): 0:362(164)  1:150(61)  2:1(0)  3:189(68)  4:596(175)  5:26(0)  6:780(389)  7:3(0)  8:6(2)  9:358(117)  10:393(146)
+== c-6202 at 24000 s: 8410 leaves, 2787 (33%) inside an island's columns
+  within m of the nearest edge: 0 m 34%  5 m 60%  10 m 81%  15 m 93%  20 m 98%  30 m 100%
+  per island, leaves nearest it (inside its columns): 0:1118(403)  1:708(234)  2:8(5)  3:637(203)  4:1374(466)  5:18(0)  6:2346(806)  7:21(0)  8:80(20)  9:790(255)  10:1310(395)
+== c-6204 at 12000 s: 2297 leaves, 927 (40%) inside an island's columns
+  within m of the nearest edge: 0 m 42%  5 m 67%  10 m 84%  15 m 94%  20 m 98%  30 m 100%
+  per island, leaves nearest it (inside its columns): 0:261(128)  1:170(43)  2:7(0)  3:146(69)  4:174(57)  6:656(260)  7:2(0)  9:561(229)  10:320(141)
+== c-6204 at 24000 s: 6400 leaves, 2069 (32%) inside an island's columns
+  within m of the nearest edge: 0 m 33%  5 m 58%  10 m 79%  15 m 92%  20 m 98%  30 m 100%
+  per island, leaves nearest it (inside its columns): 0:541(248)  1:811(211)  2:13(0)  3:310(102)  4:1059(340)  5:8(0)  6:1975(573)  7:41(0)  8:28(6)  9:1058(402)  10:556(187)
