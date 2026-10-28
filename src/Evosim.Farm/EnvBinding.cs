@@ -598,6 +598,13 @@ namespace Evosim.Farm
             Num("EVOSIM_ANCHOR_RESERVE_LAG", 60f, (s, v) => s.AnchorReserveLag = v),
             Num("EVOSIM_ANCHOR_UPKEEP", 2.5f, (s, v) => s.AnchorUpkeep = v),
             Num("EVOSIM_ANCHOR_BUD_WEIGHT", 1f, (s, v) => s.AnchorBudWeight = v),
+            // D235's nose: the cell type appended to the table, its noise per smell and its share of buds. Its upkeep, reference
+            // area, backgrounds and facing intake stay at NoseCell's defaults.
+            Flag("EVOSIM_NOSE", (s, v) => s.Nose = v),
+            Num("EVOSIM_NOSE_LEAF_NOISE", 0.25f, (s, v) => s.NoseLeafNoise = v),
+            Num("EVOSIM_NOSE_CARRION_NOISE", 5f, (s, v) => s.NoseCarrionNoise = v),
+            Num("EVOSIM_NOSE_CHEMICAL_NOISE", 0.25f, (s, v) => s.NoseChemicalNoise = v),
+            Num("EVOSIM_NOSE_BUD_WEIGHT", 1f, (s, v) => s.NoseBudWeight = v),
 
             // D146: which brain the creatures carry. The one brain's rates stay at their defaults here.
             Custom("EVOSIM_BRAIN_MODEL", (s, env) => s.BrainModel = BrainModelOf(env, "EVOSIM_BRAIN_MODEL")),
@@ -830,6 +837,17 @@ namespace Evosim.Farm
                         s.AnchorReserveThreshold, s.AnchorReserveLag, s.AnchorUpkeep)
                     {
                         BudWeight = s.AnchorBudWeight,
+                    });
+            }
+
+            // D235: the nose after the anchoring cell, so every earlier type keeps its place and a world without it is the
+            // table it was. In a world whose table lists it only noses smell.
+            if (s.Nose)
+            {
+                config.CellTypes = config.CellTypes.Appending(
+                    new NoseCell(leafNoise: s.NoseLeafNoise, carrionNoise: s.NoseCarrionNoise, chemicalNoise: s.NoseChemicalNoise)
+                    {
+                        BudWeight = s.NoseBudWeight,
                     });
             }
 
@@ -2051,6 +2069,11 @@ namespace Evosim.Farm
         public float AnchorReserveLag;
         public float AnchorUpkeep;
         public float AnchorBudWeight;
+        public bool Nose;
+        public float NoseLeafNoise;
+        public float NoseCarrionNoise;
+        public float NoseChemicalNoise;
+        public float NoseBudWeight;
         public float UpkeepConsumer;
         public BrainModel BrainModel;
         public float ScentRange;
