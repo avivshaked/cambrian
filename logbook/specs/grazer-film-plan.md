@@ -46,11 +46,11 @@ follows it.
 ### G2, the bloom screen (D251)
 
 Four arms on two seeds, 24,000 s each: (A) today; (B) the cycles; (C) the cycles and the far smell; (D) as C, with fat.
-Fat's crowd re-record and card sitting come first. Each arm is judged in windows of 3,000 s from 6,000 s on.
+Fat's crowd re-record and card sitting come first. Each arm is judged in windows of 3,000 s: survival from 9,000 s, once the first bloom cycle has settled, and evolution from 6,000 s.
 
 | Test | Threshold | Kind |
 |---|---|---|
-| Grazers survive | in every window from 6,000 s, a mean of at least 30 grazers alive, and never 0; and D222's tests pass by the procedure that made `r62cf`'s recorded table | gate |
+| Grazers survive | in every window from 9,000 s, a mean of at least 30 grazers alive, and never 0; and D222's tests pass by the procedure that made `r62cf`'s recorded table | gate |
 | The bloom reaches the food | on each island of at least 5 columns with a mean lit leaf area of at least 1 m², the leaf area follows the influx factor, with a correlation of at least 0.5 at the best lag | gate for B to D |
 | Grazers evolve | at least one heritable grazer trait shifts by at least one founder standard deviation between the first and last windows. The traits are body mass, part count, limb push, and the brain's mean drive | gate |
 | The world is rich | at least three grazer clades each hold 10 % of grazers in some window, and something eats grazers or their remains | reported |
