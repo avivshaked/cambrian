@@ -49,13 +49,13 @@ namespace Evosim.Farm.Gpu
         int LinkPoolCapacity { get; }
 
         /// <summary>D235, for the tests: the cells of the held-sniff columns across the classes (one a class in a world without the nose).</summary>
-        long HeldCells => 0; // TEMP-DEFAULT
+        long HeldCells { get; }
 
         /// <summary>D235, for the tests: the bytes of the held-sniff columns the blocks have uploaded so far (none in a world without the nose).</summary>
-        long HeldBytesUp => 0; // TEMP-DEFAULT
+        long HeldBytesUp { get; }
 
         /// <summary>D235, for the tests: the rows of the nose-flag columns across the classes (one a class in a world without the nose, else the class's links).</summary>
-        long NoseFlagRows => 0; // TEMP-DEFAULT
+        long NoseFlagRows { get; }
 
         /// <summary>The scent's fill on the card from the world's corpses (GpuScent), under <see cref="GpuOptions.Scent"/>.</summary>
         void FillScentOnCard(World world);

@@ -2564,7 +2564,22 @@ namespace __NS__
             if (_w.Nose)
             {
                 CreatureSenses senses = c.Senses;
-                for (int l = 0; l < links; l++) s.NoseFlag.Host[l * N + i] = senses.IsNose(l) ? 1 : 0;
+                bool nosed = false;
+                for (int l = 0; l < links; l++)
+                {
+                    bool nose = senses.IsNose(l);
+                    s.NoseFlag.Host[l * N + i] = nose ? 1 : 0;
+                    nosed |= nose;
+                }
+
+                // The card reads only what Sniff held (CreatureSenses.HeldSniff, as the farm sets it). A bench's body
+                // reads its noses' tips on every step instead, which the card does not, and would part from the solver.
+                if (nosed && !senses.HeldSniff)
+                {
+                    throw new InvalidOperationException(
+                        "Body " + c.Id + " has a nose whose senses read its tip on every step (HeldSniff is off); " +
+                        "the gpu engine reads only the held sniff. Set HeldSniff and call Sniff, as the farm does.");
+                }
             }
 
             if (c.Drive.BendAndPower)

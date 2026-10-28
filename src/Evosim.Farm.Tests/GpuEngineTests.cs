@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Evosim.Core;
 using Evosim.Dynamics;
@@ -145,6 +146,14 @@ namespace Evosim.Farm.Tests
                     node.CellTypeId = CellTypeIds.Nose;
                     node.Intake = 0f;
                     node.Lift = 0f;
+                }
+
+                // Under the per-part brain a neuron's sensor is its own part's and only a nose smells, so a body none of
+                // whose noses has a neuron reading a smell is drawn again.
+                if (!central && !genome.Nodes.Any(n => n.CellTypeId == CellTypeIds.Nose &&
+                                                       n.Neurons.Any(d => d.Inputs.Any(x => x.Kind == NeuronInputKind.Sensor && x.Channel.IsSmell()))))
+                {
+                    continue;
                 }
 
                 if (central && !WireCentral(genome, rng, sensorPool, world.Config.Brain, 0, table)) continue;
@@ -1360,6 +1369,13 @@ namespace Evosim.Farm.Tests
             foreach (Creature body in world.Creatures) body.Senses.Sniff(sniff);
         }
 
+        private static byte[] BrainState(Creature body)
+        {
+            using var stream = new MemoryStream();
+            using (var w = new BinaryWriter(stream)) body.Brain.WriteState(w);
+            return stream.ToArray();
+        }
+
         private static int NoseLinks(DynamicsWorld world)
         {
             int noses = 0;
@@ -1470,7 +1486,16 @@ namespace Evosim.Farm.Tests
             Assert.True(sensed[SensorChannel.Scent], brain + ": no brain read a carrion smell that was not 0");
             Assert.True(sensed[SensorChannel.Chemical], brain + ": no brain read a chemical smell that was not 0");
 
+            // Parted in a brain's neurons, a position or the drive the brain sent its joints, all of which AssertSame
+            // compares: the card matched the noisy world to the bit, so it read the noise. Under the per-part brain a
+            // nose cannot move (only a link may), so its smell reaches a drive only through a neighbour's neuron, and may
+            // not inside the test's 125 steps; it reaches the nose's own neurons at once.
             bool parted = false;
+            for (int i = 0; i < cpu.Creatures.Count && !parted; i++)
+            {
+                parted = !BrainState(plain.Creatures[i]).AsSpan().SequenceEqual(BrainState(cpu.Creatures[i]));
+            }
+
             for (int i = 0; i < cpu.Creatures.Count && !parted; i++)
             {
                 double[] a = plain.Creatures[i].Position, b = cpu.Creatures[i].Position;
@@ -1478,9 +1503,15 @@ namespace Evosim.Farm.Tests
                 {
                     parted = BitConverter.DoubleToInt64Bits(a[k]) != BitConverter.DoubleToInt64Bits(b[k]);
                 }
+
+                float[] da = plain.Creatures[i].DriveSignal, db = cpu.Creatures[i].DriveSignal;
+                for (int k = 0; k < da.Length && !parted; k++)
+                {
+                    parted = BitConverter.SingleToInt32Bits(da[k]) != BitConverter.SingleToInt32Bits(db[k]);
+                }
             }
 
-            Assert.True(parted, brain + ": the noisy noses stepped as the exact ones: the held readings never reached the trajectory");
+            Assert.True(parted, brain + ": the noisy noses stepped and drove as the exact ones: the held readings never reached the brain's drive");
 
             // The held column and the flag were sized to the links and uploaded with the blocks.
             Assert.True(backend.HeldCells > 4, "the held column is a stub in a nose world");
@@ -1488,6 +1519,26 @@ namespace Evosim.Farm.Tests
             Assert.True(backend.HeldBytesUp > 0, "no block uploaded the held column");
             Assert.Equal(0, backend.RefusedForClass);
             Assert.Equal(0L, backend.OverflowTotal);
+        }
+
+        /// <summary>
+        /// D235: the card reads only the held sniff, so a nosed body whose senses read their tips on every step (a bench's,
+        /// <c>HeldSniff</c> off) would part from the solver; the card refuses it when it packs the body.
+        /// </summary>
+        [Fact]
+        public void ANoseThatIsNotHeldIsRefused()
+        {
+            (DynamicsWorld gpu, World core) = NosePair(null, new NoseCell());
+            PopulateNoses(gpu, core, 2, 11UL, 1, new[] { SensorChannel.Chemical }, false);
+            gpu.Creatures[1].Senses.HeldSniff = false;
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            Exception thrown = Assert.ThrowsAny<Exception>(() => gpu.StepBlock(1));
+            Exception refused = thrown is AggregateException all ? all.Flatten().InnerExceptions[0] : thrown;
+            Assert.IsType<InvalidOperationException>(refused);
+            Assert.Contains("HeldSniff", refused.Message);
         }
 
         /// <summary>
