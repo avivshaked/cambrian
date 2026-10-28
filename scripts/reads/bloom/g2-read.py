@@ -613,8 +613,15 @@ def gate1(rr, a, ns):
           f"{'born share':>10} {'chain':>5} {'best repl':>9} {'living share':>12}")
     count_max = max(rr.counts) if rr.counts else 0
     window_fail = []
+    survive_from = getattr(a, "survive_from", 9000.0)
+    print(f"   the floor is judged from {survive_from:g} s (--survive-from, the coordinator's ruling of 2026-10-28); "
+          "earlier windows are printed and marked 'before'")
     for r in rows:
         t0, t1 = r["win"]
+        if t0 < survive_from - 1e-9:
+            print(f"   {t0:>5g}-{t1:<6g} {fmt(r['cmin'], '{}'):>8} {fmt(r['cmean'], '{:.1f}'):>6}  {'':>5} {'before':>6}|| "
+                  f"{'':>36}{fmt(r['share']):>10} {r['chain']:>5} {fmt(r['repl'], '{:.2f}'):>9} {fmt(r['lshare']):>12}")
+            continue
         nonzero = r["cmin"] is not None and r["cmin"] > 0
         if measure == "mean":
             ok = r["cmean"] is not None and r["cmean"] >= floor
@@ -1173,6 +1180,9 @@ def main():
     ap.add_argument("--report", default=None, help="the run's report file, where it is not <arm folder>.md")
     ap.add_argument("--end", type=float, default=24000.0)
     ap.add_argument("--from", dest="t_from", type=float, default=6000.0)
+    ap.add_argument("--survive-from", dest="survive_from", type=float, default=9000.0,
+                    help="gate 1's floor is judged from here (9,000 s, the coordinator's ruling of 2026-10-28); "
+                         "gate 3 and the rest keep --from")
     ap.add_argument("--window", type=float, default=3000.0)
     ap.add_argument("--upkeep-w", type=float, default=0.908)
     ap.add_argument("--floor-measure", choices=("mean", "fewest", "d244"), default="mean",
