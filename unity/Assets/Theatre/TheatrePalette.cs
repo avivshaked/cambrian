@@ -60,6 +60,9 @@ namespace Evosim.Theatre
         public Color Absorptive = new Color(0.90f, 0.55f, 0.22f);
         public Color Structural = new Color(0.72f, 0.74f, 0.78f);
 
+        /// <summary>D247's fat cell: a pale yellow, off the guild wheel as the link's pink is.</summary>
+        public Color Fat = new Color(0.96f, 0.90f, 0.55f);
+
         /// <summary>
         /// The colour of a link: a part whose cell is <c>link</c>, the tissue a joint moves.
         /// </summary>
@@ -2011,6 +2014,7 @@ namespace Evosim.Theatre
             if (cellTypeId == CellTypeIds.Photosynthetic) return Photosynthetic;
             if (cellTypeId == CellTypeIds.Absorptive) return Absorptive;
             if (cellTypeId == CellTypeIds.Link) return Jointed;
+            if (cellTypeId == CellTypeIds.Fat) return Fat;
             return Structural;
         }
 

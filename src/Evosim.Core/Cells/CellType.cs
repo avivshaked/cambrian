@@ -229,6 +229,16 @@ namespace Evosim.Core
         /// </summary>
         public virtual bool FixesLight => false;
 
+        /// <summary>
+        /// D229, D247: the room this tissue adds to its body's reserve cap, joules per cubic metre. 0 for every
+        /// type but fat.
+        /// </summary>
+        /// <remarks>
+        /// Read only under <see cref="ReserveCapForm.BodyAndStore"/>. Virtual and 0 here, overridden by
+        /// <see cref="FatCell"/>, so no other type's serialized form or hash changes.
+        /// </remarks>
+        public virtual float StoreRoomJoulesPerCubicMetre => 0f;
+
         /// <summary>Energy this cell acquires over one step, in joules. Never negative.</summary>
         /// <remarks>
         /// <para>

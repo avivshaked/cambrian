@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "b93ff45881bd1c89",
+  "configHash": "106682230609b5f6",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -332,6 +332,8 @@
   "sense": {
     "chemicalHalfScaleJoulesPerCubicMetre": 10,
     "energyFullScaleSeconds": 3000,
+    "energyHalfScaleSeconds": 30,
+    "energySenseSquash": "Tanh",
     "flowFullScaleMetresPerSecond": 0.3,
     "leafScent": "None",
     "leafScentCellMetres": 2,
@@ -397,6 +399,7 @@
     "nutrientSinkMetresPerSecond": 0.002,
     "refugeEdibleFraction": 0,
     "remineralisationPerSecond": 0.002,
+    "reserveCapForm": "Seconds",
     "reserveCapSeconds": 0,
     "seedOverrides": [],
     "senescenceDoublingSeconds": 3000,

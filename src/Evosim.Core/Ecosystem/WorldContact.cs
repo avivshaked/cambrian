@@ -114,6 +114,21 @@ namespace Evosim.Core
         /// <summary>The body-steps on which the cap held something back in a gut, ever (D232). Cumulative; checkpointed only with the switch on.</summary>
         public long GutCapBound { get; private set; }
 
+        /// <summary>
+        /// The body-steps on which the reserve cap held digestion back (D247): the gut had more to give, after the
+        /// mouth's own limit, than the room the reserve had left under <see cref="World.ReserveCapJoules"/>, so the gut
+        /// kept the rest. A step on which the mouth's limit left nothing to digest is not counted. Cumulative; 0 and
+        /// checkpointed only with the gut on and <see cref="RunConfig.ReserveCapForm"/> at
+        /// <see cref="ReserveCapForm.BodyAndStore"/>.
+        /// </summary>
+        public long GutWaitedAtReserveCap { get; private set; }
+
+        /// <summary>
+        /// The largest gut any body has held, J, read at the start of each digestion pass, where a gut is at its
+        /// largest (D247). A running maximum; 0 and checkpointed only with the gut on and the body-and-store cap.
+        /// </summary>
+        public double LargestGutJoules { get; private set; }
+
         /// <summary>The joules the living hold in their guts now (D232). O(n), for a report row.</summary>
         public double GutJoulesHeld
         {
@@ -939,12 +954,17 @@ namespace Evosim.Core
         {
             double keptShare = 1d - Config.IntakeWasteFraction;
             double perUnit = Config.JoulesPerUnit;
+            bool waitAtCap = Config.ReserveCapForm == ReserveCapForm.BodyAndStore;
 
             for (int i = 0; i < _living.Count; i++)
             {
                 Organism body = _living[i];
                 double gut = body.GutJoules;
                 if (!(gut > 0d)) continue;
+
+                // D247: the largest gut held, at its largest, which is the pass's start. Counted only under the
+                // body-and-store cap, so a world without it reads and writes what it always did.
+                if (waitAtCap && gut > LargestGutJoules) LargestGutJoules = gut;
 
                 double cap = MouthRate(body, seconds) * perUnit;
                 double room = cap;
@@ -957,6 +977,25 @@ namespace Evosim.Core
                 {
                     GutCapCutJoules += gut - digest;
                     GutCapBound++;
+                }
+
+                // D247: digestion waits at the reserve cap. The reserve takes the digest less the intake waste, so the
+                // digest is held to what lets the reserve rise to the cap and no higher, and the gut keeps the rest.
+                // The mouth's cut above is counted first, so its columns still read what the mouth's cap did.
+                if (waitAtCap && keptShare > 0d && digest > 0d)
+                {
+                    double reserveCap = ReserveCapJoules(body);
+                    if (!double.IsPositiveInfinity(reserveCap))
+                    {
+                        double capRoom = reserveCap - body.Energy;
+                        if (!(capRoom > 0d)) capRoom = 0d;
+                        double byCap = capRoom / keptShare;
+                        if (byCap < digest)
+                        {
+                            digest = byCap;
+                            GutWaitedAtReserveCap++;
+                        }
+                    }
                 }
 
                 if (!(digest > 0d)) continue;

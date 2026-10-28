@@ -276,6 +276,8 @@ namespace Evosim.Farm
             Num("EVOSIM_UPTAKE_KS", D.UptakeHalfSaturation, (s, v) => s.UptakeHalf = v),
             Num("EVOSIM_HANDLING", D.HandlingCostPerJouleEaten, (s, v) => s.Handling = v),
             Num("EVOSIM_RESERVE_CAP", D.ReserveCapSeconds, (s, v) => s.ReserveCap = v),
+            // D229, D247: the rule the cap is by. Seconds is D098's trim, every recorded world.
+            Custom("EVOSIM_RESERVE_CAP_FORM", (s, env) => s.ReserveCapForm = ReserveCapFormOf(env, "EVOSIM_RESERVE_CAP_FORM")),
             Num("EVOSIM_MARGIN_MIN", RandomGenomeOptions.Default.MinReserveMargin, (s, v) => s.MarginMin = v),
             Num("EVOSIM_MARGIN_MAX", RandomGenomeOptions.Default.MaxReserveMargin, (s, v) => s.MarginMax = v),
             Num("EVOSIM_MARGIN_CHANCE", MutationRates.Default.MarginChance, (s, v) => s.MarginChance = v),
@@ -599,12 +601,20 @@ namespace Evosim.Farm
             Num("EVOSIM_ANCHOR_UPKEEP", 2.5f, (s, v) => s.AnchorUpkeep = v),
             Num("EVOSIM_ANCHOR_BUD_WEIGHT", 1f, (s, v) => s.AnchorBudWeight = v),
 
+            // D229, D247: the fat cell, appended to the world's cell-type table when on, and its store room. Its other
+            // numbers are FatCell's own and live on the type, in the config's table.
+            Flag("EVOSIM_FAT", (s, v) => s.Fat = v),
+            Num("EVOSIM_FAT_ROOM", FatCell.DefaultStoreRoomJoulesPerCubicMetre, (s, v) => s.FatRoom = v),
+
             // D146: which brain the creatures carry. The one brain's rates stay at their defaults here.
             Custom("EVOSIM_BRAIN_MODEL", (s, env) => s.BrainModel = BrainModelOf(env, "EVOSIM_BRAIN_MODEL")),
             Num("EVOSIM_SCENT_RANGE", D.ScentRangeMetres, (s, v) => s.ScentRange = v),
             Num("EVOSIM_SCENT_SCALE", D.ScentHalfScaleJoules, (s, v) => s.ScentScale = v),
             Num("EVOSIM_CHEMICAL_HALF_SCALE", D.ChemicalHalfScaleJoulesPerCubicMetre, (s, v) => s.ChemicalHalfScale = v),
             Num("EVOSIM_ENERGY_FULL_SCALE", D.EnergyFullScaleSeconds, (s, v) => s.EnergyFullScale = v),
+            // D245: which squash the energy sense reads through, and the half-scale it reads at under the second.
+            Custom("EVOSIM_ENERGY_SQUASH", (s, env) => s.EnergySquash = EnergySquashOf(env, "EVOSIM_ENERGY_SQUASH")),
+            Num("EVOSIM_ENERGY_HALF_SCALE", D.EnergyHalfScaleSeconds, (s, v) => s.EnergyHalfScale = v),
             Num("EVOSIM_FLOW_FULL_SCALE", D.FlowFullScaleMetresPerSecond, (s, v) => s.FlowFullScale = v),
             Text("EVOSIM_INOCULATE", (s, v) => s.InoculatePath = v),
             Num("EVOSIM_INOCULATE_AT", D.InoculateAtSeconds, (s, v) => s.InoculateAt = v),
@@ -851,6 +861,13 @@ namespace Evosim.Farm
                 leaf.TissueEnergyPerCubicMetre = leaf.TissueEnergyPerCubicMetre * s.LeafTissueEnergy;
             }
 
+            // D247: the fat cell joins the table at its end, after the tissue-energy overrides above so that its own
+            // price stands, and every other type keeps its place: a world without it is the table it always was.
+            if (s.Fat)
+            {
+                config.CellTypes = config.CellTypes.Appending(new FatCell(s.FatRoom));
+            }
+
             config.PerOffspringOverheadJoules = s.Overhead;
             config.PerOffspringOverheadPerTissueJoule = s.OverheadPerTissue;
             config.Mutation.GestationModeChance = s.GestationModeChance;
@@ -887,6 +904,7 @@ namespace Evosim.Farm
             config.UptakeHalfSaturation = s.UptakeHalf;
             config.HandlingCostPerJouleEaten = s.Handling;
             config.ReserveCapSeconds = s.ReserveCap;
+            config.ReserveCapForm = s.ReserveCapForm;
 
             // Ordered here rather than trusted from the launcher, as EvolutionRun orders it: a
             // minimum above the maximum is a silent empty draw.
@@ -987,6 +1005,8 @@ namespace Evosim.Farm
             config.ScentHalfScaleJoules = s.ScentScale;
             config.ChemicalHalfScaleJoulesPerCubicMetre = s.ChemicalHalfScale;
             config.EnergyFullScaleSeconds = s.EnergyFullScale;
+            config.EnergySenseSquash = s.EnergySquash;
+            config.EnergyHalfScaleSeconds = s.EnergyHalfScale;
             config.FlowFullScaleMetresPerSecond = s.FlowFullScale;
             config.NeuralCostPerNeuronWatts = s.NeuronCost;
             config.NeuralCostPerConnectionWatts = s.ConnectionCost;
@@ -1331,6 +1351,36 @@ namespace Evosim.Farm
 
             throw new ArgumentException(
                 name + " is '" + raw + "', which is none of 'none', 'skin' or 'spin'.");
+        }
+
+        private static EnergySenseSquash EnergySquashOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrEmpty(raw)) return EnergySenseSquash.Tanh;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "tanh": return EnergySenseSquash.Tanh;
+                case "halfscale": return EnergySenseSquash.HalfScale;
+            }
+
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is neither 'tanh' nor 'halfscale'.");
+        }
+
+        private static ReserveCapForm ReserveCapFormOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrEmpty(raw)) return ReserveCapForm.Seconds;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "seconds": return ReserveCapForm.Seconds;
+                case "bodyandstore": return ReserveCapForm.BodyAndStore;
+            }
+
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is neither 'seconds' nor 'bodyandstore'.");
         }
 
         private static ContactShapeForm ContactShapeOf(Lookup env, string name)
@@ -2044,6 +2094,21 @@ namespace Evosim.Farm
         public float LeafScentHalf;
         public bool UnbittenNoCorpse;
         public bool Anchoring;
+
+        /// <summary>D247: the fat cell is appended to the cell-type table (<c>EVOSIM_FAT</c>).</summary>
+        public bool Fat;
+
+        /// <summary>D247: fat's store room, J/m³ (<c>EVOSIM_FAT_ROOM</c>).</summary>
+        public float FatRoom;
+
+        /// <summary>D229, D247: the rule the reserve cap is by (<c>EVOSIM_RESERVE_CAP_FORM</c>).</summary>
+        public ReserveCapForm ReserveCapForm;
+
+        /// <summary>D245: the energy sense's squash (<c>EVOSIM_ENERGY_SQUASH</c>).</summary>
+        public EnergySenseSquash EnergySquash;
+
+        /// <summary>D245: the half-scale under <c>halfscale</c>, seconds (<c>EVOSIM_ENERGY_HALF_SCALE</c>).</summary>
+        public float EnergyHalfScale;
         public float AnchorTenacity;
         public float AnchorPrice;
         public float AnchorDecay;

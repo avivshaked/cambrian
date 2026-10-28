@@ -61,6 +61,9 @@ namespace Evosim.Core
                     n["reserveThresholdSeconds"].AsFloat(),
                     n["reserveLagSeconds"].AsFloat(),
                     upkeep),
+
+                [CellTypeIds.Fat] = (n, upkeep) =>
+                    new FatCell(n["storeRoomJoulesPerCubicMetre"].AsFloat(), upkeep),
             };
 
         /// <summary>

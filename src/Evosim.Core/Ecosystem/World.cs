@@ -2741,6 +2741,17 @@ namespace Evosim.Core
                     "(Fluid.PowerPushRadiansPerSecond 0), so there is no envelope to sense.", nameof(config));
             }
 
+            // D229, D247: the body-and-store cap is s seconds of standing cost above the litter and the growth, so at
+            // s of 0 it would read as a cap that is not there; and the rule that draws its numbers is the dial's.
+            if (config.ReserveCapForm == ReserveCapForm.BodyAndStore && !(config.ReserveCapSeconds > 0f))
+            {
+                throw new ArgumentException(
+                    "ReserveCapForm is BodyAndStore and ReserveCapSeconds is 0. Under the body-and-store form s is the " +
+                    "seconds of standing cost above the litter and the growth, and 0 means no cap under either form; a " +
+                    "header naming the form would describe a cap the world did not have (D247).",
+                    nameof(config));
+            }
+
             // D231: a stroke pushes its welded assembly by the fin law's strips, so it needs the fin law; and only
             // the power push has a fixed stroke direction to take them along, so the swing push is refused.
             if (config.Fluid != null && config.Fluid.StrokePushesAssembly)
@@ -4865,11 +4876,105 @@ namespace Evosim.Core
             return ledger;
         }
 
+        /// <summary>
+        /// The cap on this body's reserve now, J, or <see cref="double.PositiveInfinity"/> where none binds: a world
+        /// with <see cref="RunConfig.ReserveCapSeconds"/> at 0, or a body with no standing cost.
+        /// </summary>
+        /// <remarks>
+        /// Under <see cref="ReserveCapForm.Seconds"/> it is D098's <c>s × W</c>, the expression the trim always read.
+        /// Under <see cref="ReserveCapForm.BodyAndStore"/> it is D229's, taken off the body as it stands and never
+        /// held between steps: <c>P + R + s × W + Σ room × volume</c>. P is the next litter's price as the breeding
+        /// gate computes it (<see cref="ReproductionTraits.CostJoules(double, RunConfig)"/> at the body's tissue,
+        /// the expression <see cref="Organism.BreedingGate(RunConfig)"/> and <see cref="Organism.LumpGate"/> add
+        /// the margin to), R is the adult tissue less the tissue now and not below 0, W is
+        /// <see cref="Organism.StandingWatts"/>, and each part adds its type's
+        /// <see cref="CellType.StoreRoomJoulesPerCubicMetre"/> times its volume. The margin gene is left out on
+        /// purpose, so a lineage cannot raise its store by evolving caution.
+        /// </remarks>
+        public double ReserveCapJoules(Organism creature)
+        {
+            if (creature == null) throw new ArgumentNullException(nameof(creature));
+            if (!(Config.ReserveCapSeconds > 0f && creature.StandingWatts > 0f)) return double.PositiveInfinity;
+
+            return Config.ReserveCapForm == ReserveCapForm.BodyAndStore
+                ? BodyAndStoreCap(creature)
+                : (double)Config.ReserveCapSeconds * creature.StandingWatts;
+        }
+
+        private double BodyAndStoreCap(Organism creature)
+        {
+            double tissue = creature.TissueJoules;
+            double price = creature.Genome.Reproduction.CostJoules(tissue, Config);
+            double growth = creature.AdultTissueJoules - tissue;
+            if (!(growth > 0d)) growth = 0d;
+
+            double cap = price + growth + (double)Config.ReserveCapSeconds * creature.StandingWatts;
+
+            IReadOnlyList<PhenotypePart> parts = creature.Phenotype.Parts;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                PhenotypePart part = parts[i];
+                float room = Config.CellTypes.Resolve(part.CellTypeId).StoreRoomJoulesPerCubicMetre;
+                if (room > 0f) cap += (double)room * Math.Max(0f, part.Volume);
+            }
+
+            return cap;
+        }
+
+        /// <summary>
+        /// D247, for a stats row: the living read against the reserve cap and the fat in them. O(parts of the living),
+        /// taken at a sample and never in a step.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="ReserveCapCensus.NearCap"/> counts the living whose reserve is within 1% of their cap; a body
+        /// with no cap, in a world with none, is never near it. <see cref="ReserveCapCensus.MarginAboveCap"/> counts
+        /// the lump breeders whose margin gene's seconds exceed <see cref="RunConfig.ReserveCapSeconds"/>, which the
+        /// body-and-store cap leaves unable to reach their own gate; 0 under the other form.
+        /// </remarks>
+        public ReserveCapCensus CensusReserveCap()
+        {
+            var census = new ReserveCapCensus();
+            bool store = Config.ReserveCapForm == ReserveCapForm.BodyAndStore;
+
+            for (int i = 0; i < _living.Count; i++)
+            {
+                Organism creature = _living[i];
+
+                double cap = ReserveCapJoules(creature);
+                if (!double.IsPositiveInfinity(cap) && creature.Energy >= 0.99d * cap) census.NearCap++;
+
+                if (store && creature.Genome.Reproduction.Mode == ReproductionMode.Lump &&
+                    creature.Genome.Reproduction.ReserveMargin > Config.ReserveCapSeconds)
+                {
+                    census.MarginAboveCap++;
+                }
+
+                bool fat = false;
+                IReadOnlyList<PhenotypePart> parts = creature.Phenotype.Parts;
+                for (int p = 0; p < parts.Count; p++)
+                {
+                    double volume = Math.Max(0f, parts[p].Volume);
+                    census.Volume += volume;
+                    if (parts[p].CellTypeId == CellTypeIds.Fat)
+                    {
+                        census.FatVolume += volume;
+                        if (volume > 0d) fat = true;
+                    }
+                }
+
+                if (fat) census.FatCarriers++;
+            }
+
+            return census;
+        }
+
         private void TrimReserve(Organism creature)
         {
             if (!(Config.ReserveCapSeconds > 0f && creature.StandingWatts > 0f)) return;
 
-            double cap = (double)Config.ReserveCapSeconds * creature.StandingWatts;
+            double cap = Config.ReserveCapForm == ReserveCapForm.BodyAndStore
+                ? BodyAndStoreCap(creature)
+                : (double)Config.ReserveCapSeconds * creature.StandingWatts;
             if (!(creature.Energy > cap)) return;
 
             // The trim is the float the water is handed, and the reserve gives up exactly that
@@ -7529,10 +7634,12 @@ namespace Evosim.Core
             // per-creature per-step loop the absorptive log would otherwise need just to decide
             // whether to record a creature at all.
             bool photosynthetic = false;
+            bool fat = false;
             IReadOnlyList<PhenotypePart> admitted = phenotype.Parts;
             for (int i = 0; i < admitted.Count; i++)
             {
                 if (admitted[i].CellTypeId == CellTypeIds.Photosynthetic) photosynthetic = true;
+                if (admitted[i].CellTypeId == CellTypeIds.Fat) fat = true;
             }
 
             creature.AbsorptiveVolume = AbsorptiveVolumeOf(phenotype);
@@ -7620,7 +7727,8 @@ namespace Evosim.Core
                 capCut, landingCorpse, landingCorpseMean,
                 LifespanRecorded ? genome.LifespanScale : float.NaN,
                 immigrantFromWorld, immigrantFromId,
-                climbing ? genome.GrowthReserveSeconds.Value : float.NaN));
+                climbing ? genome.GrowthReserveSeconds.Value : float.NaN,
+                hasFat: fat));
 
             // Record format 2's genome file, beside the lineage row and under the same guarantee:
             // exactly one per id assigned. A reference, not a copy, and nothing is read or drawn,
@@ -7944,5 +8052,27 @@ namespace Evosim.Core
             _dead.Clear();
             return taken;
         }
+    }
+
+    /// <summary>The living against the reserve cap and the fat in them — <see cref="World.CensusReserveCap"/>, D247.</summary>
+    public sealed class ReserveCapCensus
+    {
+        /// <summary>Living bodies whose reserve is within 1% of their cap.</summary>
+        public int NearCap;
+
+        /// <summary>Lump breeders whose margin gene's seconds exceed the cap's s, under the body-and-store cap.</summary>
+        public int MarginAboveCap;
+
+        /// <summary>Living bodies with any fat tissue.</summary>
+        public int FatCarriers;
+
+        /// <summary>Fat tissue's volume over the living, m³.</summary>
+        public double FatVolume;
+
+        /// <summary>All tissue's volume over the living, m³.</summary>
+        public double Volume;
+
+        /// <summary>Fat's share of the living tissue volume; 0 with no tissue.</summary>
+        public double FatVolumeShare => Volume > 0d ? FatVolume / Volume : 0d;
     }
 }
