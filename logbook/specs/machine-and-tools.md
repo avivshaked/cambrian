@@ -61,12 +61,11 @@ The root file's rules still apply. The entries below were moved word for word, s
   driver event after boot. Since then every job meant to stay off the card runs with
   `CUDA_VISIBLE_DEVICES=-1` and reports whether its process loaded `nvcuda`.
   **A screen that stays dark after its idle switch-off, with no event at all** (2026-10-28). The
-  display turns off after 600 s on mains, and the machine never sleeps there. When it would not
-  wake, the log held no sleep, no Kernel-Power and no `nvlddmkm` entry, and `nvidia-smi
-  --query-gpu=display_active` read `Disabled`. A broadcast `WM_SYSCOMMAND` `SC_MONITORPOWER` of -1
-  plus a one-pixel `mouse_event`, sent from the session, brought it back to `Enabled` within
-  seconds. Try that before any reset. At the keyboard, Win+Ctrl+Shift+B restarts the display
-  driver without touching running work.
+  display turns off after 600 s on mains, and the machine never sleeps there. The owner found the
+  cause: the Bluetooth mouse had not reconnected, so moving it sent no input. The log held no sleep,
+  no Kernel-Power and no `nvlddmkm` entry, and `nvidia-smi --query-gpu=display_active` read
+  `Disabled`. A broadcast `WM_SYSCOMMAND` `SC_MONITORPOWER` of -1 plus a one-pixel `mouse_event`,
+  sent from the session, brought it back to `Enabled` within seconds. Try that before any reset.
 - **A farm run started from VS Code gets the fast cores only while VS Code has focus.** The
   machine is an i9-13900K: eight fast cores (logical 0 to 15) and sixteen efficiency cores (16
   to 31). With VS Code in front, round 48's two farm runs sat about 44% on the fast cores and
