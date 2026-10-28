@@ -76,7 +76,6 @@ The owner launches every agent by hand. Ping the owner's phone when the next age
 | evolution-simulator-b9 | The nose's card port (G3) on `nose` (`scratch/wt-nose`, rebased onto main at `3467d7d4`), with the farm binding, the snouted founders and the launchers on `nose-mirror` (`bf687b35`). Tests on 2-15. Its three card sittings are booked through the coordinator |
 | evolution-simulator-6d | The nursery. The curriculum is parked (D254). It runs G3's nose test on `nose-test` (`scratch/wt-nose-test`, `e76de082`): the founders bench, then the arms, singles only. Short jobs on 28-31. It does not launch nursery runs; the coordinator books them |
 | assay-d6 | Another project, Assay, sharing the machine. Its agents relay through it, so every Assay line goes to assay-d6. It is suspended now, and since its lane A (0-3) overlaps b0 and the test cores, it asks the coordinator before resuming |
-| csck506-deep-learning-ac | Coursework |
 
 ## The machine
 
