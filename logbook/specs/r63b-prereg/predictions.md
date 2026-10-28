@@ -1,9 +1,9 @@
 # The bloom screen: do islands on their own clocks make a world worth filming?
 
-*Pre-registration, drafted by the coordinator on 2026-10-28 while the build's checks ran. It is gate G2 of the grazer
-film's plan (`logbook/specs/grazer-film-plan.md`, D254), and it carries out D251. The build's hashes, the launcher and
-the card group are filled in when the build lands. The screen launches from a clean worktree at this file's final
-commit, after the card notice, HOLD and the heat watch.*
+*Pre-registration, written by the coordinator on 2026-10-28 while the build's checks ran, and completed when the build
+landed. It is gate G2 of the grazer film's plan (`logbook/specs/grazer-film-plan.md`, D254), and it carries out D251.
+The screen launches from `scratch/wt-r63b` at this file's commit, with that worktree's own Release farm, after HOLD and
+the heat watch.*
 
 ## The questions
 
@@ -36,8 +36,15 @@ Four arms on two seeds, `6202` and `6203`, 24,000 world seconds each, eight worl
   and would trim the reserves of 20 to 44 % of living grazers (`logbook/specs/fat-step0/`, `grazers.txt`). Fat has room
   to buy only where the cap binds, and that trim is its cost.
 - **The build** merges `bloom`, `fat` and `g2read` on main, so that the read's trait command opens the screen's
-  configs. G0 has passed for both: switch-off digests, suites, the crowd
-  re-record, the card identity sittings, and the pace check (bloom at no more than 15 % slower).
+  configs. Its code is `r63b-build` at `379ff793`, landed on main as `dc26989b` with prose changes only; its Dynamics
+  hash is `ddb068fd624c` and its farm hash `d53ec6ee6080`. G0 passed on it:
+  - with every switch off, the world stepped identically to `r62cf` on all three seeds to 600 s;
+  - the suites passed, and the crowd fixture was re-recorded and matched;
+  - with C's and D's switches on, groups 32 and 64 gave identical digests on all three seeds (`scratch/r63b-hold/`);
+  - C stepped 1 to 8 % slower than off, against a limit of 15 %. D stepped faster, because it held fewer bodies.
+- **The launcher** is `rounds/launch-r63b.ps1`: one card group named `r63b` of eight worlds at group 32, the snow's
+  transport on the card, checkpoints every 1,500 s, the heat stop on, cores 22 to 31 at 10 threads. Each world's
+  settings come from `rounds/env-r63b-a.ps1` to `-d.ps1`.
 
 ## The read and the gates
 
@@ -71,7 +78,11 @@ These are the coordinator's, written before any run. They are guesses, and are m
   seed fails in that window (means 39.1, 34.1 and 30.6), so every arm is likely to fail at 40. That reading is
   information, not the gate. B and C pass, because the total
   influx is held constant (guess, moderate confidence). D is the likeliest to fail: fat's upkeep and room are a new
-  cost (guess).
+  cost (guess). The build's pace check gave a first sign. At 600 s, D held about half C's bodies on all three of
+  `r62cf`'s seeds (736, 784 and 562 against 1,537, 1,526 and 1,393). That came from fewer births (720 against 1,535 on
+  6202), not more deaths, and the gap was already there at 300 s. The likely cause, unchecked, is that a cap that lets a
+  body keep more energy holds energy back from breeding. If D fails gate 1, it fails in the early windows from
+  9,000 s, through slower breeding.
 - **Gate 2.** It passes in B to D on most judged islands. The best lag is 500 to 2,000 s, because matter sinks through
   12 m of island in about 600 s and leaves take time to grow (guess). The shortest periods, near 2,500 s, are the
   likeliest to fall under 0.5.
