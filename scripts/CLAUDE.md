@@ -194,6 +194,11 @@ belongs to a run that has ended, so it can be stopped by its process id (2026-10
   `Environment.ProcessorCount` as 8, so a suite started under a pin fails
   `TheRealLauncherRefusesAMaskNamingAProcessorTheMachineLacks`: its mask names logical 8, which the machine has.
   The test passes unpinned. A pinned suite whose only failure is that test is a clean result.
+- **A fresh worktree fails about 90 Nursery tests until it has the genome pools.** Pools are data, so
+  `rounds/nursery/pools/` is gitignored (the owner's ruling of 2026-10-18) and `git worktree add` makes a
+  checkout without it. Copy the main checkout's `rounds/nursery/pools/` into the worktree before its first
+  test run. One pool, `39d06aac2d0d0f60.tsv`, is not in the main checkout but only in the
+  `scratch/wt-curriculum*` worktrees, so copy it from one of them.
 - **The species column reads 1 unless `EVOSIM_SPECIES_THETA` is set.** `SpeciesDriftThreshold`
   defaults to 0, at which `AssignSpecies` gives every creature species 0 — the instrument is
   off, not reporting one species. Every arm through round 13 ran at 0; calibrate with the
