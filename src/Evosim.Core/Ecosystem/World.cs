@@ -381,6 +381,18 @@ namespace Evosim.Core
         // Reused each step: the factors the influx is laid by.
         private readonly double[] _bloomFactors;
 
+        // D251's island geometry, per island in label order: the plan's centroid and radius. Built when
+        // the cycles or the far smell are on, and null otherwise.
+        private double[] _islandCentreX;
+        private double[] _islandCentreZ;
+        private double[] _islandRadius;
+
+        // D251's far smell, null unless IslandFarSmell is Leaves: each island's flat top (radius plus the
+        // band), its height as the last leaf fill laid it, and the banded area that height came from.
+        private double[] _farFlat;
+        private double[] _farHeights;
+        private double[] _farArea;
+
         /// <summary>True when D251's island cycles are on: <see cref="RunConfig.IslandBloom"/> is Cycles.</summary>
         public bool HasIslandBloom => _bloomPeriods != null;
 
@@ -417,25 +429,69 @@ namespace Evosim.Core
         }
 
         /// <summary>
-        /// The lit leaf area standing in each island's columns, m², in label order: the area (the fourth
-        /// float) of every source of the last leaf fill (<see cref="CopyLeafSources"/>), counted towards
-        /// the island of the plan column its x and z fall in. A source over the desert counts towards
-        /// none. Empty without the cycles.
+        /// The banded lit leaf area of each island, m², in label order: the area (the fourth float) of
+        /// every source of the last leaf fill (<see cref="CopyLeafSources"/>), counted towards the island
+        /// whose edge is nearest to it (the least level distance to the island's centroid less its radius,
+        /// the lower label on a tie), and only when that least distance is at most
+        /// <see cref="RunConfig.IslandFarSmellBandMetres"/>. A source farther than the band from every
+        /// island counts towards none. This is L_k of D251's far smell, and it is banded whether or not the
+        /// far smell is on, so the stats column reads the food the smell reports. Empty without the cycles.
         /// </summary>
         public double[] IslandBloomLeafArea()
         {
             if (_bloomPeriods == null) return Array.Empty<double>();
             var area = new double[_bloomPeriods.Length];
-            var grid = (GridField)Matter;
+            if (LeafScent == null) return area;
 
-            for (int i = 0; i < _leafSourceCount; i++)
-            {
-                int column = grid.ColumnIndexAt(_leafSources[4 * i], _leafSources[4 * i + 2]);
-                int island = _islandInflux.IslandOfColumnIndex(column);
-                if (island >= 0) area[island] += _leafSources[4 * i + 3];
-            }
-
+            BandedLeafArea(
+                _leafSources, _leafSourceCount, _islandCentreX, _islandCentreZ, _islandRadius, area.Length,
+                Config.IslandFarSmellBandMetres, LeafScent.CellsX * (double)LeafScent.CellSizeMetres,
+                LeafScent.CellsZ * (double)LeafScent.CellSizeMetres, LeafScent.Wraps, area);
             return area;
+        }
+
+        /// <summary>True when D251's far smell is on: <see cref="RunConfig.IslandFarSmell"/> is Leaves.</summary>
+        public bool HasIslandFarSmell => _farHeights != null;
+
+        /// <summary>
+        /// Each island's flat height H_k = G × L_k as the last leaf fill laid it, in the leaf smell's units,
+        /// in label order. Empty without the far smell.
+        /// </summary>
+        public double[] IslandFarSmellHeights() => _farHeights == null ? Array.Empty<double>() : (double[])_farHeights.Clone();
+
+        /// <summary>
+        /// L_k, the banded lit leaf area: each of the first <paramref name="count"/> sources of
+        /// <paramref name="sources"/> (four floats each: x, y, z and area) counted towards the island with
+        /// the least <c>d − radius</c>, the lower label on a tie, when that is at most
+        /// <paramref name="band"/>. d is the level distance (x and z) from the source to the island's
+        /// centre, the shorter way round each axis when <paramref name="wraps"/>. Works in double, in the
+        /// sources' order, and overwrites <paramref name="area"/>.
+        /// </summary>
+        public static void BandedLeafArea(
+            float[] sources, int count, double[] centreX, double[] centreZ, double[] radius, int islands,
+            double band, double lengthX, double lengthZ, bool wraps, double[] area)
+        {
+            for (int k = 0; k < islands; k++) area[k] = 0d;
+
+            for (int i = 0; i < count; i++)
+            {
+                double px = sources[4 * i], pz = sources[4 * i + 2];
+                int best = -1;
+                double least = double.PositiveInfinity;
+                for (int k = 0; k < islands; k++)
+                {
+                    double dx = ScentField.LevelOffset(px - centreX[k], lengthX, wraps);
+                    double dz = ScentField.LevelOffset(pz - centreZ[k], lengthZ, wraps);
+                    double edge = Math.Sqrt(dx * dx + dz * dz) - radius[k];
+                    if (edge < least)
+                    {
+                        least = edge;
+                        best = k;
+                    }
+                }
+
+                if (best >= 0 && least <= band) area[best] += sources[4 * i + 3];
+            }
         }
 
         /// <summary>The shade map's mean over the live columns, 1 with no map. For the header.</summary>
@@ -1089,7 +1145,33 @@ namespace Evosim.Core
         {
             if (LeafScent == null) return;
             GatherLeafSources();
+            FillLeafScentFromSources();
+        }
+
+        /// <summary>
+        /// Fills the leaf smell from the sources in hand: the leaves' own cones, then, under D251's far
+        /// smell only, each island's flat top and skirt added to them. The live fill and a restore both
+        /// call it, so a restored world rebuilds the grid from the checkpoint's own sources.
+        /// </summary>
+        private void FillLeafScentFromSources()
+        {
             LeafScent.FillSources(_leafSources, _leafSourceCount);
+            if (_farHeights != null) AddIslandFarSmell();
+        }
+
+        private void AddIslandFarSmell()
+        {
+            int islands = _farHeights.Length;
+            BandedLeafArea(
+                _leafSources, _leafSourceCount, _islandCentreX, _islandCentreZ, _islandRadius, islands,
+                Config.IslandFarSmellBandMetres, LeafScent.CellsX * (double)LeafScent.CellSizeMetres,
+                LeafScent.CellsZ * (double)LeafScent.CellSizeMetres, LeafScent.Wraps, _farArea);
+
+            double gain = Config.IslandFarSmellGain;
+            for (int k = 0; k < islands; k++) _farHeights[k] = gain * _farArea[k];
+
+            LeafScent.AddLevelPlateaus(
+                _islandCentreX, _islandCentreZ, _farFlat, _farHeights, islands, Config.IslandFarSmellReachMetres);
         }
 
         /// <summary>
@@ -1898,6 +1980,7 @@ namespace Evosim.Core
             ValidateVent(config, patchCount);
             ValidateMatterInflux(config, patchCount);
             ValidateIslandBloom(config);
+            ValidateIslandFarSmell(config);
 
             Field = new LightField(
                 Light, config.WorldAreaSquareMetres, config.LightLayerMetres,
@@ -2116,6 +2199,50 @@ namespace Evosim.Core
                         "its threshold, so the matter was seeded as uniform water and there is no island " +
                         "for the influx to land on.",
                         nameof(config));
+                }
+
+                // D251. The islands' points and radii, for the banded leaf area and the far smell.
+                if (config.IslandBloom == IslandBloom.Cycles || config.IslandFarSmell == IslandFarSmell.Leaves)
+                {
+                    int islands = _islandInflux.IslandCount;
+                    _islandCentreX = new double[islands];
+                    _islandCentreZ = new double[islands];
+                    _islandRadius = new double[islands];
+                    for (int k = 0; k < islands; k++)
+                    {
+                        _islandCentreX[k] = _islandInflux.IslandX(k);
+                        _islandCentreZ[k] = _islandInflux.IslandZ(k);
+                        _islandRadius[k] = _islandInflux.IslandRadius(k);
+                    }
+                }
+
+                // D251. The far smell's heights, one per island. In a box whose seams join, an island's
+                // skirt must not reach round to meet itself, as a leaf's cone must not (ScentField).
+                if (config.IslandFarSmell == IslandFarSmell.Leaves)
+                {
+                    int islands = _islandInflux.IslandCount;
+                    _farFlat = new double[islands];
+                    _farHeights = new double[islands];
+                    _farArea = new double[islands];
+                    for (int k = 0; k < islands; k++)
+                    {
+                        _farFlat[k] = _islandRadius[k] + config.IslandFarSmellBandMetres;
+                        if (LeafScent.Wraps)
+                        {
+                            double reachMetres = _farFlat[k] + config.IslandFarSmellReachMetres;
+                            int cells = (int)Math.Ceiling(reachMetres / LeafScent.CellSizeMetres);
+                            if (2 * cells + 1 > LeafScent.CellsX || 2 * cells + 1 > LeafScent.CellsZ)
+                            {
+                                throw new ArgumentException(
+                                    FormattableString.Invariant(
+                                        $"IslandFarSmell is Leaves and island {k}'s smell reaches {reachMetres:0.###} m ") +
+                                    FormattableString.Invariant(
+                                        $"(its radius, the band and the reach), across the whole {LeafScent.CellsX} by {LeafScent.CellsZ} ") +
+                                    "cells of a box whose seams join, so it would meet itself round a seam.",
+                                    nameof(config));
+                            }
+                        }
+                    }
                 }
 
                 // D251. Each island's cycle, drawn once from the seed and the island's label alone.
@@ -3083,6 +3210,59 @@ namespace Evosim.Core
                     FormattableString.Invariant(
                         $"IslandBloom is Cycles and the amplitude bounds are {amin} and {amax}. ") +
                     "Both are finite and not below 0, and the least is not above the greatest.",
+                    nameof(config));
+            }
+        }
+
+        /// <summary>
+        /// D251's far smell is added to the leaf smell and laid on the islands of the influx's plan, so it
+        /// needs both, and its three numbers are finite. Nothing is checked while it is off. The check that
+        /// an island's skirt does not meet itself round a seam needs the plan, and the constructor makes it.
+        /// </summary>
+        private static void ValidateIslandFarSmell(RunConfig config)
+        {
+            if (config.IslandFarSmell != IslandFarSmell.Leaves) return;
+
+            if (config.LeafScent == LeafScentForm.None)
+            {
+                throw new ArgumentException(
+                    "IslandFarSmell is Leaves, but the far smell is added to the leaf smell and this world has " +
+                    "none (it needs LeafScent Strength or Direction).",
+                    nameof(config));
+            }
+
+            if (!(config.MatterInfluxPerSecond > 0f) || config.MatterInfluxAt != MatterInflux.Islands)
+            {
+                throw new ArgumentException(
+                    "IslandFarSmell is Leaves, but the far smell is laid on the islands of the influx and this " +
+                    "world has none (it needs MatterInfluxAt Islands and MatterInfluxPerSecond > 0).",
+                    nameof(config));
+            }
+
+            float gain = config.IslandFarSmellGain;
+            if (!(gain >= 0f) || float.IsInfinity(gain))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant($"IslandFarSmell is Leaves and the gain is {gain}. ") +
+                    "It is finite and not below 0.",
+                    nameof(config));
+            }
+
+            float band = config.IslandFarSmellBandMetres;
+            if (!(band >= 0f) || float.IsInfinity(band))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant($"IslandFarSmell is Leaves and the band is {band} m. ") +
+                    "It is finite and not below 0.",
+                    nameof(config));
+            }
+
+            float reach = config.IslandFarSmellReachMetres;
+            if (!(reach > 0f) || float.IsInfinity(reach))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant($"IslandFarSmell is Leaves and the reach is {reach} m. ") +
+                    "It is finite and above 0.",
                     nameof(config));
             }
         }

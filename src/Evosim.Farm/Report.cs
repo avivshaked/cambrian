@@ -522,6 +522,7 @@ namespace Evosim.Farm
                 // D251's island cycles, only when on, so every other line is what it was. Each island's own
                 // figures are the world's and come on a line of their own (IslandBloomLine).
                 IslandBloomToken(config) +
+                IslandFarSmellToken(config) +
                 " · configHash `" + config.Hash() + "`" +
                 // D159's exchange, after the hash because it is a farm setting and no part of the
                 // config, and only in a migrating world, so every other line is what it was. A lone
@@ -543,6 +544,20 @@ namespace Evosim.Farm
                    " period " + F(config.IslandBloomPeriodMinSeconds) + "-" + F(config.IslandBloomPeriodMaxSeconds) + " s" +
                    " amplitude " + F(config.IslandBloomAmplitudeMin) + "-" + F(config.IslandBloomAmplitudeMax) +
                    (config.IslandBloomHoldsTotal ? " holds the total" : " lets the total move");
+        }
+
+        /// <summary>
+        /// D251's far smell header token: its name with the gain G, the band B and the reach R. Empty unless
+        /// the far smell is on, so every other line is what it was.
+        /// </summary>
+        public static string IslandFarSmellToken(RunConfig config)
+        {
+            if (config.IslandFarSmell != IslandFarSmell.Leaves) return "";
+
+            return " · island far smell " + config.IslandFarSmell.ToString().ToLowerInvariant() +
+                   " gain " + F(config.IslandFarSmellGain) +
+                   " band " + F(config.IslandFarSmellBandMetres) + " m" +
+                   " reach " + F(config.IslandFarSmellReachMetres) + " m";
         }
 
         /// <summary>

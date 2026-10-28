@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "ff745694fbbe9747",
+  "configHash": "63254ffa8d544407",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -382,6 +382,10 @@
     "islandBloomHoldsTotal": true,
     "islandBloomPeriodMaxSeconds": 6000,
     "islandBloomPeriodMinSeconds": 2500,
+    "islandFarSmell": "None",
+    "islandFarSmellBandMetres": 10,
+    "islandFarSmellGain": 0.005,
+    "islandFarSmellReachMetres": 30,
     "joulesPerUnit": 100,
     "lightByExposure": false,
     "lightLayerMetres": 1,

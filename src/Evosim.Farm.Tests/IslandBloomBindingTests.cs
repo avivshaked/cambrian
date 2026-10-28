@@ -89,6 +89,58 @@ namespace Evosim.Farm.Tests
         }
 
         [Fact]
+        public void UnsetTheFarSmellIsOffAndTheHeaderSaysNothingNew()
+        {
+            (string line, RunConfig config, World world) = Build(Fed(("EVOSIM_LEAF_SCENT", "strength")));
+
+            Assert.Equal(IslandFarSmell.None, config.IslandFarSmell);
+            Assert.Equal(0.005f, config.IslandFarSmellGain);
+            Assert.Equal(10f, config.IslandFarSmellBandMetres);
+            Assert.Equal(30f, config.IslandFarSmellReachMetres);
+            Assert.DoesNotContain("far smell", line);
+            Assert.False(world.HasIslandFarSmell);
+        }
+
+        [Fact]
+        public void TheFarSmellNamesReachTheConfigAndTheHeader()
+        {
+            (string line, RunConfig config, World world) = Build(Fed(
+                ("EVOSIM_LEAF_SCENT", "strength"),
+                ("EVOSIM_FAR_SMELL", "leaves"),
+                ("EVOSIM_FAR_SMELL_GAIN", "0.01"),
+                ("EVOSIM_FAR_SMELL_BAND", "4"),
+                ("EVOSIM_FAR_SMELL_REACH", "5")));
+
+            Assert.Equal(IslandFarSmell.Leaves, config.IslandFarSmell);
+            Assert.Equal(0.01f, config.IslandFarSmellGain);
+            Assert.Equal(4f, config.IslandFarSmellBandMetres);
+            Assert.Equal(5f, config.IslandFarSmellReachMetres);
+            Assert.Contains(" · island far smell leaves gain 0.01 band 4 m reach 5 m · configHash", line);
+            Assert.True(world.HasIslandFarSmell);
+
+            // It does not need the cycles, and beside them the header names both, the cycles first.
+            Assert.DoesNotContain("island bloom", line);
+            (string both, _, _) = Build(Fed(
+                ("EVOSIM_LEAF_SCENT", "strength"), ("EVOSIM_ISLAND_BLOOM", "cycles"), ("EVOSIM_FAR_SMELL", "leaves")));
+            Assert.Contains(" · island bloom cycles ", both);
+            Assert.True(both.IndexOf(" · island bloom ", StringComparison.Ordinal) < both.IndexOf(" · island far smell ", StringComparison.Ordinal));
+
+            RunConfig off = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(Fed(("EVOSIM_LEAF_SCENT", "strength")))));
+            Assert.NotEqual(off.Hash(), config.Hash());
+        }
+
+        [Fact]
+        public void AnUnknownFarSmellIsRefusedAndAFarSmellWithoutALeafSmellIsRefusedByTheWorld()
+        {
+            ArgumentException e = Assert.Throws<ArgumentException>(
+                () => EnvBinding.Read(EnvBinding.Of(Fed(("EVOSIM_FAR_SMELL", "halo")))));
+            Assert.Contains("none, leaves", e.Message);
+
+            ArgumentException w = Assert.Throws<ArgumentException>(() => Build(Fed(("EVOSIM_FAR_SMELL", "leaves"))));
+            Assert.Contains("IslandFarSmell is Leaves", w.Message);
+        }
+
+        [Fact]
         public void AnUnknownBloomIsRefused()
         {
             ArgumentException e = Assert.Throws<ArgumentException>(

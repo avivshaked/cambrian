@@ -1086,8 +1086,9 @@ namespace Evosim.Farm
 
                 // D251, only in a world whose islands bloom: one entry per island in label order. The
                 // factor each island's influx was last laid by (the clock as the step advanced it, which
-                // is the sample's clock), and the lit leaf area standing in its columns, written only
-                // where the world has a leaf smell and so gathers the sources it is summed from.
+                // is the sample's clock), and the lit leaf area standing within the band of its edge
+                // (banded by IslandFarSmellBandMetres, the L_k the far smell's height is made of), written
+                // only where the world has a leaf smell and so gathers the sources it is summed from.
                 if (world.HasIslandBloom)
                 {
                     double[] bloomFactor = world.IslandBloomFactorsAt(world.ElapsedSeconds);
@@ -1102,6 +1103,16 @@ namespace Evosim.Farm
                         for (int k = 0; k < bloomLeafArea.Length; k++) w.Value(bloomLeafArea[k]);
                         w.EndArray();
                     }
+                }
+
+                // D251's far smell, only where it is on: each island's flat height H_k as the last leaf
+                // fill laid it, in label order.
+                if (world.HasIslandFarSmell)
+                {
+                    double[] farSmellHeight = world.IslandFarSmellHeights();
+                    w.BeginArray("farSmellHeight");
+                    for (int k = 0; k < farSmellHeight.Length; k++) w.Value(farSmellHeight[k]);
+                    w.EndArray();
                 }
 
                 w.BeginArray("floorStockByFloorDecile");

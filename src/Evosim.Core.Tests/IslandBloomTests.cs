@@ -479,16 +479,19 @@ namespace Evosim.Core.Tests
             Assert.Equal(off.MatterInfluxedTotal, on.MatterInfluxedTotal);
         }
 
-        [Fact]
-        public void TheLeafAreaIsSummedIntoTheIslandOfThePlanColumnEachSourceStandsIn()
+        /// <summary>
+        /// A bedded tank with a leaf smell and a leaf standing over the first column of every island and one over
+        /// the desert, stepped a few times so the leaf fill has gathered them. The band is the far smell's.
+        /// </summary>
+        private static World LeafWorld(float band)
         {
             RunConfig config = Bedded(still: true, IslandBloom.Cycles);
             config.LeafScent = LeafScentForm.Strength;
+            config.IslandFarSmellBandMetres = band;
             var world = new World(config, seed: 5);
             var cellGrid = (GridField)world.Matter;
             GridField.IslandPlan plan = world.IslandInflux;
 
-            // One leaf over the first column of every island, and one over a desert column.
             var seen = new HashSet<int>();
             for (int ix = 0; ix < cellGrid.CellsX; ix++)
             for (int iz = 0; iz < cellGrid.CellsZ; iz++)
@@ -505,29 +508,63 @@ namespace Evosim.Core.Tests
             world.InoculateAt(
                 Fixtures.SingleLeaf(cellTypeId: CellTypeIds.Photosynthetic), new Float3(0.5f * world.TankRadiusMetres, -2f, world.TankRadiusMetres));
             for (int i = 0; i < 4; i++) world.Step(0.5f);
+            return world;
+        }
 
-            Assert.NotNull(world.LeafScent);
+        /// <summary>
+        /// L_k by brute force, from the sources alone: each source counts towards the island with the least
+        /// level distance to its centroid less its radius, the lower label on a tie, and only when that is at
+        /// most the band.
+        /// </summary>
+        private static double[] BruteBandedArea(World world, double band)
+        {
             float[] sources = world.CopyLeafSources();
-            Assert.True(world.LeafSourceCount > 0, "no leaf was gathered");
-
-            var grid = (GridField)world.Matter;
-            var expected = new double[world.IslandInflux.IslandCount];
-            double desert = 0d, all = 0d;
+            GridField.IslandPlan plan = world.IslandInflux;
+            var area = new double[plan.IslandCount];
             for (int i = 0; i < world.LeafSourceCount; i++)
             {
-                all += sources[4 * i + 3];
-                int island = world.IslandInflux.IslandOfColumnIndex(grid.ColumnIndexAt(sources[4 * i], sources[4 * i + 2]));
-                if (island >= 0) expected[island] += sources[4 * i + 3];
-                else desert += sources[4 * i + 3];
+                int best = -1;
+                double least = double.MaxValue;
+                for (int k = 0; k < plan.IslandCount; k++)
+                {
+                    double dx = sources[4 * i] - plan.IslandX(k), dz = sources[4 * i + 2] - plan.IslandZ(k);
+                    double edge = Math.Sqrt(dx * dx + dz * dz) - plan.IslandRadius(k);
+                    if (edge < least) { least = edge; best = k; }
+                }
+
+                if (least <= band) area[best] += sources[4 * i + 3];
             }
 
+            return area;
+        }
+
+        [Fact]
+        public void TheLeafAreaIsTheBandedSumOfTheSourcesNearestEachIslandsEdge()
+        {
+            World world = LeafWorld(band: 10f);
+            Assert.NotNull(world.LeafScent);
+            Assert.True(world.LeafSourceCount > 0, "no leaf was gathered");
+
+            float[] sources = world.CopyLeafSources();
+            double all = 0d;
+            for (int i = 0; i < world.LeafSourceCount; i++) all += sources[4 * i + 3];
+
             double[] area = world.IslandBloomLeafArea();
+            double[] expected = BruteBandedArea(world, 10d);
             _output.WriteLine(FormattableString.Invariant(
-                $"{world.LeafSourceCount} leaf sources, {all:0.###} m2 lit, {desert:0.###} m2 over the desert; per island {string.Join(", ", area.Select(a => a.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)))}"));
+                $"{world.LeafSourceCount} leaf sources, {all:0.###} m2 lit; banded at 10 m per island {string.Join(", ", area.Select(a => a.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)))}"));
             Assert.Equal(expected, area);
             Assert.All(area, a => Assert.True(a > 0d, "an island with a leaf over it counted none"));
-            Assert.True(desert > 0d, "the leaf over the desert counted towards an island");
-            Assert.Equal(all, area.Sum() + desert, 6);
+            Assert.True(area.Sum() <= all + 1e-9);
+
+            // A band wide enough for any source counts them all; none at all counts only a source whose
+            // nearest edge it stands inside or on, and never more than the band of 10 m did.
+            World wide = LeafWorld(band: 1000f);
+            Assert.Equal(all, wide.IslandBloomLeafArea().Sum(), 6);
+            World narrow = LeafWorld(band: 0f);
+            double[] none = narrow.IslandBloomLeafArea();
+            Assert.Equal(BruteBandedArea(narrow, 0d), none);
+            Assert.True(none.Sum() <= area.Sum() + 1e-9);
         }
 
         // ---------------------------------------------------------------------------------
