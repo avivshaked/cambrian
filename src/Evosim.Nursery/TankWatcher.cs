@@ -460,7 +460,8 @@ namespace Evosim.Nursery
 
         /// <summary>
         /// Every living body that is not a member, with its genome and the solver's pose of each of its links (none while the solver holds no
-        /// body for it): what a film draws the leaf tank's leaves from (D235's graft film). A copy; the genome is the organism's own object.
+        /// body for it): what a film draws the leaf tank's leaves from (D235's graft film). A copy, which names each body by its id and hands
+        /// out no genome; <see cref="GenomeTextOf"/> gives one as text.
         /// </summary>
         public IReadOnlyList<OtherBodyPose> OtherPoses()
         {
@@ -481,22 +482,34 @@ namespace Evosim.Nursery
                     }
                 }
 
-                others.Add(new OtherBodyPose(o.Id, o.Genome, poses));
+                others.Add(new OtherBodyPose(o.Id, poses));
             }
             return others;
         }
+
+        /// <summary>
+        /// The genome of the living body <paramref name="id"/> as <see cref="GenomeJson"/> writes it, or null when no living body has that id:
+        /// text, so the caller holds a copy and never the organism's own object.
+        /// </summary>
+        public string GenomeTextOf(long id)
+        {
+            foreach (Organism o in _world.Living)
+            {
+                if (o.Id == id) return GenomeJson.Write(o.Genome);
+            }
+            return null;
+        }
     }
 
-    /// <summary>One living body that is not a member, its genome, and the solver's pose of each link (<see cref="EpisodeProbe.OtherPoses"/>).</summary>
+    /// <summary>One living body that is not a member, by its id, and the solver's pose of each link (<see cref="EpisodeProbe.OtherPoses"/>).</summary>
     public readonly struct OtherBodyPose
     {
         public readonly long Id;
-        public readonly Genome Genome;
         public readonly LinkPose[] Poses;
 
-        public OtherBodyPose(long id, Genome genome, LinkPose[] poses)
+        public OtherBodyPose(long id, LinkPose[] poses)
         {
-            Id = id; Genome = genome; Poses = poses;
+            Id = id; Poses = poses;
         }
     }
 

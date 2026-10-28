@@ -306,7 +306,7 @@ namespace Evosim.Nursery
         public sealed class LeafTrack
         {
             public long Id;
-            public Genome Genome;
+            public string GenomeText;
             public double FirstSeconds, LastSeconds, MaxDriftMetres;
             public LinkPose[] First, Last;
 
@@ -339,7 +339,7 @@ namespace Evosim.Nursery
                 now[o.Id] = o.Poses;
                 if (!_leaves.TryGetValue(o.Id, out LeafTrack track))
                 {
-                    _leaves[o.Id] = new LeafTrack { Id = o.Id, Genome = o.Genome, FirstSeconds = t, LastSeconds = t, First = o.Poses, Last = o.Poses, Links = o.Poses.Length };
+                    _leaves[o.Id] = new LeafTrack { Id = o.Id, GenomeText = probe.GenomeTextOf(o.Id), FirstSeconds = t, LastSeconds = t, First = o.Poses, Last = o.Poses, Links = o.Poses.Length };
                     _leafOrder.Add(o.Id);
                     continue;
                 }
@@ -412,7 +412,7 @@ namespace Evosim.Nursery
                 w.Field("links", l.Links);
                 w.Raw("first", Poses(l.First));
                 w.Raw("last", Poses(l.Last));
-                w.Raw("genome", GenomeJson.Write(l.Genome));
+                w.Raw("genome", l.GenomeText);
                 w.EndObject();
             }
             w.EndArray();

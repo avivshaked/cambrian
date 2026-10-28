@@ -18,7 +18,7 @@ namespace Evosim.Nursery.Tests
             var pose = new[] { new LinkPose(x, -12.5, 3.25, 0, 0, 0, 1) };
             return new FrameRecorder.LeafTrack
             {
-                Id = id, Genome = genome, FirstSeconds = first, LastSeconds = last, MaxDriftMetres = drift, First = pose, Last = pose,
+                Id = id, GenomeText = GenomeJson.Write(genome), FirstSeconds = first, LastSeconds = last, MaxDriftMetres = drift, First = pose, Last = pose,
             };
         }
 
@@ -41,7 +41,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal(7, rows[1]["column"].AsInt());
             Assert.Equal(new[] { 40.125, -12.5, 3.25, 0, 0, 0, 1 }, rows[1]["first"].Items().First().Items().Select(v => v.AsDouble()).ToArray());
             Assert.Equal(JsonNode.NodeKind.Object, rows[1]["genome"].Kind);
-            Assert.Contains(GenomeJson.Write(leaves[1].Genome), text);
+            Assert.Contains(leaves[1].GenomeText, text);
         }
     }
 }
