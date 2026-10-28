@@ -76,6 +76,10 @@ namespace Evosim.Nursery.Tests
             JsonNode result = Json.Parse(File.ReadAllText(Path.Combine(unwatched, "result.json")));
             Assert.Equal(RestepFixtures.PilotSeed0, result["episodeSeed"].AsString());
             Assert.Contains(result["members"].Items(), m => m["landed"].AsBool());
+            // A landed member also carries the measures the energy return is made of, for the nose bench's read.
+            foreach (JsonNode m in result["members"].Items().Where(x => x["landed"].AsBool()))
+                foreach (string key in new[] { "eaten", "work", "upkeep", "handling", "diedAt" })
+                    Assert.Contains(key, m.Keys());
 
             // And the recording watcher's own run: it recorded frames, and a solver digest at the end.
             JsonNode episode = Json.Parse(File.ReadAllText(Path.Combine(watched, "episode.json")));
