@@ -9832,3 +9832,16 @@ in any condition set for the world.
 - Work that does not feed the film is parked until the film is made: the curriculum's calibration, the structural-mutation follow-ups, the unpaid grip, the room's merges, the mirrored-twin film, and theatre dials the film does not need. The owner agreed to the parking reluctantly, wanting a rich world.
 
 **Why.** Each piece now in hand (blooms, fat, the nose, the shape family, the theatre's look) had been moving on its own clock. One milestone with pass marks orders them, and it lets a failure drop a feature instead of stopping the film.
+
+### D255
+**A family limb's push is computed once for each degree of freedom at build, not read from D252's table** · 2026-10-28
+
+**Status:** accepted by the coordinator on 2026-10-28, on `logbook/specs/shape-build/spec.md`. It changes how D252's fin law is carried out and leaves what D252 decides.
+
+**Decision.**
+- A family limb's added mass M and first moment I1 are computed at body build for each degree of freedom, from the strip integral of its true slices. A resize scales them by s³ and s⁴. The step reads two numbers a degree.
+- The push follows D231's law, the stroke coefficient times Σ q·I1, with the lever I1/M. The box keeps D229's lines bit for bit.
+- D252's gate becomes the build's resolution against a fine reference: within 2 % over the bench forms.
+- A family limb under the swing push, or inside a D231 assembly, is refused at build.
+
+**Why.** D252's table of 64 directions, read by interpolation, was drafted for the swing push, whose direction turns every step. Every world drives the powered stroke. There each degree's direction and the limb's axis are fixed in the link's frame for life. So one exact value per degree meets D252's aim, a push computed ahead and kept cheap, with no interpolation error.
