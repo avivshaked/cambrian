@@ -148,8 +148,8 @@ The tests use xUnit with at most 2 threads, one MSBuild node, BelowNormal, on co
 
 These are taken in slots the coordinator books.
 
-- **Pace with the family on.** A SwimProbe read on a crowded checkpoint of the t3 world, with the fin law on in both
-  arms:
+- **Pace with the family on.** A bench read of a crowded second of the t3 world, as step 4's plan below sets out. The fin
+  law is on in both arms:
   - as recorded;
   - with every jointed part turned into its nearest family member, which is the worst case.
 
@@ -224,3 +224,32 @@ None of them touches the fin-law lines. I rebase `shape-build` on main once the 
 - The refusal test is moved, to refuse the family only under true-shape contact.
 
 **Machine time.** Regeneration and the filtered card tests take about 30 minutes in a slot with nothing else on the card. G0's identity sitting with the family on takes about 1.5 hours, booked by the coordinator.
+
+## Step 4's plan: the pace read
+
+Written during the same hold, from the source alone. Nothing was built.
+
+**The tool is `Evosim.Dynamics.Bench`'s record mode, not a checkpoint.** `--mode record --at <second>` rebuilds a run's
+crowd where it stood: every living body's genome from that second's snapshot and its pose from `poses.jsonl`. It then
+times a step at each thread count. That is the solver's step on the recorded crowd, and the solver is where the fin law
+costs. A checkpoint's bodies cannot be turned into family members without rewriting the checkpoint, which this read
+does not need.
+
+Three additions to the bench, behind flags, so its existing modes keep their output:
+
+- **`--shaped`** turns on `ShapedAddedMass` in the config in memory, and checks that the recorded config already drives
+  the bend-and-power stroke. Both arms run with it.
+- **`--family nearest`** rewrites every node that carries a joint. It does so before development, in three ways:
+  - Its shape becomes the superellipsoid, with the form of the nearest member. A box takes (0.1, 0.1, 1), a sphere
+    (1, 1, 1) and a capsule (0.5, 1, 1).
+  - Its half-extents stay as recorded.
+  - The superellipsoid joins the config's shape table in memory, if the run's table lacks it.
+
+  The root keeps its shape, since it has no joint and no push.
+- **The build is timed apart from the step.** One stopwatch around `Developer.Develop` and the body's construction,
+  summed over the crowd, is reported as microseconds per body in each arm.
+
+The read, in a quiet slot the coordinator books: the same second of the crowded t3 run, recorded arm then converted arm,
+at the farm's thread count. Each arm has 200 warm-up steps and 2000 timed steps, three repeats each, and the median is
+taken. The gate is the converted arm's step at most 15 % slower than the recorded arm's. The bench counts the bodies it
+refused and the poses it left at rest. The two arms must agree on both counts, or the comparison is of different crowds.
