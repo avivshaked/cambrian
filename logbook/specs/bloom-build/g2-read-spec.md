@@ -25,8 +25,16 @@ G2 in `logbook/specs/grazer-film-plan.md` as amended at `bbcd187a`, with the def
 
 ## Gates
 
-1. **Grazers survive.** At least 30 grazers alive in every judged window, under D244's floor and D222's tests. A
-   window's grazer count is the fewest grazers alive at any stats sample in it. Print that count and the mean.
+1. **Grazers survive.** Ruled by the coordinator on 2026-10-28 after a read of `r62cf-6202`:
+   - Every judged window's mean grazer count over its stats samples is at least 30. The fewest at any sample is
+     printed beside it, and the same is read at 40 as a sensitivity.
+   - A window whose fewest is 0 fails, since extinction is not survival, however brief.
+   - D222's tests pass by the whole-run procedure that `r62cf`'s read recorded
+     (`logbook/specs/r62cf-read/24000/README.md`, its D222 table and sources). Those are the born share at the run's
+     end, the best closed cohort, the deepest chain, test 2 over the summer-start windows that hold the floor, and
+     test 3. The read is checked by reproducing that table for `r62cf-6202`, `-6203` and `-6204`.
+   - A per-window table of the same measures is printed as information, not as part of the gate.
+   - The read's `--floor-measure` also offers `fewest` and `d244` for comparison. The gate is `mean`.
 2. **The bloom reaches the food** (arms B to D). Judge only islands of 5 or more columns whose mean `bloomLeafArea`
    over the judged span is at least 1 m².
    - For each such island, find the Pearson correlation between `bloomFactor_k(t)` and `bloomLeafArea_k(t + lag)`
@@ -58,8 +66,10 @@ G2 in `logbook/specs/grazer-film-plan.md` as amended at `bbcd187a`, with the def
    - **Crossings and strolls.** Walk each grazer's position fixes in time, as `grazer-moves-read.py` walks them, with
      the groves above in place of its islands.
      - A move goes from grove A to grove B, B not A. Fixes outside every grove between them do not reset A.
-     - A move is a crossing when A's and B's groves do not touch: the distance between their centroids is more than
-       r_A + r_B + 20 m. Every other move is a stroll.
+     - A move is a crossing when the banded edge gap between A and B is at least 10 m: the distance between their
+       centroids less (r_A + 10) less (r_B + 10). Every other move is a stroll. The coordinator ruled the 10 m on
+       2026-10-28. On `r62cf`'s plan it leaves out two pairs whose discs miss by 2.3 to 2.4 m, which made crossings
+       of a median 6.4 m.
      - A point inside two groves belongs to the nearer centroid.
      - Print per window both counts, the counts per grazer life, and each crossing's median distance and duration.
    - **Crowds at blooms.** For each island and each stats sample, count the grazers inside its grove. Print, per
@@ -92,8 +102,9 @@ grazer in `lineage.jsonl`. The world's own code builds each body.
 
 - `id`.
 - `parts`: the developed body's part count at birth, from `Developer` with the run's config and cell table.
-- `mass_kg`: the adult body's mass, the birth body's mass times `adultScale`³, using the density the world uses. Name
-  the expression in a comment.
+- `mass_kg`: the adult body's mass, using the density the world uses. `Developer` already folds `adultScale` into
+  every volume, so the developed body is the adult one, and nothing is multiplied again. A test holds a scale of 2 at
+  8 times the mass. `adult_scale` is written as a column of its own.
 - `jointed`: the jointed parts.
 - `limb_push`: the sum of the node's `Power` gene over the developed body's jointed parts.
 - `drive_rest` and `drive_fed`: the brain's mean drive, |output| averaged over every output that drives a joint.
