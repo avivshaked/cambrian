@@ -21,8 +21,8 @@ looked for under runs/.
 
 --json (show, plans) prints the same facts as one JSON object per creature or plan, with no
 header, for scripts. --plain prints one line in plain words, for a film's caption: it states
-cells, longest extent, joint, repeats and mirroring, says "hunts" only when a grown node has
-attack > 0 and "makes its own food" only for a photosynthetic node, and claims nothing else.
+cells, longest extent, joint, repeats and mirroring, says "can attack" when a grown node's attack is
+at least 0.5 and "a trace of attack" below it, and "makes its own food" only for a photosynthetic node, and claims nothing else.
 "mouth" is the word it uses for a consumer cell.
 
 What the four read:
@@ -344,7 +344,7 @@ def article(text):
 
 def plain_line(g):
     """One line of plain words built from the genome's stated facts only: cell, shape, longest
-    extent, joint, repeats, mirrored. 'hunts' only when a grown node has attack > 0, 'makes its
+    extent, joint, repeats, mirrored. 'can attack' at attack >= 0.5, a trace below it, 'makes its
     own food' only when one is photosynthetic. No behaviour beyond that is claimed."""
     live = reachable(g)
     root = g.get('root', 0)
@@ -369,8 +369,13 @@ def plain_line(g):
     if len(descs) > 1:
         line += ' with ' + ', '.join(article(x) + x for x in descs[1:])
     tail = []
-    if any(g['nodes'][i].get('attack', 0) > 0 for i in live):
-        tail.append('hunts')
+    # A genome says what a body can do, not what it does: kills are in lineage, not here. So the
+    # line says "can attack", and a weak attack is named as a trace rather than as a weapon.
+    attack = max_attack(g)
+    if attack >= 0.5:
+        tail.append('can attack')
+    elif attack > 0:
+        tail.append('a trace of attack (%.2f)' % attack)
     if any(g['nodes'][i]['cell'] == 'photosynthetic' for i in live):
         tail.append('makes its own food')
     return line + ''.join('; ' + t for t in tail)
