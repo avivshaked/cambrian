@@ -1042,6 +1042,41 @@ namespace Evosim.Farm
                             .Field("biteCapCut", world.BiteCapCutJoules)
                             .Field("gutCapCut", world.GutCapCutJoules)
                             .Field("gutCapBound", world.GutCapBound);
+
+                        // D247. Only with the body-and-store cap as well: the body-steps on which digestion waited at the
+                        // reserve cap (cumulative) and the largest gut any body has held, joules (a running maximum).
+                        if (world.Config.ReserveCapForm == ReserveCapForm.BodyAndStore)
+                        {
+                            w.Field("gutWaitedAtCap", world.GutWaitedAtReserveCap)
+                                .Field("gutLargest", world.LargestGutJoules);
+                        }
+                    }
+                }
+
+                // D247. Only in a world with a reserve cap: the joules it has trimmed to the water (cumulative), and
+                // the living within 1% of their cap now. With the body-and-store form, the lump breeders whose margin
+                // gene's seconds exceed s, which that cap leaves unable to breed. Only with fat in the table: the
+                // bodies carrying it and its share of the living tissue volume. Every other world's row is the bytes
+                // it was.
+                bool capOn = world.Config.ReserveCapSeconds > 0f;
+                bool fatIn = world.Config.CellTypes.Contains(CellTypeIds.Fat);
+                if (capOn || fatIn)
+                {
+                    ReserveCapCensus census = world.CensusReserveCap();
+                    if (capOn)
+                    {
+                        w.Field("reserveTrimmed", world.ReserveTrimmedTotal)
+                            .Field("atCap", census.NearCap);
+                        if (world.Config.ReserveCapForm == ReserveCapForm.BodyAndStore)
+                        {
+                            w.Field("marginAboveCap", census.MarginAboveCap);
+                        }
+                    }
+
+                    if (fatIn)
+                    {
+                        w.Field("fatCarriers", census.FatCarriers)
+                            .Field("fatVolumeShare", census.FatVolumeShare);
                     }
                 }
 

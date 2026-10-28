@@ -125,6 +125,12 @@ namespace Evosim.Core
         public bool HasPhotosynthetic { get; }
 
         /// <summary>
+        /// Birth only (D247) — whether any part of the developed body is <see cref="CellTypeIds.Fat"/>. The row's
+        /// <c>fat</c>, written only where it is 1, so a world whose table has no fat writes the rows it always wrote.
+        /// </summary>
+        public bool HasFat { get; }
+
+        /// <summary>
         /// Birth only — the horizontal cell the creature was born into, <see cref="Organism.Patch"/>
         /// — D061. Always 0 whenever <see cref="RunConfig.HorizontalPatches"/> is 1, and only
         /// meaningful above that; carried unconditionally because it is one small int and a
@@ -488,8 +494,10 @@ namespace Evosim.Core
             float lifespan = float.NaN,
             int immigrantFromWorld = -1, long immigrantFromId = -1,
             double intakeOwnKill = 0d, double intakeOtherKill = 0d, double intakeCarrion = 0d,
-            double biteKept = 0d, double remainsJoules = 0d, float growthReserve = float.NaN)
+            double biteKept = 0d, double remainsJoules = 0d, float growthReserve = float.NaN,
+            bool hasFat = false)
         {
+            HasFat = hasFat;
             GrowthReserveSeconds = growthReserve;
             RemainsJoules = remainsJoules;
             BiteKeptJoules = biteKept;
@@ -559,7 +567,7 @@ namespace Evosim.Core
             float landingCorpse = float.NaN, float landingCorpseMean = float.NaN,
             float lifespan = float.NaN,
             int immigrantFromWorld = -1, long immigrantFromId = -1,
-            float growthReserve = float.NaN) =>
+            float growthReserve = float.NaN, bool hasFat = false) =>
             new LineageEvent(
                 LineageEventKind.Birth, elapsedSeconds, id, parentId, birthKind, generationDepth,
                 speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch,
@@ -578,7 +586,7 @@ namespace Evosim.Core
                 lifespan: lifespan,
                 immigrantFromWorld: birthKind == BirthKind.Immigration ? immigrantFromWorld : -1,
                 immigrantFromId: birthKind == BirthKind.Immigration ? immigrantFromId : -1,
-                growthReserve: growthReserve);
+                growthReserve: growthReserve, hasFat: hasFat);
 
         /// <summary>
         /// One death. <paramref name="gestationJoules"/> and <paramref name="reserveJoules"/> are
@@ -727,8 +735,13 @@ namespace Evosim.Core
                     .Field("s", (long)SpeciesId)
                     .Field("abs", HasAbsorptive ? 1 : 0)
                     .Field("jnt", HasJoint ? 1 : 0)
-                    .Field("pho", HasPhotosynthetic ? 1 : 0)
-                    .Field("pt", Patch)
+                    .Field("pho", HasPhotosynthetic ? 1 : 0);
+
+                // D247. Beside the three flags above and only where it is 1, so a row of a world with no fat
+                // in its table is byte for byte what it was; a reader takes an absent field as 0.
+                if (HasFat) w.Field("fat", 1);
+
+                w.Field("pt", Patch)
                     .Field("bf", BirthFraction)
                     .Field("as", AdultScale)
                     .Field("rm", ReserveMargin)

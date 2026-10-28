@@ -86,6 +86,8 @@ namespace Evosim.Dynamics
         private readonly float _worldDepthMetres;
         private readonly float _chemicalHalfScale;
         private readonly float _energyFullScaleSeconds;
+        private readonly EnergySenseSquash _energySquash;
+        private readonly float _energyHalfScaleSeconds;
 
         /// <summary>
         /// The field <see cref="SensorChannel.Chemical"/> smells — <c>World.Nutrients</c>. Null
@@ -178,6 +180,9 @@ namespace Evosim.Dynamics
                 (float)System.Math.Max(1e-6, config.ChemicalHalfScaleJoulesPerCubicMetre);
             _energyFullScaleSeconds =
                 (float)System.Math.Max(1e-6, config.EnergyFullScaleSeconds);
+            _energySquash = config.EnergySenseSquash;
+            _energyHalfScaleSeconds =
+                (float)System.Math.Max(1e-6, config.EnergyHalfScaleSeconds);
 
             _depth = new float[body.Links];
             _up = new float[body.Links];
@@ -478,13 +483,30 @@ namespace Evosim.Dynamics
         /// <see cref="Brain"/>'s NaN/Inf guard would report the safest creature in the world as
         /// indistinguishable from a dead input.
         /// </remarks>
-        private float Squash(float seconds)
+        private float Squash(float seconds) =>
+            SquashSeconds(seconds, _energySquash, _energyFullScaleSeconds, _energyHalfScaleSeconds);
+
+        /// <summary>
+        /// The energy sense's squash, written once (D245): the host's reading and the card's
+        /// <c>Squash</c> in <c>gpu-kernel.template</c>, which transcribes it operation for operation.
+        /// </summary>
+        /// <param name="seconds">Seconds of reserve.</param>
+        /// <param name="squash">Which squash: <c>tanh(S / fullScale)</c>, or <c>S / (|S| + halfScale)</c> in float.</param>
+        /// <param name="fullScale"><c>RunConfig.EnergyFullScaleSeconds</c>, floored as the sense floors it.</param>
+        /// <param name="halfScale"><c>RunConfig.EnergyHalfScaleSeconds</c>, floored as the sense floors it.</param>
+        /// <remarks>
+        /// NaN, +infinity and -infinity are answered first, whichever squash is asked for.
+        /// </remarks>
+        public static float SquashSeconds(float seconds, EnergySenseSquash squash, float fullScale, float halfScale)
         {
             if (float.IsNaN(seconds)) return 0f;
             if (float.IsPositiveInfinity(seconds)) return 1f;
             if (float.IsNegativeInfinity(seconds)) return -1f;
 
-            return (float)System.Math.Tanh(seconds / _energyFullScaleSeconds);
+            // D245: S / (|S| + k), in float. Equal to S / (S + k) from 0 up and odd below it.
+            if (squash == EnergySenseSquash.HalfScale) return seconds / (System.Math.Abs(seconds) + halfScale);
+
+            return (float)System.Math.Tanh(seconds / fullScale);
         }
     }
 }

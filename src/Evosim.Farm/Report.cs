@@ -296,7 +296,7 @@ namespace Evosim.Farm
                 " · sink " + F(s.NutrientSink) + " m/s, matter " + F(s.MatterSink) + " m/s" +
                 " · economy rho " + F(s.Rho) + " J/unit, uptake " + F(s.UptakeRate) +
                 " /m2/s at K " + F(s.UptakeHalf) + " /m3, remin " + F(s.Remin) + " /s, handling " +
-                F(s.Handling) + ", reserveCap " + (s.ReserveCap > 0f ? F(s.ReserveCap) + " s" : "off") +
+                F(s.Handling) + ", reserveCap " + ReserveCapToken(s, config) +
                 ", margin " + F(config.Genome.MinReserveMargin) + "-" +
                 F(config.Genome.MaxReserveMargin) + " s at " + F(s.MarginChance) +
                 " · refuge " + F(s.FloorRefuge) + " m" +
@@ -358,7 +358,10 @@ namespace Evosim.Farm
                 config.Genome.MaxHalfExtent.ToString("0.###", Inv) + " m" +
                 " · float " + F(s.FloatChance) + " at " + F(s.LiftCost) + " W/lift" +
                 " · senses " + SensesToken(config) +
-                " · sense scale chem " + F(s.ChemicalHalfScale) + " J/m3, energy " + F(s.EnergyFullScale) +
+                " · sense scale chem " + F(s.ChemicalHalfScale) + " J/m3, energy " +
+                (config.EnergySenseSquash == EnergySenseSquash.HalfScale
+                    ? "half " + F(config.EnergyHalfScaleSeconds)
+                    : F(s.EnergyFullScale)) +
                 " s, flow " + F(s.FlowFullScale) + " m/s" +
                 (space.InoculumHashShort != null
                     ? " · inoculate " + F(s.InoculateCount) + " @ " + F(s.InoculateAt) + " s, " +
@@ -522,6 +525,29 @@ namespace Evosim.Farm
         /// metabolic clocks (<see cref="CellType.MetabolicClockSeconds"/>), the gene's start and range,
         /// and its mutation chance. Empty unless T is above 0 or the chance is.
         /// </summary>
+        /// <summary>
+        /// The reserve cap's token inside the economy token (D229, D247): <c>off</c> or <c>3000 s</c> as it always read,
+        /// then the form when it is the body-and-store cap, then fat's upkeep, tissue and room when the table holds
+        /// it. The default world prints what it printed before. Under the body-and-store cap the numbers are read
+        /// from the config, so a resumed run's header says what it ran.
+        /// </summary>
+        public static string ReserveCapToken(EnvSettings s, RunConfig config)
+        {
+            bool store = config.ReserveCapForm == ReserveCapForm.BodyAndStore;
+            string token = store
+                ? F(config.ReserveCapSeconds) + " s body+store"
+                : s.ReserveCap > 0f ? F(s.ReserveCap) + " s" : "off";
+
+            if (config.CellTypes.Contains(CellTypeIds.Fat))
+            {
+                CellType fat = config.CellTypes.Resolve(CellTypeIds.Fat);
+                token += ", fat upkeep " + F(fat.UpkeepWattsPerCubicMetre) + " W/m3 tissue " +
+                         F(fat.TissueEnergyPerCubicMetre) + " J/m3 room " + F(fat.StoreRoomJoulesPerCubicMetre) + " J/m3";
+            }
+
+            return token;
+        }
+
         public static string ClimbToken(RunConfig config)
         {
             if (!(config.GrowthAdultSeconds > 0f) && !(config.Mutation.GrowthReserveChance > 0f)) return "";
