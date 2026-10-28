@@ -205,6 +205,10 @@ run many steps to a frame, prints the identity verdict at every sample, and quit
 
 ## Gotchas
 
+- **Prove a shading term is live in the shot before building its fix.** Render one take with the term forced to zero or to
+  a false colour, and show the pixels move. Light-through terms are zero when the key is behind the camera, and the film's
+  shots look down with the key above. Three colour dials in a row were built on a dead term and came out byte-identical
+  (`THALLI 2`, `ALGA_BACK_GREY`, `THALLI_SEE`, 2026-10-28).
 - **The skin can hide a joint, so every joint is bridged** (`TheatrePalette`'s necks, the
   theatre-joins brief in `logbook/specs/theatre-joins/`). Rounded leaves, sphere parts drawn as
   the genome's ellipsoid, and wavy plate rims all once left gaps where Core's anchors coincide. A
