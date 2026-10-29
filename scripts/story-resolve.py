@@ -40,7 +40,7 @@ by hand (the manual's chapter 59). `--captions filmed` sets what the director pl
 
 The configuration is per machine: KEY=value lines in `.env` at the repository's root (gitignored),
 any of them overridden by the environment. The keys and their defaults are in
-`scripts/story-resolve.env.example`. The procedure, and what the Resolve API does that its
+`.env.example`. The procedure, and what the Resolve API does that its
 documentation does not say, are in `logbook/specs/story-resolve.md`.
 """
 import argparse

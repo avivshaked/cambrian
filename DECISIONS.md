@@ -9883,3 +9883,45 @@ in any condition set for the world.
 **Why.** No single noise passed both bench marks. At 1/64, size paid (a double snout over a half one by 137 ± 46 J) but a reference snout fell short of whole-body smell. At 1/256 the reference snout matched it and size paid nothing. D235's first condition is judged on bodies evolved over 60 generations, not on founders. At 1/64 a double snout already eats about as well as whole-body smell, at about 0.03 W of upkeep, so the arms test D235's claim that size pays and evolution finds it. The body search mutates a nose's dimensions like any part's (`Mutator.MutateNode`). Every nursery founder is wired to the direction channel, so a strength arm would start blind and would test whether that wiring can evolve, not which form smells better.
 
 **Rejected.** Running at 1/256, which makes the nose a free organ rather than a bet. A second recalibration near 1/90, whose window looks narrower than the bench resolves. Strength-wired founders, whose mapping from a direction link to a strength link is arbitrary.
+
+### D258
+**The heat stop is for sustained heat, and light work may run beside a card run** · 2026-10-29
+
+**Status:** ruled by the owner on 2026-10-29, on the coordinator's recommendation, to move faster at no real cost to the machine's health. It supersedes D183's stop limit.
+
+**Decision.**
+- `-HeatStop` (`scripts/card/heat-stop.ps1`) stops a card run when the CPU is at 98 °C or more on one reading, or at 95 °C or more on every reading for a minute. The card's 80 °C limit and the two blind minutes stay. The render terms take the same CPU limits.
+- At every pace look the coordinator reads the run's temperature log, and tells the owner when the CPU has held 90 °C or more for ten minutes. That pattern points at the cooling, not the load.
+- Light work runs beside a card run: reads, Python analysis and single-thread jobs, on free efficiency cores at BelowNormal. Builds and test suites still wait for a HOLD window.
+- The coordinator's half-hourly heat watch is not armed for card runs, because the launchers read the heat every turn themselves.
+
+**Why.** The i9-13900K throttles itself at 100 °C and is rated to run up to it. The single seconds at 90 to 96 °C behind every stop since 2026-10-12 were one boosting fast core, not the package (`logbook/specs/machine-and-tools.md`). A stop loses nothing, since a run resumes from its checkpoint and replays bit for bit. But avoiding stops kept most of the machine idle beside every card run, which cost far more time than any stop. A minute held at 95 °C, or one reading at 98 °C, is what a cooling fault looks like, and it still stops the run. The limits are judgement, not measurement, and are to be checked against a few days of runs.
+
+**Rejected.** Keeping 90 °C on two readings, which stops on harmless spikes and keeps the machine idle. Capping the CPU's boost in Windows, which ends the spikes but slows all work all the time and is a system change. No stop at all, which would leave a cooling fault unwatched.
+
+### D259
+**The film's world is `r63c`'s arm B: the slow bloom, the far smell off** · 2026-10-29
+
+**Status:** ruled by the owner on 2026-10-29, on the coordinator's recommendation, after no arm of `r63c` passed every gate (`logbook/specs/r63c-read/`). It settles G2 of the grazer film's plan (`logbook/specs/grazer-film-plan.md`, D254).
+
+**Decision.**
+- The film's world is the bloom at periods of 5,000 to 10,000 s, with the far smell off and D249's energy sense on (`rounds/env-r63c-b.ps1`). G5's shape screen and G7's round build on it.
+- Three B worlds run on to 72,000 s, or longer if they are doing something worth watching (`r63d`, `logbook/specs/r63d-prereg/`): `r63c`'s two resumed, and seed 6204 founded to join them. This judges G2's gates over three times the bloom cycles before G7, at the owner's direction.
+
+**Why.** B's leaves followed the bloom on 4 and 5 of 8 islands, where C's did on 2. Survival passed in both B worlds, and evolution on seed 6203. The far smell added only one or two crossings. At 24,000 s each island sees 2.4 to 4.8 cycles, too few for a firm correlation, so gate 2 is judged again at 48,000 s.
+
+**Rejected.** C, the far smell on, which is one more mechanism for little more migration and a weaker bloom signal. A screen at still slower periods, which 24,000 s cannot judge.
+
+### D260
+**Data is kept only for work in progress, and what cannot be recreated is backed up, compressed and encrypted** · 2026-10-29
+
+**Status:** ruled by the owner on 2026-10-29, after the project had grown to 552 GB with nothing outside git backed up. The plan and the standing procedure are `logbook/specs/data-retention-and-backup.md`.
+
+**Decision.**
+- A finished round keeps its record and its keep-list checkpoints. Its replay data goes, because a resume on the run's own build regenerates it bit for bit. What cannot be regenerated is compressed if it is needed and deleted if not, on the owner's word item by item. Before a cleanup every lane names what it still needs, and a cleanup never deletes a branch.
+- The backup holds what cannot be recreated. It goes to a folder on the second disk (C:) and, encrypted and compressed by restic through rclone, to the owner's Google Drive. The owner approved installing both tools, and gave a standing approval for those uploads at milestones, with each upload's size reported. The owner holds the encryption password and the Google login.
+- The project gets a size budget in place of a free-space trigger: `scratch/` at 75 GB, and a review of `runs/` above 300 GB.
+
+**Why.** Everything outside git lived on one drive, so a drive failure would have lost it all. And a cleanup's deletion has no backup to restore from. Most of the bulk was replay data and renders that regenerate. The owner's plan has 5 TB, of which 33 GB was used, but the project grew to 552 GB in about two months, so the backup holds only what cannot be recreated, compressed before it leaves.
+
+**Rejected.** Google Drive for desktop, whose sync would carry a deletion or corruption into the copy. A whole-machine backup, which would ship terabytes of data that regenerates. Keeping replay data for every round.

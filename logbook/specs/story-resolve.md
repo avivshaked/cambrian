@@ -64,7 +64,7 @@ MCP server is not needed. On this machine that connection was tested with Python
 Resolve Studio 21.1.
 
 The settings belong to one machine and live in `.env` at the repository's root, which git
-ignores. The keys, their defaults and what each does are in `scripts/story-resolve.env.example`.
+ignores. The keys, their defaults and what each does are in `.env.example`.
 On this machine the file names the project Cambrian and the bin Stories. It asks for a 3840 by
 2160 timeline at 30 frames a second, with the two parts of "Submerged Wonder" as the music.
 

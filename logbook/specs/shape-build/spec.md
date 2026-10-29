@@ -298,3 +298,55 @@ The arms run at the farm's thread count. Each arm has 200 warm-up steps and 2000
 taken. The converted arm's step against the recorded arm's is the host's share of any slowdown; the gate itself is read
 on the card (section 5). The bench counts the bodies it
 refused and the poses it left at rest. The two arms must agree on both counts, or the comparison is of different crowds.
+
+## As built, step 4: G0's measurements (branch shape-build, b018c2bb)
+
+Both reads ran on 2026-10-29, after `r63c` ended, at `b018c2bb`. That is the card port with the bench's record mode
+(`f0b46db7`) and the sitting's two world launchers.
+
+### The card sitting
+
+Five card groups of three worlds ran one after another, each on seeds 6202, 6203 and 6204, founded for 600 s at 10
+threads on cores 22 to 31:
+
+1. "off": `rounds/env-r62cf.ps1`, every new switch off, at group 32;
+2. "fin": `rounds/env-r62cf-fin.ps1`, D229's fin law on, at group 32;
+3. "family": `rounds/env-r62cf-family.ps1`, the fin law on, the family listed and its form genes walking at 0.05, at
+   group 32;
+4. "fin" again, at group 32, to repeat the baseline;
+5. "family" again, at group 64.
+
+The scripts and reads are under `scratch/shape-build/card/`.
+
+- **With every switch off, the build steps `r62cf` bit for bit.** On each seed, all 60 stats samples to 600 s and all
+  601 digest rows to step 60,000 equal `r62cf`'s own. The lineage is byte-equal over 1,688, 1,452 and 1,410 lines.
+- **The family gives the same digest at groups 32 and 64.** On each seed the stats and digests are identical, and the
+  lineage is byte-equal over 1,713, 1,501 and 1,363 lines.
+- **The pace gate passes.** The walls, summed over the three seeds, are 7.940 min for "off", 8.192 for "fin", 7.946 for
+  "family" and 7.898 for the repeated "fin". The family against the two fin baselines is 0.970 and 1.006, and against
+  "off" it is 1.001. The two fin runs differ by 3.7 %, which is the sitting's own spread. Every world ran at 3.6 to 4.0
+  times real time, with the CPU at 77 °C at most.
+- **The caveat: the card pair times a world with almost no family in it.** The founders hold no family part, so every
+  family limb is a mutant's. At 600 s, 7 of the 1,091 jointed bodies across the three family worlds carry one (3 of 332,
+  0 of 413 and 4 of 346), and each sits at the member it entered at (`scripts/reads/shape/g5-read.py`). The card gate
+  is the realistic early world. The host read below is the worst case.
+
+### The host read
+
+The bench's record mode ran on `runs/r62p-t3-6201` at 20,700 s: 9,036 bodies, 484 of them jointed, 14 threads, the fin
+law on in both arms, and three repeats of 2,000 steps. The run's own config predates nine tunables and the build refuses
+it. So the read used that file forwarded by `scripts/nursery-config-forward.py`, each key at the default that leaves
+the world as it ran (`scratch/shape-build/r62p-t3-6201-config-fwd.json`).
+
+- **The recorded crowd** steps at a median of 3.539 ms (3.539, 3.539, 3.481).
+- **Every jointed node turned family** steps at 3.587 ms (3.341, 3.610, 3.587), which is +1.4 %. The nodes were made from
+  471 boxes, 2,288 spheres and 1,592 capsules.
+- **The build costs more.** It takes 120.4 µs a body against 16.4, because the strip integral runs once per degree at
+  build. At the working estimate of 40,000 births an hour that is about 1.3 ms a wall second (inference).
+- **A departure from the condition above, which the coordinator accepted.** The two arms agree on the refused count,
+  1,719, but not on bodies at rest: 0 against 3. In the family arm 485 bodies are jointed against 484, with 1,062 degrees
+  of freedom against 1,061. Three bodies developed differently once their jointed nodes took the family's shape, so their
+  recorded joint angles no longer fit, and the bench left them at rest. The cause is inferred, not traced: the
+  self-overlap test reads a family part's true shape (step 1), which is smaller than its box, so a child that was pruned
+  can grow. A body at rest costs less, so the family arm's +1.4 % may read low, by at most about three bodies' share,
+  about 0.03 %. That is two orders of magnitude inside the bar. No rerun was taken.

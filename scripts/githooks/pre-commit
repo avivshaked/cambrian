@@ -39,6 +39,7 @@ for f in $staged; do
     src/*.csproj|src/*.sln|spikes/*.csproj) : ;;
     *.csproj|*.sln|*.user|*.suo)    block "$f — IDE file with absolute local paths" ;;
     *.stackdump|*.dmp|core|core.*)  block "$f — crash dump; binary junk, may contain process memory" ;;
+    .env.example)                   : ;;  # the tracked list of keys, with no values
     *.env|.env.*|*.pem|*.key|*.pfx) block "$f — credential or key file" ;;
   esac
 done

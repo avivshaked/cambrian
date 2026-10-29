@@ -192,6 +192,7 @@ design/nursery/*.zip
 # Local secrets (the Leonardo key, scripts/leonardo-generate.py); the commit hook blocks *.env too.
 .env
 .env.*
+!.env.example
 # The same without the leading dot, the name an editor's copy of env.example gets.
 env.local
 *.env.local

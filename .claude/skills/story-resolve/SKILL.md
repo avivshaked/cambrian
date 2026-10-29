@@ -15,7 +15,7 @@ Checklist:
 1. `story-flow.py status` reads film done: every scene has a clip filmed from its current fields.
 2. Resolve is running with external scripting set to Local, and
    `python scripts/story-resolve.py --check` shows the configured project open and the assets
-   present. The per-machine settings are in `.env` (keys in `scripts/story-resolve.env.example`);
+   present. The per-machine settings are in `.env` (keys in `.env.example`);
    never write a machine's values into this skill.
 3. Ask the owner before building if another agent may be working in Resolve. A build changes the
    current timeline and, for a moment, the Deliver page's settings.
