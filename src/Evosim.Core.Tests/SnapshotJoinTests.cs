@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using Evosim.Core;
+using Evosim.TestSupport;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -122,11 +123,11 @@ namespace Evosim.Core.Tests
         /// buffered-tail gap, so this never asserts a clean join; it reports what it finds and
         /// leaves the gap on record rather than re-introducing it as a build failure.
         /// </summary>
-        [Fact]
+        [LocalDataFact("runs/*/*/run.json")]
         public void SnapshotIdsJoinLineageAgainstRealRuns()
         {
-            string root = RepositoryRoot();
-            if (root == null) { _output.WriteLine("no repository root found — skipped"); return; }
+            string root = LocalData.FindRoot("runs/*/*/run.json");
+            if (root == null) { _output.WriteLine("no run data found — skipped"); return; }
 
             string runs = Path.Combine(root, "runs");
             if (!Directory.Exists(runs)) { _output.WriteLine("no runs/ — skipped"); return; }

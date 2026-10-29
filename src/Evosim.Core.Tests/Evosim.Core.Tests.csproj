@@ -27,4 +27,9 @@
     <None Include="fixtures\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The attributes that skip a test whose gitignored local data is absent (scripts/test-pins.py lists what they name): one copy in the tree, linked. -->
+    <Compile Include="..\TestSupport\LocalData.cs" Link="LocalData.cs" />
+  </ItemGroup>
+
 </Project>

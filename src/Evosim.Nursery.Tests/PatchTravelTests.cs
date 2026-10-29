@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text.Json;
 using Evosim.Core;
 using Evosim.Nursery;
+using Evosim.TestSupport;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -242,7 +243,7 @@ namespace Evosim.Nursery.Tests
             return LeafTankFixtures.Write(_dir, "switching.json", LeafTankFixtures.RecipeJson(cfg, hash, pool, 3, leaves, seconds));
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void TheWatcherReadsASwitchingEpisodeAndChangesNoNetToTheBit()
         {
             string recipe = SwitchingRecipe(8);   // two switches, at 3 s and 6 s: four openings
@@ -292,7 +293,7 @@ namespace Evosim.Nursery.Tests
             Assert.True(landed > 0, "no member landed");
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void APatchesRunOfASwitchingEpisodeWritesTheTravelColumnsAfterTodaysAndEverySwitchOnce()
         {
             string recipe = SwitchingRecipe(8);
@@ -351,7 +352,7 @@ namespace Evosim.Nursery.Tests
             }
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void ATankWhosePatchesDoNotSwitchHasNoTravelTracks()
         {
             RunConfig config = LeafTankFixtures.Config();
@@ -476,7 +477,7 @@ namespace Evosim.Nursery.Tests
             Assert.Contains("own vs frozen, time to arrival (s, a never-arrived switch at its follow-up: a lower bound): 38.75 vs 100.00, difference -61.25 = -5.44 standard errors", stdout);
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void EatenJoulesIsTheLeafFoodUnderContactEatingAndTheMouthsCountWithout()
         {
             // Under contact eating: the joules kept from leaves, which a bite handed to the world by hand makes certain of.

@@ -23,7 +23,7 @@ namespace Evosim.Dynamics.Tests
         public CrowdTests(ITestOutputHelper output) => _out = output;
 
         /// <summary>Two hundred newborn-sized bodies inside four metres, for a minute.</summary>
-        [Fact]
+        [CefixRunFact]
         public void APackedCrowdOfNewbornsLosesNobody()
         {
             Assert.True(RunFixture.Present, RunFixture.Why);
@@ -38,7 +38,7 @@ namespace Evosim.Dynamics.Tests
         /// A thousand bodies in round 42's own slab — a 26 m disc, ten metres deep — for ten
         /// minutes.
         /// </summary>
-        [Fact]
+        [CefixRunFact]
         [Trait("Category", "Slow")]
         public void RoundFortyTwosOwnDensityLosesNobodyInTenMinutes()
         {

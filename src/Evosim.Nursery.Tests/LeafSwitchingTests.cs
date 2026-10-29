@@ -6,6 +6,7 @@ using System.Linq;
 using Evosim.Core;
 using Evosim.Dynamics.Placement;
 using Evosim.Nursery;
+using Evosim.TestSupport;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -47,7 +48,7 @@ namespace Evosim.Nursery.Tests
             return LeafTankFixtures.Write(_dir, name, LeafTankFixtures.RecipeJson(config, hash, pool, 3, leaves, seconds));
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void TheFieldReadsBackToItselfAndMovesTheHash()
         {
             Recipe plain = Recipe.Read(WriteRecipe(LeavesJson(PatchesJson(null)), name: "plain.json"));
@@ -79,7 +80,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal(plain.Canonical(), nulled.Canonical());
         }
 
-        [Theory]
+        [LocalDataTreeTheory("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         [InlineData("{\"period\": 600, \"regrowAfter\": 120, \"witherOver\": 300}", "leaves.patches.switching is missing minimumTurn")]
         [InlineData("{\"period\": 600, \"regrowAfter\": 120, \"witherOver\": 300, \"minimumTurn\": 120, \"x\": 1}", "leaves.patches.switching has unknown x")]
         [InlineData("{\"period\": 0, \"regrowAfter\": 120, \"witherOver\": 300, \"minimumTurn\": 120}", "leaves.patches.switching.period must be more than 0")]
@@ -98,7 +99,7 @@ namespace Evosim.Nursery.Tests
             Assert.Contains(said, e.Message);
         }
 
-        [Theory]
+        [LocalDataTreeTheory("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         [InlineData(1)]
         [InlineData(3)]
         public void TheFieldIsRefusedUnlessThePatchesAreTwo(int count)
@@ -108,7 +109,7 @@ namespace Evosim.Nursery.Tests
             Assert.Contains("is for two patches, and leaves.patches.count is " + count, e.Message);
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void AnEdgeValueIsAccepted()
         {
             foreach (string s in new[] { SwitchingJson(regrow: 0), SwitchingJson(wither: 600), SwitchingJson(minTurn: 0), SwitchingJson(minTurn: 180) })
@@ -275,7 +276,7 @@ namespace Evosim.Nursery.Tests
         private static List<Organism> LivingOf(Rig rig, int opening) =>
             rig.World.Living.Where(o => rig.Schedule.OpeningOf(o.Id) == opening).ToList();
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void TheFedDiscsDeadLeafIsReplacedAfterRegrowAfterAndOnlyThen()
         {
             Rig rig = MakeRig(11);
@@ -311,7 +312,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal(3, Alive(rig, 1 - fed));
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void TheUnfedDiscNeitherRegrowsNorWithersInTheFirstPeriod()
         {
             Rig rig = MakeRig(12);
@@ -326,7 +327,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal(2, rig.Schedule.Openings.Count);
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void AtASwitchEveryLeafOfBothOldOpeningsIsGoneWithinWitherOverAndLeftNothing()
         {
             Rig rig = MakeRig(13);
@@ -385,7 +386,7 @@ namespace Evosim.Nursery.Tests
                 $"the energy audit does not close: {rig.World.AuditResidual}");
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void TheNewOpeningsAngleIsAtLeastTheMinimumTurnFromTheOutgoingDiscsInTheWorldToo()
         {
             Rig rig = MakeRig(14, period: 10, wither: 5, regrow: 3, minTurn: 150, episode: 62);
@@ -407,7 +408,7 @@ namespace Evosim.Nursery.Tests
             foreach (LeafOpening opening in o.Skip(2)) Assert.Equal(opening.OpenedAt, opening.FedFrom);
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void TheSameEpisodeStepsToTheSameBitsAndLeafIdsMapToTheirOpenings()
         {
             string Run(ulong seed)
@@ -451,7 +452,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal(born.Energy, leaf.Energy, 9);
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void UnderTheClimbARegrownLeafIsAdultWithNoReserveGiven()
         {
             Rig rig = MakeRig(11, climb: true);
@@ -470,7 +471,7 @@ namespace Evosim.Nursery.Tests
             Assert.All(fresh, AssertLaidAdult);
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void UnderTheClimbAFreshComplementLeafAtASwitchIsAdultWithNoReserveGiven()
         {
             Rig rig = MakeRig(13, climb: true);
@@ -534,7 +535,7 @@ namespace Evosim.Nursery.Tests
             }
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void ASwitchingEpisodeSwimsTwiceToTheBitAndWithAWatcherAsWithout()
         {
             string recipe = SwitchingEpisodeRecipe(8);
@@ -556,7 +557,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal(6, first.MappedAtBegin);
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void ASwitchingEpisodeWithersTheOldOpeningsLeavesNothingAndLaysTheFreshComplementInTheSolver()
         {
             var frames = new Frames();

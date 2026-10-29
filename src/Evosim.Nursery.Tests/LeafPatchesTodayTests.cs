@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using Evosim.Core;
 using Evosim.Nursery;
+using Evosim.TestSupport;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -76,7 +77,7 @@ namespace Evosim.Nursery.Tests
             }
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void ARecipeWithPatchesAndNoSwitchingDrawsExactlyAsBefore()
         {
             (string config, string hash) = LeafTankFixtures.WriteConfig(_dir, LeafTankFixtures.Config());

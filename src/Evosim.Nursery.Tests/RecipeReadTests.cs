@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using Evosim.Nursery;
+using Evosim.TestSupport;
 using Xunit;
 
 namespace Evosim.Nursery.Tests
@@ -50,7 +51,18 @@ namespace Evosim.Nursery.Tests
                 return d.RootElement.ValueKind == JsonValueKind.Object && d.RootElement.TryGetProperty("format", out _) && d.RootElement.TryGetProperty("world", out _);
         }).ToArray();
 
-        [Fact]
+        // Load refuses a recipe whose pool is absent, which is not a refusal of its world, so every pool a recipe on file names is declared.
+        [LocalDataTreeFact(
+            "rounds/nursery/pools/206827daf1cce715.tsv",
+            "rounds/nursery/pools/320aa1fd335d62b4.tsv",
+            "rounds/nursery/pools/39d06aac2d0d0f60.tsv",
+            "rounds/nursery/pools/410a70db44a4b20a.tsv",
+            "rounds/nursery/pools/6a27d8acada28e03.tsv",
+            "rounds/nursery/pools/6fe2fc2a1bd2061f.tsv",
+            "rounds/nursery/pools/97d4a4fc12a91017.tsv",
+            "rounds/nursery/pools/9cee8ad6fca64ecd.tsv",
+            "rounds/nursery/pools/a326093a77658bdc.tsv",
+            "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void ReadGivesTheHashAndTheCanonicalTextLoadGivesForEveryRecipeThatLoads()
         {
             string[] all = Recipes();

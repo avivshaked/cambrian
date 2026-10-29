@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using Evosim.Core;
 using Evosim.Nursery;
+using Evosim.TestSupport;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -107,7 +108,7 @@ namespace Evosim.Nursery.Tests
         private static string Leaves(int count) =>
             "{\"pool\": \"" + LeafTankFixtures.LeafPool + "\", \"count\": " + count + ", \"spentUnitsPerCubicMetre\": 0}";
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void UnderContactEatingASwimmersEatenIsWhatItKeptFromLeavesAndAMealOnAMemberIsNotEaten()
         {
             string recipe = Recipe(Contact(leaves: true), 2, _ => Swimmer(), Leaves(6), seconds: 6, purseSeconds: 600);

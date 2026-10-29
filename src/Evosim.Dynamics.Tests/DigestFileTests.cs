@@ -38,7 +38,7 @@ namespace Evosim.Dynamics.Tests
 
         public DigestFileTests(ITestOutputHelper output) => _out = output;
 
-        [Fact]
+        [CefixRunFact]
         public void TheDigestFileIsTheSameAtOneEightAndTwentyFourThreads()
         {
             Assert.True(RunFixture.Present, RunFixture.Why);

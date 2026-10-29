@@ -8,6 +8,7 @@ using System.Text;
 using Evosim.Core;
 using Evosim.Dynamics;
 using Evosim.Farm;
+using Evosim.TestSupport;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -355,7 +356,7 @@ namespace Evosim.Nursery.Tests
 
         // ------------------------------------------------------------------ the nursery
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void TheNurseryTakesTheTenAsABredPoolBesideLeaves()
         {
             Genome[] blades = Parents.Select(p => GenomeJson.Read(Lf(Blades + BladeOf(p)))).ToArray();

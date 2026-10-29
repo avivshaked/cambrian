@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Evosim.Core;
 using Evosim.Farm;
+using Evosim.TestSupport;
 using Xunit;
 
 namespace Evosim.Farm.Tests
@@ -179,19 +180,13 @@ namespace Evosim.Farm.Tests
         /// reads <c>runs/r42-s1/&lt;run&gt;/config.json</c> — the file the Unity build wrote, never
         /// touched — and compares it line for line with what this binding writes, so a mismatch
         /// names the field. The run directory is gitignored and lives in the main working tree, so
-        /// this skips where the record is not on the machine rather than failing for its absence.
+        /// <see cref="LocalDataFactAttribute"/> skips this where the record is not on the machine rather than failing for its absence.
         /// </remarks>
-        [Fact]
+        [LocalDataFact("runs/r42-s1/2026-09-20-191209-ff557bce/config.json")]
         public void Round42ConfigMatchesTheRecordedFileFieldByField()
         {
             string recorded = RecordedRound42Config();
-            if (recorded == null)
-            {
-                Console.WriteLine(
-                    "runs/r42-s1/2026-09-20-191209-ff557bce/config.json is not on this machine " +
-                    "(run directories are gitignored), so there is nothing to compare against.");
-                return;
-            }
+            Assert.NotNull(recorded);   // the attribute skipped the fact where the record is absent
 
             RunConfig built = EnvBinding.BuildConfig(
                 EnvBinding.Read(EnvBinding.Of(Round42Seed1())));
@@ -939,7 +934,7 @@ namespace Evosim.Farm.Tests
         /// The recorded round 42 seed 1 config, or null where the record is not on this machine.
         /// </summary>
         /// <remarks>
-        /// Found by walking up from the test binary: the worktree this builds in has no
+        /// Found by walking up from the test binary (<see cref="LocalData.Find"/>): the worktree this builds in has no
         /// <c>runs/</c> of its own (they are gitignored and belong to the main working tree), and
         /// the main tree is two directories above <c>scratch/wt-farm-io</c>. Read-only, always: a
         /// test that wrote into a run directory would be editing the record it is checking
@@ -947,17 +942,7 @@ namespace Evosim.Farm.Tests
         /// </remarks>
         private static string RecordedRound42Config()
         {
-            const string rel = "runs/r42-s1/2026-09-20-191209-ff557bce/config.json";
-            var dir = new DirectoryInfo(AppContext.BaseDirectory);
-
-            while (dir != null)
-            {
-                string candidate = Path.Combine(dir.FullName, rel.Replace('/', Path.DirectorySeparatorChar));
-                if (File.Exists(candidate)) return candidate;
-                dir = dir.Parent;
-            }
-
-            return null;
+            return LocalData.Find("runs/r42-s1/2026-09-20-191209-ff557bce/config.json");
         }
     }
 }

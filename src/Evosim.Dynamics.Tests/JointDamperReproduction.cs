@@ -41,7 +41,7 @@ namespace Evosim.Dynamics.Tests
 
         public JointDamperReproduction(ITestOutputHelper output) => _out = output;
 
-        [Fact]
+        [CefixRunFact]
         public void TheBodyTheExplicitJointDamperLostSurvivesAMinuteOfBeingTouched()
         {
             Assert.True(RunFixture.Present, RunFixture.Why);

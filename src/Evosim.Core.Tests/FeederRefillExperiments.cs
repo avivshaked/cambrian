@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using Evosim.Core;
+using Evosim.TestSupport;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -55,13 +56,13 @@ namespace Evosim.Core.Tests
             return dir;
         }
 
-        [Fact]
+        [LocalDataFact("runs/r48-s1/2026-09-24-115115-e5a30c15/config.json")]
         public void WhatRefillsAFeedersCellInRound48sWater()
         {
             string path = Environment.GetEnvironmentVariable("EVOSIM_EXPERIMENT_CONFIG");
             if (string.IsNullOrEmpty(path))
             {
-                string root = RepoRoot();
+                string root = LocalData.FindRoot(DefaultRun + "/config.json");
                 path = root == null ? null : Path.Combine(root, DefaultRun);
             }
 

@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Evosim.Core;
 using Evosim.Farm.Gpu;
+using Evosim.TestSupport;
 using ILGPU;
 using ILGPU.Runtime;
 using ILGPU.Runtime.CPU;
@@ -21,12 +22,16 @@ namespace Evosim.Farm.Tests
     /// </summary>
     /// <remarks>
     /// The run directory is gitignored and belongs to the main working tree, as
-    /// <c>Evosim.Dynamics.Tests.RunFixture</c>'s is; on a machine without it the test fails and says so.
+    /// <c>Evosim.Dynamics.Tests.RunFixture</c>'s is; on a machine without it the test is skipped, naming the path
+    /// (<see cref="LocalDataFactAttribute"/>).
     /// </remarks>
     public class GpuTransportRound57Tests
     {
-        private const string RunDirectory =
-            @"D:\Projects\experiments\evolution-simulator\runs\r57-s2\2026-10-06-065827-dfc0e881";
+        internal const string Relative = "runs/r57-s2/2026-10-06-065827-dfc0e881";
+
+        /// <summary>The run's folder, found in this tree or above it; the folder it would have in this tree where it is nowhere.</summary>
+        internal static string RunDirectory =>
+            Path.Combine(LocalData.FindRoot(Relative + "/pool") ?? LocalData.RepoRoot ?? "", Relative.Replace('/', Path.DirectorySeparatorChar));
 
         // r57-s2's own seed (its run.json), so the bed and the reefs are the round's.
         private const ulong Seed = 2UL;
@@ -84,7 +89,7 @@ namespace Evosim.Farm.Tests
             return bytes.ToArray();
         }
 
-        [Fact]
+        [LocalDataFact("runs/r57-s2/2026-10-06-065827-dfc0e881/pool")]
         public void TheTransportOnTheAcceleratorCarriesRound57sWorld()
         {
             using Context context = Context.Create(b => b.CPU(new CPUDevice(4, 1, 1)).EnableAlgorithms());
@@ -98,7 +103,7 @@ namespace Evosim.Farm.Tests
         /// contracted multiply-add would part the two. It touches the card, so it runs only with
         /// EVOSIM_GPU_T1_CARD=1, on the coordinator's go, and returns at once otherwise.
         /// </summary>
-        [Fact]
+        [LocalDataFact("runs/r57-s2/2026-10-06-065827-dfc0e881/pool")]
         [Trait("Category", "Card")]
         public void TheTransportOnTheCardCarriesRound57sWorld()
         {
@@ -169,5 +174,16 @@ namespace Evosim.Farm.Tests
                            cpuSnow.Recount().ToString("R") + " J; tank radius " + cpu.TankRadiusMetres.ToString("R") +
                            " m; " + current.Reefs.Count + " reefs");
         }
+    }
+
+    /// <summary>
+    /// A fact that restores r57-s2 at 48,000 s: its checkpoint and the trickle pool beside it. Skipped, naming the path, where either is not on the
+    /// machine (<see cref="LocalDataFactAttribute"/>). The paths repeat <see cref="GpuTransportRound57Tests.Relative"/> as literals, so that a search for them finds this.
+    /// </summary>
+    internal sealed class Round57CheckpointFactAttribute : LocalDataFactAttribute
+    {
+        public Round57CheckpointFactAttribute() : base(
+            "runs/r57-s2/2026-10-06-065827-dfc0e881/checkpoints/000048000.ckpt",
+            "runs/r57-s2/2026-10-06-065827-dfc0e881/pool") { }
     }
 }

@@ -291,7 +291,7 @@ namespace Evosim.Dynamics.Tests
         /// The recorded crowd under per-part contact, a thousand bodies for a thousand steps: the
         /// digest at one thread is the digest at sixteen.
         /// </summary>
-        [Fact]
+        [CefixRunFact]
         public void PerPartContactDoesNotSeeTheThreadCount()
         {
             Assert.True(Crowd.Present, Crowd.Why);
@@ -346,7 +346,7 @@ namespace Evosim.Dynamics.Tests
         /// its writes into <c>Fext</c> are cleared by the step's own pass, so the trajectory is the
         /// one the world would have taken without it. Slow, so the default run skips it.
         /// </remarks>
-        [Fact]
+        [CefixRunFact]
         [Trait("Category", "Slow")]
         public void ContactPhaseWallOnTheCrowdUnderBothModels()
         {
@@ -412,7 +412,7 @@ namespace Evosim.Dynamics.Tests
         /// the grid's own cell and its floor, so the test holds whatever order the grid's counting
         /// sort puts a bucket in (the partition of 2026-09-26, logbook/specs/cpu-profile-2026-09-26.txt).
         /// </remarks>
-        [Fact]
+        [CefixRunFact]
         public void TheGridsCandidatesAreTheOverlappingCellBoxesAtAnyThreadCount()
         {
             Assert.True(Crowd.Present, Crowd.Why);

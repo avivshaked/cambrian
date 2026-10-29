@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Evosim.Core;
 using Evosim.Nursery;
+using Evosim.TestSupport;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -28,7 +29,7 @@ namespace Evosim.Nursery.Tests
 
         public void Dispose() => Directory.Delete(_dir, true);
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void ANonSwitchingPatchEpisodesRowsAreTheBytesTheyWere()
         {
             // The tank of PatchWatcherTests' patchy episode: 1,600 m2, three patches of four leaves, the smell short-ranged, three members.

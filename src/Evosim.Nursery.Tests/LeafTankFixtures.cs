@@ -15,7 +15,7 @@ namespace Evosim.Nursery.Tests
     /// </summary>
     internal static class LeafTankFixtures
     {
-        /// <summary>The committed leaf pool (step 1 of logbook/specs/nursery-leaf-tank-plan.md), repository-relative.</summary>
+        /// <summary>The leaf pool (step 1 of logbook/specs/nursery-leaf-tank-plan.md), repository-relative. It sits in rounds/nursery/pools/, which is gitignored, so a test that reads it carries <c>LocalDataTreeFact</c> naming it.</summary>
         public const string LeafPool = "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz";
 
         /// <summary>

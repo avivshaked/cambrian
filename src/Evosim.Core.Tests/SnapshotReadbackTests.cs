@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Evosim.Core;
+using Evosim.TestSupport;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -39,22 +40,11 @@ namespace Evosim.Core.Tests
 
         public SnapshotReadbackTests(ITestOutputHelper output) => _output = output;
 
-        /// <summary>Walks up from the test binary to the repository root.</summary>
-        private static string RepositoryRoot()
-        {
-            var dir = new DirectoryInfo(AppContext.BaseDirectory);
-            while (dir != null && !File.Exists(Path.Combine(dir.FullName, "DESIGN.md")))
-            {
-                dir = dir.Parent;
-            }
-            return dir?.FullName;
-        }
-
-        [Fact]
+        [LocalDataFact("runs/*/*/snapshots/*.jsonl")]
         public void EveryGenomeARunWroteCanBeReadBack()
         {
-            string root = RepositoryRoot();
-            if (root == null) { _output.WriteLine("no repository root found — skipped"); return; }
+            string root = LocalData.FindRoot("runs/*/*/snapshots/*.jsonl");
+            if (root == null) { _output.WriteLine("no run data found — skipped"); return; }
 
             string runs = Path.Combine(root, "runs");
             if (!Directory.Exists(runs)) { _output.WriteLine("no runs/ — skipped"); return; }

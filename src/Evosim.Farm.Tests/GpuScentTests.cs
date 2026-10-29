@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using Evosim.Core;
 using Evosim.Farm.Gpu;
+using Evosim.TestSupport;
 using ILGPU;
 using ILGPU.Runtime;
 using ILGPU.Runtime.CPU;
@@ -28,8 +29,7 @@ namespace Evosim.Farm.Tests
     /// </remarks>
     public class GpuScentTests
     {
-        private const string RunDirectory =
-            @"D:\Projects\experiments\evolution-simulator\runs\r57-s2\2026-10-06-065827-dfc0e881";
+        private static string RunDirectory => GpuTransportRound57Tests.RunDirectory;
 
         private readonly ITestOutputHelper _out;
 
@@ -127,7 +127,7 @@ namespace Evosim.Farm.Tests
             }
         }
 
-        [Fact]
+        [Round57CheckpointFact]
         public void TheCardsFillIsTheHostsOnRound57sCorpses()
         {
             var (context, accelerator) = Cpu();
@@ -144,7 +144,7 @@ namespace Evosim.Farm.Tests
         /// touches the card, so it runs only with EVOSIM_GPU_C3_CARD=1, in a window the coordinator
         /// holds, and returns at once otherwise.
         /// </summary>
-        [Fact]
+        [Round57CheckpointFact]
         [Trait("Category", "Card")]
         public void TheCardsFillIsTheHostsOnRound57sCorpsesOnTheCard()
         {
@@ -168,7 +168,7 @@ namespace Evosim.Farm.Tests
         /// block reads must be the second's. On the CPU accelerator a stream finishes its work at every
         /// call, so there is nothing to wait for and only the grid is checked.
         /// </summary>
-        [Fact]
+        [Round57CheckpointFact]
         public void ARestoresSnapshotThenTheStepsOwnFillsTheSecond()
         {
             var (context, accelerator) = Cpu();
@@ -180,7 +180,7 @@ namespace Evosim.Farm.Tests
         }
 
         /// <summary>The same on the card, where the second snapshot must be seen to wait.</summary>
-        [Fact]
+        [Round57CheckpointFact]
         [Trait("Category", "Card")]
         public void ARestoresSnapshotThenTheStepsOwnFillsTheSecondOnTheCard()
         {
@@ -278,7 +278,7 @@ namespace Evosim.Farm.Tests
             SameBits(host, world.Scent.CopyCells(), _out, "round 57 at 48,000 s", 10000);
         }
 
-        [Fact]
+        [Round57CheckpointFact]
         public void AWorldWithTheFillHandedOverDoesNotFillItsOwnField()
         {
             // The hand-over takes the step's fill: the world calls the engine and leaves its field as

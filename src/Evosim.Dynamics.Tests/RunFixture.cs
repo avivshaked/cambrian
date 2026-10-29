@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Evosim.Core;
 using Evosim.Dynamics.Placement;
+using Evosim.TestSupport;
 
 namespace Evosim.Dynamics.Tests
 {
@@ -40,8 +41,15 @@ namespace Evosim.Dynamics.Tests
     /// </remarks>
     internal static class RunFixture
     {
-        public const string RunDirectory =
-            @"D:\Projects\experiments\evolution-simulator\runs\cefix-s4\2026-10-28-112207-d2298c25";
+        /// <summary>The recording, repository-relative: the attribute below and scripts/test-pins.py name it, so a change here changes both.</summary>
+        public const string Relative = "runs/cefix-s4/2026-10-28-112207-d2298c25";
+
+        /// <summary>
+        /// The recording's folder, found in this tree or above it (a worktree has no <c>runs/</c> of its own). Where it is nowhere, the
+        /// folder it would have in this tree, which <see cref="Why"/> reports as absent.
+        /// </summary>
+        public static string RunDirectory =>
+            Path.Combine(LocalData.FindRoot(Relative + "/config.json") ?? LocalData.RepoRoot ?? "", Relative.Replace('/', Path.DirectorySeparatorChar));
 
         /// <summary>The recording's name, for the messages that say why it cannot serve.</summary>
         private const string Recording = "cefix-s4 (round 44's world on the r63b build at 41dfcbb7, main with fat, bloom and G2's read merged, every new switch off, every row equal to integration branch 2's fixture's; that fixture was round 44's world on integration branch 2 at d11b9bc0, main merged into it with the five REPIN pins set to the merged build's hashes, every row equal to the growth build's fixture's; that fixture was round 44's world on the growth build at 9f41fd02, pace with shape-genes merged, D233's shape list and form walk and D241's climb, reserve gene and juvenile strength at their defaults, which are the three named shapes, 0, 0 and off, every row equal to the pace build's fixture's; that fixture was round 44's world on the pace build at 6b985a3e, D239's pace factor at its default, which is 1, every row equal to integration branch 1's fixture's; that fixture was round 44's world on integration branch 1 at d2ad919d, after level (b) of D228 and D232's kill gut, both at their defaults, which are off and spheres, every row equal to the D228-D229 fixture's; world state version 20,D229's shaped added mass, D228's reflected mirrored anchors and its contact on the true shape at their defaults, which are off and spheres, every row equal to the D226 fixture's, D219-D224's contact eating, remains window and bite store at their defaults, which are off, D226's bite damage scale at its default, which is 1, recorded unbroken with the pace guard's ratio at 0.1 and every row equal to r62sfix-s4's, D212's corpse half-life at its default, which is 0 and off, D211's intake scale and leaf tissue energy at their defaults, which are 1, D204's seams read across, D206's kept matter and D207's own leaves first at their defaults, which are off, D185's glass margin for the islands at its default, which is 0, D161's drag on turning, D162's touch of the rock and anchoring cell and D167's leaf smell and no-corpse rule at their defaults, which are off, every cell type's bud weight 1, D151's two-season shape and weather at their defaults, which are off, the season at its default, which is off, D149's floor pool share at its default, which is 0, D144's drive sense and D146's one brain at their defaults, which are off, D135's drive, D137's friction and the nursery's LaySnow at their defaults, which are off, D132's settled decay at its default, which is off, D129's mouths at the corpses at its default, which is off, D127's and D128's rules off, the reef cover and the pool at 0, every rule at its default, seed 4)";
@@ -323,5 +331,17 @@ namespace Evosim.Dynamics.Tests
 
             return true;
         }
+    }
+
+    /// <summary>
+    /// A fact that needs <see cref="RunFixture"/>'s recording: skipped, naming the path, where the recording is not on the machine. Whether this
+    /// build can read it is still <see cref="RunFixture.Present"/>'s question, which the fact asserts. The paths repeat
+    /// <see cref="RunFixture.Relative"/> and <see cref="RunFixture.Snapshot"/> as literals, so that a search for them finds this.
+    /// </summary>
+    internal sealed class CefixRunFactAttribute : LocalDataFactAttribute
+    {
+        public CefixRunFactAttribute() : base(
+            "runs/cefix-s4/2026-10-28-112207-d2298c25/config.json",
+            "runs/cefix-s4/2026-10-28-112207-d2298c25/snapshots/000020000.jsonl") { }
     }
 }

@@ -19,14 +19,14 @@ namespace Evosim.Dynamics.Tests
         /// A thousand bodies dropped over the rock for sixty seconds: none lost, none inside the
         /// rock, none through the glass.
         /// </summary>
-        [Fact]
+        [CefixRunFact]
         public void ABodyDroppedOnTheShapedBedStaysOnIt()
         {
             OnTheBed(seconds: 60);
         }
 
         /// <summary>The same, for ten minutes — the package's own gate.</summary>
-        [Fact]
+        [CefixRunFact]
         [Trait("Category", "Slow")]
         public void ABodyDroppedOnTheShapedBedStaysOnItForTenMinutes()
         {
@@ -108,7 +108,7 @@ namespace Evosim.Dynamics.Tests
         /// <summary>
         /// The five counters and the whole event list, at one thread and at twenty-four.
         /// </summary>
-        [Fact]
+        [CefixRunFact]
         public void TheInstrumentAndTheEventListDoNotDependOnTheThreadCount()
         {
             Assert.True(RunFixture.Present, RunFixture.Why);
@@ -169,7 +169,7 @@ namespace Evosim.Dynamics.Tests
         /// Turning the instrument on changes no trajectory, which is what lets a run be read
         /// without being a different run.
         /// </summary>
-        [Fact]
+        [CefixRunFact]
         public void TheInstrumentMovesNothing()
         {
             Assert.True(RunFixture.Present, RunFixture.Why);
@@ -190,7 +190,7 @@ namespace Evosim.Dynamics.Tests
         /// A bed with no relief is the flat slab and not a general path with a zero in it —
         /// <c>SeaFloor.Build</c>'s own gate, and <c>PlacementFloor</c>'s.
         /// </summary>
-        [Fact]
+        [CefixRunFact]
         public void AReliefLessBedIsTheFlatPath()
         {
             Assert.True(RunFixture.Present, RunFixture.Why);
@@ -210,7 +210,7 @@ namespace Evosim.Dynamics.Tests
         }
 
         /// <summary>The glass stands at the axis the farm's wall and placer stand at.</summary>
-        [Fact]
+        [CefixRunFact]
         public void TheGlassStandsWhereTheFarmPutsIt()
         {
             Assert.True(RunFixture.Present, RunFixture.Why);

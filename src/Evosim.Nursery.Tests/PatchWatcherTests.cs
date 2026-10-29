@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Evosim.Core;
 using Evosim.Nursery;
+using Evosim.TestSupport;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -114,7 +115,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal(new[] { 0, 1, 0, 1, 2, 1 }, new long[] { 1, 2, 3, 4, 5, 6 }.Select(id => groups[id]));
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void TheWatcherReadsAPatchyTankAndChangesNoNet()
         {
             // A tank of 1,600 m² (radius 22.6 m) whose patches stand apart as the arm's do: centres 24.2 m apart, so at least 16 m

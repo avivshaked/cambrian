@@ -4,6 +4,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Evosim.Core;
 using Evosim.Farm;
+using Evosim.TestSupport;
 using Xunit;
 
 namespace Evosim.Farm.Tests
@@ -79,15 +80,11 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
         /// bed token are derived there, and a header built from the environment alone could
         /// describe a box the simulation does not have.
         /// </remarks>
-        [Fact]
+        [LocalDataFact("runs/r42-s1.md")]
         public void Round42SettingsLineIsTheRecordedOneWithTheTwoPortedTokens()
         {
             string recordedReport = RecordedRound42Report();
-            if (recordedReport == null)
-            {
-                Console.WriteLine("runs/r42-s1.md is not on this machine (run reports are gitignored).");
-                return;
-            }
+            Assert.NotNull(recordedReport);   // the attribute skipped the fact where the report is absent
 
             string recordedLine = null;
             foreach (string line in File.ReadAllLines(recordedReport))
@@ -383,15 +380,11 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
         /// The recorded table's header row, column for column but for the four that were renamed
         /// and the five D106 appended.
         /// </summary>
-        [Fact]
+        [LocalDataFact("runs/r42-s1.md")]
         public void TheTableHeaderIsTheRecordedOneBarTheFourRenamedColumns()
         {
             string recordedReport = RecordedRound42Report();
-            if (recordedReport == null)
-            {
-                Console.WriteLine("runs/r42-s1.md is not on this machine (run reports are gitignored).");
-                return;
-            }
+            Assert.NotNull(recordedReport);   // the attribute skipped the fact where the report is absent
 
             string recorded = null;
             foreach (string line in File.ReadAllLines(recordedReport))
@@ -489,15 +482,11 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
         /// for them (see <see cref="Round42Footer"/>); every other line has to be the recorded
         /// bytes, which is what a line-by-line comparison says and a whole-string one would not.
         /// </remarks>
-        [Fact]
+        [LocalDataFact("runs/r42-s1.md")]
         public void TheFooterIsByteCompatibleWithTheFileOnDisk()
         {
             string recordedReport = RecordedRound42Report();
-            if (recordedReport == null)
-            {
-                Console.WriteLine("runs/r42-s1.md is not on this machine (run reports are gitignored).");
-                return;
-            }
+            Assert.NotNull(recordedReport);   // the attribute skipped the fact where the report is absent
 
             string text = File.ReadAllText(recordedReport).Replace("\r\n", "\n");
             int start = text.IndexOf("**Ended:**", StringComparison.Ordinal);
@@ -1081,15 +1070,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
         /// <summary>The recorded round 42 seed 1 report, or null where it is not on this machine.</summary>
         private static string RecordedRound42Report()
         {
-            var dir = new DirectoryInfo(AppContext.BaseDirectory);
-            while (dir != null)
-            {
-                string candidate = Path.Combine(dir.FullName, "runs", "r42-s1.md");
-                if (File.Exists(candidate)) return candidate;
-                dir = dir.Parent;
-            }
-
-            return null;
+            return LocalData.Find("runs/r42-s1.md");
         }
     }
 }

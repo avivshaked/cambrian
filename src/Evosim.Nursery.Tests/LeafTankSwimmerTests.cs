@@ -10,6 +10,7 @@ using Evosim.Core;
 using Evosim.Dynamics;
 using Evosim.Farm;
 using Evosim.Nursery;
+using Evosim.TestSupport;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -231,7 +232,7 @@ namespace Evosim.Nursery.Tests
 
         // ------------------------------------------------------------------ the swimmer
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/README.md")]
         public void ThePlateIsOneLineInThisBuildsFormatAndItsHashIsTheOneRecorded()
         {
             byte[] bytes = File.ReadAllBytes(Full(Plate));
@@ -279,7 +280,7 @@ namespace Evosim.Nursery.Tests
             Assert.InRange(Math.Abs(offset.Y), 0d, 1e-6);
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/6a27d8acada28e03.tsv")]
         public void ThePoolIsThePlateAloneAndNamedByItsHash()
         {
             byte[] bytes = File.ReadAllBytes(Full(PlatePool));
@@ -287,7 +288,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal("0\t" + File.ReadAllText(Full(Plate)), Encoding.UTF8.GetString(bytes));
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz", "rounds/nursery/pools/6a27d8acada28e03.tsv")]
         public void ARecipeWithLeavesTakesThePoolAndRefusesTheSwimmerWithALeafAdded()
         {
             const string leaves = "{\"pool\": \"" + LeafTankFixtures.LeafPool + "\", \"count\": 4, \"spentUnitsPerCubicMetre\": 0}";

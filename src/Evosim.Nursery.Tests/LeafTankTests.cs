@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using Evosim.Core;
 using Evosim.Nursery;
+using Evosim.TestSupport;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -129,7 +130,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal(files, listed);
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void TheSectionReadsBackToItselfAndMovesTheHash()
         {
             Recipe without = Nursery.Recipe.Read(Recipe(null));
@@ -158,7 +159,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal(without.Canonical(), nulled.Canonical());
         }
 
-        [Theory]
+        [LocalDataTreeTheory("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         [InlineData("{\"pool\": \"" + LeafTankFixtures.LeafPool + "\", \"spentUnitsPerCubicMetre\": 0}", "leaves is missing count")]
         [InlineData("{\"pool\": \"" + LeafTankFixtures.LeafPool + "\", \"count\": 1, \"spentUnitsPerCubicMetre\": 0, \"extra\": 1}", "leaves has unknown extra")]
         [InlineData("{\"pool\": \"" + LeafTankFixtures.LeafPool + "\", \"count\": 0, \"spentUnitsPerCubicMetre\": 0}", "leaves.count must be 1 or more")]
@@ -182,7 +183,7 @@ namespace Evosim.Nursery.Tests
         private static string PatchedJson(int count = 12, string patches = "{\"count\": 3, \"radius\": 4.5, \"ring\": 6.5}") =>
             "{\"pool\": \"" + LeafTankFixtures.LeafPool + "\", \"count\": " + count + ", \"spentUnitsPerCubicMetre\": 0, \"patches\": " + patches + "}";
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void ThePatchesReadBackToThemselvesAndMoveTheHash()
         {
             Recipe plain = Nursery.Recipe.Read(Recipe(LeavesJson(spent: 0), name: "plain.json"));
@@ -207,7 +208,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal(plain.Canonical(), Nursery.Recipe.Read(Recipe(PatchedJson(patches: "null"), name: "pnull.json")).Canonical());
         }
 
-        [Theory]
+        [LocalDataTreeTheory("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         [InlineData("{\"count\": 3, \"radius\": 4.5}", "leaves.patches is missing ring")]
         [InlineData("{\"count\": 3, \"radius\": 4.5, \"ring\": 6.5, \"turn\": 0}", "leaves.patches has unknown turn")]
         [InlineData("{\"count\": 0, \"radius\": 4.5, \"ring\": 6.5}", "leaves.patches.count must be 1 or more")]
@@ -256,7 +257,7 @@ namespace Evosim.Nursery.Tests
             Assert.InRange(free, 0.88, 0.93);
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void TheLeavesLieInTheirPatchesAndAreTheRowsDrawnWithoutThem()
         {
             BodyView[] plain = SwimStart(Recipe(LeavesJson(count: 12, spent: 0), seconds: 0.5, name: "plain.json"), 0).Leaves;
@@ -293,7 +294,7 @@ namespace Evosim.Nursery.Tests
 
         // ------------------------------------------------------------------ the pool
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void TheCommittedPoolReadsEveryRow()
         {
             string path = Path.Combine(RestepFixtures.Root, LeafTankFixtures.LeafPool.Replace('/', Path.DirectorySeparatorChar));
@@ -382,7 +383,7 @@ namespace Evosim.Nursery.Tests
             return start;
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void ATankWithLeavesHoldsTheBredBodiesTheLeavesAndNothingElse()
         {
             Start with = SwimStart(Recipe(LeavesJson(count: 12, spent: 0.5), seconds: 0.5), 0);
@@ -415,7 +416,7 @@ namespace Evosim.Nursery.Tests
             Assert.InRange((with.Spent - without.Spent) / (0.5 * volume), 0.9, 1.1);
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void TheLeavesAreTheSameForOneSeedAndDifferBetweenSeeds()
         {
             string recipe = Recipe(LeavesJson(count: 12, spent: 0), seconds: 0.5);
@@ -538,7 +539,7 @@ namespace Evosim.Nursery.Tests
             }
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void UnderTheClimbALaidLeafIsAdultAndHoldsNoReserveGiven()
         {
             Start zero = SwimStart(Recipe(LeavesJson(count: 12, spent: 0), seconds: 0.5, name: "zero.json"), 0);
@@ -662,7 +663,7 @@ namespace Evosim.Nursery.Tests
             Assert.Empty(PoolLines.Refused(lines, _ => null));
         }
 
-        [Theory]
+        [LocalDataTreeTheory("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         [InlineData(CellTypeIds.Photosynthetic, "carries photosynthetic tissue")]
         [InlineData(CellTypeIds.Absorptive, "carries absorptive tissue")]
         public void ABredBodyThatFeedsOtherwiseIsRefusedBesideLeaves(string cell, string said)

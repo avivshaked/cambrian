@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Evosim.Core;
+using Evosim.TestSupport;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -42,7 +43,7 @@ namespace Evosim.Dynamics.Tests
         /// lands where the fresh build's kinematics put it.
         /// </para>
         /// </remarks>
-        [Fact]
+        [LocalDataFact("runs/r42-s4/2026-09-21-051718-ff557bce/config.json", "runs/r42-s4/2026-09-21-051718-ff557bce/snapshots/000020000.jsonl")]
         public void AResizedBodyIsTheBodyBuiltAtThatSize()
         {
             SolverConfig config = TestBodies.Water(0.01);
@@ -201,7 +202,7 @@ namespace Evosim.Dynamics.Tests
         /// are not written at all, so the snap is exactly zero and the threshold in the brief
         /// (1e-9 rad) has nothing to absorb.
         /// </remarks>
-        [Fact]
+        [LocalDataFact("runs/r42-s4/2026-09-21-051718-ff557bce/config.json", "runs/r42-s4/2026-09-21-051718-ff557bce/snapshots/000020000.jsonl")]
         public void AGrowingDrivenBodyNeverSnapsAJoint()
         {
             Round42 round42 = Round42.Read(40, jointedOnly: true);
@@ -317,7 +318,7 @@ namespace Evosim.Dynamics.Tests
         /// together and says plainly why.
         /// </para>
         /// </remarks>
-        [Fact]
+        [LocalDataFact("runs/r42-s4/2026-09-21-051718-ff557bce/config.json", "runs/r42-s4/2026-09-21-051718-ff557bce/snapshots/000020000.jsonl")]
         public void TheThreadCountDoesNotChangeAGrowingWorld()
         {
             Round42 round42 = Round42.Read(400, jointedOnly: true);
