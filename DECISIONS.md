@@ -9896,7 +9896,7 @@ in any condition set for the world.
 
 **Decision.**
 - The film's world is the bloom at periods of 5,000 to 10,000 s, with the far smell off and D249's energy sense on (`rounds/env-r63c-b.ps1`). G5's shape screen and G7's round build on it.
-- B's two worlds are run on to 48,000 s (`r63d`, `logbook/specs/r63d-prereg/`). This judges G2's gates over twice the bloom cycles before G7, at the owner's suggestion.
+- Three B worlds run on to 72,000 s, or longer if they are doing something worth watching (`r63d`, `logbook/specs/r63d-prereg/`): `r63c`'s two resumed, and seed 6204 founded to join them. This judges G2's gates over three times the bloom cycles before G7, at the owner's direction.
 
 **Why.** B's leaves followed the bloom on 4 and 5 of 8 islands, where C's did on 2. Survival passed in both B worlds, and evolution on seed 6203. The far smell added only one or two crossings. At 24,000 s each island sees 2.4 to 4.8 cycles, too few for a firm correlation, so gate 2 is judged again at 48,000 s.
 
