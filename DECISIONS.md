@@ -9860,3 +9860,16 @@ in any condition set for the world.
 **Why.** Every `r63b` world that failed the floor failed it in one window, 9,000 to 12,000 s, and grew afterwards, to 75 to 130 grazers by 24,000 s. Arm A differs from `r62cf` only by the energy sense, and in that window its births fell by about a third (186 and 178 against 264 and 276) while deaths held. `r62cf`'s own low there was 31 to 39, just above the bar. A floor judged across that first dip measures the dip, not whether the guild lives. Trial d, chosen on the test stage, read tan in the world's light (hue 90 to 95), and a colour corrected for the world read olive green.
 
 **Rejected.** Keeping the floor from 9,000 s, which would most likely fail the rerun on the same dip. Taking the energy sense out of the film's world, which would drop the sense fat was built to use.
+
+### D257
+**The nose's nursery test runs at 1/64 of the default noise, and the strength form is not tested now** · 2026-10-29
+
+**Status:** ruled by the owner on 2026-10-29, on the coordinator's and the nose lane's recommendations. It settles D235's one recalibration, which failed (`logbook/specs/nose-bench.md` on `nose-arms`, `104391b7`), and changes how D235's choice of smell form is made.
+
+**Decision.**
+- The nose arms run at 1/64 of the default leaf noise, where a larger nose pays. A world that carries the nose seeds its founders with a snout larger than the bench's reference.
+- The strength-form arm N2 is not run. The worlds keep the direction form, the film world's, chosen by N1 alone. Both forms stay in the code.
+
+**Why.** No single noise passed both bench marks. At 1/64, size paid (a double snout over a half one by 137 ± 46 J) but a reference snout fell short of whole-body smell. At 1/256 the reference snout matched it and size paid nothing. D235's first condition is judged on bodies evolved over 60 generations, not on founders. At 1/64 a double snout already eats about as well as whole-body smell, at about 0.03 W of upkeep, so the arms test D235's claim that size pays and evolution finds it. The body search mutates a nose's dimensions like any part's (`Mutator.MutateNode`). Every nursery founder is wired to the direction channel, so a strength arm would start blind and would test whether that wiring can evolve, not which form smells better.
+
+**Rejected.** Running at 1/256, which makes the nose a free organ rather than a bet. A second recalibration near 1/90, whose window looks narrower than the bench resolves. Strength-wired founders, whose mapping from a direction link to a strength link is arbitrary.
