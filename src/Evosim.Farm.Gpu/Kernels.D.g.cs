@@ -304,6 +304,10 @@ namespace Evosim.Farm.Gpu.Dbl
 
         public float SWorldDepth, ChemHalf, EnergyScale, FlowScale, RateScale, ConstCE, DtF;
         public float ScentHalf;
+
+        // D245's energy squash: 1 reads S / (|S| + EnergyHalfK) in float, 0 the tanh of S over EnergyScale.
+        public int EnergyHalfMode;
+        public float EnergyHalfK;
         public int ScentNx, ScentNy, ScentNz;
 
         // D204: 1 when the smell grids' x and z are rings (ScentField.Wraps), the seams joined.
@@ -8373,7 +8377,7 @@ namespace Evosim.Farm.Gpu.Dbl
             float[] sDepth, float[] sUp, float[] sChem, float[] sScent, float[] sFlow, float[] sAngle, float[] sRate, float[] sDrive,
             float[] sLeaf, ref float energy, ref bool lost)
         {
-            if (readsEnergy) energy = Squash(br.Reserve[i], cfg.EnergyScale);
+            if (readsEnergy) energy = Squash(br.Reserve[i], cfg.EnergyScale, cfg.EnergyHalfMode, cfg.EnergyHalfK);
 
             bool smells = readsChemical;
 
@@ -8518,11 +8522,14 @@ namespace Evosim.Farm.Gpu.Dbl
             }
         }
 
-        private static float Squash(float seconds, float scale)
+        private static float Squash(float seconds, float scale, int halfMode, float halfK)
         {
             if (seconds != seconds) return 0f;
             if (seconds == float.PositiveInfinity) return 1f;
             if (seconds == float.NegativeInfinity) return -1f;
+
+            // D245: S / (|S| + k), the host's CreatureSenses.Squash transcribed; the tanh path is untouched.
+            if (halfMode != 0) return seconds / ((seconds < 0f ? -seconds : seconds) + halfK);
 
             return TanhF(seconds / scale);
         }
@@ -14091,6 +14098,7 @@ namespace Evosim.Farm.Gpu.Dbl
 
                 SWorldDepth = w.SWorldDepth, ChemHalf = w.ChemHalf, ScentHalf = w.ScentHalf, EnergyScale = w.EnergyScale,
                 LeafHalf = w.LeafHalf,
+                EnergyHalfMode = w.EnergyHalfMode, EnergyHalfK = w.EnergyHalfK,
                 FlowScale = w.FlowScale, RateScale = w.RateScale, ConstCE = w.ConstCE, DtF = w.DtF,
 
                 StreamAmpAt = w.StreamAmpAt, StreamRateAt = w.StreamRateAt, CellAmpAt = w.CellAmpAt,

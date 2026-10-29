@@ -17,6 +17,7 @@ namespace Evosim.Core
         public const string Buoyancy = "buoyancy";
         public const string Anchoring = "anchoring";
         public const string Nose = "nose";
+        public const string Fat = "fat";
     }
 
     /// <summary>
@@ -1037,5 +1038,83 @@ namespace Evosim.Core
             if (!(value >= 0f) || float.IsInfinity(value))
                 throw new ArgumentOutOfRangeException(name, value, "Must be finite and not negative.");
         }
+    }
+
+    /// <summary>
+    /// A store of room for reserve - D229, D247, <c>logbook/specs/fat-build-spec.md</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>It earns nothing, costs little to keep and is dear to build.</b> Its upkeep is half of structural
+    /// tissue's, its tissue is worth four times every other type's, and it has no attack, intake or
+    /// protection, a toughness cap of 1, no joint and no light. What it adds is room: under
+    /// <see cref="ReserveCapForm.BodyAndStore"/> each cubic metre of it raises its body's reserve cap by
+    /// <see cref="StoreRoomJoulesPerCubicMetre"/>.
+    /// </para>
+    /// <para>
+    /// <b>It enters a world through the table only</b>, as D165's anchoring cell does: it is not in
+    /// <see cref="CellTypeRegistry.Standard"/>, so a table without it draws as it always did, and a mutation's
+    /// new type is drawn from the table, so fat can arise only in a world whose table carries it.
+    /// </para>
+    /// <para>
+    /// Fat tissue is never burnt. A starving body spends its reserve and its fat stays at full size, because
+    /// tissue cannot be spent and bodies do not shrink (D087). Its lift is 0, so it sinks as other tissue does
+    /// (D247).
+    /// </para>
+    /// </remarks>
+    public sealed class FatCell : CellType
+    {
+        /// <summary>Upkeep, W/m³: half of structural tissue's.</summary>
+        public const float DefaultUpkeepWattsPerCubicMetre = 0.5f;
+
+        /// <summary>Tissue energy, J/m³: four times every other type's.</summary>
+        public const float DefaultTissueEnergyPerCubicMetre = 2000f;
+
+        /// <summary>Store room, J/m³.</summary>
+        public const float DefaultStoreRoomJoulesPerCubicMetre = 50000f;
+
+        private readonly float _storeRoom;
+
+        /// <param name="storeRoomJoulesPerCubicMetre">
+        /// The room a cubic metre of this tissue adds to its body's cap, J. Not negative.
+        /// </param>
+        /// <param name="upkeepWattsPerCubicMetre">Standing cost, W/m³; above 0, as every type's.</param>
+        public FatCell(
+            float storeRoomJoulesPerCubicMetre = DefaultStoreRoomJoulesPerCubicMetre,
+            float upkeepWattsPerCubicMetre = DefaultUpkeepWattsPerCubicMetre)
+            : base(upkeepWattsPerCubicMetre)
+        {
+            if (!(storeRoomJoulesPerCubicMetre >= 0f) || float.IsInfinity(storeRoomJoulesPerCubicMetre))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(storeRoomJoulesPerCubicMetre), storeRoomJoulesPerCubicMetre,
+                    "Store room is finite and not negative.");
+            }
+
+            _storeRoom = storeRoomJoulesPerCubicMetre;
+            TissueEnergyPerCubicMetre = DefaultTissueEnergyPerCubicMetre;
+            AttackMax = 0f;
+            IntakeMax = 0f;
+            ProtectionMax = 0f;
+            ToughnessMax = 1f;
+        }
+
+        public override string Id => CellTypeIds.Fat;
+
+        public override float StoreRoomJoulesPerCubicMetre => _storeRoom;
+
+        /// <summary>Pale yellow.</summary>
+        public override Float3 InspectionColour => new Float3(0.95f, 0.88f, 0.55f);
+
+        public override CellIntake Acquire(in CellContext context) => CellIntake.None;
+
+        public override void WriteParameters(Json.Writer writer) =>
+            writer.Field("storeRoomJoulesPerCubicMetre", _storeRoom);
+
+        public override string HashContribution() =>
+            string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}:upkeep={1:R},joint={2},room={3:R}",
+                Id, UpkeepWattsPerCubicMetre, AllowsJoint, _storeRoom);
     }
 }

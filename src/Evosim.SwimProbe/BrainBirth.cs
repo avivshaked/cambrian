@@ -258,7 +258,7 @@ namespace Evosim.SwimProbe
                 if (haveReserve > 0)
                 {
                     Console.WriteLine(FormattableString.Invariant(
-                        $"  reserve: childSwimReserve is childSwim with Senses.Reserve set to a fixed stand-in whose SecondsOfReserve is the row's S0 ({haveReserve} of {rows.Count} rows have one; the others are skipped with a note). The energy sense is then tanh(S0 / EnergyFullScaleSeconds {solver.EnergyFullScaleSeconds}) (CreatureSenses.cs:203, :475-482; +infinity reads 1); the chemical sense stays at the constant {solver.ConstantChemicalAndEnergy}. Anchor reads the same reserve only for a held grip, and a body alone holds none"));
+                        $"  reserve: childSwimReserve is childSwim with Senses.Reserve set to a fixed stand-in whose SecondsOfReserve is the row's S0 ({haveReserve} of {rows.Count} rows have one; the others are skipped with a note). The energy sense is then {(solver.EnergySenseSquash == EnergySenseSquash.HalfScale ? $"S0 / (|S0| + EnergyHalfScaleSeconds {solver.EnergyHalfScaleSeconds})" : $"tanh(S0 / EnergyFullScaleSeconds {solver.EnergyFullScaleSeconds})")} (CreatureSenses.Squash; +infinity reads 1); the chemical sense stays at the constant {solver.ConstantChemicalAndEnergy}. Anchor reads the same reserve only for a held grip, and a body alone holds none"));
                 }
                 else if (senseSweep != null || !double.IsNaN(current))
                 {
@@ -545,6 +545,12 @@ namespace Evosim.SwimProbe
             if (float.IsNaN(seconds)) return 0.0;
             if (float.IsPositiveInfinity(seconds)) return 1.0;
             if (float.IsNegativeInfinity(seconds)) return -1.0;
+            // D245: the half-scale squash is S / (|S| + k) in float, as CreatureSenses.Squash reads it.
+            if (cx.Solver.EnergySenseSquash == EnergySenseSquash.HalfScale)
+            {
+                return seconds / (Math.Abs(seconds) + (float)Math.Max(1e-6, cx.Solver.EnergyHalfScaleSeconds));
+            }
+
             return (float)Math.Tanh(seconds / (float)Math.Max(1e-6, cx.Solver.EnergyFullScaleSeconds));
         }
 

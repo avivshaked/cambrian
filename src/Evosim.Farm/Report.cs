@@ -101,12 +101,22 @@ namespace Evosim.Farm
         /// recorded run), or the gpu engine's <c>gpu single 4090 g32 classes 2/4/8/16</c>.
         /// </param>
         public void Begin(
-            EnvSettings s, RunConfig config, SpaceFacts space, string engineVersion, string engine = null)
+            EnvSettings s, RunConfig config, SpaceFacts space, string engineVersion, string engine = null,
+            World world = null)
         {
             _text.AppendLine("# Evolution run — " + s.Irradiance.ToString("0", Inv) + " W/m2");
             _text.AppendLine();
             _text.AppendLine(HeaderLine(s, config, space, engineVersion, engine));
             _text.AppendLine();
+
+            // D251, only in a world whose islands bloom: the draws each island got.
+            string islands = IslandBloomLine(world);
+            if (islands.Length > 0)
+            {
+                _text.AppendLine(islands);
+                _text.AppendLine();
+            }
+
             _text.AppendLine(TableHeader());
         }
 
@@ -296,7 +306,7 @@ namespace Evosim.Farm
                 " · sink " + F(s.NutrientSink) + " m/s, matter " + F(s.MatterSink) + " m/s" +
                 " · economy rho " + F(s.Rho) + " J/unit, uptake " + F(s.UptakeRate) +
                 " /m2/s at K " + F(s.UptakeHalf) + " /m3, remin " + F(s.Remin) + " /s, handling " +
-                F(s.Handling) + ", reserveCap " + (s.ReserveCap > 0f ? F(s.ReserveCap) + " s" : "off") +
+                F(s.Handling) + ", reserveCap " + ReserveCapToken(s, config) +
                 ", margin " + F(config.Genome.MinReserveMargin) + "-" +
                 F(config.Genome.MaxReserveMargin) + " s at " + F(s.MarginChance) +
                 " · refuge " + F(s.FloorRefuge) + " m" +
@@ -358,7 +368,10 @@ namespace Evosim.Farm
                 config.Genome.MaxHalfExtent.ToString("0.###", Inv) + " m" +
                 " · float " + F(s.FloatChance) + " at " + F(s.LiftCost) + " W/lift" +
                 " · senses " + SensesToken(config) +
-                " · sense scale chem " + F(s.ChemicalHalfScale) + " J/m3, energy " + F(s.EnergyFullScale) +
+                " · sense scale chem " + F(s.ChemicalHalfScale) + " J/m3, energy " +
+                (config.EnergySenseSquash == EnergySenseSquash.HalfScale
+                    ? "half " + F(config.EnergyHalfScaleSeconds)
+                    : F(s.EnergyFullScale)) +
                 " s, flow " + F(s.FlowFullScale) + " m/s" +
                 (space.InoculumHashShort != null
                     ? " · inoculate " + F(s.InoculateCount) + " @ " + F(s.InoculateAt) + " s, " +
@@ -508,6 +521,11 @@ namespace Evosim.Farm
                 // can mutate the gene, so every other line is what it was.
                 ClimbToken(config) +
                 (config.JuvenileStrengthScales ? " · juvenile strength scaled" : "") +
+
+                // D251's island cycles, only when on, so every other line is what it was. Each island's own
+                // figures are the world's and come on a line of their own (IslandBloomLine).
+                IslandBloomToken(config) +
+                IslandFarSmellToken(config) +
                 " · configHash `" + config.Hash() + "`" +
                 // D159's exchange, after the hash because it is a farm setting and no part of the
                 // config, and only in a migrating world, so every other line is what it was. A lone
@@ -518,10 +536,85 @@ namespace Evosim.Farm
         }
 
         /// <summary>
+        /// D251's header token: the bloom's name, its bounds and whether the total is held. Empty unless
+        /// the islands' influx is on cycles.
+        /// </summary>
+        public static string IslandBloomToken(RunConfig config)
+        {
+            if (config.IslandBloom != IslandBloom.Cycles) return "";
+
+            return " · island bloom " + config.IslandBloom.ToString().ToLowerInvariant() +
+                   " period " + F(config.IslandBloomPeriodMinSeconds) + "-" + F(config.IslandBloomPeriodMaxSeconds) + " s" +
+                   " amplitude " + F(config.IslandBloomAmplitudeMin) + "-" + F(config.IslandBloomAmplitudeMax) +
+                   (config.IslandBloomHoldsTotal ? " holds the total" : " lets the total move");
+        }
+
+        /// <summary>
+        /// D251's far smell header token: its name with the gain G, the band B and the reach R. Empty unless
+        /// the far smell is on, so every other line is what it was.
+        /// </summary>
+        public static string IslandFarSmellToken(RunConfig config)
+        {
+            if (config.IslandFarSmell != IslandFarSmell.Leaves) return "";
+
+            return " · island far smell " + config.IslandFarSmell.ToString().ToLowerInvariant() +
+                   " gain " + F(config.IslandFarSmellGain) +
+                   " band " + F(config.IslandFarSmellBandMetres) + " m" +
+                   " reach " + F(config.IslandFarSmellReachMetres) + " m";
+        }
+
+        /// <summary>
+        /// D251's islands, one line: each island's period, amplitude and phase with its column count and
+        /// centroid, in label order. Empty unless the world's islands are on cycles.
+        /// </summary>
+        public static string IslandBloomLine(World world)
+        {
+            if (world == null || !world.HasIslandBloom) return "";
+
+            GridField.IslandPlan plan = world.IslandInflux;
+            var line = new StringBuilder("island bloom, " + F(plan.IslandCount) + " islands (label: P s, A, phase rad, columns, centre x z m):");
+            for (int k = 0; k < plan.IslandCount; k++)
+            {
+                line.Append(k == 0 ? " " : "; ")
+                    .Append(F(k)).Append(": P ").Append(world.IslandBloomPeriods[k].ToString("0.#", Inv))
+                    .Append(", A ").Append(world.IslandBloomAmplitudes[k].ToString("0.###", Inv))
+                    .Append(", phase ").Append(world.IslandBloomPhases[k].ToString("0.###", Inv))
+                    .Append(", ").Append(F(plan.IslandColumns(k))).Append(" columns")
+                    .Append(", at ").Append(plan.IslandX(k).ToString("0.#", Inv))
+                    .Append(" ").Append(plan.IslandZ(k).ToString("0.#", Inv));
+            }
+
+            return line.ToString();
+        }
+
+        /// <summary>
         /// D241's header token: the time to adulthood T, in world seconds and in the consumer's
         /// metabolic clocks (<see cref="CellType.MetabolicClockSeconds"/>), the gene's start and range,
         /// and its mutation chance. Empty unless T is above 0 or the chance is.
         /// </summary>
+        /// <summary>
+        /// The reserve cap's token inside the economy token (D229, D247): <c>off</c> or <c>3000 s</c> as it always read,
+        /// then the form when it is the body-and-store cap, then fat's upkeep, tissue and room when the table holds
+        /// it. The default world prints what it printed before. Under the body-and-store cap the numbers are read
+        /// from the config, so a resumed run's header says what it ran.
+        /// </summary>
+        public static string ReserveCapToken(EnvSettings s, RunConfig config)
+        {
+            bool store = config.ReserveCapForm == ReserveCapForm.BodyAndStore;
+            string token = store
+                ? F(config.ReserveCapSeconds) + " s body+store"
+                : s.ReserveCap > 0f ? F(s.ReserveCap) + " s" : "off";
+
+            if (config.CellTypes.Contains(CellTypeIds.Fat))
+            {
+                CellType fat = config.CellTypes.Resolve(CellTypeIds.Fat);
+                token += ", fat upkeep " + F(fat.UpkeepWattsPerCubicMetre) + " W/m3 tissue " +
+                         F(fat.TissueEnergyPerCubicMetre) + " J/m3 room " + F(fat.StoreRoomJoulesPerCubicMetre) + " J/m3";
+            }
+
+            return token;
+        }
+
         public static string ClimbToken(RunConfig config)
         {
             if (!(config.GrowthAdultSeconds > 0f) && !(config.Mutation.GrowthReserveChance > 0f)) return "";

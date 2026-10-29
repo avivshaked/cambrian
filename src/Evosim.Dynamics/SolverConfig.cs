@@ -341,6 +341,18 @@ namespace Evosim.Dynamics
         public double EnergyFullScaleSeconds = 600.0;
 
         /// <summary>
+        /// D245: which squash the energy sense reads through, <c>RunConfig.EnergySenseSquash</c>. Tanh is every
+        /// world before it.
+        /// </summary>
+        public EnergySenseSquash EnergySenseSquash;
+
+        /// <summary>
+        /// D245: the reserve that reads one half under the half-scale squash, seconds —
+        /// <c>RunConfig.EnergyHalfScaleSeconds</c>.
+        /// </summary>
+        public double EnergyHalfScaleSeconds = 30.0;
+
+        /// <summary>
         /// Everything the solver reads, taken off a run's config.
         /// </summary>
         /// <param name="config">The run's own config, as <c>RunDirectory</c> loaded it.</param>
@@ -420,6 +432,8 @@ namespace Evosim.Dynamics
                 LeafScent = config.LeafScent,
                 LeafScentHalfScaleSquareMetres = config.LeafScentHalfScaleSquareMetres,
                 EnergyFullScaleSeconds = config.EnergyFullScaleSeconds,
+                EnergySenseSquash = config.EnergySenseSquash,
+                EnergyHalfScaleSeconds = config.EnergyHalfScaleSeconds,
             };
         }
 

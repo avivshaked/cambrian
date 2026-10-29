@@ -148,16 +148,20 @@ The tests use xUnit with at most 2 threads, one MSBuild node, BelowNormal, on co
 
 These are taken in slots the coordinator books.
 
-- **Pace with the family on.** A SwimProbe read on a crowded checkpoint of the t3 world, with the fin law on in both
-  arms:
+- **Pace with the family on: the gate, on the card.** Rounds step on the card, and r63b's G0 pace was read there. So the
+  15 % gate is read at the card identity sitting. There the family-on world is timed against the same world with the
+  family off, on one card and one build. The family-on world's step is to be no more than 15 % slower. The coordinator
+  ruled this on 2026-10-29.
+- **Pace with the family on: the host diagnostic.** A bench read of a crowded second of the t3 world, as step 4's plan
+  below sets out. The fin law is on in both arms:
   - as recorded;
   - with every jointed part turned into its nearest family member, which is the worst case.
 
-  The read times the step and the build per body separately. The gate is the step no more than 15 % slower. The build
-  cost per birth is reported beside it.
+  The read times the solver's step and the build per body separately, and reports the build cost per birth. No gate rests
+  on it. Beside the card's number, it says whether a slowdown comes from the solver or from the card.
 - **Pace with the family off.** The bit-for-bit test above covers it. The pace read is the build's ordinary farm pace
   check on a quiet machine.
-- **Card identity sitting** with the family on, at groups 32 and 64.
+- **Card identity sitting** with the family on, at groups 32 and 64. It carries the pace gate's two timed arms.
 
 ## The order
 
@@ -167,3 +171,130 @@ These are taken in slots the coordinator books.
 4. The pace read (section 5).
 
 Steps 1 and 2 need no card and no quiet machine. Step 3 waits for a slot beside b9's kernels.
+
+## As built, steps 1 and 2 (branch shape-build, 0eae73ce)
+
+The review changed three of the plans above. The filtered tests passed: Core 118 and Dynamics 127, after one pin was moved to the new reach.
+
+- **The buoyancy arm is fixed, not shown harmless.** On the bench's paddle and stick the thinnest axis is Y, which is the taper's axis. So offset ±1 put the buoyancy centre up to 16 mm past the narrow pole. The arm is now the offset times the true surface's distance along that axis, on the offset's side.
+- **A family link's contact sphere is the solid's reach under sphere contact too.** The half-diagonal left a taper-4 part's wide end outside its sphere. The founders' bounding radius and the developer's body-reach prune take the same reach.
+- **The silhouette of the box-like member is 7.3 % under the box's.** At exponents of 0.1 the 98 surface points stand about 5 % inside the box's corners. The test asserts the hull lies inside the true hull, which the 1 % comparison above cannot.
+
+The build's resolution is 24 cells a face edge, on a lattice of 25 points. Its worst error against the reference is 1.22 % over 170 cases. A family member nearest the box gives M 0.85 % under the box's caliper value, with a lever equal to the reach. A mirrored twin's cached M and I1 equal values computed from the solver's own anchor and axes, with reflection on and off.
+
+## Step 3's plan: the card (written against nose at 0cb43c60)
+
+The plan was written while round 63b's screen held the machine, from the source alone. Nothing was built.
+
+**What the card already takes from the host.** It packs each body whole at a slot fill and again at every resize. From the host it copies:
+
+- the contact reach (`c.LinkReach`);
+- the buoyancy arm (`c.BuoyancyArm`);
+- the contact radius;
+- the panels;
+- the mass and the inertia.
+
+So the step-1 fixes reach the card with no kernel change. Only the fin law reads the shape inside the kernel, and only in two places:
+
+- the powered stroke, once per size class in `gpu-kernel.template`;
+- the swing push, around line 5800.
+
+**The changes.**
+
+1. **`FarmGpu.Open`.** It refuses a family world only when `ContactShape` is a true shape. The card packs every core as a box's half-extents, so a family part there would touch as its box. Under sphere contact the refusal is lifted.
+2. **`gpu-runner.template`, the packing.**
+   - The family gets shape code 3.
+   - Two per-degree columns are added, `FamMass` and `FamMoment`, sized like `StrokeMass`. They are allocated whenever `shapedMass` is on, so `ClassSet`'s constructor takes no new parameter. b9's port edits that signature and the call that builds it.
+   - At packing, a family link's degrees take `(Real)c.FamilyAddedMass[d]` and `(Real)c.FamilyFirstMoment[d]`.
+   - The `else` branch keeps its refusal for any other shape.
+3. **`gpu-kernel.template`, the powered stroke.** With shape code 3, each degree adds `q · FamMoment` and `q · FamMass` to two new sums, in the host's order. Here `q` is `sv · omega · sv · omega · (1 − along · along)`, as the host writes it in `Fluid.Apply`. Then:
+   - the push is `cfg.LimbPush · familySum`;
+   - the lever is `AssemblyLeverOf(familySum, familyMass, linkReach)`;
+   - the `LeverOf · ShapedAddedMass` line is not entered;
+   - the half-extents are not read for code 3.
+4. **The swing push.** The host refuses a family limb under the swing push when the body is built (`RefuseFamilyStroke`), so code 3 never reaches it. Add one guard that names D255, so that a future path cannot read code 3 as a box.
+5. **Regenerate** both precisions (`GpuKernelSourceTests`, `EVOSIM_GPU_REGENERATE=1`). Run the accelerator tests in the slot the coordinator gives.
+
+**Merging with b9.** b9's port lands first. Its hunks sit beside four of mine:
+- the column lists near lines 75 and 381;
+- the `ClassSet` constructor and its call;
+- the packing near line 2521.
+
+None of them touches the fin-law lines. I rebase `shape-build` on main once the nose lands, make the edits above on the merged templates, and regenerate once.
+
+**Tests.**
+- Family-free bit for bit: the existing accelerator and fixture tests pass unchanged.
+- Family on the card: a one-limb family body under the powered stroke, with the fin law on, gives the same digest on the card in double as on the host, step for step, for 2,000 steps. It also gives the same digest at groups 32 and 64.
+- The refusal test is moved, to refuse the family only under true-shape contact.
+
+**Machine time.** Regeneration and the filtered card tests take about 30 minutes in a slot with nothing else on the card. G0's identity sitting with the family on takes about 1.5 hours, booked by the coordinator. The sitting adds one arm: the same world with the family off, timed beside the family-on arm on the same card and build. That pair is the 15 % pace gate (section 5).
+
+## As built, step 3 (branch shape-build, 83d8755d)
+
+The nose did not land on main first. On the coordinator's word, `shape-build` merged `nose` at `99258173` instead
+(`b90d3ecb`). The card port was written on the merged templates. If the nose changes before it lands, the port is merged
+again and the kernels regenerated.
+
+The five changes are as planned. Two departures from the plan were accepted by the coordinator on 2026-10-29.
+
+- **The family's sums use plain products, not `mul.rn`.** The kernel template has no `mul.rn` helper. D231's assembly
+  lines, which this branch copies, use plain products too, and they passed their identity sitting. On the CPU
+  accelerator in double nothing is fused, so the host comparison holds. On the card, groups 32 and 64 run the same
+  compiled kernel.
+- **Groups 32 and 64 are told apart only on the card.** The CPU accelerator ignores the group size. It takes its
+  device's largest group, so a test at 32 and one at 64 would be one run twice. That identity is the card sitting's.
+
+The off-card checks passed with `CUDA_VISIBLE_DEVICES=-1`, and no process loaded the card's driver:
+
+- The kernels regenerated from their templates, and the source test passed after a rebuild.
+- The accelerator class passed 37 of 37 tests. One of them is new. In it, three one-limb family bodies step under the
+  powered stroke with the fin law on. The host and the CPU accelerator in double agree digest for digest over 2,000
+  steps, and the world parts from the same world with the fin law off.
+- The card refuses the family under either true-shape contact and opens it under spheres, as its test asserts.
+- The Farm default suite passed 471 of 471 at `b90d3ecb`, with `GpuMeanTests` left out. That test crashes the CPU
+  accelerator when its host is pinned, as `src/Evosim.Farm.Gpu/CLAUDE.md` records.
+
+A degree whose axis runs along its limb twists the limb and moves no water across it. The universal joint's first
+degree, on an in-line limb, is one, and its M and I1 are 0 on the host as on the card. The family test asks only that
+each family limb push through at least one degree.
+
+## Step 4's plan: the pace read
+
+Written during the same hold, from the source alone. Nothing was built.
+
+**The tool is `Evosim.Dynamics.Bench`'s record mode, not a checkpoint.** `--mode record --at <second>` rebuilds a run's
+crowd where it stood: every living body's genome from that second's snapshot and its pose from `poses.jsonl`. It then
+times a step at each thread count. That is the solver's step on the recorded crowd, and the solver is where the fin law
+costs. A checkpoint's bodies cannot be turned into family members without rewriting the checkpoint, which this read
+does not need.
+
+Three additions to the bench, behind flags, so its existing modes keep their output:
+
+- **`--shaped`** turns on `ShapedAddedMass` in the config in memory, and checks that the recorded config already drives
+  the bend-and-power stroke. Both arms run with it.
+- **`--family nearest`** rewrites every node that carries a joint. It does so before development, in three ways:
+  - Its shape becomes the superellipsoid, with the form of the nearest member. A box takes (0.1, 0.1, 1), a sphere
+    (1, 1, 1) and a capsule (0.5, 1, 1).
+  - Its half-extents stay as recorded.
+  - The superellipsoid joins the config's shape table in memory, if the run's table lacks it.
+
+  The root keeps its shape, since it has no joint and no push.
+- **Record mode reads the farm's present files.** It reads `poses.jsonl` and plain snapshots today, and the t3 run
+  holds `poses.bin` with its index and gzipped compact snapshots. Snapshots go through `RecordFiles.ReadSnapshot`, and
+  poses through the farm's pose reader or a port of it. A compact snapshot row carries each body's growth fraction, so
+  each body is built at its recorded size rather than at adult size.
+- **The build is timed apart from the step.** One stopwatch around `Developer.Develop` and the body's construction,
+  summed over the crowd, is reported as microseconds per body in each arm.
+
+The read, in a quiet slot the coordinator books: second 20700 of `runs/r62p-t3-6201` (run directory
+`2026-10-26-034325-a9cd635c`), recorded arm then converted arm, at the farm's thread count.
+- That is the run's most crowded snapshot: 9036 bodies alive, by its `stats.jsonl`.
+- Of those, 484 are jointed, with 1061 degrees of freedom between them. They are the only bodies the converted arm
+  changes.
+- So the gate measures the world's pace on the real mix. The bench also reports the step per jointed body, which gives
+  the fin law's cost per limb beside it.
+
+The arms run at the farm's thread count. Each arm has 200 warm-up steps and 2000 timed steps, three repeats each, and the median is
+taken. The converted arm's step against the recorded arm's is the host's share of any slowdown; the gate itself is read
+on the card (section 5). The bench counts the bodies it
+refused and the poses it left at rest. The two arms must agree on both counts, or the comparison is of different crowds.

@@ -521,7 +521,8 @@ namespace Evosim.Core
             bool corpseLandings = Config.FoundersFollowCorpses;
             bool lifespans = LifespanRecorded;
             bool climb = Config.GrowthAdultSeconds > 0f;
-            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i], layout, capped, corpseLandings, lifespans, Config.ContactEating, climb);
+            bool fatTable = Config.CellTypes.Contains(CellTypeIds.Fat);
+            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i], layout, capped, corpseLandings, lifespans, Config.ContactEating, climb, fatTable);
 
             StateIo.Tag(w, "ABSD");
             w.Write(_absorptiveDeaths.Count);
@@ -625,6 +626,13 @@ namespace Evosim.Core
                     w.Write(BiteCapCutJoules);
                     w.Write(GutCapCutJoules);
                     w.Write(GutCapBound);
+
+                    // D247's two, only with the body-and-store cap as well, so a world without it writes the bytes it wrote.
+                    if (Config.ReserveCapForm == ReserveCapForm.BodyAndStore)
+                    {
+                        w.Write(GutWaitedAtReserveCap);
+                        w.Write(LargestGutJoules);
+                    }
                 }
             }
 
@@ -877,7 +885,8 @@ namespace Evosim.Core
             bool corpseLandings = Config.FoundersFollowCorpses;
             bool lifespans = LifespanRecorded;
             bool climb = Config.GrowthAdultSeconds > 0f;
-            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r, version, capped, corpseLandings, lifespans, Config.ContactEating, climb));
+            bool fatTable = Config.CellTypes.Contains(CellTypeIds.Fat);
+            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r, version, capped, corpseLandings, lifespans, Config.ContactEating, climb, fatTable));
 
             StateIo.Tag(r, "ABSD");
             int deaths = r.ReadInt32();
@@ -999,6 +1008,17 @@ namespace Evosim.Core
                     BiteCapCutJoules = r.ReadDouble();
                     GutCapCutJoules = r.ReadDouble();
                     GutCapBound = r.ReadInt64();
+
+                    if (Config.ReserveCapForm == ReserveCapForm.BodyAndStore)
+                    {
+                        GutWaitedAtReserveCap = r.ReadInt64();
+                        LargestGutJoules = r.ReadDouble();
+                    }
+                    else
+                    {
+                        GutWaitedAtReserveCap = 0L;
+                        LargestGutJoules = 0d;
+                    }
                 }
                 else
                 {
@@ -1009,6 +1029,8 @@ namespace Evosim.Core
                     BiteCapCutJoules = 0d;
                     GutCapCutJoules = 0d;
                     GutCapBound = 0L;
+                    GutWaitedAtReserveCap = 0L;
+                    LargestGutJoules = 0d;
                 }
             }
             else
@@ -1031,6 +1053,8 @@ namespace Evosim.Core
                 BiteCapCutJoules = 0d;
                 GutCapCutJoules = 0d;
                 GutCapBound = 0L;
+                GutWaitedAtReserveCap = 0L;
+                LargestGutJoules = 0d;
             }
 
             ReadField(r, Nutrients);
@@ -1043,7 +1067,7 @@ namespace Evosim.Core
             FillScent();
 
             // D167: from the sources the last fill took, as the live field was.
-            LeafScent?.FillSources(_leafSources, _leafSourceCount);
+            if (LeafScent != null) FillLeafScentFromSources();
 
             StateVersionRead = version;
         }
@@ -1440,7 +1464,7 @@ namespace Evosim.Core
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(),
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
 
-        private static void WriteLineage(BinaryWriter w, LineageEvent e, int layout, bool capped, bool corpseLandings, bool lifespans, bool contactEating, bool climb)
+        private static void WriteLineage(BinaryWriter w, LineageEvent e, int layout, bool capped, bool corpseLandings, bool lifespans, bool contactEating, bool climb, bool fatTable)
         {
             w.Write((int)e.Kind);
             w.Write(e.ElapsedSeconds);
@@ -1536,6 +1560,9 @@ namespace Evosim.Core
             // world's rows are the bytes they were. The reader asks the same config.
             if (climb) w.Write(e.GrowthReserveSeconds);
 
+            // D247's flag on a birth row, the same way: only in a world whose table holds fat.
+            if (fatTable && e.Kind == LineageEventKind.Birth) w.Write(e.HasFat);
+
             // D159's two, written only on an immigrant's row, for the pool index's reason: every
             // row a world without immigrants queues is the bytes version 14 wrote, and an
             // immigrant's row can only be in a stream of version 15.
@@ -1566,7 +1593,7 @@ namespace Evosim.Core
             // version 10, above.
         }
 
-        private static LineageEvent ReadLineage(BinaryReader r, int version, bool capped, bool corpseLandings, bool lifespans, bool contactEating, bool climb)
+        private static LineageEvent ReadLineage(BinaryReader r, int version, bool capped, bool corpseLandings, bool lifespans, bool contactEating, bool climb, bool fatTable)
         {
             var kind = (LineageEventKind)r.ReadInt32();
             double seconds = r.ReadDouble();
@@ -1631,6 +1658,7 @@ namespace Evosim.Core
             float landingCorpseMean = corpseLandings ? r.ReadSingle() : float.NaN;
             float lifespan = lifespans ? r.ReadSingle() : float.NaN;
             float growthReserve = climb ? r.ReadSingle() : float.NaN;
+            bool hasFat = fatTable && kind == LineageEventKind.Birth && r.ReadBoolean();
 
             int fromWorld = -1;
             long fromId = -1;
@@ -1665,7 +1693,7 @@ namespace Evosim.Core
                     reproductionMode, gestationShare,
                     landingSnow, landingSnowColumn, landingMatter, landingMatterColumn,
                     capCut, landingCorpse, landingCorpseMean, lifespan,
-                    fromWorld, fromId, growthReserve)
+                    fromWorld, fromId, growthReserve, hasFat)
                 : LineageEvent.Death(
                     seconds, id, cause, accountAtDeath, reserveAtDeath, intakeOwn, intakeOther, intakeCarrion, biteKept);
         }

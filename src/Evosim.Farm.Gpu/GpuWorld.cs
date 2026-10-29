@@ -117,6 +117,10 @@ namespace Evosim.Farm.Gpu
         public float SWorldDepth, ChemHalf, EnergyScale, FlowScale, RateScale, ConstCE, DtF;
         public float ScentHalf;
 
+        // ---- D245's energy squash: 1 reads S / (|S| + EnergyHalfK) in float, 0 the tanh of S over EnergyScale
+        public int EnergyHalfMode;
+        public float EnergyHalfK;
+
         // ---- D167's leaf smell: the strength's half scale, m², as CreatureSenses takes it
         public float LeafHalf;
 
@@ -232,6 +236,8 @@ namespace Evosim.Farm.Gpu
             ScentHalf = (float)Math.Max(1e-6, s.ScentHalfScaleJoules);
             LeafHalf = (float)Math.Max(1e-6, s.LeafScentHalfScaleSquareMetres);
             EnergyScale = (float)Math.Max(1e-6, s.EnergyFullScaleSeconds);
+            EnergyHalfMode = s.EnergySenseSquash == EnergySenseSquash.HalfScale ? 1 : 0;
+            EnergyHalfK = (float)Math.Max(1e-6, s.EnergyHalfScaleSeconds);
             FlowScale = (float)Math.Max(1e-6, s.FlowFullScaleMetresPerSecond);
             RateScale = (float)Math.Max(1e-6, s.JointRateFullScale);
             ConstCE = s.ConstantChemicalAndEnergy;

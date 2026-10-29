@@ -250,6 +250,17 @@ namespace Evosim.Core
         public const ulong FloorPoolIndex = ulong.MaxValue - 11UL;
 
         /// <summary>
+        /// D251's seed slot: each fed island's cycle. Island k draws its period, amplitude and phase,
+        /// in that order, from <c>new Rng(SeedFor(SeedFor(Seed, IslandBloomIndex), k))</c>. Stateless,
+        /// as <see cref="AgeDeathIndex"/> is: the draws are a function of the world's seed and the
+        /// island's label and are taken once at construction, so a checkpoint carries nothing for them
+        /// and the state's layout does not move. Drawn from by no world whose
+        /// <see cref="RunConfig.IslandBloom"/> is <see cref="Evosim.Core.IslandBloom.None"/>, which is
+        /// every recorded world.
+        /// </summary>
+        public const ulong IslandBloomIndex = ulong.MaxValue - 12UL;
+
+        /// <summary>
         /// The stream behind <see cref="ConceptionOrder.Shuffled"/> — D072. Constructed for every
         /// world and drawn from by none but a shuffled one.
         /// </summary>
@@ -361,6 +372,127 @@ namespace Evosim.Core
         public GridField.IslandPlan IslandInflux => _islandInflux;
 
         private readonly GridField.IslandPlan _islandInflux;
+
+        // D251. One entry per island of _islandInflux, in label order; null unless IslandBloom is Cycles.
+        private readonly double[] _bloomPeriods;
+        private readonly double[] _bloomAmplitudes;
+        private readonly double[] _bloomPhases;
+
+        // Reused each step: the factors the influx is laid by.
+        private readonly double[] _bloomFactors;
+
+        // D251's island geometry, per island in label order: the plan's centroid and radius. Built when
+        // the cycles or the far smell are on, and null otherwise.
+        private double[] _islandCentreX;
+        private double[] _islandCentreZ;
+        private double[] _islandRadius;
+
+        // D251's far smell, null unless IslandFarSmell is Leaves: each island's flat top (radius plus the
+        // band), its height as the last leaf fill laid it, and the banded area that height came from.
+        private double[] _farFlat;
+        private double[] _farHeights;
+        private double[] _farArea;
+
+        /// <summary>True when D251's island cycles are on: <see cref="RunConfig.IslandBloom"/> is Cycles.</summary>
+        public bool HasIslandBloom => _bloomPeriods != null;
+
+        /// <summary>Each island's period P, s, in label order. Empty without the cycles.</summary>
+        public IReadOnlyList<double> IslandBloomPeriods => _bloomPeriods ?? Array.Empty<double>();
+
+        /// <summary>Each island's amplitude A, in label order. Empty without the cycles.</summary>
+        public IReadOnlyList<double> IslandBloomAmplitudes => _bloomAmplitudes ?? Array.Empty<double>();
+
+        /// <summary>Each island's phase φ, radians, in label order. Empty without the cycles.</summary>
+        public IReadOnlyList<double> IslandBloomPhases => _bloomPhases ?? Array.Empty<double>();
+
+        /// <summary>
+        /// D251's factor: <c>max(0, 1 + A sin(2π t / P + φ))</c>, in double.
+        /// </summary>
+        public static double IslandBloomFactor(double seconds, double period, double amplitude, double phase) =>
+            Math.Max(0d, 1d + amplitude * Math.Sin(2d * Math.PI * seconds / period + phase));
+
+        /// <summary>Island <paramref name="island"/>'s factor at clock value <paramref name="seconds"/>.</summary>
+        public double IslandBloomFactorAt(int island, double seconds) =>
+            IslandBloomFactor(seconds, _bloomPeriods[island], _bloomAmplitudes[island], _bloomPhases[island]);
+
+        /// <summary>
+        /// Every island's factor at clock value <paramref name="seconds"/>, in label order. Empty without
+        /// the cycles. The influx lays by the factors at <see cref="ElapsedSeconds"/> as the step has
+        /// advanced it, so a sample taken between steps reads the factors the last influx was laid by.
+        /// </summary>
+        public double[] IslandBloomFactorsAt(double seconds)
+        {
+            if (_bloomPeriods == null) return Array.Empty<double>();
+            var factors = new double[_bloomPeriods.Length];
+            for (int k = 0; k < factors.Length; k++) factors[k] = IslandBloomFactorAt(k, seconds);
+            return factors;
+        }
+
+        /// <summary>
+        /// The banded lit leaf area of each island, m², in label order: the area (the fourth float) of
+        /// every source of the last leaf fill (<see cref="CopyLeafSources"/>), counted towards the island
+        /// whose edge is nearest to it (the least level distance to the island's centroid less its radius,
+        /// the lower label on a tie), and only when that least distance is at most
+        /// <see cref="RunConfig.IslandFarSmellBandMetres"/>. A source farther than the band from every
+        /// island counts towards none. This is L_k of D251's far smell, and it is banded whether or not the
+        /// far smell is on, so the stats column reads the food the smell reports. Empty without the cycles.
+        /// </summary>
+        public double[] IslandBloomLeafArea()
+        {
+            if (_bloomPeriods == null) return Array.Empty<double>();
+            var area = new double[_bloomPeriods.Length];
+            if (LeafScent == null) return area;
+
+            BandedLeafArea(
+                _leafSources, _leafSourceCount, _islandCentreX, _islandCentreZ, _islandRadius, area.Length,
+                Config.IslandFarSmellBandMetres, LeafScent.CellsX * (double)LeafScent.CellSizeMetres,
+                LeafScent.CellsZ * (double)LeafScent.CellSizeMetres, LeafScent.Wraps, area);
+            return area;
+        }
+
+        /// <summary>True when D251's far smell is on: <see cref="RunConfig.IslandFarSmell"/> is Leaves.</summary>
+        public bool HasIslandFarSmell => _farHeights != null;
+
+        /// <summary>
+        /// Each island's flat height H_k = G × L_k as the last leaf fill laid it, in the leaf smell's units,
+        /// in label order. Empty without the far smell.
+        /// </summary>
+        public double[] IslandFarSmellHeights() => _farHeights == null ? Array.Empty<double>() : (double[])_farHeights.Clone();
+
+        /// <summary>
+        /// L_k, the banded lit leaf area: each of the first <paramref name="count"/> sources of
+        /// <paramref name="sources"/> (four floats each: x, y, z and area) counted towards the island with
+        /// the least <c>d − radius</c>, the lower label on a tie, when that is at most
+        /// <paramref name="band"/>. d is the level distance (x and z) from the source to the island's
+        /// centre, the shorter way round each axis when <paramref name="wraps"/>. Works in double, in the
+        /// sources' order, and overwrites <paramref name="area"/>.
+        /// </summary>
+        public static void BandedLeafArea(
+            float[] sources, int count, double[] centreX, double[] centreZ, double[] radius, int islands,
+            double band, double lengthX, double lengthZ, bool wraps, double[] area)
+        {
+            for (int k = 0; k < islands; k++) area[k] = 0d;
+
+            for (int i = 0; i < count; i++)
+            {
+                double px = sources[4 * i], pz = sources[4 * i + 2];
+                int best = -1;
+                double least = double.PositiveInfinity;
+                for (int k = 0; k < islands; k++)
+                {
+                    double dx = ScentField.LevelOffset(px - centreX[k], lengthX, wraps);
+                    double dz = ScentField.LevelOffset(pz - centreZ[k], lengthZ, wraps);
+                    double edge = Math.Sqrt(dx * dx + dz * dz) - radius[k];
+                    if (edge < least)
+                    {
+                        least = edge;
+                        best = k;
+                    }
+                }
+
+                if (best >= 0 && least <= band) area[best] += sources[4 * i + 3];
+            }
+        }
 
         /// <summary>The shade map's mean over the live columns, 1 with no map. For the header.</summary>
         public float MeanShade { get; } = 1f;
@@ -1013,7 +1145,33 @@ namespace Evosim.Core
         {
             if (LeafScent == null) return;
             GatherLeafSources();
+            FillLeafScentFromSources();
+        }
+
+        /// <summary>
+        /// Fills the leaf smell from the sources in hand: the leaves' own cones, then, under D251's far
+        /// smell only, each island's flat top and skirt added to them. The live fill and a restore both
+        /// call it, so a restored world rebuilds the grid from the checkpoint's own sources.
+        /// </summary>
+        private void FillLeafScentFromSources()
+        {
             LeafScent.FillSources(_leafSources, _leafSourceCount);
+            if (_farHeights != null) AddIslandFarSmell();
+        }
+
+        private void AddIslandFarSmell()
+        {
+            int islands = _farHeights.Length;
+            BandedLeafArea(
+                _leafSources, _leafSourceCount, _islandCentreX, _islandCentreZ, _islandRadius, islands,
+                Config.IslandFarSmellBandMetres, LeafScent.CellsX * (double)LeafScent.CellSizeMetres,
+                LeafScent.CellsZ * (double)LeafScent.CellSizeMetres, LeafScent.Wraps, _farArea);
+
+            double gain = Config.IslandFarSmellGain;
+            for (int k = 0; k < islands; k++) _farHeights[k] = gain * _farArea[k];
+
+            LeafScent.AddLevelPlateaus(
+                _islandCentreX, _islandCentreZ, _farFlat, _farHeights, islands, Config.IslandFarSmellReachMetres);
         }
 
         /// <summary>
@@ -1821,6 +1979,8 @@ namespace Evosim.Core
 
             ValidateVent(config, patchCount);
             ValidateMatterInflux(config, patchCount);
+            ValidateIslandBloom(config);
+            ValidateIslandFarSmell(config);
 
             Field = new LightField(
                 Light, config.WorldAreaSquareMetres, config.LightLayerMetres,
@@ -2039,6 +2199,69 @@ namespace Evosim.Core
                         "its threshold, so the matter was seeded as uniform water and there is no island " +
                         "for the influx to land on.",
                         nameof(config));
+                }
+
+                // D251. The islands' points and radii, for the banded leaf area and the far smell.
+                if (config.IslandBloom == IslandBloom.Cycles || config.IslandFarSmell == IslandFarSmell.Leaves)
+                {
+                    int islands = _islandInflux.IslandCount;
+                    _islandCentreX = new double[islands];
+                    _islandCentreZ = new double[islands];
+                    _islandRadius = new double[islands];
+                    for (int k = 0; k < islands; k++)
+                    {
+                        _islandCentreX[k] = _islandInflux.IslandX(k);
+                        _islandCentreZ[k] = _islandInflux.IslandZ(k);
+                        _islandRadius[k] = _islandInflux.IslandRadius(k);
+                    }
+                }
+
+                // D251. The far smell's heights, one per island. In a box whose seams join, an island's
+                // skirt must not reach round to meet itself, as a leaf's cone must not (ScentField).
+                if (config.IslandFarSmell == IslandFarSmell.Leaves)
+                {
+                    int islands = _islandInflux.IslandCount;
+                    _farFlat = new double[islands];
+                    _farHeights = new double[islands];
+                    _farArea = new double[islands];
+                    for (int k = 0; k < islands; k++)
+                    {
+                        _farFlat[k] = _islandRadius[k] + config.IslandFarSmellBandMetres;
+                        if (LeafScent.Wraps)
+                        {
+                            double reachMetres = _farFlat[k] + config.IslandFarSmellReachMetres;
+                            int cells = (int)Math.Ceiling(reachMetres / LeafScent.CellSizeMetres);
+                            if (2 * cells + 1 > LeafScent.CellsX || 2 * cells + 1 > LeafScent.CellsZ)
+                            {
+                                throw new ArgumentException(
+                                    FormattableString.Invariant(
+                                        $"IslandFarSmell is Leaves and island {k}'s smell reaches {reachMetres:0.###} m ") +
+                                    FormattableString.Invariant(
+                                        $"(its radius, the band and the reach), across the whole {LeafScent.CellsX} by {LeafScent.CellsZ} ") +
+                                    "cells of a box whose seams join, so it would meet itself round a seam.",
+                                    nameof(config));
+                            }
+                        }
+                    }
+                }
+
+                // D251. Each island's cycle, drawn once from the seed and the island's label alone.
+                if (config.IslandBloom == IslandBloom.Cycles)
+                {
+                    int islands = _islandInflux.IslandCount;
+                    _bloomPeriods = new double[islands];
+                    _bloomAmplitudes = new double[islands];
+                    _bloomPhases = new double[islands];
+                    _bloomFactors = new double[islands];
+                    ulong stream = Rng.SeedFor(seed, IslandBloomIndex);
+
+                    for (int k = 0; k < islands; k++)
+                    {
+                        var draw = new Rng(Rng.SeedFor(stream, (ulong)k));
+                        _bloomPeriods[k] = draw.Range(config.IslandBloomPeriodMinSeconds, config.IslandBloomPeriodMaxSeconds);
+                        _bloomAmplitudes[k] = draw.Range(config.IslandBloomAmplitudeMin, config.IslandBloomAmplitudeMax);
+                        _bloomPhases[k] = (double)draw.NextFloat() * (2d * Math.PI);
+                    }
                 }
             }
 
@@ -2741,6 +2964,17 @@ namespace Evosim.Core
                     "(Fluid.PowerPushRadiansPerSecond 0), so there is no envelope to sense.", nameof(config));
             }
 
+            // D229, D247: the body-and-store cap is s seconds of standing cost above the litter and the growth, so at
+            // s of 0 it would read as a cap that is not there; and the rule that draws its numbers is the dial's.
+            if (config.ReserveCapForm == ReserveCapForm.BodyAndStore && !(config.ReserveCapSeconds > 0f))
+            {
+                throw new ArgumentException(
+                    "ReserveCapForm is BodyAndStore and ReserveCapSeconds is 0. Under the body-and-store form s is the " +
+                    "seconds of standing cost above the litter and the growth, and 0 means no cap under either form; a " +
+                    "header naming the form would describe a cap the world did not have (D247).",
+                    nameof(config));
+            }
+
             // D231: a stroke pushes its welded assembly by the fin law's strips, so it needs the fin law; and only
             // the power push has a fixed stroke direction to take them along, so the swing push is refused.
             if (config.Fluid != null && config.Fluid.StrokePushesAssembly)
@@ -2958,6 +3192,92 @@ namespace Evosim.Core
         /// one, the same rule <see cref="ValidateVent"/> follows.
         /// </para>
         /// </remarks>
+        private static void ValidateIslandBloom(RunConfig config)
+        {
+            if (config.IslandBloom != IslandBloom.Cycles) return;
+
+            if (!(config.MatterInfluxPerSecond > 0f) || config.MatterInfluxAt != MatterInflux.Islands)
+            {
+                throw new ArgumentException(
+                    "IslandBloom is Cycles, but the cycles act on the islands' influx and this world has " +
+                    "none (it needs MatterInfluxAt Islands and MatterInfluxPerSecond > 0).",
+                    nameof(config));
+            }
+
+            float pmin = config.IslandBloomPeriodMinSeconds, pmax = config.IslandBloomPeriodMaxSeconds;
+            if (!(pmin > 0f) || !(pmax > 0f) || float.IsInfinity(pmin) || float.IsInfinity(pmax) || pmin > pmax)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"IslandBloom is Cycles and the period bounds are {pmin} and {pmax} s. ") +
+                    "Both are finite and above 0, and the least is not above the greatest.",
+                    nameof(config));
+            }
+
+            float amin = config.IslandBloomAmplitudeMin, amax = config.IslandBloomAmplitudeMax;
+            if (!(amin >= 0f) || !(amax >= 0f) || float.IsInfinity(amin) || float.IsInfinity(amax) || amin > amax)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"IslandBloom is Cycles and the amplitude bounds are {amin} and {amax}. ") +
+                    "Both are finite and not below 0, and the least is not above the greatest.",
+                    nameof(config));
+            }
+        }
+
+        /// <summary>
+        /// D251's far smell is added to the leaf smell and laid on the islands of the influx's plan, so it
+        /// needs both, and its three numbers are finite. Nothing is checked while it is off. The check that
+        /// an island's skirt does not meet itself round a seam needs the plan, and the constructor makes it.
+        /// </summary>
+        private static void ValidateIslandFarSmell(RunConfig config)
+        {
+            if (config.IslandFarSmell != IslandFarSmell.Leaves) return;
+
+            if (config.LeafScent == LeafScentForm.None)
+            {
+                throw new ArgumentException(
+                    "IslandFarSmell is Leaves, but the far smell is added to the leaf smell and this world has " +
+                    "none (it needs LeafScent Strength or Direction).",
+                    nameof(config));
+            }
+
+            if (!(config.MatterInfluxPerSecond > 0f) || config.MatterInfluxAt != MatterInflux.Islands)
+            {
+                throw new ArgumentException(
+                    "IslandFarSmell is Leaves, but the far smell is laid on the islands of the influx and this " +
+                    "world has none (it needs MatterInfluxAt Islands and MatterInfluxPerSecond > 0).",
+                    nameof(config));
+            }
+
+            float gain = config.IslandFarSmellGain;
+            if (!(gain >= 0f) || float.IsInfinity(gain))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant($"IslandFarSmell is Leaves and the gain is {gain}. ") +
+                    "It is finite and not below 0.",
+                    nameof(config));
+            }
+
+            float band = config.IslandFarSmellBandMetres;
+            if (!(band >= 0f) || float.IsInfinity(band))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant($"IslandFarSmell is Leaves and the band is {band} m. ") +
+                    "It is finite and not below 0.",
+                    nameof(config));
+            }
+
+            float reach = config.IslandFarSmellReachMetres;
+            if (!(reach > 0f) || float.IsInfinity(reach))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant($"IslandFarSmell is Leaves and the reach is {reach} m. ") +
+                    "It is finite and above 0.",
+                    nameof(config));
+            }
+        }
+
         private static void ValidateMatterInflux(RunConfig config, int patchCount)
         {
             if (!(config.MatterInfluxPerSecond > 0f)) return;
@@ -3554,6 +3874,21 @@ namespace Evosim.Core
                 // D175. In the island seeding's cells and shares; what is counted is what was laid.
                 if (Config.MatterInfluxAt == MatterInflux.Islands)
                 {
+                    // D251. Each island's share scaled by its cycle, read at ElapsedSeconds as Step has
+                    // already advanced it (the clock after this step's own advance). Off, the line below.
+                    if (_bloomPeriods != null)
+                    {
+                        double t = ElapsedSeconds;
+                        for (int k = 0; k < _bloomFactors.Length; k++)
+                        {
+                            _bloomFactors[k] = IslandBloomFactor(t, _bloomPeriods[k], _bloomAmplitudes[k], _bloomPhases[k]);
+                        }
+
+                        MatterInfluxedTotal += grid.DepositIslandsBloomed(
+                            _islandInflux, amount, _bloomFactors, Config.IslandBloomHoldsTotal);
+                        return;
+                    }
+
                     MatterInfluxedTotal += grid.DepositIslands(_islandInflux, amount);
                     return;
                 }
@@ -4865,11 +5200,105 @@ namespace Evosim.Core
             return ledger;
         }
 
+        /// <summary>
+        /// The cap on this body's reserve now, J, or <see cref="double.PositiveInfinity"/> where none binds: a world
+        /// with <see cref="RunConfig.ReserveCapSeconds"/> at 0, or a body with no standing cost.
+        /// </summary>
+        /// <remarks>
+        /// Under <see cref="ReserveCapForm.Seconds"/> it is D098's <c>s × W</c>, the expression the trim always read.
+        /// Under <see cref="ReserveCapForm.BodyAndStore"/> it is D229's, taken off the body as it stands and never
+        /// held between steps: <c>P + R + s × W + Σ room × volume</c>. P is the next litter's price as the breeding
+        /// gate computes it (<see cref="ReproductionTraits.CostJoules(double, RunConfig)"/> at the body's tissue,
+        /// the expression <see cref="Organism.BreedingGate(RunConfig)"/> and <see cref="Organism.LumpGate"/> add
+        /// the margin to), R is the adult tissue less the tissue now and not below 0, W is
+        /// <see cref="Organism.StandingWatts"/>, and each part adds its type's
+        /// <see cref="CellType.StoreRoomJoulesPerCubicMetre"/> times its volume. The margin gene is left out on
+        /// purpose, so a lineage cannot raise its store by evolving caution.
+        /// </remarks>
+        public double ReserveCapJoules(Organism creature)
+        {
+            if (creature == null) throw new ArgumentNullException(nameof(creature));
+            if (!(Config.ReserveCapSeconds > 0f && creature.StandingWatts > 0f)) return double.PositiveInfinity;
+
+            return Config.ReserveCapForm == ReserveCapForm.BodyAndStore
+                ? BodyAndStoreCap(creature)
+                : (double)Config.ReserveCapSeconds * creature.StandingWatts;
+        }
+
+        private double BodyAndStoreCap(Organism creature)
+        {
+            double tissue = creature.TissueJoules;
+            double price = creature.Genome.Reproduction.CostJoules(tissue, Config);
+            double growth = creature.AdultTissueJoules - tissue;
+            if (!(growth > 0d)) growth = 0d;
+
+            double cap = price + growth + (double)Config.ReserveCapSeconds * creature.StandingWatts;
+
+            IReadOnlyList<PhenotypePart> parts = creature.Phenotype.Parts;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                PhenotypePart part = parts[i];
+                float room = Config.CellTypes.Resolve(part.CellTypeId).StoreRoomJoulesPerCubicMetre;
+                if (room > 0f) cap += (double)room * Math.Max(0f, part.Volume);
+            }
+
+            return cap;
+        }
+
+        /// <summary>
+        /// D247, for a stats row: the living read against the reserve cap and the fat in them. O(parts of the living),
+        /// taken at a sample and never in a step.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="ReserveCapCensus.NearCap"/> counts the living whose reserve is within 1% of their cap; a body
+        /// with no cap, in a world with none, is never near it. <see cref="ReserveCapCensus.MarginAboveCap"/> counts
+        /// the lump breeders whose margin gene's seconds exceed <see cref="RunConfig.ReserveCapSeconds"/>, which the
+        /// body-and-store cap leaves unable to reach their own gate; 0 under the other form.
+        /// </remarks>
+        public ReserveCapCensus CensusReserveCap()
+        {
+            var census = new ReserveCapCensus();
+            bool store = Config.ReserveCapForm == ReserveCapForm.BodyAndStore;
+
+            for (int i = 0; i < _living.Count; i++)
+            {
+                Organism creature = _living[i];
+
+                double cap = ReserveCapJoules(creature);
+                if (!double.IsPositiveInfinity(cap) && creature.Energy >= 0.99d * cap) census.NearCap++;
+
+                if (store && creature.Genome.Reproduction.Mode == ReproductionMode.Lump &&
+                    creature.Genome.Reproduction.ReserveMargin > Config.ReserveCapSeconds)
+                {
+                    census.MarginAboveCap++;
+                }
+
+                bool fat = false;
+                IReadOnlyList<PhenotypePart> parts = creature.Phenotype.Parts;
+                for (int p = 0; p < parts.Count; p++)
+                {
+                    double volume = Math.Max(0f, parts[p].Volume);
+                    census.Volume += volume;
+                    if (parts[p].CellTypeId == CellTypeIds.Fat)
+                    {
+                        census.FatVolume += volume;
+                        if (volume > 0d) fat = true;
+                    }
+                }
+
+                if (fat) census.FatCarriers++;
+            }
+
+            return census;
+        }
+
         private void TrimReserve(Organism creature)
         {
             if (!(Config.ReserveCapSeconds > 0f && creature.StandingWatts > 0f)) return;
 
-            double cap = (double)Config.ReserveCapSeconds * creature.StandingWatts;
+            double cap = Config.ReserveCapForm == ReserveCapForm.BodyAndStore
+                ? BodyAndStoreCap(creature)
+                : (double)Config.ReserveCapSeconds * creature.StandingWatts;
             if (!(creature.Energy > cap)) return;
 
             // The trim is the float the water is handed, and the reserve gives up exactly that
@@ -7529,10 +7958,12 @@ namespace Evosim.Core
             // per-creature per-step loop the absorptive log would otherwise need just to decide
             // whether to record a creature at all.
             bool photosynthetic = false;
+            bool fat = false;
             IReadOnlyList<PhenotypePart> admitted = phenotype.Parts;
             for (int i = 0; i < admitted.Count; i++)
             {
                 if (admitted[i].CellTypeId == CellTypeIds.Photosynthetic) photosynthetic = true;
+                if (admitted[i].CellTypeId == CellTypeIds.Fat) fat = true;
             }
 
             creature.AbsorptiveVolume = AbsorptiveVolumeOf(phenotype);
@@ -7620,7 +8051,8 @@ namespace Evosim.Core
                 capCut, landingCorpse, landingCorpseMean,
                 LifespanRecorded ? genome.LifespanScale : float.NaN,
                 immigrantFromWorld, immigrantFromId,
-                climbing ? genome.GrowthReserveSeconds.Value : float.NaN));
+                climbing ? genome.GrowthReserveSeconds.Value : float.NaN,
+                hasFat: fat));
 
             // Record format 2's genome file, beside the lineage row and under the same guarantee:
             // exactly one per id assigned. A reference, not a copy, and nothing is read or drawn,
@@ -7944,5 +8376,27 @@ namespace Evosim.Core
             _dead.Clear();
             return taken;
         }
+    }
+
+    /// <summary>The living against the reserve cap and the fat in them — <see cref="World.CensusReserveCap"/>, D247.</summary>
+    public sealed class ReserveCapCensus
+    {
+        /// <summary>Living bodies whose reserve is within 1% of their cap.</summary>
+        public int NearCap;
+
+        /// <summary>Lump breeders whose margin gene's seconds exceed the cap's s, under the body-and-store cap.</summary>
+        public int MarginAboveCap;
+
+        /// <summary>Living bodies with any fat tissue.</summary>
+        public int FatCarriers;
+
+        /// <summary>Fat tissue's volume over the living, m³.</summary>
+        public double FatVolume;
+
+        /// <summary>All tissue's volume over the living, m³.</summary>
+        public double Volume;
+
+        /// <summary>Fat's share of the living tissue volume; 0 with no tissue.</summary>
+        public double FatVolumeShare => Volume > 0d ? FatVolume / Volume : 0d;
     }
 }

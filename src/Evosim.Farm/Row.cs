@@ -1042,6 +1042,41 @@ namespace Evosim.Farm
                             .Field("biteCapCut", world.BiteCapCutJoules)
                             .Field("gutCapCut", world.GutCapCutJoules)
                             .Field("gutCapBound", world.GutCapBound);
+
+                        // D247. Only with the body-and-store cap as well: the body-steps on which digestion waited at the
+                        // reserve cap (cumulative) and the largest gut any body has held, joules (a running maximum).
+                        if (world.Config.ReserveCapForm == ReserveCapForm.BodyAndStore)
+                        {
+                            w.Field("gutWaitedAtCap", world.GutWaitedAtReserveCap)
+                                .Field("gutLargest", world.LargestGutJoules);
+                        }
+                    }
+                }
+
+                // D247. Only in a world with a reserve cap: the joules it has trimmed to the water (cumulative), and
+                // the living within 1% of their cap now. With the body-and-store form, the lump breeders whose margin
+                // gene's seconds exceed s, which that cap leaves unable to breed. Only with fat in the table: the
+                // bodies carrying it and its share of the living tissue volume. Every other world's row is the bytes
+                // it was.
+                bool capOn = world.Config.ReserveCapSeconds > 0f;
+                bool fatIn = world.Config.CellTypes.Contains(CellTypeIds.Fat);
+                if (capOn || fatIn)
+                {
+                    ReserveCapCensus census = world.CensusReserveCap();
+                    if (capOn)
+                    {
+                        w.Field("reserveTrimmed", world.ReserveTrimmedTotal)
+                            .Field("atCap", census.NearCap);
+                        if (world.Config.ReserveCapForm == ReserveCapForm.BodyAndStore)
+                        {
+                            w.Field("marginAboveCap", census.MarginAboveCap);
+                        }
+                    }
+
+                    if (fatIn)
+                    {
+                        w.Field("fatCarriers", census.FatCarriers)
+                            .Field("fatVolumeShare", census.FatVolumeShare);
                     }
                 }
 
@@ -1083,6 +1118,37 @@ namespace Evosim.Farm
                 w.BeginArray("alivePerPatch");
                 for (int p = 0; p < alivePerPatch.Length; p++) w.Value(alivePerPatch[p]);
                 w.EndArray();
+
+                // D251, only in a world whose islands bloom: one entry per island in label order. The
+                // factor each island's influx was last laid by (the clock as the step advanced it, which
+                // is the sample's clock), and the lit leaf area standing within the band of its edge
+                // (banded by IslandFarSmellBandMetres, the L_k the far smell's height is made of), written
+                // only where the world has a leaf smell and so gathers the sources it is summed from.
+                if (world.HasIslandBloom)
+                {
+                    double[] bloomFactor = world.IslandBloomFactorsAt(world.ElapsedSeconds);
+                    w.BeginArray("bloomFactor");
+                    for (int k = 0; k < bloomFactor.Length; k++) w.Value(bloomFactor[k]);
+                    w.EndArray();
+
+                    if (world.LeafScent != null)
+                    {
+                        double[] bloomLeafArea = world.IslandBloomLeafArea();
+                        w.BeginArray("bloomLeafArea");
+                        for (int k = 0; k < bloomLeafArea.Length; k++) w.Value(bloomLeafArea[k]);
+                        w.EndArray();
+                    }
+                }
+
+                // D251's far smell, only where it is on: each island's flat height H_k as the last leaf
+                // fill laid it, in label order.
+                if (world.HasIslandFarSmell)
+                {
+                    double[] farSmellHeight = world.IslandFarSmellHeights();
+                    w.BeginArray("farSmellHeight");
+                    for (int k = 0; k < farSmellHeight.Length; k++) w.Value(farSmellHeight[k]);
+                    w.EndArray();
+                }
 
                 w.BeginArray("floorStockByFloorDecile");
                 for (int d = 0; d < floorDecileShares.Length; d++) w.Value(floorDecileShares[d]);

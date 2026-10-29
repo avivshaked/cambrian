@@ -74,6 +74,9 @@ namespace Evosim.Core
                     n["chemicalBackground"].AsFloat(),
                     n["facingIntake"].AsBool(),
                     n["intakeFullScaleMetresPerSecond"].AsFloat()),
+
+                [CellTypeIds.Fat] = (n, upkeep) =>
+                    new FatCell(n["storeRoomJoulesPerCubicMetre"].AsFloat(), upkeep),
             };
 
         /// <summary>

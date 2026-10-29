@@ -30,6 +30,15 @@
   The farm program. Default artifacts/Evosim.Farm/bin/Release/net8.0/Evosim.Farm.exe under the
   repository (dotnet build src/Evosim.Farm -c Release).
 
+.PARAMETER RepoRoot
+  The source tree the farm hashes for its "this build" (coreHash and the rest), handed to it as
+  EVOSIM_REPO_ROOT. Without it the farm walks up from its working directory, this repository, and
+  so names this checkout's source even when the program was built elsewhere: a window recorded by a
+  farm built at the run's own commit then read as a different build (2026-10-28). When it is not
+  given, the root is, in order: the path in a source-root.txt beside the program (written when a
+  farm built in another worktree is copied out), EVOSIM_REPO_ROOT if already set, and the first
+  folder above the program that holds src/Evosim.Core. The root used is printed.
+
 .PARAMETER Scenes
   Only these story numbers, as a comma list or an array.
 
@@ -45,6 +54,7 @@ param(
     [Parameter(Mandatory, Position = 0)][string]$Plan,
     [int]$Threads = 0,
     [string]$Exe = '',
+    [string]$RepoRoot = '',
     [string[]]$Scenes = @(),
     [switch]$WhatIf
 )
@@ -71,6 +81,19 @@ $exePath = if ($Exe -ne '') { Resolve-UnderRepo $Exe }
 if (-not $WhatIf -and -not (Test-Path -LiteralPath $exePath)) {
     throw "No farm program at $exePath. Build it: dotnet build src/Evosim.Farm -c Release."
 }
+
+# The source tree the farm names as "this build" (see -RepoRoot).
+$exeDir = Split-Path -Parent $exePath
+$sidecar = Join-Path $exeDir 'source-root.txt'
+$sourceRoot, $sourceFrom = if ($RepoRoot -ne '') { (Resolve-UnderRepo $RepoRoot), '-RepoRoot' }
+    elseif (Test-Path -LiteralPath $sidecar) { (Get-Content -LiteralPath $sidecar -TotalCount 1).Trim(), 'source-root.txt beside the program' }
+    elseif ($env:EVOSIM_REPO_ROOT) { $env:EVOSIM_REPO_ROOT, 'EVOSIM_REPO_ROOT as set' }
+    else {
+        $up = $exeDir
+        while ($up -and -not (Test-Path -LiteralPath (Join-Path $up 'src\Evosim.Core'))) { $up = Split-Path -Parent $up }
+        if ($up) { $up, 'the first folder above the program holding src/Evosim.Core' } else { $root, 'this repository (nothing found above the program)' }
+    }
+if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot 'src\Evosim.Core'))) { throw "No src/Evosim.Core under the source root $sourceRoot ($sourceFrom)." }
 
 if ($Threads -le 0) { $Threads = [Math]::Max(1, [int][Math]::Floor([Environment]::ProcessorCount / 3)) }
 
@@ -123,6 +146,7 @@ $todo = @($manifest.windows | Where-Object { $wanted.Count -eq 0 -or $wanted -co
 
 Write-Host "story windows: $($todo.Count) of $(@($manifest.windows).Count) window(s) from $planPath"
 Write-Host "  farm $exePath, $Threads thread(s) a window, one window at a time"
+Write-Host "  source root $sourceRoot (from $sourceFrom), handed to the farm as EVOSIM_REPO_ROOT"
 foreach ($s in @($manifest.skipped)) {
     if ($null -ne $s -and ($wanted.Count -eq 0 -or $wanted -contains [int]$s.scene)) { Write-Host "  scene $($s.scene) has no window: $($s.why)" }
 }
@@ -163,8 +187,12 @@ foreach ($w in $todo) {
     Write-Host "  $name`: recording, log $log"
     $started = Get-Date
     $quoted = $arguments | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } }
-    $process = Start-Process -FilePath $exePath -ArgumentList $quoted -WorkingDirectory $root -NoNewWindow -Wait -PassThru `
-        -RedirectStandardOutput $log -RedirectStandardError $err
+    $priorRoot = $env:EVOSIM_REPO_ROOT
+    $env:EVOSIM_REPO_ROOT = $sourceRoot
+    try {
+        $process = Start-Process -FilePath $exePath -ArgumentList $quoted -WorkingDirectory $root -NoNewWindow -Wait -PassThru `
+            -RedirectStandardOutput $log -RedirectStandardError $err
+    } finally { $env:EVOSIM_REPO_ROOT = $priorRoot }
     $minutes = ((Get-Date) - $started).TotalMinutes
 
     $v = Read-Verdict $dir

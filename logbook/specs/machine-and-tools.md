@@ -261,6 +261,13 @@ The root file's rules still apply. The entries below were moved word for word, s
     spikes of 93 and 94 °C. Over that half hour, whose last ten minutes had the suite alone on 16
     threads, the CPU spent 108 seconds at 90 °C or above (measured, the heat watch). A test process can be narrowed mid-run, as a farm
     can, but a suite beside a long run belongs on 4 threads at most, or after it.
+  - **Even a 4-core suite's start spikes to 100 °C beside two light jobs, and a 90-second watch misses it.**
+    On 2026-10-28 at 20:41, a film window on 4 threads (28 to 31) and a trait read (22 to 27) held the CPU
+    at 65 to 68 °C. A Core and Dynamics suite at BelowNormal, pinned to 12 to 15, then began, and readings 3 s
+    apart gave 90, 86, 100 and 88 °C at only 31 to 48 % `Utility`. Within a minute of stopping the suite, the
+    CPU was at 55 °C (measured, `temp-check.ps1`). The heat watch, which samples every 90 s, recorded none of
+    it. So take a few readings seconds apart in the first minute after starting a suite, and start it
+    when nothing else is running.
   - **Twelve busy efficiency cores leave no room for a burst on the fast cores, and `-HeatStop` stops on
     one sample.** On the night of 2026-10-14 a card group ran 12 threads on 16 to 27, with a nursery arm
     on 2 to 4 of 28 to 31, and peaked at 88 to 89 °C alone. The group stopped twice at its first sample

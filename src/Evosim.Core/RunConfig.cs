@@ -1264,6 +1264,20 @@ namespace Evosim.Core
 
         private float _reserveCapSeconds;
 
+        /// <summary>
+        /// D229, D247: which rule <see cref="ReserveCapSeconds"/> is the cap by.
+        /// <see cref="Evosim.Core.ReserveCapForm.Seconds"/> is D098's trim, unchanged, and every recorded world.
+        /// </summary>
+        /// <remarks>
+        /// Under <see cref="Evosim.Core.ReserveCapForm.BodyAndStore"/> the cap is the next litter's price, plus the
+        /// growth still to come, plus <see cref="ReserveCapSeconds"/> of standing cost, plus each part's store room
+        /// times its volume (<see cref="CellType.StoreRoomJoulesPerCubicMetre"/>, fat's alone). The gut is outside it
+        /// and digestion waits while the reserve is full. That form with <see cref="ReserveCapSeconds"/> at 0 is
+        /// refused at construction: it would read as a cap that is not there. <c>EVOSIM_RESERVE_CAP_FORM</c>.
+        /// </remarks>
+        [Tunable("world")]
+        public ReserveCapForm ReserveCapForm { get; set; } = ReserveCapForm.Seconds;
+
         // ---------------------------------------------------------------- growth
         //
         // fable-propose-growth.md (2026-09-08). A child is born at a fraction of its adult body
@@ -1909,6 +1923,93 @@ namespace Evosim.Core
         }
 
         private float _matterIslandGlassMarginMetres;
+
+        /// <summary>
+        /// D251: whether each fed island's influx follows a slow cycle of its own. Default
+        /// <see cref="Evosim.Core.IslandBloom.None"/>, the steady influx every recorded world has.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Under <see cref="Evosim.Core.IslandBloom.Cycles"/> island k's share of each step's influx is
+        /// multiplied by <c>max(0, 1 + A_k sin(2π t / P_k + φ_k))</c>, where its period P, amplitude A and
+        /// phase φ are drawn once from the bounds below on a seed stream of their own
+        /// (<see cref="World.IslandBloomIndex"/>). The schedule is a pure function of the seed and the
+        /// clock and a checkpoint carries nothing for it; D151's light season is the precedent. It acts on
+        /// the influx only: the seeding at t = 0 and D190's burial are as they were. It needs the islands'
+        /// influx (<see cref="MatterInfluxAt"/> Islands with <see cref="MatterInfluxPerSecond"/> above 0)
+        /// and is refused without it.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public IslandBloom IslandBloom { get; set; } = IslandBloom.None;
+
+        /// <summary>The shortest island cycle, s. Each island draws its period uniformly between this and the longest. D251.</summary>
+        [Tunable("world", Unit = "s")]
+        public float IslandBloomPeriodMinSeconds { get; set; } = 2500f;
+
+        /// <summary>The longest island cycle, s. D251.</summary>
+        [Tunable("world", Unit = "s")]
+        public float IslandBloomPeriodMaxSeconds { get; set; } = 6000f;
+
+        /// <summary>
+        /// The smallest cycle amplitude A in <c>1 + A sin(...)</c>. Each island draws its amplitude
+        /// uniformly between this and the largest. Above 1 an island's factor is clamped at 0 for part of
+        /// its cycle. D251.
+        /// </summary>
+        [Tunable("world")]
+        public float IslandBloomAmplitudeMin { get; set; } = 0.8f;
+
+        /// <summary>The largest cycle amplitude. D251.</summary>
+        [Tunable("world")]
+        public float IslandBloomAmplitudeMax { get; set; } = 1.0f;
+
+        /// <summary>
+        /// D251: true, the default under cycles, holds the world's total influx constant, so one island's
+        /// bloom is another's lean time: each cell takes <c>joules × w f / Σ (w f)</c>. False lets the total
+        /// move with the cycles: each takes <c>joules × w f / Σ w</c>.
+        /// </summary>
+        [Tunable("world")]
+        public bool IslandBloomHoldsTotal { get; set; } = true;
+
+        /// <summary>
+        /// D251: whether a fed island smells from further away than its leaves do. Default
+        /// <see cref="Evosim.Core.IslandFarSmell.None"/>, the leaf smell every recorded world has.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Under <see cref="Evosim.Core.IslandFarSmell.Leaves"/>, island k of the influx plan adds to the
+        /// leaf-smell grid, at every cell whose centre lies at level distance d (x and z only) from the
+        /// island's centroid, <c>H_k × max(0, 1 − max(0, d − (r_k + B)) / R)</c>, with
+        /// <c>H_k = G × L_k</c>. G is <see cref="IslandFarSmellGain"/>, B
+        /// <see cref="IslandFarSmellBandMetres"/>, R <see cref="IslandFarSmellReachMetres"/>, r_k the plan's
+        /// <see cref="GridField.IslandPlan.IslandRadius"/> and L_k the lit leaf area of the sources whose
+        /// nearest island edge is island k's and within B (<see cref="World.IslandBloomLeafArea"/>). It is a
+        /// second pass after the leaves' own fill, derived from the same sources, so a checkpoint carries
+        /// nothing new. It needs <see cref="LeafScent"/> and the islands' influx and is refused without them.
+        /// It does not need <see cref="IslandBloom"/>. <c>EVOSIM_FAR_SMELL</c>.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public IslandFarSmell IslandFarSmell { get; set; } = IslandFarSmell.None;
+
+        /// <summary>
+        /// The far smell's gain G: an island's flat height is this times its banded lit leaf area, in the
+        /// leaf smell's own units. D251. <c>EVOSIM_FAR_SMELL_GAIN</c>.
+        /// </summary>
+        [Tunable("world")]
+        public float IslandFarSmellGain { get; set; } = 0.005f;
+
+        /// <summary>
+        /// The far smell's band B, metres: the flat top reaches this far past the plan's radius, and a leaf
+        /// standing within this of an island's edge counts towards its height. D251.
+        /// <c>EVOSIM_FAR_SMELL_BAND</c>.
+        /// </summary>
+        [Tunable("world", Unit = "m")]
+        public float IslandFarSmellBandMetres { get; set; } = 10f;
+
+        /// <summary>The far smell's reach R, metres: past the flat top it falls to 0 over this. D251. <c>EVOSIM_FAR_SMELL_REACH</c>.</summary>
+        [Tunable("world", Unit = "m")]
+        public float IslandFarSmellReachMetres { get; set; } = 30f;
 
         /// <summary>
         /// Named seeds that take a category of draws off the world's seed (D192), each written
@@ -4461,6 +4562,39 @@ namespace Evosim.Core
         public float EnergyFullScaleSeconds { get; set; } = 3000f;
 
         /// <summary>
+        /// D245: which squash the energy sense reads the reserve through.
+        /// <see cref="Evosim.Core.EnergySenseSquash.Tanh"/> is <c>tanh(S / EnergyFullScaleSeconds)</c>, every
+        /// recorded world.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Evosim.Core.EnergySenseSquash.HalfScale"/> reads <c>S / (|S| + k)</c> in float, with <c>k</c> =
+        /// <see cref="EnergyHalfScaleSeconds"/>: S/(S+k) for S of 0 and above, odd below it. <c>EVOSIM_ENERGY_SQUASH</c>.
+        /// </remarks>
+        [Tunable("sense")]
+        public EnergySenseSquash EnergySenseSquash { get; set; } = EnergySenseSquash.Tanh;
+
+        /// <summary>
+        /// D245: the reserve that reads one half on <see cref="SensorChannel.Energy"/> under
+        /// <see cref="Evosim.Core.EnergySenseSquash.HalfScale"/>, seconds. Above 0. <c>EVOSIM_ENERGY_HALF_SCALE</c>.
+        /// </summary>
+        /// <remarks>
+        /// ⚠ Read only under the half-scale squash, and part of the config and its hash whatever the squash is. At
+        /// 30 s the sense reads 0.33 at 15 s and 0.6 at 45 s (D245).
+        /// </remarks>
+        [Tunable("sense", Unit = "s")]
+        public float EnergyHalfScaleSeconds
+        {
+            get => _energyHalfScaleSeconds;
+            set => _energyHalfScaleSeconds = value > 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(EnergyHalfScaleSeconds), value,
+                    "A half-scale in seconds of reserve is finite and above 0 (D245).");
+        }
+
+        private float _energyHalfScaleSeconds = 30f;
+
+        /// <summary>
         /// Relative water speed that reads as full scale on <see cref="SensorChannel.Flow"/>, m/s.
         /// </summary>
         /// <remarks>
@@ -4700,6 +4834,32 @@ namespace Evosim.Core
     }
 
     /// <summary>
+    /// D251: whether each fed island's influx follows a slow cycle of its own. See
+    /// <see cref="RunConfig.IslandBloom"/>.
+    /// </summary>
+    public enum IslandBloom
+    {
+        /// <summary>The islands' influx is steady, as every recorded world has it.</summary>
+        None = 0,
+
+        /// <summary>D251: each fed island's influx follows a slow cycle of its own.</summary>
+        Cycles = 1,
+    }
+
+    /// <summary>
+    /// D251: whether a fed island smells from further away than its leaves do. See
+    /// <see cref="RunConfig.IslandFarSmell"/>.
+    /// </summary>
+    public enum IslandFarSmell
+    {
+        /// <summary>The leaf smell is the leaves' own cones alone, as every recorded world has it.</summary>
+        None = 0,
+
+        /// <summary>D251: each fed island adds a flat top and a falling skirt, by its leaves' lit area, to the leaf smell.</summary>
+        Leaves = 1,
+    }
+
+    /// <summary>
     /// Where <see cref="RunConfig.MatterInfluxPerSecond"/>'s deposit lands — D074. See
     /// <see cref="RunConfig.MatterInfluxAt"/> for why it is a knob and
     /// <see cref="World.Step"/> for when it is spent.
@@ -4746,6 +4906,35 @@ namespace Evosim.Core
 
         /// <summary>D194's branching coral on the islands, placed by <see cref="CoralGeometry.Place(RunConfig, CoralFootprint, BedShape, System.Func{float, float, float}, ulong, bool)"/>.</summary>
         Coral = 1,
+    }
+
+    /// <summary>
+    /// How the energy sense squashes the reserve - <see cref="RunConfig.EnergySenseSquash"/>, D245. By name in the
+    /// file and the hash, as every enum tunable is.
+    /// </summary>
+    public enum EnergySenseSquash
+    {
+        /// <summary><c>tanh(S / EnergyFullScaleSeconds)</c>: every recorded world.</summary>
+        Tanh = 0,
+
+        /// <summary><c>S / (|S| + k)</c> with k = <see cref="RunConfig.EnergyHalfScaleSeconds"/>, in float.</summary>
+        HalfScale = 1,
+    }
+
+    /// <summary>
+    /// The rule behind <see cref="RunConfig.ReserveCapSeconds"/> - <see cref="RunConfig.ReserveCapForm"/>, D229,
+    /// D247. By name in the file and the hash, as every enum tunable is.
+    /// </summary>
+    public enum ReserveCapForm
+    {
+        /// <summary>D098's trim: the reserve is held to <c>ReserveCapSeconds</c> of standing cost. Every recorded world.</summary>
+        Seconds = 0,
+
+        /// <summary>
+        /// D229's cap: <c>P + R + s × W + Σ room × volume</c>, the next litter's price, the growth still to come,
+        /// s seconds of standing cost and fat's room.
+        /// </summary>
+        BodyAndStore = 1,
     }
 
     /// <summary>

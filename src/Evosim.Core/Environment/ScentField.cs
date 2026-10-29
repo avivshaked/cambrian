@@ -218,6 +218,88 @@ namespace Evosim.Core
             });
         }
 
+        /// <summary>
+        /// D251's far smell: adds to every cell, for each of <paramref name="count"/> islands in order,
+        /// <c>height × max(0, 1 − max(0, d − flatRadius) / reach)</c>, where d is the level distance from the
+        /// cell's centre to the island's point (x and z only, so a column takes the same add at every
+        /// depth). Round the seams each axis takes the shorter way. It does not clear the grid: it is the
+        /// second pass after <see cref="FillSources"/>.
+        /// </summary>
+        /// <remarks>
+        /// Split by rows of cells across <see cref="Parallelism.ForRanges"/> as the fills are, each row
+        /// taking the islands in label order, so every cell takes the same additions in the same order at
+        /// any thread count. Each term is worked in double and added as a float, as
+        /// <see cref="AddRows"/> adds a cone. An island whose height is not above 0 adds nothing.
+        /// </remarks>
+        /// <param name="x">Each island's point along x, metres.</param>
+        /// <param name="z">Each island's point along z, metres.</param>
+        /// <param name="flatRadius">Each island's flat top, metres: the plan's radius plus the band.</param>
+        /// <param name="height">Each island's height H on its flat top, in the field's own units.</param>
+        /// <param name="count">How many islands the arrays are taken for.</param>
+        /// <param name="reach">Where the skirt reaches 0 past the flat top, metres.</param>
+        public void AddLevelPlateaus(double[] x, double[] z, double[] flatRadius, double[] height, int count, double reach)
+        {
+            if (count < 0 || count > x.Length || count > z.Length || count > flatRadius.Length || count > height.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), count, "more islands than the arrays hold");
+            }
+
+            if (!(reach > 0) || double.IsInfinity(reach))
+            {
+                throw new ArgumentOutOfRangeException(nameof(reach), reach, "the skirt's reach must be a positive number of metres");
+            }
+
+            double lengthX = _nx * (double)_cell, lengthZ = _nz * (double)_cell;
+            bool wraps = _wraps;
+
+            Parallelism.ForRanges(_nx * _ny, (from, to) =>
+            {
+                for (int row = from; row < to; row++)
+                {
+                    int i = row / _ny;
+                    double cx = (i + 0.5) * _cell;
+                    int at = row * _nz;
+                    for (int n = 0; n < count; n++)
+                    {
+                        double h = height[n];
+                        if (!(h > 0d)) continue;
+
+                        double limit = flatRadius[n] + reach;
+                        double dx = LevelOffset(cx - x[n], lengthX, wraps);
+                        double xx = dx * dx;
+
+                        // A cell whose square is clearly past the limit's square is skipped before its
+                        // root. The limit is not a float, so its square is not exact: the bound carries a
+                        // margin well above the rounding, and every cell under it keeps the exact test
+                        // on the root below, as AddRows' cells do.
+                        double l2 = limit * limit * (1d + 1e-9);
+                        if (xx >= l2) continue;
+                        double flat = flatRadius[n];
+                        for (int k = 0; k < _nz; k++)
+                        {
+                            double dz = LevelOffset((k + 0.5) * _cell - z[n], lengthZ, wraps);
+                            double s = xx + dz * dz;
+                            if (s >= l2) continue;
+                            double d = Math.Sqrt(s);
+                            if (d >= limit) continue;
+                            double over = d - flat;
+                            double term = over > 0d ? h * (1d - over / reach) : h;
+                            _v[at + k] += (float)term;
+                        }
+                    }
+                }
+            });
+        }
+
+        /// <summary>A signed offset along a ring of <paramref name="length"/> taken the shorter way, or as it is off a ring.</summary>
+        internal static double LevelOffset(double delta, double length, bool wraps)
+        {
+            if (!wraps) return delta;
+            double half = 0.5 * length;
+            delta -= length * Math.Floor(delta / length + 0.5);
+            return delta > half ? delta - length : delta < -half ? delta + length : delta;
+        }
+
         /// <summary>Adds one source's cone: <paramref name="joules"/> at its centre, 0 at the range.</summary>
         public void Add(Float3 p, double joules) => AddRows(p, joules, 0, _nx * _ny);
 

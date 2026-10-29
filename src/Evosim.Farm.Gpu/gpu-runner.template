@@ -1072,6 +1072,7 @@ namespace __NS__
 
                 SWorldDepth = w.SWorldDepth, ChemHalf = w.ChemHalf, ScentHalf = w.ScentHalf, EnergyScale = w.EnergyScale,
                 LeafHalf = w.LeafHalf,
+                EnergyHalfMode = w.EnergyHalfMode, EnergyHalfK = w.EnergyHalfK,
                 FlowScale = w.FlowScale, RateScale = w.RateScale, ConstCE = w.ConstCE, DtF = w.DtF,
 
                 StreamAmpAt = w.StreamAmpAt, StreamRateAt = w.StreamRateAt, CellAmpAt = w.CellAmpAt,
