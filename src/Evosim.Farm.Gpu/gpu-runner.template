@@ -73,6 +73,11 @@ namespace __NS__
         // one-wide otherwise.
         public readonly Seg<int> StrokeParts;
         public readonly Seg<Real> StrokeAlong, StrokeMass, StrokeMoment;
+        // D255's family limb under the fin law: a degree of freedom each, indexed like DofStart: the added mass of
+        // the family part moving along that degree's stroke, and that mass's first moment about the joint
+        // (Creature.FamilyAddedMass, FamilyFirstMoment). 0 for a degree of a link that is not a family link. A degree of
+        // freedom wide only in a world that runs the fin law, one-wide otherwise.
+        public readonly Seg<Real> FamMass, FamMoment;
         // D234's mirrored twin: each link's mask of the degrees of freedom read negated. A link wide only in
         // a world whose bodies reflect their drive, one-wide otherwise.
         public readonly Seg<int> MirrorMask;
@@ -146,6 +151,8 @@ namespace __NS__
 
             int gs = shapedMass ? L : 0;
             ShapeCode = C<int>(gs, Constant); HalfExt = C<Real>(3 * gs, Constant);
+            int fd = shapedMass ? D : 0;
+            FamMass = C<Real>(fd, Constant); FamMoment = C<Real>(fd, Constant);
 
             int sa = strokeAssembly ? L : 0, sd = strokeAssembly ? D : 0;
             StrokeParts = C<int>(sa, Constant);
@@ -404,6 +411,7 @@ namespace __NS__
             LinkPower = LinkPower.View, ShapeCode = ShapeCode.View, HalfExt = HalfExt.View,
             StrokeParts = StrokeParts.View, StrokeAlong = StrokeAlong.View,
             StrokeMass = StrokeMass.View, StrokeMoment = StrokeMoment.View,
+            FamMass = FamMass.View, FamMoment = FamMoment.View,
             MirrorMask = MirrorMask.View, NoseFlag = NoseFlag.View,
         };
 
@@ -2481,7 +2489,13 @@ namespace __NS__
                     Float3 h = part.HalfExtents;
                     int at = l * N + i;
                     int a3 = (3 * l) * N + i;
-                    if (part.ShapeId == ShapeIds.Sphere)
+                    if (part.Family != null)
+                    {
+                        // D255: a family part (D233) takes the strip integral of its true slices, which the host body
+                        // carries by degree of freedom (below). No half-extents are written, and the kernel reads none.
+                        s.ShapeCode.Host[at] = 3;
+                    }
+                    else if (part.ShapeId == ShapeIds.Sphere)
                     {
                         s.ShapeCode.Host[at] = 0;
                     }
@@ -2504,6 +2518,33 @@ namespace __NS__
                         throw new ArgumentException(
                             "The fin law has no added mass for the shape '" + part.ShapeId +
                             "'; it knows box, capsule and sphere.");
+                    }
+                }
+
+                // D255: a family link's added mass and first moment, the host body's own per-degree tables
+                // (Creature.FamilyAddedMass, FamilyFirstMoment, indexed like DofStart) as WriteFamilyStroke left them
+                // at its build and at its last resize. A resize re-packs the body whole, so the card never holds the
+                // numbers of an old size. Every degree is written, 0 for any other link or when the tables are null
+                // (a body with no family joint), so a slot's earlier body leaves nothing behind.
+                for (int d = 0; d < dof; d++)
+                {
+                    int at = d * N + i;
+                    s.FamMass.Host[at] = 0;
+                    s.FamMoment.Host[at] = 0;
+                }
+
+                if (c.FamilyAddedMass != null && c.FamilyFirstMoment != null)
+                {
+                    for (int l = 0; l < links; l++)
+                    {
+                        if (c.Phenotype.Parts[l].Family == null) continue;
+                        for (int k = 0; k < c.DofCount[l]; k++)
+                        {
+                            int d = c.DofStart[l] + k;
+                            int at = d * N + i;
+                            s.FamMass.Host[at] = (Real)c.FamilyAddedMass[d];
+                            s.FamMoment.Host[at] = (Real)c.FamilyFirstMoment[d];
+                        }
                     }
                 }
             }

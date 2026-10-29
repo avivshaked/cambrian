@@ -400,6 +400,63 @@ namespace Evosim.Farm.Tests
             return g;
         }
 
+        /// <summary>How many designs <see cref="FamilyGenome"/> draws; a design is the body's index modulo this.</summary>
+        public const int FamilyDesigns = 3;
+
+        /// <summary>
+        /// A hand-built body for D255: a root and one jointed limb, and that limb a family part (D233). 0: a hinged limb
+        /// of the egg-shaped member (profile 0.6, section 1, taper 2). 1: a universal limb (two degrees of freedom) of the
+        /// member nearest a box (0.1, 0.1, 1). 2: a hinged limb of the sphere (1, 1, 1) with a flat paddle's half-extents.
+        /// </summary>
+        public static Genome FamilyGenome(int design, int id)
+        {
+            var g = new Genome { RootIndex = 0, AdultScale = 1f };
+            g.Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f, ReserveMargin = 0f };
+            g.Nodes.Add(new MorphNode
+            {
+                Dimensions = new Float3(0.2f, 0.2f, 0.2f), CellTypeId = CellTypeIds.Structural, ShapeId = ShapeIds.Box,
+                JointType = JointType.Fixed, JointLimits = Array.Empty<Float2>(), RecursiveLimit = 1,
+            });
+
+            float power = 8f + id % 5;
+            float hz = 0.5f + 0.1f * (id % 7);
+            var inLineAt = new Float3(1f, 0f, 0f);
+            var inLineBy = new Float3(-1f, 0f, 0f);
+
+            MorphNode limb;
+            switch (design % FamilyDesigns)
+            {
+                case 0:
+                    limb = StrokeLink(new Float3(0.15f, 0.04f, 0.08f), JointType.Hinge, power, hz, 0.6f);
+                    limb.Form = new PartForm(0.6f, 1f, 2f);
+                    break;
+                case 1:
+                    limb = StrokeLink(new Float3(0.12f, 0.05f, 0.04f), JointType.Universal, power, hz, 0.3f);
+                    limb.Form = new PartForm(0.1f, 0.1f, 1f);
+                    break;
+                default:
+                    limb = StrokeLink(new Float3(0.2f, 0.01f, 0.12f), JointType.Hinge, power, hz, 0.9f);
+                    limb.Form = new PartForm(1f, 1f, 1f);
+                    break;
+            }
+
+            limb.ShapeId = ShapeIds.Superellipsoid;
+            StrokeAdd(g, 0, limb, inLineAt, inLineBy);
+            return g;
+        }
+
+        /// <summary>
+        /// A body from a hand-built genome that holds family parts, developed and built against the world's own shape
+        /// list (<see cref="Hand"/> develops against the standard three, which have no family), placed and wired as
+        /// <see cref="Hand"/> places it.
+        /// </summary>
+        public static Creature FamilyHand(int id, SolverConfig solver, World world, Genome genome, Vec3 at)
+        {
+            PartShapeRegistry shapes = world.Config.Shapes;
+            Phenotype plan = Developer.Develop(genome, DevelopmentLimits.Default, shapes: shapes);
+            return Equip(new Creature(id, plan, solver, shapes), plan, world, id, at);
+        }
+
         /// <summary>The tank's axis, where Core's tank puts it.</summary>
         public static Vec3 Axis(World world) => new Vec3(world.TankRadiusMetres, 0, world.TankRadiusMetres);
 
@@ -880,6 +937,123 @@ namespace Evosim.Farm.Tests
                 int id = firstId + k;
                 world.AddInIdOrder(GpuTank.Hand(id, world.Config, core, GpuTank.StrokeGenome(k, id), at));
             }
+        }
+
+        /// <summary>
+        /// D255's crowd: <see cref="PopulateStroke"/>'s places, with <see cref="GpuTank.FamilyGenome"/>'s one-limb family
+        /// bodies in them, the design by the body's place in the crowd.
+        /// </summary>
+        private static void PopulateFamily(DynamicsWorld world, World core, int count, int firstId)
+        {
+            Vec3 axis = GpuTank.Axis(core);
+
+            for (int k = 0; k < count; k++)
+            {
+                var at = new Vec3(axis.X + 0.7 * (k % 3) - 0.7, -9.0 - 0.6 * (k / 3), axis.Z + 0.5 * (k % 2));
+                int id = firstId + k;
+                world.AddInIdOrder(GpuTank.FamilyHand(id, world.Config, core, GpuTank.FamilyGenome(k, id), at));
+            }
+        }
+
+        /// <summary>
+        /// D255's card copy of the fin law for a family limb: a one-limb family body under the bend-and-power stroke with
+        /// the fin law on (<c>EVOSIM_SHAPED_ADDED_MASS</c>), on the CPU accelerator in double and on the solver, the same
+        /// digest after every one of 2,000 steps and the same state to the byte at every hundredth. Three bodies, a
+        /// hinged egg, a universal box-like limb and a hinged sphere, so that the strip integral's two sums run over one
+        /// degree of freedom and over two. The world is first shown to hold family limbs with a nonzero added mass and
+        /// to part on the CPU from the same world with the fin law off, so a table that was never filled, a switch that
+        /// never reached the solver or a push that never fired cannot pass as a match.
+        /// <para>
+        /// The group size is not a variable here: the CPU accelerator ignores EVOSIM_GPU_GROUP and takes its device's
+        /// largest group (gpu-runner.template, <c>GroupSize</c>), so a run at 32 and a run at 64 would be one run twice.
+        /// Identity across the card's group sizes is the card sitting's (<c>card-group.ps1</c>).
+        /// </para>
+        /// </summary>
+        [Fact]
+        public void AFamilyLimbUnderThePoweredStrokeOnTheCpuAcceleratorIsTheSolverStepForStep()
+        {
+            var power = new Dictionary<string, string>
+            {
+                { "EVOSIM_POWER_PUSH", "2" }, { "EVOSIM_POSE_HZ", "2" }, { "EVOSIM_LIMB_PUSH", "0.3" },
+                { "EVOSIM_SHAPES", "box,sphere,capsule,superellipsoid" },
+            };
+            var family = new Dictionary<string, string>(power) { { "EVOSIM_SHAPED_ADDED_MASS", "1" } };
+
+            (DynamicsWorld plain, World core0) = Pair(true, false, power);
+            (DynamicsWorld cpu, World coreA) = Pair(true, false, family);
+            (DynamicsWorld gpu, World coreB) = Pair(true, false, family);
+
+            PopulateFamily(plain, core0, 3, 1);
+            PopulateFamily(cpu, coreA, 3, 1);
+            PopulateFamily(gpu, coreB, 3, 1);
+
+            Assert.False(plain.Config.ShapedAddedMass);
+            Assert.True(cpu.Config.ShapedAddedMass);
+            Assert.True(cpu.Creatures[0].Drive.BendAndPower);
+
+            // The crowd holds what the case is about: a family limb with a degree of freedom and an added mass for it,
+            // one limb with two degrees, and the same table on the card's side of the pair.
+            int limbs = 0, degrees = 0, silent = 0;
+            var report = new List<string>();
+            foreach (Creature c in cpu.Creatures)
+            {
+                Assert.NotNull(c.FamilyAddedMass);
+                Assert.NotNull(c.FamilyFirstMoment);
+                for (int l = 0; l < c.Links; l++)
+                {
+                    if (c.Phenotype.Parts[l].Family == null || c.Parent[l] < 0) continue;
+                    limbs++;
+                    bool pushes = false;
+                    for (int d = 0; d < c.DofCount[l]; d++)
+                    {
+                        degrees++;
+                        PhenotypePart part = c.Phenotype.Parts[l];
+                        report.Add("body " + c.Id + " link " + l + " degree " + d + ": form " + part.Form + ", anchor " +
+                                   part.Family.ReferenceChildAnchor + ", half " + part.Family.ReferenceHalfExtents +
+                                   ", joint " + part.JointType + ", M " + c.FamilyAddedMass[c.DofStart[l] + d] +
+                                   ", I1 " + c.FamilyFirstMoment[c.DofStart[l] + d]);
+                        if (c.FamilyAddedMass[c.DofStart[l] + d] > 0 && c.FamilyFirstMoment[c.DofStart[l] + d] > 0) pushes = true;
+                    }
+
+                    // A degree whose axis runs along the limb (the universal's first, in line) twists it and moves no
+                    // water across it, so its M and I1 are 0 on the host as here; each limb pushes through another.
+                    if (!pushes) silent++;
+                }
+            }
+
+            Assert.True(limbs == 3 && degrees == 4 && silent == 0,
+                "the crowd lacks its family limbs: " + limbs + " limbs, " + degrees + " degrees, " + silent + " limbs with no degree that pushes; " +
+                string.Join(" | ", report));
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            const int steps = 2000;
+            for (int step = 1; step <= steps; step++)
+            {
+                plain.StepBlock(1);
+                cpu.StepBlock(1);
+                gpu.StepBlock(1);
+
+                if (cpu.Digest() != gpu.Digest()) Assert.Fail("The engines part at step " + step + ": " + GpuTank.FirstDifference(cpu, gpu));
+                if (step % 100 == 0) AssertSame(cpu, gpu, "family limbs, at step " + step);
+            }
+
+            AssertSame(cpu, gpu, "family limbs, after " + steps + " steps");
+
+            bool parted = false;
+            for (int i = 0; i < cpu.Creatures.Count && !parted; i++)
+            {
+                double[] a = plain.Creatures[i].Position, b = cpu.Creatures[i].Position;
+                for (int k = 0; k < a.Length && !parted; k++)
+                {
+                    parted = BitConverter.DoubleToInt64Bits(a[k]) != BitConverter.DoubleToInt64Bits(b[k]);
+                }
+            }
+
+            Assert.True(parted, "the family world stepped as the one with the fin law off");
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
         }
 
         /// <summary>

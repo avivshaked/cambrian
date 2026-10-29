@@ -81,6 +81,12 @@ namespace Evosim.Farm.Gpu.Dbl
         // first moment about the joint. One row wide when the switch is off.
         public ArrayView<int> StrokeParts;
         public ArrayView<Real> StrokeAlong, StrokeMass, StrokeMoment;
+
+        // D255's family limb under the fin law (shape code 3), a degree of freedom each, indexed like DofStart: the
+        // added mass of the part moving along that degree's stroke and that mass's first moment about the joint,
+        // as the host body holds them (Creature.FamilyAddedMass, FamilyFirstMoment). 0 for a degree of a link that
+        // is not a family link. One row wide when the fin law is off.
+        public ArrayView<Real> FamMass, FamMoment;
         // D234's mirrored twin, a link each: the bit mask of the degrees of freedom whose signed
         // quantities are read negated (Creature.MirrorMask). A link wide only in a world whose bodies
         // reflect their drive, a one-wide stub otherwise, and then never read (cfg.MirrorDrive is 0). Bit d is
@@ -1914,7 +1920,14 @@ namespace Evosim.Farm.Gpu.Dbl
                             // (shape 0) keeps the unshaped line.
                             int shapeCode = cfg.ShapedMass != 0 ? b.ShapeCode[fl * N + i] : 0;
                             Real hx0 = 0, hx1 = 0, hx2 = 0;
-                            if (shapeCode != 0)
+
+                            // D255, as Fluid.Apply: a family limb (shape code 3) takes the strip integral its host body
+                            // carries for each degree of freedom, in place of D229's lines. It reads no half-extents.
+                            // Not entered for any other part, whose lines below are unchanged.
+                            bool family = shapeCode == 3;
+                            Real familySum = 0;
+                            Real familyMass = 0;
+                            if (shapeCode != 0 && !family)
                             {
                                 hx0 = b.HalfExt[(3 * fl) * N + i];
                                 hx1 = b.HalfExt[(3 * fl + 1) * N + i];
@@ -1948,7 +1961,16 @@ namespace Evosim.Farm.Gpu.Dbl
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
 
-                                if (shapeCode != 0)
+                                if (family)
+                                {
+                                    // q_d as above, times the degree's I1 and M, which the host wrote at build and
+                                    // at every resize (Fluid.Apply's familyQ).
+                                    Real familyQ = sv * omega * sv * omega * ((Real)1.0 - along * along);
+                                    familySum += familyQ * b.FamMoment[(fstart + d) * N + i];
+                                    familyMass += familyQ * b.FamMass[(fstart + d) * N + i];
+                                }
+
+                                if (shapeCode != 0 && !family)
                                 {
                                     V3 motion = V3.Cross(dofAxis, axis);
                                     Real motionLength = motion.Magnitude;
@@ -1968,7 +1990,7 @@ namespace Evosim.Farm.Gpu.Dbl
                             {
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
-                                if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
+                                if (shapeCode != 0 && !family) push = cfg.LimbPush * shapedSum;
 
                                 // D231: C_T times the sum of q_d I1_d, and the push-weighted lever
                                 // (sum q_d I1_d) / (sum q_d M_d). Another link's lever is the reach.
@@ -1977,6 +1999,12 @@ namespace Evosim.Farm.Gpu.Dbl
                                 {
                                     push = cfg.LimbPush * assemblySum;
                                     lever = AssemblyLeverOf(assemblySum, assemblyMass, linkReach);
+                                }
+                                else if (family)
+                                {
+                                    // D255: the same law for a family limb, from the strip integral of its true slices.
+                                    push = cfg.LimbPush * familySum;
+                                    lever = AssemblyLeverOf(familySum, familyMass, linkReach);
                                 }
 
                                 linkForce = linkForce + axis * (-push);
@@ -3048,7 +3076,14 @@ namespace Evosim.Farm.Gpu.Dbl
                             // (shape 0) keeps the unshaped line.
                             int shapeCode = cfg.ShapedMass != 0 ? b.ShapeCode[fl * N + i] : 0;
                             Real hx0 = 0, hx1 = 0, hx2 = 0;
-                            if (shapeCode != 0)
+
+                            // D255, as Fluid.Apply: a family limb (shape code 3) takes the strip integral its host body
+                            // carries for each degree of freedom, in place of D229's lines. It reads no half-extents.
+                            // Not entered for any other part, whose lines below are unchanged.
+                            bool family = shapeCode == 3;
+                            Real familySum = 0;
+                            Real familyMass = 0;
+                            if (shapeCode != 0 && !family)
                             {
                                 hx0 = b.HalfExt[(3 * fl) * N + i];
                                 hx1 = b.HalfExt[(3 * fl + 1) * N + i];
@@ -3082,7 +3117,16 @@ namespace Evosim.Farm.Gpu.Dbl
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
 
-                                if (shapeCode != 0)
+                                if (family)
+                                {
+                                    // q_d as above, times the degree's I1 and M, which the host wrote at build and
+                                    // at every resize (Fluid.Apply's familyQ).
+                                    Real familyQ = sv * omega * sv * omega * ((Real)1.0 - along * along);
+                                    familySum += familyQ * b.FamMoment[(fstart + d) * N + i];
+                                    familyMass += familyQ * b.FamMass[(fstart + d) * N + i];
+                                }
+
+                                if (shapeCode != 0 && !family)
                                 {
                                     V3 motion = V3.Cross(dofAxis, axis);
                                     Real motionLength = motion.Magnitude;
@@ -3102,7 +3146,7 @@ namespace Evosim.Farm.Gpu.Dbl
                             {
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
-                                if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
+                                if (shapeCode != 0 && !family) push = cfg.LimbPush * shapedSum;
 
                                 // D231: C_T times the sum of q_d I1_d, and the push-weighted lever
                                 // (sum q_d I1_d) / (sum q_d M_d). Another link's lever is the reach.
@@ -3111,6 +3155,12 @@ namespace Evosim.Farm.Gpu.Dbl
                                 {
                                     push = cfg.LimbPush * assemblySum;
                                     lever = AssemblyLeverOf(assemblySum, assemblyMass, linkReach);
+                                }
+                                else if (family)
+                                {
+                                    // D255: the same law for a family limb, from the strip integral of its true slices.
+                                    push = cfg.LimbPush * familySum;
+                                    lever = AssemblyLeverOf(familySum, familyMass, linkReach);
                                 }
 
                                 linkForce = linkForce + axis * (-push);
@@ -4182,7 +4232,14 @@ namespace Evosim.Farm.Gpu.Dbl
                             // (shape 0) keeps the unshaped line.
                             int shapeCode = cfg.ShapedMass != 0 ? b.ShapeCode[fl * N + i] : 0;
                             Real hx0 = 0, hx1 = 0, hx2 = 0;
-                            if (shapeCode != 0)
+
+                            // D255, as Fluid.Apply: a family limb (shape code 3) takes the strip integral its host body
+                            // carries for each degree of freedom, in place of D229's lines. It reads no half-extents.
+                            // Not entered for any other part, whose lines below are unchanged.
+                            bool family = shapeCode == 3;
+                            Real familySum = 0;
+                            Real familyMass = 0;
+                            if (shapeCode != 0 && !family)
                             {
                                 hx0 = b.HalfExt[(3 * fl) * N + i];
                                 hx1 = b.HalfExt[(3 * fl + 1) * N + i];
@@ -4216,7 +4273,16 @@ namespace Evosim.Farm.Gpu.Dbl
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
 
-                                if (shapeCode != 0)
+                                if (family)
+                                {
+                                    // q_d as above, times the degree's I1 and M, which the host wrote at build and
+                                    // at every resize (Fluid.Apply's familyQ).
+                                    Real familyQ = sv * omega * sv * omega * ((Real)1.0 - along * along);
+                                    familySum += familyQ * b.FamMoment[(fstart + d) * N + i];
+                                    familyMass += familyQ * b.FamMass[(fstart + d) * N + i];
+                                }
+
+                                if (shapeCode != 0 && !family)
                                 {
                                     V3 motion = V3.Cross(dofAxis, axis);
                                     Real motionLength = motion.Magnitude;
@@ -4236,7 +4302,7 @@ namespace Evosim.Farm.Gpu.Dbl
                             {
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
-                                if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
+                                if (shapeCode != 0 && !family) push = cfg.LimbPush * shapedSum;
 
                                 // D231: C_T times the sum of q_d I1_d, and the push-weighted lever
                                 // (sum q_d I1_d) / (sum q_d M_d). Another link's lever is the reach.
@@ -4245,6 +4311,12 @@ namespace Evosim.Farm.Gpu.Dbl
                                 {
                                     push = cfg.LimbPush * assemblySum;
                                     lever = AssemblyLeverOf(assemblySum, assemblyMass, linkReach);
+                                }
+                                else if (family)
+                                {
+                                    // D255: the same law for a family limb, from the strip integral of its true slices.
+                                    push = cfg.LimbPush * familySum;
+                                    lever = AssemblyLeverOf(familySum, familyMass, linkReach);
                                 }
 
                                 linkForce = linkForce + axis * (-push);
@@ -5316,7 +5388,14 @@ namespace Evosim.Farm.Gpu.Dbl
                             // (shape 0) keeps the unshaped line.
                             int shapeCode = cfg.ShapedMass != 0 ? b.ShapeCode[fl * N + i] : 0;
                             Real hx0 = 0, hx1 = 0, hx2 = 0;
-                            if (shapeCode != 0)
+
+                            // D255, as Fluid.Apply: a family limb (shape code 3) takes the strip integral its host body
+                            // carries for each degree of freedom, in place of D229's lines. It reads no half-extents.
+                            // Not entered for any other part, whose lines below are unchanged.
+                            bool family = shapeCode == 3;
+                            Real familySum = 0;
+                            Real familyMass = 0;
+                            if (shapeCode != 0 && !family)
                             {
                                 hx0 = b.HalfExt[(3 * fl) * N + i];
                                 hx1 = b.HalfExt[(3 * fl + 1) * N + i];
@@ -5350,7 +5429,16 @@ namespace Evosim.Farm.Gpu.Dbl
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
 
-                                if (shapeCode != 0)
+                                if (family)
+                                {
+                                    // q_d as above, times the degree's I1 and M, which the host wrote at build and
+                                    // at every resize (Fluid.Apply's familyQ).
+                                    Real familyQ = sv * omega * sv * omega * ((Real)1.0 - along * along);
+                                    familySum += familyQ * b.FamMoment[(fstart + d) * N + i];
+                                    familyMass += familyQ * b.FamMass[(fstart + d) * N + i];
+                                }
+
+                                if (shapeCode != 0 && !family)
                                 {
                                     V3 motion = V3.Cross(dofAxis, axis);
                                     Real motionLength = motion.Magnitude;
@@ -5370,7 +5458,7 @@ namespace Evosim.Farm.Gpu.Dbl
                             {
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
-                                if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
+                                if (shapeCode != 0 && !family) push = cfg.LimbPush * shapedSum;
 
                                 // D231: C_T times the sum of q_d I1_d, and the push-weighted lever
                                 // (sum q_d I1_d) / (sum q_d M_d). Another link's lever is the reach.
@@ -5379,6 +5467,12 @@ namespace Evosim.Farm.Gpu.Dbl
                                 {
                                     push = cfg.LimbPush * assemblySum;
                                     lever = AssemblyLeverOf(assemblySum, assemblyMass, linkReach);
+                                }
+                                else if (family)
+                                {
+                                    // D255: the same law for a family limb, from the strip integral of its true slices.
+                                    push = cfg.LimbPush * familySum;
+                                    lever = AssemblyLeverOf(familySum, familyMass, linkReach);
                                 }
 
                                 linkForce = linkForce + axis * (-push);
@@ -9279,7 +9373,10 @@ namespace Evosim.Farm.Gpu.Dbl
                         int shapeCode = b.ShapeCode[i * n + c];
                         V3 swingMotion = V3.Cross(across, axis);
                         Real acrossLength = swingMotion.Magnitude;
-                        if (acrossLength > 0 && shapeCode != 0)
+                        // D255: shape code 3 (a family part) is never read as a box here. The host refuses a family limb
+                        // under the swing push when the body is built (Creature.RefuseFamilyStroke), so this guard is never
+                        // reached; it stops a future path reading the code's unwritten half-extents as one.
+                        if (acrossLength > 0 && shapeCode != 0 && shapeCode != 3)
                         {
                             V3 swingDirection = swingMotion * ((Real)1.0 / acrossLength);
                             addedMass = ShapedAddedMass(
@@ -12955,6 +13052,11 @@ namespace Evosim.Farm.Gpu.Dbl
         // one-wide otherwise.
         public readonly Seg<int> StrokeParts;
         public readonly Seg<Real> StrokeAlong, StrokeMass, StrokeMoment;
+        // D255's family limb under the fin law: a degree of freedom each, indexed like DofStart: the added mass of
+        // the family part moving along that degree's stroke, and that mass's first moment about the joint
+        // (Creature.FamilyAddedMass, FamilyFirstMoment). 0 for a degree of a link that is not a family link. A degree of
+        // freedom wide only in a world that runs the fin law, one-wide otherwise.
+        public readonly Seg<Real> FamMass, FamMoment;
         // D234's mirrored twin: each link's mask of the degrees of freedom read negated. A link wide only in
         // a world whose bodies reflect their drive, one-wide otherwise.
         public readonly Seg<int> MirrorMask;
@@ -13028,6 +13130,8 @@ namespace Evosim.Farm.Gpu.Dbl
 
             int gs = shapedMass ? L : 0;
             ShapeCode = C<int>(gs, Constant); HalfExt = C<Real>(3 * gs, Constant);
+            int fd = shapedMass ? D : 0;
+            FamMass = C<Real>(fd, Constant); FamMoment = C<Real>(fd, Constant);
 
             int sa = strokeAssembly ? L : 0, sd = strokeAssembly ? D : 0;
             StrokeParts = C<int>(sa, Constant);
@@ -13286,6 +13390,7 @@ namespace Evosim.Farm.Gpu.Dbl
             LinkPower = LinkPower.View, ShapeCode = ShapeCode.View, HalfExt = HalfExt.View,
             StrokeParts = StrokeParts.View, StrokeAlong = StrokeAlong.View,
             StrokeMass = StrokeMass.View, StrokeMoment = StrokeMoment.View,
+            FamMass = FamMass.View, FamMoment = FamMoment.View,
             MirrorMask = MirrorMask.View, NoseFlag = NoseFlag.View,
         };
 
@@ -15403,7 +15508,13 @@ namespace Evosim.Farm.Gpu.Dbl
                     Float3 h = part.HalfExtents;
                     int at = l * N + i;
                     int a3 = (3 * l) * N + i;
-                    if (part.ShapeId == ShapeIds.Sphere)
+                    if (part.Family != null)
+                    {
+                        // D255: a family part (D233) takes the strip integral of its true slices, which the host body
+                        // carries by degree of freedom (below). No half-extents are written, and the kernel reads none.
+                        s.ShapeCode.Host[at] = 3;
+                    }
+                    else if (part.ShapeId == ShapeIds.Sphere)
                     {
                         s.ShapeCode.Host[at] = 0;
                     }
@@ -15426,6 +15537,33 @@ namespace Evosim.Farm.Gpu.Dbl
                         throw new ArgumentException(
                             "The fin law has no added mass for the shape '" + part.ShapeId +
                             "'; it knows box, capsule and sphere.");
+                    }
+                }
+
+                // D255: a family link's added mass and first moment, the host body's own per-degree tables
+                // (Creature.FamilyAddedMass, FamilyFirstMoment, indexed like DofStart) as WriteFamilyStroke left them
+                // at its build and at its last resize. A resize re-packs the body whole, so the card never holds the
+                // numbers of an old size. Every degree is written, 0 for any other link or when the tables are null
+                // (a body with no family joint), so a slot's earlier body leaves nothing behind.
+                for (int d = 0; d < dof; d++)
+                {
+                    int at = d * N + i;
+                    s.FamMass.Host[at] = 0;
+                    s.FamMoment.Host[at] = 0;
+                }
+
+                if (c.FamilyAddedMass != null && c.FamilyFirstMoment != null)
+                {
+                    for (int l = 0; l < links; l++)
+                    {
+                        if (c.Phenotype.Parts[l].Family == null) continue;
+                        for (int k = 0; k < c.DofCount[l]; k++)
+                        {
+                            int d = c.DofStart[l] + k;
+                            int at = d * N + i;
+                            s.FamMass.Host[at] = (Real)c.FamilyAddedMass[d];
+                            s.FamMoment.Host[at] = (Real)c.FamilyFirstMoment[d];
+                        }
                     }
                 }
             }

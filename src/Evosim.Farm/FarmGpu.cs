@@ -36,18 +36,23 @@ namespace Evosim.Farm
         public static GpuBackend Open(
             EnvSettings s, SolverConfig solver, Evosim.Core.PartShapeRegistry shapes, GpuDevice shared = null)
         {
-            // D233's family carries its form to the host's contact as a hull of core points (ConvexCore.OfFamily).
-            // The card packs every core as a box's half-extents, so a family link would touch there as the box of its
-            // half-extents and part from the host at its first touch. A world develops only the shapes its list holds,
-            // so a list with no shape that takes a form holds no family part. This stands until the card's port.
+            // D233's family carries its form to the host's contact as a hull of core points (ConvexCore.OfFamily)
+            // under a true-shape contact (D228). The card packs every core as a box's half-extents, so a family link
+            // would touch there as the box of its half-extents and part from the host at its first touch. A world
+            // develops only the shapes its list holds, so a list with no shape that takes a form holds no family part.
+            // Under sphere contact a family link touches as its sphere of FamilyReach on both engines, and the card
+            // carries its fin law (D255), so the refusal stands only for a true-shape contact.
             if (shapes == null) throw new System.ArgumentNullException(nameof(shapes));
-            for (int i = 0; i < shapes.Count; i++)
+            bool trueShapeContact = solver.ContactShape == Evosim.Core.ContactShapeForm.TrueShape ||
+                                    solver.ContactShape == Evosim.Core.ContactShapeForm.TrueShapeAtPoint;
+            for (int i = 0; trueShapeContact && i < shapes.Count; i++)
             {
                 if (shapes[i].TakesForm)
                 {
                     throw new System.InvalidOperationException(
-                        "the gpu engine has no family shape ('" + shapes[i].Id + "' takes a form, D233); " +
-                        "run this world on the cpu engine");
+                        "the gpu engine has no family shape under a true-shape contact ('" + shapes[i].Id +
+                        "' takes a form, D233); the card packs a true-shape core as a box. Run this world on the " +
+                        "cpu engine, or under sphere contact (D255)");
                 }
             }
 
