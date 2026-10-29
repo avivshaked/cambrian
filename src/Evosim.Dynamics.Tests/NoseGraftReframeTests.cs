@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Evosim.Core;
+using Evosim.TestSupport;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -104,7 +105,7 @@ namespace Evosim.Dynamics.Tests
             return founders;
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/410a70db44a4b20a.tsv")]
         public void TheGraftedNoseFeelsTheLeafAsTheWholeBodyDidAtRest()
         {
             RunConfig plain = Config("9adc2be043e22219"), nosed = Config("3976418af5a1286d");
@@ -117,7 +118,7 @@ namespace Evosim.Dynamics.Tests
         /// is reframed in the frame of the nose it goes to, and the two halves still give each target the input it had. Both
         /// bodies grow with reflected anchors, as a pair needs, and the pair stands either side of the middle, mirrored in x.
         /// </summary>
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/410a70db44a4b20a.tsv")]
         public void ASplitPairFeelsTheLeafAsTheWholeBodyDidAtRest()
         {
             RunConfig plain = Config("9adc2be043e22219"), nosed = Config("3976418af5a1286d");
