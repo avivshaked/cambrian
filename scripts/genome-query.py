@@ -460,6 +460,7 @@ def cmd_find(args):
     run = resolve_run(args.run)
     t, alive, births, genomes = alive_genomes(run, args.at, False)
     joint = args.joint.lower() if args.joint else None
+    jointed_shape = args.jointed_shape.lower() if args.jointed_shape else None
     n = 0
     print('== %s at %d s: %d alive, %d genomes read' % (run, t, len(alive), len(genomes)))
     for gid in sorted(genomes):
@@ -469,6 +470,9 @@ def cmd_find(args):
         if args.cell and not has_cell(g, args.cell):
             continue
         if joint and not any(nd['joint'].lower() == joint for i, nd in enumerate(g['nodes']) if i in reachable(g)):
+            continue
+        if jointed_shape and not any(nd['shape'].lower() == jointed_shape and nd['joint'] != 'Fixed'
+                                     for i, nd in enumerate(g['nodes']) if i in reachable(g) and i != g.get('root', 0)):
             continue
         if len(reachable(g)) < args.min_nodes:
             continue
@@ -546,6 +550,8 @@ def main():
     p.add_argument('--at', type=float, default=None)
     p.add_argument('--attack', action='store_true', help='any node with attack > 0')
     p.add_argument('--cell'); p.add_argument('--joint', help='e.g. Hinge, Twist, Spherical')
+    p.add_argument('--jointed-shape', help='a grown node other than the root with this shape and a joint that moves, '
+                                           'e.g. superellipsoid (a family limb, D233)')
     p.add_argument('--min-nodes', type=int, default=1)
     p.add_argument('--limit', type=int, default=20)
     p.set_defaults(fn=cmd_find)
