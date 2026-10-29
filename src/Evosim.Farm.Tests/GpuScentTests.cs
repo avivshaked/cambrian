@@ -22,7 +22,7 @@ namespace Evosim.Farm.Tests
     /// The synthetic case plants what the bins and the order must survive: corpses outside the grid
     /// on every side, corpses with no joules or negative ones, terms that narrow to a subnormal float,
     /// a cell at exactly the range from its corpse, and a crowd in one cell whose float sum depends on
-    /// the order of its terms. Round 57's case is r57-s2's own corpses at 47,000 s, restored from its
+    /// the order of its terms. Round 57's case is r57-s2's own corpses at 48,000 s, restored from its
     /// checkpoint; the run directory is gitignored and belongs to the main working tree, as
     /// <see cref="GpuTransportRound57Tests"/>'s is.
     /// </remarks>
@@ -202,7 +202,7 @@ namespace Evosim.Farm.Tests
             World world = Round57World();
             int second = world.ScentFilledCorpses;
             int first = second - 5000;
-            Assert.True(first > 10000, "r57-s2 at 47,000 s filled from " + second + " corpses; the test wants tens of thousands");
+            Assert.True(first > 10000, "r57-s2 at 48,000 s filled from " + second + " corpses; the test wants tens of thousands");
 
             world.Scent.Fill(world.Corpses, first);
             float[] hostFirst = world.Scent.CopyCells();
@@ -240,9 +240,9 @@ namespace Evosim.Farm.Tests
 
         private static World Round57World()
         {
-            string path = Path.Combine(RunDirectory, "checkpoints", "000047000.ckpt");
+            string path = Path.Combine(RunDirectory, "checkpoints", "000048000.ckpt");
             Assert.True(File.Exists(path),
-                "r57-s2's checkpoint at 47,000 s is not on this machine (run directories are gitignored and belong to the main working tree): " + path);
+                "r57-s2's checkpoint at 48,000 s is not on this machine (run directories are gitignored and belong to the main working tree): " + path);
 
             RunConfig config = GpuTransportRound57Tests.Round57Config();
             TricklePoolFiles.Pool pool = TricklePoolFiles.Load(RunDirectory, config);
@@ -271,11 +271,11 @@ namespace Evosim.Farm.Tests
             world.FillScentElsewhere(scent.Snapshot, scent.BringHome);
             Assert.True(world.ScentFilledElsewhere);
             _out.WriteLine("corpses with joules in the snapshot: " + scent.Count);
-            Assert.True(scent.Count > 10000, "r57-s2 at 47,000 s held " + scent.Count + " corpses with joules; round 57 held tens of thousands");
+            Assert.True(scent.Count > 10000, "r57-s2 at 48,000 s held " + scent.Count + " corpses with joules; round 57 held tens of thousands");
 
             world.Scent.Clear();
             world.BringScentHome();
-            SameBits(host, world.Scent.CopyCells(), _out, "round 57 at 47,000 s", 10000);
+            SameBits(host, world.Scent.CopyCells(), _out, "round 57 at 48,000 s", 10000);
         }
 
         [Fact]
@@ -283,8 +283,8 @@ namespace Evosim.Farm.Tests
         {
             // The hand-over takes the step's fill: the world calls the engine and leaves its field as
             // the engine last brought it home.
-            string path = Path.Combine(RunDirectory, "checkpoints", "000047000.ckpt");
-            Assert.True(File.Exists(path), "r57-s2's checkpoint at 47,000 s is not on this machine: " + path);
+            string path = Path.Combine(RunDirectory, "checkpoints", "000048000.ckpt");
+            Assert.True(File.Exists(path), "r57-s2's checkpoint at 48,000 s is not on this machine: " + path);
 
             RunConfig config = GpuTransportRound57Tests.Round57Config();
             TricklePoolFiles.Pool pool = TricklePoolFiles.Load(RunDirectory, config);
