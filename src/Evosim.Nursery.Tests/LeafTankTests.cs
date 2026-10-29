@@ -61,16 +61,6 @@ namespace Evosim.Nursery.Tests
         [InlineData("brain2-nocross-w4.json", "dd2f5190667baa40d228827aac2ccbf816e70e4752840177f6f8a4f57a137018")]
         [InlineData("brain2-nocross-w5.json", "53956c9ac8c1385ad7443e51b00c9cd98b3f19bdcd18eb0ee012b5f115f4dbe8")]
         [InlineData("brain2-nocross.json", "907fdf7ce3ba3eee5592d968afd12c32eb80a178e4cb65c8a302d572743c312a")]
-        [InlineData("brain2-nodrive-w2.json", "5ec7503af7378603c74f472a5046e0b331fde29c19469866fbe8bd85e3a1000d")]
-        [InlineData("brain2-nodrive-w3.json", "a45d5f9c824dcd29759bdf5aeb3f8be13fed4c6cc12d9274d1d7311603adcc71")]
-        [InlineData("brain2-nodrive-w4.json", "c791e4950620bca5983b200d922c9ac9973b909793adfce99ed0c951b0bce1dc")]
-        [InlineData("brain2-nodrive-w5.json", "3d36e18c42cf4be869e18500cdbbe689dae65330c0e0e3ca4c1f3f705b9a521b")]
-        [InlineData("brain2-nodrive.json", "f7a83c9d65f1ce6695fffb6d150b3852a313ce2b9a712ce2e7466647e0bf2770")]
-        [InlineData("brain2-rep2-w2.json", "693ac233e0bc8729e012efa21dc754de6b13b5fa1a992c6ddd0811ee9d2242b9")]
-        [InlineData("brain2-rep2-w3.json", "c77426334dc51780612ec4550f65d6bb5aeb7c29c92e48baaf248a327317ced7")]
-        [InlineData("brain2-rep2-w4.json", "af9ac2c8c136ce8044faf3bc67bcb13696320ce655740dd2e2f95bc926dc5797")]
-        [InlineData("brain2-rep2-w5.json", "04bb5ba5b2b041292611bdcc33193a0431895b57bb089ce90dc4712a0d95fd30")]
-        [InlineData("brain2-rep2.json", "52a4d23ae49d85851313bbccddadff110ae663bd871396cae0acc04d8a81090b")]
         [InlineData("brain2-w2.json", "8336b6b458a16d6b6654c1c55e5ed33ebe1374da49bd50691a7c101facf2a7fd")]
         [InlineData("brain2-w3-t16-hold.json", "4656727a1a8b3c59b322015449fee94c376fae9ac1a3f69fc524293115c1d796")]
         [InlineData("brain2-w3.json", "63b5e4e588e937c3e510ffb979087915ee49de14e6e2d7742a60dc878bea61ee")]
@@ -84,12 +74,28 @@ namespace Evosim.Nursery.Tests
         [InlineData("brain2-w9.json", "8f1c10f7c78d15c18ad27dc9357c5554abd262feabdd4c12070e3b095db49e65")]
         [InlineData("brain2-w10.json", "6f83a22a1cc53d04799ec308446c3ca445fe7353e241956c3d427d5a63cba1df")]
         [InlineData("brain2.json", "ef0743270c7c48a3ea671320892302b23482e63432391e0e54d3e4ec4a19d61a")]
+        public void ARecipeOnFileHashesAsItDidBeforeTheSection(string file, string hash) => AssertHashesAsBeforeTheSection(file, hash);
+
+        /// <summary>The same, for the recipes that name a pool: Recipe.Read refuses a recipe whose pool is absent, so these rows are a theory of their own, skipped where the pools are not in this tree.</summary>
+        [LocalDataTreeTheory("rounds/nursery/pools/97d4a4fc12a91017.tsv", "rounds/nursery/pools/a326093a77658bdc.tsv")]
+        [InlineData("brain2-nodrive-w2.json", "5ec7503af7378603c74f472a5046e0b331fde29c19469866fbe8bd85e3a1000d")]
+        [InlineData("brain2-nodrive-w3.json", "a45d5f9c824dcd29759bdf5aeb3f8be13fed4c6cc12d9274d1d7311603adcc71")]
+        [InlineData("brain2-nodrive-w4.json", "c791e4950620bca5983b200d922c9ac9973b909793adfce99ed0c951b0bce1dc")]
+        [InlineData("brain2-nodrive-w5.json", "3d36e18c42cf4be869e18500cdbbe689dae65330c0e0e3ca4c1f3f705b9a521b")]
+        [InlineData("brain2-nodrive.json", "f7a83c9d65f1ce6695fffb6d150b3852a313ce2b9a712ce2e7466647e0bf2770")]
+        [InlineData("brain2-rep2-w2.json", "693ac233e0bc8729e012efa21dc754de6b13b5fa1a992c6ddd0811ee9d2242b9")]
+        [InlineData("brain2-rep2-w3.json", "c77426334dc51780612ec4550f65d6bb5aeb7c29c92e48baaf248a327317ced7")]
+        [InlineData("brain2-rep2-w4.json", "af9ac2c8c136ce8044faf3bc67bcb13696320ce655740dd2e2f95bc926dc5797")]
+        [InlineData("brain2-rep2-w5.json", "04bb5ba5b2b041292611bdcc33193a0431895b57bb089ce90dc4712a0d95fd30")]
+        [InlineData("brain2-rep2.json", "52a4d23ae49d85851313bbccddadff110ae663bd871396cae0acc04d8a81090b")]
         [InlineData("leaf-drag-off.json", "fb0fc19381dc0782b6bba7548beca7a9276881ba642d0200019a95af97f83f5a")]
         [InlineData("leaf-drag-skin-0p05.json", "c48e7a64a7eb66a8ed757f9c48ed6194686ee691d632ccabf5204a594feb1648")]
         [InlineData("leaf-drag-skin-0p5.json", "7abf8a6aab99544397cd61c2cddae3d233f723673a656ccefd82a4e40d5b21b3")]
         [InlineData("leaf-drag-spin-0p05.json", "34383099db69f1e0357d0d2641c0651ef578137bc541dc6fa12ea9d3c592086b")]
         [InlineData("leaf-drag-spin-0p5.json", "2f037de190f9f03905c375b90d724a25fde2b08af3253df6c2c0efa6c5b7e8dd")]
-        public void ARecipeOnFileHashesAsItDidBeforeTheSection(string file, string hash)
+        public void ARecipeThatNamesAPoolHashesAsItDidBeforeTheSection(string file, string hash) => AssertHashesAsBeforeTheSection(file, hash);
+
+        private static void AssertHashesAsBeforeTheSection(string file, string hash)
         {
             Recipe r = Nursery.Recipe.Read(Path.Combine(RestepFixtures.Root, "rounds", "nursery", file));
             Assert.Null(r.Leaves);
@@ -98,7 +104,7 @@ namespace Evosim.Nursery.Tests
         }
 
         /// <summary>Every leaf recipe a run has registered, and the hash the registry recorded for it: D182's patches are written only when set, so each hashes as it did.</summary>
-        [Theory]
+        [LocalDataTreeTheory("rounds/nursery/pools/320aa1fd335d62b4.tsv", "rounds/nursery/pools/410a70db44a4b20a.tsv", "rounds/nursery/pools/6a27d8acada28e03.tsv", "rounds/nursery/pools/9cee8ad6fca64ecd.tsv", "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         [InlineData("leaf-strength.json", "649c2dac2627cb12141696954c5d764381d9e22777d053a454d1c0ec5a63b56b")]
         [InlineData("leaf-direction.json", "19fcb14ed1760d3ad89f45d85d49b6357dcad4c81239da08196a586eb08750df")]
         [InlineData("leaf-strength-tops.json", "caa6c66284e707ef787826599881cc970fab67f0a3eb7f3e134529344d4db265")]
@@ -118,14 +124,25 @@ namespace Evosim.Nursery.Tests
             Assert.Equal(hash, r.Hash());
         }
 
-        [Fact]
+        // Recipe.Read refuses a recipe whose pool is absent, so every pool a recipe on file names is declared.
+        [LocalDataTreeFact(
+            "rounds/nursery/pools/206827daf1cce715.tsv",
+            "rounds/nursery/pools/320aa1fd335d62b4.tsv",
+            "rounds/nursery/pools/39d06aac2d0d0f60.tsv",
+            "rounds/nursery/pools/410a70db44a4b20a.tsv",
+            "rounds/nursery/pools/6a27d8acada28e03.tsv",
+            "rounds/nursery/pools/6fe2fc2a1bd2061f.tsv",
+            "rounds/nursery/pools/97d4a4fc12a91017.tsv",
+            "rounds/nursery/pools/9cee8ad6fca64ecd.tsv",
+            "rounds/nursery/pools/a326093a77658bdc.tsv",
+            "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void EveryRecipeOnFileIsInTheListAbove()
         {
             string[] files = Directory.GetFiles(Path.Combine(RestepFixtures.Root, "rounds", "nursery"), "*.json")
                 .Where(f => Path.GetFileName(f) != "room.json" && Nursery.Recipe.Read(f).Leaves == null)
                 .Select(Path.GetFileName).OrderBy(f => f, StringComparer.Ordinal).ToArray();
-            string[] listed = typeof(LeafTankTests).GetMethod(nameof(ARecipeOnFileHashesAsItDidBeforeTheSection))
-                .GetCustomAttributes(typeof(InlineDataAttribute), false).Cast<InlineDataAttribute>()
+            string[] listed = new[] { nameof(ARecipeOnFileHashesAsItDidBeforeTheSection), nameof(ARecipeThatNamesAPoolHashesAsItDidBeforeTheSection) }
+                .SelectMany(m => typeof(LeafTankTests).GetMethod(m).GetCustomAttributes(typeof(InlineDataAttribute), false)).Cast<InlineDataAttribute>()
                 .Select(a => (string)a.GetData(null).First()[0]).OrderBy(f => f, StringComparer.Ordinal).ToArray();
             Assert.Equal(files, listed);
         }

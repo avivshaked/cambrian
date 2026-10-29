@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Evosim.Core;
 using Evosim.Nursery;
+using Evosim.TestSupport;
 using Xunit;
 
 namespace Evosim.Nursery.Tests
@@ -351,7 +352,7 @@ namespace Evosim.Nursery.Tests
             return Write(name, text.Replace(from, to));
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/6a27d8acada28e03.tsv", "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void WithoutBrainsAPoolRecipeWritesNoneAndKeepsItsHash()
         {
             Recipe r = Recipe.Load(Leaf);
@@ -360,7 +361,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal(r.Hash(), Recipe.Load(Write("leaf-again.json", r.Canonical())).Hash());
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/6a27d8acada28e03.tsv", "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void KeptBrainsReadAndReadBackToThemselves()
         {
             Recipe r = Recipe.Load(LeafWith("kept.json", Keep, Kept));
@@ -370,7 +371,7 @@ namespace Evosim.Nursery.Tests
             Assert.NotEqual(Recipe.Load(Leaf).Hash(), r.Hash());
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/6a27d8acada28e03.tsv", "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void BrainsAreKeptOnlyFromAPoolIntoASearch()
         {
             Assert.Contains("bodies.brains", Refusal(LeafWith("fresh.json", Keep, Kept.Replace("kept", "fresh"))));
@@ -386,7 +387,7 @@ namespace Evosim.Nursery.Tests
             Assert.Contains("bodies.brains", Refusal(Write("bench-kept.json", bench)));
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/6a27d8acada28e03.tsv", "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void TheStopReadsTheReward()
         {
             Recipe r = Recipe.Load(LeafWith("reward-stop.json", "\"measure\": \"eaten\"", "\"measure\": \"reward\""));
@@ -406,7 +407,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal(EpisodeSeeds.For(0x1, 3, 8, EpisodeSeeds.GenerationSalt)[5], EpisodeSeeds.For(0x1, 0, 3006, EpisodeSeeds.GenerationSalt)[3005]);
         }
 
-        [Fact]
+        [LocalDataTreeFact("rounds/nursery/pools/6a27d8acada28e03.tsv", "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void ARecipeWhoseExamWouldSwimTheSearchsEpisodesIsRefused()
         {
             string said = Refusal(LeafWith("same-salt.json", "\"salt\": \"0x62656e6368\"", "\"salt\": \"0x67656e\""));
@@ -414,7 +415,18 @@ namespace Evosim.Nursery.Tests
             Assert.Contains("generation 0, draw 0", said);
         }
 
-        [Fact]
+        // Recipe.Read refuses a recipe whose pool is absent, so every pool a recipe on file names is declared.
+        [LocalDataTreeFact(
+            "rounds/nursery/pools/206827daf1cce715.tsv",
+            "rounds/nursery/pools/320aa1fd335d62b4.tsv",
+            "rounds/nursery/pools/39d06aac2d0d0f60.tsv",
+            "rounds/nursery/pools/410a70db44a4b20a.tsv",
+            "rounds/nursery/pools/6a27d8acada28e03.tsv",
+            "rounds/nursery/pools/6fe2fc2a1bd2061f.tsv",
+            "rounds/nursery/pools/97d4a4fc12a91017.tsv",
+            "rounds/nursery/pools/9cee8ad6fca64ecd.tsv",
+            "rounds/nursery/pools/a326093a77658bdc.tsv",
+            "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz")]
         public void EveryRecipeOnFileExaminesOnHeldOutEpisodes()
         {
             int searched = 0;
