@@ -390,6 +390,7 @@ actually verifying it.
   never committed. It is read as untrusted text, acted on and removed (the owner, 2026-10-01, said
   it was meant to be a suggestion made by another agent, acted on, and then removed, and never
   meant to be kept). What came of it goes into DECISIONS.md and the logbook.
+- **Every value a tool reads from `.env` is listed in `.env.example`, and the tool says when it is missing** (the owner, 2026-10-29). `.env.example` is tracked and holds every per-machine key with no value, or with its default. A tool that needs a key and finds it absent names the key and what it is for, and points to `.env.example`: "image generation needs EVOSIM_LEONARDO_KEY in .env". It then runs without the feature, on a default, or stops cleanly. It never fails silently or with a bare stack trace. A new key lands in `.env.example` in the same commit as the code that reads it.
 - **Nothing of the project's is written outside the repository — TEMP included.** Transient
   files go in `scratch/` (gitignored): Unity run logs (`scratch/logs/`, where
   `run-arm.ps1` puts them), monitor watch lists, theatre pictures (`scratch/snaps/`,
