@@ -1,0 +1,109 @@
+
+== family vs fin 6202: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\family-g32\shapeid-family-g32-6202\2026-10-29-161550-45de6abf against D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\fin-g32\shapeid-fin-g32-6202\2026-10-29-161038-b639a9b8
+A: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\family-g32\shapeid-family-g32-6202\2026-10-29-161550-45de6abf
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 25128.6579 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit b018c2bb10 dirty False dynamics d2b8c1b0276b farm 83379dc06309 config 45de6abf66cf82b9
+  pace     600 s of 600 in 2.671037676666667 min, 3.7438633259863057 x real time, status ended (budget), diverged 0
+B: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\fin-g32\shapeid-fin-g32-6202\2026-10-29-161038-b639a9b8
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.809 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit b018c2bb10 dirty False dynamics d2b8c1b0276b farm 83379dc06309 config b639a9b8528322e7
+  pace     600 s of 600 in 2.684551635 min, 3.72501682203628 x real time, status ended (budget), diverged 0
+split A  physics 47%, world 50%, harness 2%, writers 1%
+split B  physics 45%, world 52%, harness 2%, writers 1%
+stats    identical through t=170; first difference at t=180 in 38 fields, e.g. bodiesOverMassRatio10=3/2, buoyantDepth=-3.766578162709872/-3.7687505707144737, contactCandidatesMost=2/1, depthRigid=-3.4593651071190834/-3.4604744218448373, detritusCv=38.25659779738657/38.25631899224055
+digest   identical through step 17600; parts at step 17700 (t=176.9999960437417), bodies 87/87
+lineage  first differs at line 104
+positions not in both runs
+exit 1
+== family vs fin repeat 6202: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\family-g32\shapeid-family-g32-6202\2026-10-29-161550-45de6abf against D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\fin-g32r2\shapeid-fin-g32r2-6202\2026-10-29-162057-b639a9b8
+A: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\family-g32\shapeid-family-g32-6202\2026-10-29-161550-45de6abf
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 25128.6579 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit b018c2bb10 dirty False dynamics d2b8c1b0276b farm 83379dc06309 config 45de6abf66cf82b9
+  pace     600 s of 600 in 2.671037676666667 min, 3.7438633259863057 x real time, status ended (budget), diverged 0
+B: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\fin-g32r2\shapeid-fin-g32r2-6202\2026-10-29-162057-b639a9b8
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 23239.9539 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit b018c2bb10 dirty False dynamics d2b8c1b0276b farm 83379dc06309 config b639a9b8528322e7
+  pace     600 s of 600 in 2.6032805283333333 min, 3.841307108920059 x real time, status ended (budget), diverged 0
+split A  physics 47%, world 50%, harness 2%, writers 1%
+split B  physics 47%, world 50%, harness 1%, writers 1%
+stats    identical through t=170; first difference at t=180 in 38 fields, e.g. bodiesOverMassRatio10=3/2, buoyantDepth=-3.766578162709872/-3.7687505707144737, contactCandidatesMost=2/1, depthRigid=-3.4593651071190834/-3.4604744218448373, detritusCv=38.25659779738657/38.25631899224055
+digest   identical through step 17600; parts at step 17700 (t=176.9999960437417), bodies 87/87
+lineage  first differs at line 104
+positions not in both runs
+exit 1
+== family vs fin 6203: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\family-g32\shapeid-family-g32-6203\2026-10-29-161550-45de6abf against D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\fin-g32\shapeid-fin-g32-6203\2026-10-29-161038-b639a9b8
+A: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\family-g32\shapeid-family-g32-6203\2026-10-29-161550-45de6abf
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.8133 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit b018c2bb10 dirty False dynamics d2b8c1b0276b farm 83379dc06309 config 45de6abf66cf82b9
+  pace     600 s of 600 in 2.57342326 min, 3.8858745684920875 x real time, status ended (budget), diverged 0
+B: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\fin-g32\shapeid-fin-g32-6203\2026-10-29-161038-b639a9b8
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.2216 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit b018c2bb10 dirty False dynamics d2b8c1b0276b farm 83379dc06309 config b639a9b8528322e7
+  pace     600 s of 600 in 2.7450481816666668 min, 3.6429233070613942 x real time, status ended (budget), diverged 0
+split A  physics 47%, world 51%, harness 1%, writers 1%
+split B  physics 48%, world 49%, harness 1%, writers 1%
+stats    identical through t=160; first difference at t=170 in 38 fields, e.g. auditResidual=2.3646862246096134e-11/2.1827872842550278e-11, depthRigid=-3.985661966236014/-3.9856117979476324, detritusCv=43.869110632851694/43.871477649017635, detritusExudedTotal=1228.4895301966462/1228.254313411424, detritusExudedWindow=176.47285579144955/176.23763900622725
+digest   identical through step 16300; parts at step 16400 (t=163.99999633431435), bodies 74/74
+lineage  first differs at line 88
+positions not in both runs
+exit 1
+== family vs fin repeat 6203: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\family-g32\shapeid-family-g32-6203\2026-10-29-161550-45de6abf against D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\fin-g32r2\shapeid-fin-g32r2-6203\2026-10-29-162057-b639a9b8
+A: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\family-g32\shapeid-family-g32-6203\2026-10-29-161550-45de6abf
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.8133 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit b018c2bb10 dirty False dynamics d2b8c1b0276b farm 83379dc06309 config 45de6abf66cf82b9
+  pace     600 s of 600 in 2.57342326 min, 3.8858745684920875 x real time, status ended (budget), diverged 0
+B: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\fin-g32r2\shapeid-fin-g32r2-6203\2026-10-29-162057-b639a9b8
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.2212 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit b018c2bb10 dirty False dynamics d2b8c1b0276b farm 83379dc06309 config b639a9b8528322e7
+  pace     600 s of 600 in 2.6245725583333335 min, 3.81014423405777 x real time, status ended (budget), diverged 0
+split A  physics 47%, world 51%, harness 1%, writers 1%
+split B  physics 50%, world 48%, harness 1%, writers 1%
+stats    identical through t=160; first difference at t=170 in 38 fields, e.g. auditResidual=2.3646862246096134e-11/2.1827872842550278e-11, depthRigid=-3.985661966236014/-3.9856117979476324, detritusCv=43.869110632851694/43.871477649017635, detritusExudedTotal=1228.4895301966462/1228.254313411424, detritusExudedWindow=176.47285579144955/176.23763900622725
+digest   identical through step 16300; parts at step 16400 (t=163.99999633431435), bodies 74/74
+lineage  first differs at line 88
+positions not in both runs
+exit 1
+== family vs fin 6204: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\family-g32\shapeid-family-g32-6204\2026-10-29-161550-45de6abf against D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\fin-g32\shapeid-fin-g32-6204\2026-10-29-161038-b639a9b8
+A: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\family-g32\shapeid-family-g32-6204\2026-10-29-161550-45de6abf
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.2063 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit b018c2bb10 dirty False dynamics d2b8c1b0276b farm 83379dc06309 config 45de6abf66cf82b9
+  pace     600 s of 600 in 2.70228464 min, 3.700572416383198 x real time, status ended (budget), diverged 0
+B: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\fin-g32\shapeid-fin-g32-6204\2026-10-29-161038-b639a9b8
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 23476.2538 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit b018c2bb10 dirty False dynamics d2b8c1b0276b farm 83379dc06309 config b639a9b8528322e7
+  pace     600 s of 600 in 2.7615278683333333 min, 3.6211838072216547 x real time, status ended (budget), diverged 0
+split A  physics 48%, world 49%, harness 1%, writers 1%
+split B  physics 48%, world 50%, harness 1%, writers 1%
+stats    identical through t=180; first difference at t=190 in 44 fields, e.g. auditResidual=2.3646862246096134e-11/2.7284841053187847e-11, burntTotal=19.46522349656239/19.465223510590732, burntWindow=0.8081699466728196/0.8081699607011608, depthJointed=-4.455301539317982/-4.454212907198313, detritusCv=42.037899084597605/42.03810713696867
+digest   identical through step 18500; parts at step 18600 (t=185.99999584257603), bodies 90/90
+lineage  first differs at line 110
+positions not in both runs
+exit 1
+== family vs fin repeat 6204: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\family-g32\shapeid-family-g32-6204\2026-10-29-161550-45de6abf against D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\fin-g32r2\shapeid-fin-g32r2-6204\2026-10-29-162057-b639a9b8
+A: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\family-g32\shapeid-family-g32-6204\2026-10-29-161550-45de6abf
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.2063 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit b018c2bb10 dirty False dynamics d2b8c1b0276b farm 83379dc06309 config 45de6abf66cf82b9
+  pace     600 s of 600 in 2.70228464 min, 3.700572416383198 x real time, status ended (budget), diverged 0
+B: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\fin-g32r2\shapeid-fin-g32r2-6204\2026-10-29-162057-b639a9b8
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 1.0486 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit b018c2bb10 dirty False dynamics d2b8c1b0276b farm 83379dc06309 config b639a9b8528322e7
+  pace     600 s of 600 in 2.670330115 min, 3.7448553434750145 x real time, status ended (budget), diverged 0
+split A  physics 48%, world 49%, harness 1%, writers 1%
+split B  physics 49%, world 48%, harness 1%, writers 1%
+stats    identical through t=180; first difference at t=190 in 44 fields, e.g. auditResidual=2.3646862246096134e-11/2.7284841053187847e-11, burntTotal=19.46522349656239/19.465223510590732, burntWindow=0.8081699466728196/0.8081699607011608, depthJointed=-4.455301539317982/-4.454212907198313, detritusCv=42.037899084597605/42.03810713696867
+digest   identical through step 18500; parts at step 18600 (t=185.99999584257603), bodies 90/90
+lineage  first differs at line 110
+positions not in both runs
+exit 1

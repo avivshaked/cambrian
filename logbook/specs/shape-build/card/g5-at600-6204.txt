@@ -1,0 +1,45 @@
+G5 read: shape screen, one seed
+ON  run: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\family-g32\shapeid-family-g32-6204\2026-10-29-161550-45de6abf
+OFF run: D:\Projects\experiments\evolution-simulator\scratch\shape-build\card\sit\fin-g32\shapeid-fin-g32-6204\2026-10-29-161038-b639a9b8
+snapshot at 600 s; moving pairs from 0 to 600 s; still bar 0.005 m/s; gap 10 s; every 1
+
+== Gate 2: evolution uses the shapes (ON, snapshot nearest 600 s)
+ON  snapshot at 600 s
+ON  living bodies: 1263 (genomes read: 1263)
+ON  jointed bodies: 346
+ON  family-jointed bodies: 4
+ON  family share, family-jointed over jointed: 0.0116
+OFF snapshot at 600 s (sanity)
+OFF living bodies: 1302 (genomes read: 1302)
+OFF jointed bodies: 362
+OFF family-jointed bodies: 0 (should be 0)
+
+== Reported (ON): the family among nodes, and the form walk
+ON  jointed non-root nodes: 362, of them family limbs: 4
+ON  family share of jointed non-root nodes: 0.0110
+ON  form walk, family limbs: n 4, median 0.000, p90 0.000 (distance from the nearest entry member, in range log widths)
+ON  form walk, every grown family node: n 26, median 0.000, p90 0.103 (distance from the nearest entry member, in range log widths)
+
+== Gate 3: swimming does not suffer (grazer pose pairs)
+ON  grazers born by 600 s: 0; pose pairs up to 600 s: 0, in the window: 0
+ON  moving pairs: 0, median speed n/a m/s
+ON  median speed over all pairs in the window, moving or not: n/a m/s (n 0)
+ON  median speed over all pairs up to 600 s, any t: n/a m/s (n 0)
+OFF grazers born by 600 s: 0; pose pairs up to 600 s: 0, in the window: 0
+OFF moving pairs: 0, median speed n/a m/s
+OFF median speed over all pairs in the window, moving or not: n/a m/s (n 0)
+OFF median speed over all pairs up to 600 s, any t: n/a m/s (n 0)
+moving-pair median speed ratio ON/OFF: n/a
+
+== Reported (ON): grazers carrying a family limb against the rest (moving pairs)
+ON  moving pairs of carriers: 0, median speed n/a m/s (0 grazers)
+ON  moving pairs of the rest: 0, median speed n/a m/s (0 grazers)
+
+== Reported: pace, world seconds per wall second (different sittings: read with caution)
+ON  pace up to 600 s: 4.159; in 0 to 600 s: 4.159 (60 stats rows)
+OFF pace up to 600 s: 4.054; in 0 to 600 s: 4.054 (60 stats rows)
+pace ratio ON/OFF, whole span: 1.026; window: 1.026
+
+== Gates
+Gate 2 (family share of jointed bodies >= 0.10): FAIL (share 0.0116)
+Gate 3 (moving-grazer median speed ON/OFF >= 0.80): FAIL (ratio n/a)
