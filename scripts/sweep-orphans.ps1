@@ -55,6 +55,13 @@ function Get-Orphans {
         $_.ProcessId, $_.CreationDate, $c.Substring([Math]::Max(0, $c.Length - 90))
 }
 
+# The drive's free space, read at every session start (the owner, 2026-10-29, after scratch had grown until 195 GB
+# were left). Under 300 GB, scratch's cleanup is due.
+$d = Get-PSDrive D
+$free = [Math]::Round($d.Free / 1GB)
+if ($free -lt 300) { "DISK: D: has $free GB free, under 300 GB: scratch's cleanup is due" }
+else { "disk: D: has $free GB free" }
+
 $found = @(Get-Orphans)
 if ($found.Count -eq 0) { Write-Output 'no orphaned loops'; exit 0 }
 $found | Group-Object Name | ForEach-Object { '{0,-28} {1}' -f $_.Name, $_.Count }
