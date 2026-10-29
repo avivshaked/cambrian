@@ -22,7 +22,12 @@ $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [En
 $key = if ($To -eq 'local') { 'EVOSIM_BACKUP_OP_LOCAL' } else { 'EVOSIM_BACKUP_OP_GDRIVE' }
 $line = Get-Content "$R\.env" -ErrorAction SilentlyContinue | Where-Object { $_ -match "^$key=" } | Select-Object -First 1
 $ref = if ($line) { ($line -split '=', 2)[1].Trim() } else { '' }
-if ($ref) { $env:RESTIC_PASSWORD_COMMAND = "op read `"$ref`"" }
+# Read once, into this process's environment only, so the owner approves once per backup rather than once per restic
+# call (backup, snapshots, stats). It is never printed and goes with the process.
+if ($ref) {
+    $env:RESTIC_PASSWORD = (& op read $ref)
+    if ($LASTEXITCODE -ne 0 -or -not $env:RESTIC_PASSWORD) { throw "1Password did not return the password for $key; is the app unlocked?" }
+}
 else { Write-Host "An unattended backup needs $key in .env: a 1Password reference to the store's password (see .env.example). Asking at the prompt instead." }
 $me = [System.Diagnostics.Process]::GetCurrentProcess()
 $me.PriorityClass = 'BelowNormal'
