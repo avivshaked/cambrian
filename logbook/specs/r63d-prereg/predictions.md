@@ -56,7 +56,8 @@ These are the coordinator's, written before any run, and they are guesses.
 ## What would change the plan
 
 - **The hashes differ from `r63c`'s.** Stop: the build is not the one this file names.
-- **A world falls far below real time.** The owner asked for the long run, so slowness alone does not stop it. Each
-  look reports the pace, and the owner is asked if a world falls under 0.3x.
+- **A world falls under 0.5x real time.** It is stopped at its last checkpoint (the owner, 2026-10-29), and the read
+  uses the seconds it reached. Each look reports the pace. When the nose's nursery tests end, the group may resume at
+  more threads, since a resume replays bit for bit at any thread count.
 - **Something worth watching is still happening at 72,000 s.** The worlds resume from their last checkpoint for
   more, as a new pre-registered step.
