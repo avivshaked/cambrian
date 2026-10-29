@@ -9901,3 +9901,17 @@ in any condition set for the world.
 **Why.** B's leaves followed the bloom on 4 and 5 of 8 islands, where C's did on 2. Survival passed in both B worlds, and evolution on seed 6203. The far smell added only one or two crossings. At 24,000 s each island sees 2.4 to 4.8 cycles, too few for a firm correlation, so gate 2 is judged again at 48,000 s.
 
 **Rejected.** C, the far smell on, which is one more mechanism for little more migration and a weaker bloom signal. A screen at still slower periods, which 24,000 s cannot judge.
+
+### D260
+**Data is kept only for work in progress, and what cannot be recreated is backed up, compressed and encrypted** · 2026-10-29
+
+**Status:** ruled by the owner on 2026-10-29, after the project had grown to 552 GB with nothing outside git backed up. The plan and the standing procedure are `logbook/specs/data-retention-and-backup.md`.
+
+**Decision.**
+- A finished round keeps its record and its keep-list checkpoints. Its replay data goes, because a resume on the run's own build regenerates it bit for bit. What cannot be regenerated is compressed if it is needed and deleted if not, on the owner's word item by item. Before a cleanup every lane names what it still needs, and a cleanup never deletes a branch.
+- The backup holds what cannot be recreated. It goes to a folder on the second disk (C:) and, encrypted and compressed by restic through rclone, to the owner's Google Drive. The owner approved installing both tools, and gave a standing approval for those uploads at milestones, with each upload's size reported. The owner holds the encryption password and the Google login.
+- The project gets a size budget in place of a free-space trigger: `scratch/` at 75 GB, and a review of `runs/` above 300 GB.
+
+**Why.** Everything outside git lived on one drive, so a drive failure would have lost it all. And a cleanup's deletion has no backup to restore from. Most of the bulk was replay data and renders that regenerate. The owner's plan has 5 TB, of which 33 GB was used, but the project grew to 552 GB in about two months, so the backup holds only what cannot be recreated, compressed before it leaves.
+
+**Rejected.** Google Drive for desktop, whose sync would carry a deletion or corruption into the copy. A whole-machine backup, which would ship terabytes of data that regenerates. Keeping replay data for every round.
