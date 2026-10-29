@@ -9845,3 +9845,18 @@ in any condition set for the world.
 - A family limb under the swing push, or inside a D231 assembly, is refused at build.
 
 **Why.** D252's table of 64 directions, read by interpolation, was drafted for the swing push, whose direction turns every step. Every world drives the powered stroke. There each degree's direction and the limb's axis are fixed in the link's frame for life. So one exact value per degree meets D252's aim, a push computed ahead and kept cheap, with no interpolation error.
+
+### D256
+**The bloom rerun judges survival from 12,000 s, and drops fat; the film's blades take a colour set per world** · 2026-10-29
+
+**Status:** ruled by the owner on 2026-10-29, on the coordinator's recommendations after `r63b` (`logbook/specs/r63b-read/`) and the look sheets in `scratch/owner/r62cf-look-sample/` and `scratch/owner/leaf-subtle-flutter-underwater-green/`. It amends G2's survival gate (D254's plan, `logbook/specs/grazer-film-plan.md`) for the rerun `r63c` only, and was made after the data were seen.
+
+**Decision.**
+- In `r63c`, gate 1's floor (a mean of at least 30 grazers, never 0) is judged in the windows from 12,000 s, not 9,000 s. D222's tests stay as they were. The owner said the early dip does not trouble them when the grazers go on to survive.
+- Fat's arm D is not rerun. It never held 30 grazers on either seed in `r63b`.
+- The energy sense (D249) stays on in every arm.
+- In the film, the blades' colour target is set per world, so that they land on the underwater photographs' hue (102 to 108) in each world's own light. The small round producers take the darker forest green. The flutter stays at 0.4.
+
+**Why.** Every `r63b` world that failed the floor failed it in one window, 9,000 to 12,000 s, and grew afterwards, to 75 to 130 grazers by 24,000 s. Arm A differs from `r62cf` only by the energy sense, and in that window its births fell by about a third (186 and 178 against 264 and 276) while deaths held. `r62cf`'s own low there was 31 to 39, just above the bar. A floor judged across that first dip measures the dip, not whether the guild lives. Trial d, chosen on the test stage, read tan in the world's light (hue 90 to 95), and a colour corrected for the world read olive green.
+
+**Rejected.** Keeping the floor from 9,000 s, which would most likely fail the rerun on the same dip. Taking the energy sense out of the film's world, which would drop the sense fat was built to use.
