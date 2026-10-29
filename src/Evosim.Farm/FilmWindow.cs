@@ -77,6 +77,20 @@ namespace Evosim.Farm
     /// nothing the world steps on reads them.
     /// </para>
     /// <para>
+    /// <b>Remains are written beside the bodies, in a file of their own</b> (D220, contact eating).
+    /// <c>remains.jsonl.gz</c> exists only for a window that sees remains, and holds three kinds of line. A
+    /// <c>remains</c> row, once per remains body the first metabolic step the window sees it (at the window's opening
+    /// for those standing then), carries its id, the body it was cut from (<c>from</c>, or -1 for a body that is
+    /// itself the remains), the second its window began (<c>since</c>, which a remains of remains keeps from the
+    /// original), the scale its body stood at, the plan it was developed on and the map that selects its parts from
+    /// that developed body (<c>Phenotype.Select</c>), which is null for the whole body. A <c>shed</c> row follows each
+    /// time the map changes, because a part of the remains was eaten. A genome row, in the form of the window's
+    /// own, is written for each remains body the window has no genome row for: the standing at the start, whose
+    /// bodies died before it, and a limb, which is no body any genome develops. The window's own files are written
+    /// exactly as before: the rows are additive, a reader that does not know them reads the window as it always did,
+    /// and a world without contact eating writes none of them.
+    /// </para>
+    /// <para>
     /// <b>The genomes come from the world's admission queue</b>
     /// (<see cref="World.QueueAdmittedGenomes"/>), turned on before the restore as the run's loop
     /// turns it on, so a body born and dead between two metabolic steps still has its genome. The
@@ -114,6 +128,12 @@ namespace Evosim.Farm
         public const string EventsFileName = "events.jsonl";
         public const string IdentityFileName = "identity.jsonl";
         public const string CorpsesFileName = "corpses.jsonl.gz";
+
+        /// <summary>
+        /// The remains standing at the start, founded inside the window or shedding parts (D220), and the genomes of
+        /// those the window has none for. Written only when the window sees remains.
+        /// </summary>
+        public const string RemainsFileName = "remains.jsonl.gz";
 
         public const double DefaultFramesPerSecond = 30d;
 
@@ -206,6 +226,24 @@ namespace Evosim.Farm
 
             /// <summary>Corpses whose body has no genome row in the window, which a player cannot draw.</summary>
             public int CorpsesWithoutAGenome;
+
+            /// <summary>
+            /// Remains bodies with a first row in <c>remains.jsonl.gz</c> (D220): those standing at the start, those
+            /// that died inside the window and those founded inside it as a cut-off limb.
+            /// </summary>
+            public int Remains;
+
+            /// <summary>Remains that lost parts after their first row: one <c>shed</c> row each time.</summary>
+            public int RemainsSheds;
+
+            /// <summary>Genome rows written into <c>remains.jsonl.gz</c>, for the remains the window has no genome row for.</summary>
+            public int RemainsGenomes;
+
+            /// <summary>The run's own <c>r</c> rows inside the window: remains cut off a body.</summary>
+            public int RemainsFounded;
+
+            /// <summary>The run's own <c>rc</c> rows inside the window: remains that closed.</summary>
+            public int RemainsClosed;
 
             /// <summary>Report seconds compared inside the window, and the one after it when used.</summary>
             public int Rows;
@@ -671,6 +709,7 @@ namespace Evosim.Farm
             {
                 PosesFileName, Path.ChangeExtension(PosesFileName, ".idx"), GenomesFileName,
                 PlansFileName, EventsFileName, IdentityFileName, CorpsesFileName,
+                RemainsFileName,
             };
 
             foreach (string name in names)
@@ -1175,7 +1214,8 @@ namespace Evosim.Farm
                    result.Frames.ToString(c) + " frames at " + options.FramesPerSecond.ToString("0.##", c) +
                    " fps, " + result.Bodies.ToString(c) + " bodies (" + result.Births.ToString(c) +
                    " born, " + result.Deaths.ToString(c) + " died)" +
-                   (result.Corpses > 0 ? ", " + result.Corpses.ToString(c) + " corpses" : "") + ", wall " +
+                   (result.Corpses > 0 ? ", " + result.Corpses.ToString(c) + " corpses" : "") +
+                   (result.Remains > 0 ? ", " + result.Remains.ToString(c) + " remains" : "") + ", wall " +
                    (result.WallSeconds / 60d).ToString("0.0", c) + " min on " + result.Threads.ToString(c) +
                    " threads, " + result.Verdict.ToUpperInvariant() + ": " + result.Reason;
         }
@@ -1217,6 +1257,9 @@ namespace Evosim.Farm
             private readonly List<long> _corpseGone = new List<long>();
             private readonly StringBuilder _corpseRow = new StringBuilder(1 << 16);
             private double _corpseLast = double.NegativeInfinity;
+
+            private JsonlGzWriter _remains;
+            private RemainsRecorder _remainsRows;
 
             private readonly HashSet<long> _withGenome = new HashSet<long>();
             private readonly Dictionary<long, Plan> _plansWritten = new Dictionary<long, Plan>();
@@ -1306,6 +1349,7 @@ namespace Evosim.Farm
 
                 CaptureCorpses(world, t, atStart: true);
                 TakeCorpseGenomesFromTheRun();
+                CaptureRemains(world, t, atStart: true);
 
                 _genomes.EndMember();
             }
@@ -1330,6 +1374,8 @@ namespace Evosim.Farm
                 {
                     WritePlanIfChanged(world.Living[i], t);
                 }
+
+                CaptureRemains(world, t, atStart: false);
             }
 
             /// <summary>Everything on the world's admission queue, held until its birth row is read.</summary>
@@ -1403,6 +1449,14 @@ namespace Evosim.Farm
                     {
                         _result.Deaths++;
                     }
+                    else if (e.Kind == LineageEventKind.RemainsFounded)
+                    {
+                        _result.RemainsFounded++;
+                    }
+                    else if (e.Kind == LineageEventKind.RemainsClosed)
+                    {
+                        _result.RemainsClosed++;
+                    }
                     else
                     {
                         _result.Bites++;
@@ -1430,6 +1484,7 @@ namespace Evosim.Farm
                 _plans.Flush();
                 _events.Flush();
                 _corpses?.EndMember();
+                _remains?.EndMember();
             }
 
             public void Identity(string row)
@@ -1471,6 +1526,10 @@ namespace Evosim.Farm
                 _corpseHeld.Clear();
                 _corpses?.Dispose();
                 _corpses = null;
+
+                _remainsRows = null;
+                _remains?.Dispose();
+                _remains = null;
             }
 
             /// <summary>The verdict, last in <c>identity.jsonl</c>, and the file closed.</summary>
@@ -1503,6 +1562,18 @@ namespace Evosim.Farm
                 w.Field("corpseSteps", result.CorpseSteps);
                 w.Field("corpseGenomes", result.CorpseGenomes);
                 w.Field("corpsesWithoutAGenome", result.CorpsesWithoutAGenome);
+
+                // D220's remains, only for a window that saw some: a window of a world without contact eating
+                // carries the fields it always did.
+                if (result.Remains > 0 || result.RemainsFounded > 0 || result.RemainsClosed > 0)
+                {
+                    w.Field("remains", result.Remains);
+                    w.Field("remainsSheds", result.RemainsSheds);
+                    w.Field("remainsGenomes", result.RemainsGenomes);
+                    w.Field("remainsFounded", result.RemainsFounded);
+                    w.Field("remainsClosed", result.RemainsClosed);
+                }
+
                 w.Field("rows", result.Rows);
                 w.Field("rowsAgreed", result.RowsAgreed);
                 w.Field("rowsBefore", result.RowsBefore);
@@ -1790,6 +1861,37 @@ namespace Evosim.Farm
                 _result.Bodies++;
             }
 
+            // ------------------------------------------------------------ the remains (D220)
+
+            /// <summary>
+            /// The remains the world holds, as the first row of each one the window has not written, and a shed row
+            /// for each that lost parts since its last row. Writes nothing, and creates no file, in a world with none.
+            /// </summary>
+            private void CaptureRemains(World world, double t, bool atStart)
+            {
+                if (world.Remains.Count == 0) return;
+
+                if (_remainsRows == null)
+                {
+                    _remainsRows = new RemainsRecorder(line =>
+                    {
+                        if (_remains == null)
+                        {
+                            _remains = new JsonlGzWriter(Path.Combine(_outDirectory, RemainsFileName), memberEachRow: false);
+                        }
+
+                        _remains.Write(line);
+                    });
+                }
+
+                _remainsRows.Capture(
+                    world.Remains, t, atStart, id => _withGenome.Contains(id), id => _admitted.ContainsKey(id));
+
+                _result.Remains = _remainsRows.Remains;
+                _result.RemainsSheds = _remainsRows.Sheds;
+                _result.RemainsGenomes = _remainsRows.Genomes;
+            }
+
             /// <summary>
             /// A plans row when the body's module counts or lost parts differ from what was last
             /// written for it, the genome's own plan standing for a body with no row yet.
@@ -1835,6 +1937,185 @@ namespace Evosim.Farm
 
                 _plans.Write(w.ToString());
                 _result.PlanRows++;
+            }
+        }
+
+        /// <summary>
+        /// The lines of <c>remains.jsonl.gz</c> (D220), taken from the world's standing remains at each metabolic
+        /// step. Presentation only: it reads the world and nothing the world steps on reads it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Three lines, all one JSON object to a line.</b> A genome row, in <see cref="GenomeJson.Write"/>'s form
+        /// (it starts <c>{"id":</c>), for a remains body the window has no genome row for. A first row
+        /// <c>{"k":"remains","t":,"id":,"from":,"since":,"start":,"scaledBy":,"genome":,"moduleCounts":[],"lostPaths":[],"map":}</c>:
+        /// <c>from</c> is the id of the body a limb was cut from and -1 for a body that is itself the remains,
+        /// <c>since</c> the second its window began, <c>start</c> whether it was standing when the window opened,
+        /// <c>genome</c> whether its genome row is in this file (otherwise the window's own file holds it),
+        /// <c>scaledBy</c> the linear scale its body stood at (<c>Phenotype.ScaledBy</c>), and <c>map</c> the
+        /// ascending indices of its parts in the body its genome develops to on the plan the counts and lost paths
+        /// name, scaled by <c>scaledBy</c> (null for the whole body). A shed row
+        /// <c>{"k":"shed","t":,"id":,"map":[]}</c> follows when the map changes.
+        /// </para>
+        /// <para>
+        /// <b>A founding is a remains the window has no genome for.</b> A limb is founded under an id of its own
+        /// that no birth row and no admission names, so a remains first seen after the opening whose id is neither
+        /// among the window's genomes nor on its admission queue is a limb. The map is Core's
+        /// <c>Organism.RemainsMap</c>, an internal property read through a delegate: the one place this reads what
+        /// Core does not publish.
+        /// </para>
+        /// </remarks>
+        internal sealed class RemainsRecorder
+        {
+            private static readonly Func<Organism, int[]> MapOf = MapReader();
+
+            private static Func<Organism, int[]> MapReader()
+            {
+                System.Reflection.PropertyInfo property = typeof(Organism).GetProperty(
+                    "RemainsMap",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public |
+                    System.Reflection.BindingFlags.NonPublic);
+
+                System.Reflection.MethodInfo getter = property?.GetGetMethod(nonPublic: true);
+                if (getter == null) return null;
+
+                return (Func<Organism, int[]>)Delegate.CreateDelegate(typeof(Func<Organism, int[]>), getter);
+            }
+
+            private readonly Action<string> _write;
+            private readonly Dictionary<long, int[]> _seen = new Dictionary<long, int[]>();
+
+            /// <summary>First rows written.</summary>
+            public int Remains { get; private set; }
+
+            /// <summary>Shed rows written.</summary>
+            public int Sheds { get; private set; }
+
+            /// <summary>Genome rows written.</summary>
+            public int Genomes { get; private set; }
+
+            public RemainsRecorder(Action<string> write)
+            {
+                _write = write ?? throw new ArgumentNullException(nameof(write));
+            }
+
+            /// <summary>The map a remains body's parts are selected by, or null for the whole body.</summary>
+            public static int[] MapFor(Organism remains)
+            {
+                if (remains == null) throw new ArgumentNullException(nameof(remains));
+
+                if (MapOf == null)
+                {
+                    throw new InvalidOperationException(
+                        "Organism.RemainsMap is not there to read. A film window of a world with remains cannot say " +
+                        "which parts of the developed body each remains body is without it.");
+                }
+
+                return MapOf(remains);
+            }
+
+            /// <param name="remains">The world's standing remains.</param>
+            /// <param name="t">The second the rows are written at.</param>
+            /// <param name="atStart">True at the window's opening: the remains standing then are not foundings.</param>
+            /// <param name="hasWindowGenome">Whether the window's genomes file holds, or will hold, a body's genome.</param>
+            /// <param name="isAdmitted">Whether a body's genome is on the admission queue, to be written at its birth row.</param>
+            public void Capture(
+                IReadOnlyList<Organism> remains, double t, bool atStart,
+                Func<long, bool> hasWindowGenome, Func<long, bool> isAdmitted)
+            {
+                for (int i = 0; i < remains.Count; i++)
+                {
+                    Organism body = remains[i];
+                    long id = body.Id;
+                    int[] map = MapFor(body);
+
+                    if (_seen.TryGetValue(id, out int[] last))
+                    {
+                        if (SameMap(last, map)) continue;
+
+                        var shed = new Json.Writer(indent: false);
+                        shed.BeginObject();
+                        shed.Field("k", "shed");
+                        shed.Field("t", t);
+                        shed.Field("id", id);
+                        MapField(shed, map);
+                        shed.EndObject();
+                        _write(shed.ToString());
+
+                        _seen[id] = map == null ? null : (int[])map.Clone();
+                        Sheds++;
+                        continue;
+                    }
+
+                    bool inWindowFiles = hasWindowGenome(id) || (!atStart && isAdmitted(id));
+                    bool founded = !atStart && !inWindowFiles;
+
+                    if (!inWindowFiles)
+                    {
+                        _write(GenomeJson.Write(body.Genome, indent: false, id: id));
+                        Genomes++;
+                    }
+
+                    var w = new Json.Writer(indent: false);
+                    w.BeginObject();
+                    w.Field("k", "remains");
+                    w.Field("t", t);
+                    w.Field("id", id);
+                    w.Field("from", founded ? body.ParentId : -1L);
+                    w.Field("since", body.RemainsSince);
+                    w.Field("start", atStart);
+                    w.Field("scaledBy", body.Phenotype.ScaledBy);
+                    w.Field("genome", !inWindowFiles);
+
+                    w.BeginArray("moduleCounts");
+                    if (body.ModuleCounts != null) foreach (int count in body.ModuleCounts) w.Value(count);
+                    w.EndArray();
+
+                    w.BeginArray("lostPaths");
+                    if (body.LostPartPaths != null)
+                    {
+                        foreach (int[] path in body.LostPartPaths)
+                        {
+                            w.BeginArray();
+                            foreach (int step in path) w.Value(step);
+                            w.EndArray();
+                        }
+                    }
+                    w.EndArray();
+
+                    MapField(w, map);
+                    w.EndObject();
+                    _write(w.ToString());
+
+                    _seen[id] = map == null ? null : (int[])map.Clone();
+                    Remains++;
+                }
+            }
+
+            private static void MapField(Json.Writer w, int[] map)
+            {
+                if (map == null)
+                {
+                    w.Field("map", (string)null);
+                    return;
+                }
+
+                w.BeginArray("map");
+                foreach (int part in map) w.Value(part);
+                w.EndArray();
+            }
+
+            private static bool SameMap(int[] a, int[] b)
+            {
+                if (a == null || b == null) return a == b;
+                if (a.Length != b.Length) return false;
+
+                for (int i = 0; i < a.Length; i++)
+                {
+                    if (a[i] != b[i]) return false;
+                }
+
+                return true;
             }
         }
 

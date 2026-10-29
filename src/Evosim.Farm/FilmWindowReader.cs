@@ -62,13 +62,37 @@ namespace Evosim.Farm
         public int CorpseSteps;
         public int CorpseGenomes;
         public int CorpsesWithoutAGenome;
+
+        /// <summary>
+        /// D220's remains: bodies with a first row in <c>remains.jsonl.gz</c>, the later shed rows, the genome rows
+        /// written there, and the run's own <c>r</c> and <c>rc</c> rows inside the window. 0 for a window that saw
+        /// no remains and for one written before they were recorded.
+        /// </summary>
+        public int Remains;
+
+        public int RemainsSheds;
+        public int RemainsGenomes;
+        public int RemainsFounded;
+        public int RemainsClosed;
     }
 
-    /// <summary>One birth, death or bite inside a window, from <c>events.jsonl</c>.</summary>
+    /// <summary>One birth, death, bite or remains row inside a window, from <c>events.jsonl</c>.</summary>
     public struct FilmWindowEvent
     {
-        /// <summary><c>b</c>, <c>d</c> or <c>k</c>: the lineage row's own <c>e</c>.</summary>
+        /// <summary>
+        /// The lineage row's own <c>e</c>, whole: <c>b</c>, <c>d</c>, <c>k</c>, <c>r</c> (remains cut off a body) or
+        /// <c>rc</c> (remains closed). The key to read an event by.
+        /// </summary>
+        public string Type;
+
+        /// <summary>
+        /// <see cref="Type"/>'s first letter, kept for readers written before the remains rows: <c>b</c>, <c>d</c>,
+        /// <c>k</c> and <c>r</c> as ever, and <c>c</c> for <c>rc</c>, so the two remains rows are not one kind.
+        /// </summary>
         public char Kind;
+
+        /// <summary>The body remains were cut from (<c>r</c> rows), or -1.</summary>
+        public long From;
 
         public double Seconds;
         public long Id;
@@ -164,6 +188,45 @@ namespace Evosim.Farm
         public bool Settled;
     }
 
+    /// <summary>The parts a remains body held from a second on: indices into the body its plan develops to.</summary>
+    public sealed class FilmWindowRemainsMap
+    {
+        /// <summary>The second the row was written at.</summary>
+        public double Seconds;
+
+        /// <summary>Ascending part indices, or null for the whole body.</summary>
+        public int[] Map;
+    }
+
+    /// <summary>
+    /// A remains body in a film window (D220): a dead body or a cut-off limb, from <c>remains.jsonl.gz</c>. What
+    /// does not change while it lies there is here; the parts it still holds change with each shed row.
+    /// </summary>
+    public sealed class FilmWindowRemains
+    {
+        public long Id;
+
+        /// <summary>The body a limb was cut from, or -1 for a body that is itself the remains.</summary>
+        public long From = -1;
+
+        /// <summary>The second its window began; remains of remains keep the original's.</summary>
+        public double Since = double.NaN;
+
+        /// <summary>Whether it was standing when the window opened.</summary>
+        public bool Start;
+
+        /// <summary>The linear scale its body stood at (<c>Phenotype.ScaledBy</c>); 1 is the adult.</summary>
+        public float ScaledBy = 1f;
+
+        /// <summary>The plan it was developed on, or null for the genome's own minimum.</summary>
+        public int[] ModuleCounts;
+
+        public List<int[]> LostPaths;
+
+        /// <summary>The first row's second, then each shed row's, in time order.</summary>
+        public readonly List<FilmWindowRemainsMap> Maps = new List<FilmWindowRemainsMap>();
+    }
+
     /// <summary>
     /// A film window read back: the verdict, the frames, the genomes, the plans and the events,
     /// for a player that draws the window without stepping anything
@@ -203,6 +266,9 @@ namespace Evosim.Farm
         private readonly Dictionary<long, FilmWindowCorpse> _corpses = new Dictionary<long, FilmWindowCorpse>();
         private readonly List<FilmWindowCorpse> _corpseList = new List<FilmWindowCorpse>();
         private readonly List<double> _corpseSteps = new List<double>();
+        private readonly Dictionary<long, string> _remainsGenomes = new Dictionary<long, string>();
+        private readonly Dictionary<long, FilmWindowRemains> _remains = new Dictionary<long, FilmWindowRemains>();
+        private readonly List<FilmWindowRemains> _remainsList = new List<FilmWindowRemains>();
 
         /// <summary>The window's directory, full path.</summary>
         public string Directory { get; }
@@ -265,6 +331,7 @@ namespace Evosim.Farm
                 reader.ReadPlans();
                 reader.ReadEvents();
                 reader.ReadCorpses();
+                reader.ReadRemains();
             }
             catch
             {
@@ -357,6 +424,11 @@ namespace Evosim.Farm
                 CorpseSteps = Int(v, "corpseSteps"),
                 CorpseGenomes = Int(v, "corpseGenomes"),
                 CorpsesWithoutAGenome = Int(v, "corpsesWithoutAGenome"),
+                Remains = Int(v, "remains"),
+                RemainsSheds = Int(v, "remainsSheds"),
+                RemainsGenomes = Int(v, "remainsGenomes"),
+                RemainsFounded = Int(v, "remainsFounded"),
+                RemainsClosed = Int(v, "remainsClosed"),
             };
 
             if (v.Has("sourcesDiffer") && v["sourcesDiffer"].Kind == JsonNode.NodeKind.Array)
@@ -763,7 +835,11 @@ namespace Evosim.Farm
 
                 var e = new FilmWindowEvent
                 {
-                    Kind = kind[0],
+                    Type = kind,
+
+                    // 'rc' is not 'r': the whole kind decides, and the letter is kept for older readers.
+                    Kind = kind == "rc" ? 'c' : kind[0],
+                    From = row.Has("from") && row["from"].Kind == JsonNode.NodeKind.Number ? (long)row["from"].AsDouble() : -1L,
                     Seconds = row["t"].AsDouble(),
                     Id = (long)row["id"].AsDouble(),
                     Parent = row.Has("p") && row["p"].Kind == JsonNode.NodeKind.Number ? (long)row["p"].AsDouble() : -1L,
@@ -1034,6 +1110,147 @@ namespace Evosim.Farm
             _corpseList.Add(corpse);
         }
 
+        // ---------------------------------------------------------------- the remains (D220)
+
+        /// <summary>Remains bodies the window holds, standing at its start, dead inside it or cut off inside it.</summary>
+        public int RemainsCount => _remainsList.Count;
+
+        /// <summary>Every remains body, in the order its first row was written.</summary>
+        public IReadOnlyList<FilmWindowRemains> Remains => _remainsList;
+
+        /// <summary>A remains body's facts, or false when the window has none for the id.</summary>
+        public bool TryRemains(long id, out FilmWindowRemains remains) => _remains.TryGetValue(id, out remains);
+
+        /// <summary>
+        /// A remains body's genome row: the window's own genomes file first, then the rows of
+        /// <c>remains.jsonl.gz</c> for the bodies that file has none for. Apart from <see cref="TryGenome"/>, which
+        /// answers from the genomes file alone as it always did.
+        /// </summary>
+        public bool TryRemainsGenome(long id, out string row) =>
+            _genomes.TryGetValue(id, out row) || _remainsGenomes.TryGetValue(id, out row);
+
+        private const string RemainsHead = "{\"k\":\"remains\"";
+        private const string ShedHead = "{\"k\":\"shed\"";
+
+        private void ReadRemains()
+        {
+            string path = Path.Combine(Directory, FilmWindow.RemainsFileName);
+
+            // A window written before the remains were recorded has no such file, which reads as no remains rows.
+            if (!File.Exists(path)) return;
+
+            int orphans = 0;
+            int unreadable = 0;
+            int unreadableGenomes = 0;
+
+            using (GzipMemberReader reader = GzipMemberReader.Open(path))
+            {
+                foreach (string line in reader.Lines())
+                {
+                    if (line.Length == 0) continue;
+
+                    try
+                    {
+                        if (line.StartsWith(RemainsHead, StringComparison.Ordinal))
+                        {
+                            ReadRemainsRow(line);
+                        }
+                        else if (line.StartsWith(ShedHead, StringComparison.Ordinal))
+                        {
+                            orphans += ReadShedRow(line);
+                        }
+                        else if (line.StartsWith("{\"k\":", StringComparison.Ordinal))
+                        {
+                            // A row kind a later build wrote: skipped, as a reader that does not know it must.
+                        }
+                        else
+                        {
+                            long id = GenomeJson.ReadId(line);
+
+                            if (id < 0) unreadableGenomes++;
+                            else if (!_remainsGenomes.ContainsKey(id)) _remainsGenomes[id] = line;
+                        }
+                    }
+                    catch (Exception e) when (e is FormatException || e is InvalidDataException || e is KeyNotFoundException)
+                    {
+                        unreadable++;
+                    }
+                }
+
+                if (reader.Torn) _notes.Add(FilmWindow.RemainsFileName + ": " + reader.TornNote);
+            }
+
+            if (orphans > 0) _notes.Add(orphans + " shed row(s) in " + FilmWindow.RemainsFileName + " with no remains row, not read");
+            if (unreadable > 0) _notes.Add(unreadable + " remains row(s) this build cannot read, not drawn");
+            if (unreadableGenomes > 0) _notes.Add(unreadableGenomes + " remains genome row(s) carry no readable id and are not drawn");
+        }
+
+        private static int[] MapOfRow(JsonNode row)
+        {
+            if (!row.Has("map") || row["map"].Kind != JsonNode.NodeKind.Array) return null;
+
+            var map = new List<int>();
+            foreach (JsonNode part in row["map"].Items()) map.Add(part.AsInt());
+            return map.ToArray();
+        }
+
+        private void ReadRemainsRow(string line)
+        {
+            JsonNode row = Json.Parse(line);
+            long id = (long)row["id"].AsDouble();
+
+            if (_remains.ContainsKey(id)) return;
+
+            var remains = new FilmWindowRemains
+            {
+                Id = id,
+                From = row.Has("from") && row["from"].Kind == JsonNode.NodeKind.Number ? (long)row["from"].AsDouble() : -1L,
+                Since = Num(row, "since"),
+                Start = row.Has("start") && row["start"].Kind == JsonNode.NodeKind.Bool && row["start"].AsBool(),
+                ScaledBy = row.Has("scaledBy") && row["scaledBy"].Kind == JsonNode.NodeKind.Number ? (float)row["scaledBy"].AsDouble() : 1f,
+            };
+
+            var counts = new List<int>();
+            if (row.Has("moduleCounts")) foreach (JsonNode count in row["moduleCounts"].Items()) counts.Add(count.AsInt());
+
+            var lost = new List<int[]>();
+            if (row.Has("lostPaths"))
+            {
+                foreach (JsonNode lostPath in row["lostPaths"].Items())
+                {
+                    var steps = new List<int>();
+                    foreach (JsonNode step in lostPath.Items()) steps.Add(step.AsInt());
+                    lost.Add(steps.ToArray());
+                }
+            }
+
+            // Empty is the genome's own minimum, as the plans' first row and a corpse's read it.
+            remains.ModuleCounts = counts.Count > 0 ? counts.ToArray() : null;
+            remains.LostPaths = lost.Count > 0 ? lost : null;
+
+            remains.Maps.Add(new FilmWindowRemainsMap { Seconds = row["t"].AsDouble(), Map = MapOfRow(row) });
+
+            _remains[id] = remains;
+            _remainsList.Add(remains);
+        }
+
+        private int ReadShedRow(string line)
+        {
+            JsonNode row = Json.Parse(line);
+            long id = (long)row["id"].AsDouble();
+
+            if (!_remains.TryGetValue(id, out FilmWindowRemains remains)) return 1;
+
+            double t = row["t"].AsDouble();
+            List<FilmWindowRemainsMap> maps = remains.Maps;
+
+            // Written in time order already; inserted in it anyway, so a reader never depends on that.
+            int at = maps.Count;
+            while (at > 0 && maps[at - 1].Seconds > t) at--;
+            maps.Insert(at, new FilmWindowRemainsMap { Seconds = t, Map = MapOfRow(row) });
+            return 0;
+        }
+
         // ---------------------------------------------------------------- housekeeping
 
         /// <summary>
@@ -1062,10 +1279,11 @@ namespace Evosim.Farm
 
             return string.Format(
                 inv,
-                "{0}: {1} frame(s), {2}, {3} genome(s), {4} plan row(s), {5} event(s), {8} corpse(s); {6}{7}",
+                "{0}: {1} frame(s), {2}, {3} genome(s), {4} plan row(s), {5} event(s), {8} corpse(s){9}; {6}{7}",
                 Directory, FrameCount, span, GenomeCount, PlanRows, _events.Count,
                 ProvenanceWord,
-                v == null ? " (no verdict)" : " (" + v.Reason + ")", _corpseList.Count);
+                v == null ? " (no verdict)" : " (" + v.Reason + ")", _corpseList.Count,
+                _remainsList.Count > 0 ? ", " + _remainsList.Count + " remains" : "");
         }
 
         public void Dispose()
