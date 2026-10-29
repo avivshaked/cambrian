@@ -229,6 +229,35 @@ None of them touches the fin-law lines. I rebase `shape-build` on main once the 
 
 **Machine time.** Regeneration and the filtered card tests take about 30 minutes in a slot with nothing else on the card. G0's identity sitting with the family on takes about 1.5 hours, booked by the coordinator. The sitting adds one arm: the same world with the family off, timed beside the family-on arm on the same card and build. That pair is the 15 % pace gate (section 5).
 
+## As built, step 3 (branch shape-build, 83d8755d)
+
+The nose did not land on main first. On the coordinator's word, `shape-build` merged `nose` at `99258173` instead
+(`b90d3ecb`). The card port was written on the merged templates. If the nose changes before it lands, the port is merged
+again and the kernels regenerated.
+
+The five changes are as planned. Two departures from the plan were accepted by the coordinator on 2026-10-29.
+
+- **The family's sums use plain products, not `mul.rn`.** The kernel template has no `mul.rn` helper. D231's assembly
+  lines, which this branch copies, use plain products too, and they passed their identity sitting. On the CPU
+  accelerator in double nothing is fused, so the host comparison holds. On the card, groups 32 and 64 run the same
+  compiled kernel.
+- **Groups 32 and 64 are told apart only on the card.** The CPU accelerator ignores the group size. It takes its
+  device's largest group, so a test at 32 and one at 64 would be one run twice. That identity is the card sitting's.
+
+The off-card checks passed with `CUDA_VISIBLE_DEVICES=-1`, and no process loaded the card's driver:
+
+- The kernels regenerated from their templates, and the source test passed after a rebuild.
+- The accelerator class passed 37 of 37 tests. One of them is new. In it, three one-limb family bodies step under the
+  powered stroke with the fin law on. The host and the CPU accelerator in double agree digest for digest over 2,000
+  steps, and the world parts from the same world with the fin law off.
+- The card refuses the family under either true-shape contact and opens it under spheres, as its test asserts.
+- The Farm default suite passed 471 of 471 at `b90d3ecb`, with `GpuMeanTests` left out. That test crashes the CPU
+  accelerator when its host is pinned, as `src/Evosim.Farm.Gpu/CLAUDE.md` records.
+
+A degree whose axis runs along its limb twists the limb and moves no water across it. The universal joint's first
+degree, on an in-line limb, is one, and its M and I1 are 0 on the host as on the card. The family test asks only that
+each family limb push through at least one degree.
+
 ## Step 4's plan: the pace read
 
 Written during the same hold, from the source alone. Nothing was built.
