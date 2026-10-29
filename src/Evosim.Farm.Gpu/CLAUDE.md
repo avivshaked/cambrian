@@ -58,11 +58,12 @@ The root file's rules still apply. The entries below were moved word for word, s
   and a number sets that number. `card-run.ps1` and `farm-queue.ps1` pass it through. It changes pace and
   load and never a number. `run.json` names it as `threadPoolSpinLimit`, and the header's engine line ends
   `spin N`. Compare a pace only with runs at the same spin.
-- **`GpuMeanTests` crashes the CPU accelerator with "Index out of range" when the test process is pinned to 4
-  or to 8 logical processors** (found 2026-10-19; the same at `df2bf3b8`, so no recent change caused it; 8 crashes
-  too, 2026-10-26). The crash takes the whole test host down, so a pinned full Farm suite aborts part way and
-  reports only the tests before it: run the suite with `--filter 'FullyQualifiedName!~GpuMeanTests'`, and
-  `GpuMeanTests` alone unpinned when it matters (`logbook/specs/plants-keep-matter-build.md` on `r62-base`).
+- **`GpuMeanTests` crashes the CPU accelerator with "Index out of range" at every processor count:** pinned to 4
+  or 8 logical processors, and unpinned with all 32 visible (2026-10-29, `shape-land`). It does the same at
+  `df2bf3b8`, so no recent change caused it. The crash takes the whole test host down, so a full Farm suite that
+  includes it aborts part way and reports only the tests before it. Run the suite with
+  `--filter 'FullyQualifiedName!~GpuMeanTests'`. Nothing on this machine runs `GpuMeanTests` to a pass; a build's
+  kernel regeneration check and its card identity sittings stand in for it.
 - **A founded card run meets code a resume never reaches, so it is checked on its own** (r58t1,
   2026-10-10; fixed in `c8762e9e` on `r58-runner`). Every card sitting before then was a resume, whose bodies
   are attached before the first block. A founded world steps blocks with no body, and the scent's fill on
