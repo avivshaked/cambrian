@@ -16,7 +16,7 @@ namespace Evosim.Farm.Tests
     /// </summary>
     /// <remarks>
     /// <b>How the digest was obtained.</b> This file was built and run, unchanged, on the worktree as it stood before
-    /// the remains rows were added to <c>FilmWindow</c> (the tree at <c>07599da3</c>), and the digest printed there is
+    /// the remains rows were added to <c>FilmWindow</c> (main at <c>d17d2878</c>), and the digest printed there is
     /// <see cref="PinnedDigest"/>. The same file then ran on the tree with the remains rows and printed the same
     /// digest. It covers what a theatre reads of a window: the pose stream's bytes, every genome row, every plans
     /// row, every event row, the identity rows before the verdict, and the verdict's counts and word (not its wall
@@ -30,7 +30,7 @@ namespace Evosim.Farm.Tests
         public FilmWindowDigestTests(ITestOutputHelper output) => _out = output;
 
         /// <summary>The digest taken on the tree before the remains rows (see the remarks).</summary>
-        private const string PinnedDigest = "rQIRCHuqF6MRFEzkoo43sw+WFuELNviM98eY4yeZMcQ=";
+        private const string PinnedDigest = "CHo4QtXZ6xmIVVak47v3guHGjrNmomNA5fcWcC8kCy0=";
 
         private static void Mix(HashAlgorithm sha, string text)
         {
