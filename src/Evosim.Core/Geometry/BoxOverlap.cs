@@ -62,6 +62,23 @@ namespace Evosim.Core
                 if (p == null) throw new ArgumentNullException(nameof(p));
 
                 Quat q = p.Rotation;
+
+                // D255. A family part's frame is at its centre of mass, which is CentreOffset from the box's
+                // centre along Y; the true bounding box is centred there and is as wide as the taper's wide
+                // end: half-extents a(1 + |k|), b, c(1 + |k|).
+                if (p.Family != null)
+                {
+                    Superellipsoid geometry = p.Family.Geometry;
+                    float shift = geometry.CentreOffset(p.HalfExtents);
+                    float wide = 1f + (float)Math.Abs(geometry.TaperSlope);
+                    return new Obb(
+                        p.Position + q.Rotate(new Float3(0f, -shift, 0f)),
+                        q.Rotate(new Float3(1f, 0f, 0f)),
+                        q.Rotate(new Float3(0f, 1f, 0f)),
+                        q.Rotate(new Float3(0f, 0f, 1f)),
+                        new Float3(Math.Abs(p.HalfExtents.X) * wide, Math.Abs(p.HalfExtents.Y), Math.Abs(p.HalfExtents.Z) * wide));
+                }
+
                 return new Obb(
                     p.Position,
                     q.Rotate(new Float3(1f, 0f, 0f)),

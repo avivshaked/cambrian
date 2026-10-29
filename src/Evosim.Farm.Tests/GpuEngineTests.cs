@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Evosim.Core;
 using Evosim.Dynamics;
@@ -57,7 +58,8 @@ namespace Evosim.Farm.Tests
         };
 
         public static (World world, SolverConfig solver) Build(bool perPart = true, bool reefs = true, ulong seed = 7UL,
-                                                                IReadOnlyDictionary<string, string> extra = null)
+                                                                IReadOnlyDictionary<string, string> extra = null,
+                                                                Action<RunConfig> tune = null)
         {
             Dictionary<string, string> block = Launcher(perPart, reefs);
             if (extra != null)
@@ -66,6 +68,7 @@ namespace Evosim.Farm.Tests
             }
 
             RunConfig config = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block)));
+            tune?.Invoke(config);
             var world = new World(config, seed);
 
             SolverConfig solver = SolverConfig.FromWorld(config, config.PhysicsStepSeconds, world.Bed, world);
@@ -118,6 +121,58 @@ namespace Evosim.Farm.Tests
                 }
 
                 return Equip(body, plan, world, id, at);
+            }
+        }
+
+        /// <summary>
+        /// D235's crowd member: a jointed body drawn as <see cref="Body"/> draws one, with every part but the links recast
+        /// as a nose and developed against the world's table, so that at least one part is a nose and the table's
+        /// nose is the world's. Under the one brain the wiring is made against that body, so its smell ports sit on its
+        /// noses. The senses are handed the world and the sniff's key (a seed and the body's id), as the farm hands them.
+        /// </summary>
+        public static Creature NoseBody(int id, SolverConfig solver, World world, Rng rng, Vec3 at,
+                                        SensorChannel[] sensorPool, bool central, ulong noiseSeed)
+        {
+            CellTypeRegistry table = world.Config.CellTypes;
+
+            for (int attempt = 0; ; attempt++)
+            {
+                if (attempt > 2000) throw new InvalidOperationException("no viable nosed body in 2,000 draws");
+                Genome genome = GenomeFactory.RandomViable(rng, minParts: 2, sensorPool: sensorPool);
+
+                foreach (MorphNode node in genome.Nodes)
+                {
+                    if (node.CellTypeId == CellTypeIds.Link) continue;
+                    node.CellTypeId = CellTypeIds.Nose;
+                    node.Intake = 0f;
+                    node.Lift = 0f;
+                }
+
+                // Under the per-part brain a neuron's sensor is its own part's and only a nose smells, so a body none of
+                // whose noses has a neuron reading a smell is drawn again.
+                if (!central && !genome.Nodes.Any(n => n.CellTypeId == CellTypeIds.Nose &&
+                                                       n.Neurons.Any(d => d.Inputs.Any(x => x.Kind == NeuronInputKind.Sensor && x.Channel.IsSmell()))))
+                {
+                    continue;
+                }
+
+                if (central && !WireCentral(genome, rng, sensorPool, world.Config.Brain, 0, table)) continue;
+
+                Phenotype plan = Developer.Develop(genome, DevelopmentLimits.Default, cellTypes: table);
+                if (plan.PartCount > 16 || plan.TotalDof == 0) continue;
+
+                bool nosed = false;
+                foreach (PhenotypePart part in plan.Parts) nosed |= part.CellTypeId == CellTypeIds.Nose;
+                if (!nosed) continue;
+
+                var body = new Creature(id, plan, solver);
+                if (GpuSlots.OverInputs(body) || Math.Max(GpuSlots.NeuronsOf(body), body.Brain.NeuronCount) > 256) continue;
+
+                Creature placed = Equip(body, plan, world, id, at);
+                placed.Senses.HeldSniff = true;
+                placed.Senses.NoiseSeed = noiseSeed;
+                placed.Senses.BodyId = id;
+                return placed;
             }
         }
 
@@ -199,10 +254,10 @@ namespace Evosim.Farm.Tests
         /// breaks a rule of the brain's or falls a quarter short, and the caller draws again.
         /// </summary>
         private static bool WireCentral(Genome genome, Rng rng, SensorChannel[] pool, CentralBrainOptions options,
-                                        int bigLinks = 0)
+                                        int bigLinks = 0, CellTypeRegistry table = null)
         {
             CentralWiring.Convert(genome);
-            Phenotype grown = Developer.Develop(genome, DevelopmentLimits.Default);
+            Phenotype grown = Developer.Develop(genome, DevelopmentLimits.Default, cellTypes: table);
             genome.Brain = CentralWiring.Effective(genome.Brain, grown, rng, pool, options, founder: true);
             for (int m = 0; m < 6; m++) CentralMutation.Mutate(genome.Brain, grown, pool, rng, options);
 
@@ -343,6 +398,63 @@ namespace Evosim.Farm.Tests
             }
 
             return g;
+        }
+
+        /// <summary>How many designs <see cref="FamilyGenome"/> draws; a design is the body's index modulo this.</summary>
+        public const int FamilyDesigns = 3;
+
+        /// <summary>
+        /// A hand-built body for D255: a root and one jointed limb, and that limb a family part (D233). 0: a hinged limb
+        /// of the egg-shaped member (profile 0.6, section 1, taper 2). 1: a universal limb (two degrees of freedom) of the
+        /// member nearest a box (0.1, 0.1, 1). 2: a hinged limb of the sphere (1, 1, 1) with a flat paddle's half-extents.
+        /// </summary>
+        public static Genome FamilyGenome(int design, int id)
+        {
+            var g = new Genome { RootIndex = 0, AdultScale = 1f };
+            g.Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f, ReserveMargin = 0f };
+            g.Nodes.Add(new MorphNode
+            {
+                Dimensions = new Float3(0.2f, 0.2f, 0.2f), CellTypeId = CellTypeIds.Structural, ShapeId = ShapeIds.Box,
+                JointType = JointType.Fixed, JointLimits = Array.Empty<Float2>(), RecursiveLimit = 1,
+            });
+
+            float power = 8f + id % 5;
+            float hz = 0.5f + 0.1f * (id % 7);
+            var inLineAt = new Float3(1f, 0f, 0f);
+            var inLineBy = new Float3(-1f, 0f, 0f);
+
+            MorphNode limb;
+            switch (design % FamilyDesigns)
+            {
+                case 0:
+                    limb = StrokeLink(new Float3(0.15f, 0.04f, 0.08f), JointType.Hinge, power, hz, 0.6f);
+                    limb.Form = new PartForm(0.6f, 1f, 2f);
+                    break;
+                case 1:
+                    limb = StrokeLink(new Float3(0.12f, 0.05f, 0.04f), JointType.Universal, power, hz, 0.3f);
+                    limb.Form = new PartForm(0.1f, 0.1f, 1f);
+                    break;
+                default:
+                    limb = StrokeLink(new Float3(0.2f, 0.01f, 0.12f), JointType.Hinge, power, hz, 0.9f);
+                    limb.Form = new PartForm(1f, 1f, 1f);
+                    break;
+            }
+
+            limb.ShapeId = ShapeIds.Superellipsoid;
+            StrokeAdd(g, 0, limb, inLineAt, inLineBy);
+            return g;
+        }
+
+        /// <summary>
+        /// A body from a hand-built genome that holds family parts, developed and built against the world's own shape
+        /// list (<see cref="Hand"/> develops against the standard three, which have no family), placed and wired as
+        /// <see cref="Hand"/> places it.
+        /// </summary>
+        public static Creature FamilyHand(int id, SolverConfig solver, World world, Genome genome, Vec3 at)
+        {
+            PartShapeRegistry shapes = world.Config.Shapes;
+            Phenotype plan = Developer.Develop(genome, DevelopmentLimits.Default, shapes: shapes);
+            return Equip(new Creature(id, plan, solver, shapes), plan, world, id, at);
         }
 
         /// <summary>The tank's axis, where Core's tank puts it.</summary>
@@ -828,6 +940,123 @@ namespace Evosim.Farm.Tests
         }
 
         /// <summary>
+        /// D255's crowd: <see cref="PopulateStroke"/>'s places, with <see cref="GpuTank.FamilyGenome"/>'s one-limb family
+        /// bodies in them, the design by the body's place in the crowd.
+        /// </summary>
+        private static void PopulateFamily(DynamicsWorld world, World core, int count, int firstId)
+        {
+            Vec3 axis = GpuTank.Axis(core);
+
+            for (int k = 0; k < count; k++)
+            {
+                var at = new Vec3(axis.X + 0.7 * (k % 3) - 0.7, -9.0 - 0.6 * (k / 3), axis.Z + 0.5 * (k % 2));
+                int id = firstId + k;
+                world.AddInIdOrder(GpuTank.FamilyHand(id, world.Config, core, GpuTank.FamilyGenome(k, id), at));
+            }
+        }
+
+        /// <summary>
+        /// D255's card copy of the fin law for a family limb: a one-limb family body under the bend-and-power stroke with
+        /// the fin law on (<c>EVOSIM_SHAPED_ADDED_MASS</c>), on the CPU accelerator in double and on the solver, the same
+        /// digest after every one of 2,000 steps and the same state to the byte at every hundredth. Three bodies, a
+        /// hinged egg, a universal box-like limb and a hinged sphere, so that the strip integral's two sums run over one
+        /// degree of freedom and over two. The world is first shown to hold family limbs with a nonzero added mass and
+        /// to part on the CPU from the same world with the fin law off, so a table that was never filled, a switch that
+        /// never reached the solver or a push that never fired cannot pass as a match.
+        /// <para>
+        /// The group size is not a variable here: the CPU accelerator ignores EVOSIM_GPU_GROUP and takes its device's
+        /// largest group (gpu-runner.template, <c>GroupSize</c>), so a run at 32 and a run at 64 would be one run twice.
+        /// Identity across the card's group sizes is the card sitting's (<c>card-group.ps1</c>).
+        /// </para>
+        /// </summary>
+        [Fact]
+        public void AFamilyLimbUnderThePoweredStrokeOnTheCpuAcceleratorIsTheSolverStepForStep()
+        {
+            var power = new Dictionary<string, string>
+            {
+                { "EVOSIM_POWER_PUSH", "2" }, { "EVOSIM_POSE_HZ", "2" }, { "EVOSIM_LIMB_PUSH", "0.3" },
+                { "EVOSIM_SHAPES", "box,sphere,capsule,superellipsoid" },
+            };
+            var family = new Dictionary<string, string>(power) { { "EVOSIM_SHAPED_ADDED_MASS", "1" } };
+
+            (DynamicsWorld plain, World core0) = Pair(true, false, power);
+            (DynamicsWorld cpu, World coreA) = Pair(true, false, family);
+            (DynamicsWorld gpu, World coreB) = Pair(true, false, family);
+
+            PopulateFamily(plain, core0, 3, 1);
+            PopulateFamily(cpu, coreA, 3, 1);
+            PopulateFamily(gpu, coreB, 3, 1);
+
+            Assert.False(plain.Config.ShapedAddedMass);
+            Assert.True(cpu.Config.ShapedAddedMass);
+            Assert.True(cpu.Creatures[0].Drive.BendAndPower);
+
+            // The crowd holds what the case is about: a family limb with a degree of freedom and an added mass for it,
+            // one limb with two degrees, and the same table on the card's side of the pair.
+            int limbs = 0, degrees = 0, silent = 0;
+            var report = new List<string>();
+            foreach (Creature c in cpu.Creatures)
+            {
+                Assert.NotNull(c.FamilyAddedMass);
+                Assert.NotNull(c.FamilyFirstMoment);
+                for (int l = 0; l < c.Links; l++)
+                {
+                    if (c.Phenotype.Parts[l].Family == null || c.Parent[l] < 0) continue;
+                    limbs++;
+                    bool pushes = false;
+                    for (int d = 0; d < c.DofCount[l]; d++)
+                    {
+                        degrees++;
+                        PhenotypePart part = c.Phenotype.Parts[l];
+                        report.Add("body " + c.Id + " link " + l + " degree " + d + ": form " + part.Form + ", anchor " +
+                                   part.Family.ReferenceChildAnchor + ", half " + part.Family.ReferenceHalfExtents +
+                                   ", joint " + part.JointType + ", M " + c.FamilyAddedMass[c.DofStart[l] + d] +
+                                   ", I1 " + c.FamilyFirstMoment[c.DofStart[l] + d]);
+                        if (c.FamilyAddedMass[c.DofStart[l] + d] > 0 && c.FamilyFirstMoment[c.DofStart[l] + d] > 0) pushes = true;
+                    }
+
+                    // A degree whose axis runs along the limb (the universal's first, in line) twists it and moves no
+                    // water across it, so its M and I1 are 0 on the host as here; each limb pushes through another.
+                    if (!pushes) silent++;
+                }
+            }
+
+            Assert.True(limbs == 3 && degrees == 4 && silent == 0,
+                "the crowd lacks its family limbs: " + limbs + " limbs, " + degrees + " degrees, " + silent + " limbs with no degree that pushes; " +
+                string.Join(" | ", report));
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            const int steps = 2000;
+            for (int step = 1; step <= steps; step++)
+            {
+                plain.StepBlock(1);
+                cpu.StepBlock(1);
+                gpu.StepBlock(1);
+
+                if (cpu.Digest() != gpu.Digest()) Assert.Fail("The engines part at step " + step + ": " + GpuTank.FirstDifference(cpu, gpu));
+                if (step % 100 == 0) AssertSame(cpu, gpu, "family limbs, at step " + step);
+            }
+
+            AssertSame(cpu, gpu, "family limbs, after " + steps + " steps");
+
+            bool parted = false;
+            for (int i = 0; i < cpu.Creatures.Count && !parted; i++)
+            {
+                double[] a = plain.Creatures[i].Position, b = cpu.Creatures[i].Position;
+                for (int k = 0; k < a.Length && !parted; k++)
+                {
+                    parted = BitConverter.DoubleToInt64Bits(a[k]) != BitConverter.DoubleToInt64Bits(b[k]);
+                }
+            }
+
+            Assert.True(parted, "the family world stepped as the one with the fin law off");
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
+        }
+
+        /// <summary>
         /// D228's crowd: bodies close enough to touch each other, the plates and the capsules among them, with the
         /// bed under the lowest and the last at the glass.
         /// </summary>
@@ -1273,6 +1502,260 @@ namespace Evosim.Farm.Tests
             Assert.True(parted, drive + ": the world stepped as the one without its switch");
             Assert.Equal(0, backend.RefusedForClass);
             Assert.Equal(0L, backend.OverflowTotal);
+        }
+
+        // ---- D235's nose: the held sniff as the card's smell inputs.
+
+        private static (DynamicsWorld world, World core) NosePair(IReadOnlyDictionary<string, string> extra, NoseCell nose)
+        {
+            (World core, SolverConfig solver) = GpuTank.Build(
+                true, false, extra: extra, tune: config => config.CellTypes = config.CellTypes.Appending(nose));
+            return (new DynamicsWorld(solver) { Threads = 2 }, core);
+        }
+
+        /// <summary>
+        /// <see cref="Populate"/>'s places, with <see cref="GpuTank.NoseBody"/>'s bodies in them: jointed, each with a nose
+        /// part, the sniff keyed on the seed 99 and the body's id.
+        /// </summary>
+        private static void PopulateNoses(DynamicsWorld world, World core, int count, ulong seed, int firstId,
+                                          SensorChannel[] pool, bool central)
+        {
+            var rng = new Rng(seed);
+            Vec3 axis = GpuTank.Axis(core);
+
+            for (int k = 0; k < count; k++)
+            {
+                var at = new Vec3(axis.X + 0.7 * (k % 3) - 0.7, -9.0 - 0.6 * (k / 3), axis.Z + 0.5 * (k % 2));
+                world.AddInIdOrder(GpuTank.NoseBody(firstId + k, world.Config, core, rng, at, pool, central, 99UL));
+            }
+        }
+
+        /// <summary>A cloud of marine snow at the cluster, for the chemical sense; the same in every world it is put in.</summary>
+        private static void Snow(World core, Vec3 axis)
+        {
+            var snow = (GridField)core.Nutrients;
+            snow.Deposit(new FieldPoint(new Float3((float)axis.X + 0.4f, -9.5f, (float)axis.Z + 0.2f), 0), 400f);
+            snow.Deposit(new FieldPoint(new Float3((float)axis.X - 0.6f, -10.5f, (float)axis.Z - 0.3f), 0), 250f);
+        }
+
+        private static void Sniff(DynamicsWorld world, long sniff)
+        {
+            foreach (Creature body in world.Creatures) body.Senses.Sniff(sniff);
+        }
+
+        private static byte[] BrainState(Creature body)
+        {
+            using var stream = new MemoryStream();
+            using (var w = new BinaryWriter(stream)) body.Brain.WriteState(w);
+            return stream.ToArray();
+        }
+
+        private static int NoseLinks(DynamicsWorld world)
+        {
+            int noses = 0;
+            foreach (Creature body in world.Creatures)
+            {
+                for (int link = 0; link < body.Links; link++) if (body.Senses.IsNose(link)) noses++;
+            }
+
+            return noses;
+        }
+
+        /// <summary>
+        /// D235: in a world whose table lists the nose the card reads each nose link's held sniff (what
+        /// <c>CreatureSenses.Sniff</c> left, with its noise) and every other link's smells as zero, reading no smell field,
+        /// no noise and no grid. The world holds bodies each with a nose, among a leaf field (strength and direction), a
+        /// carrion scent and snow, under the per-part brain and under the one brain. Before every block each body of the
+        /// three worlds is sniffed, as the farm sniffs at a metabolic step; the CPU's world and the card's are then the
+        /// solver's to the bit after every block, a death and a birth included. A third world, on the CPU with the noses'
+        /// noise at 0, is shown at the end to have parted from the first, so that readings that never reached the
+        /// trajectory cannot pass.
+        /// </summary>
+        [Theory]
+        [InlineData("perpart")]
+        [InlineData("central")]
+        public void TheNoseOnTheCpuAcceleratorIsTheSolver(string brain)
+        {
+            bool central = brain == "central";
+            var settings = new Dictionary<string, string>
+            {
+                { "EVOSIM_LEAF_SCENT", "direction" }, { "EVOSIM_LEAF_SCENT_RANGE", "6" }, { "EVOSIM_LEAF_SCENT_CELL", "1.5" },
+                { "EVOSIM_LEAF_SCENT_HALF", "0.5" },
+                { "EVOSIM_SENSE_SCENT", "1" }, { "EVOSIM_CORPSE_DECAY", "0.000385" },
+            };
+            if (central)
+            {
+                settings["EVOSIM_BRAIN_MODEL"] = "central";
+                settings["EVOSIM_NEURON_COST"] = "0";
+                settings["EVOSIM_CONNECTION_COST"] = "0";
+            }
+
+            SensorChannel[] pool =
+            {
+                SensorChannel.LeafScent, SensorChannel.LeafScentDirection, SensorChannel.Scent, SensorChannel.Chemical,
+            };
+
+            (DynamicsWorld plain, World core0) = NosePair(settings, new NoseCell(leafNoise: 0f, carrionNoise: 0f, chemicalNoise: 0f));
+            (DynamicsWorld cpu, World coreA) = NosePair(settings, new NoseCell());
+            (DynamicsWorld gpu, World coreB) = NosePair(settings, new NoseCell());
+            Assert.NotNull(cpu.Config.Nose);
+            Assert.NotNull(gpu.Config.Nose);
+            Assert.NotNull(coreA.LeafScent);
+            Assert.NotNull(coreA.Scent);
+
+            var worlds = new[] { (plain, core0), (cpu, coreA), (gpu, coreB) };
+            Vec3 axis = GpuTank.Axis(coreA);
+            foreach ((DynamicsWorld w, World core) in worlds)
+            {
+                PopulateNoses(w, core, 8, 11UL, 1, pool, central);
+                Snow(core, axis);
+                Leaves(core.LeafScent, axis, 0);
+                Smell(core.Scent, axis, 0);
+            }
+
+            int noses = NoseLinks(cpu);
+            _out.WriteLine(brain + ": " + noses + " nose links among " + cpu.Creatures.Count + " bodies");
+            Assert.True(noses >= cpu.Creatures.Count, "a body drew no nose");
+            Assert.Equal(noses, NoseLinks(gpu));
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            var sensed = new Dictionary<SensorChannel, bool>();
+            foreach (SensorChannel channel in pool) sensed[channel] = false;
+
+            for (int block = 0; block < 5; block++)
+            {
+                foreach ((DynamicsWorld w, World core) in worlds) Sniff(w, block);
+
+                plain.StepBlock(25);
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, brain + " nose, after block " + block);
+                foreach (SensorChannel channel in pool) sensed[channel] |= Reads(cpu, channel);
+
+                if (block == 1)
+                {
+                    foreach ((DynamicsWorld w, World core) in worlds)
+                    {
+                        w.Remove(w.Creatures[0].Id);
+                        PopulateNoses(w, core, 1, 99UL, 50, pool, central);
+                    }
+                }
+
+                foreach ((DynamicsWorld w, World core) in worlds)
+                {
+                    Leaves(core.LeafScent, axis, block + 1);
+                    Smell(core.Scent, axis, block + 1);
+                }
+            }
+
+            foreach (SensorChannel channel in pool)
+            {
+                _out.WriteLine(brain + ": " + channel + (sensed[channel] ? " read as not 0" : " never read as not 0"));
+            }
+
+            Assert.True(sensed[SensorChannel.LeafScent] || sensed[SensorChannel.LeafScentDirection],
+                brain + ": no brain read a leaf smell that was not 0");
+            Assert.True(sensed[SensorChannel.Scent], brain + ": no brain read a carrion smell that was not 0");
+            Assert.True(sensed[SensorChannel.Chemical], brain + ": no brain read a chemical smell that was not 0");
+
+            // Parted in a brain's neurons, a position or the drive the brain sent its joints, all of which AssertSame
+            // compares: the card matched the noisy world to the bit, so it read the noise. Under the per-part brain a
+            // nose cannot move (only a link may), so its smell reaches a drive only through a neighbour's neuron, and may
+            // not inside the test's 125 steps; it reaches the nose's own neurons at once.
+            bool parted = false;
+            for (int i = 0; i < cpu.Creatures.Count && !parted; i++)
+            {
+                parted = !BrainState(plain.Creatures[i]).AsSpan().SequenceEqual(BrainState(cpu.Creatures[i]));
+            }
+
+            for (int i = 0; i < cpu.Creatures.Count && !parted; i++)
+            {
+                double[] a = plain.Creatures[i].Position, b = cpu.Creatures[i].Position;
+                for (int k = 0; k < a.Length && !parted; k++)
+                {
+                    parted = BitConverter.DoubleToInt64Bits(a[k]) != BitConverter.DoubleToInt64Bits(b[k]);
+                }
+
+                float[] da = plain.Creatures[i].DriveSignal, db = cpu.Creatures[i].DriveSignal;
+                for (int k = 0; k < da.Length && !parted; k++)
+                {
+                    parted = BitConverter.SingleToInt32Bits(da[k]) != BitConverter.SingleToInt32Bits(db[k]);
+                }
+            }
+
+            Assert.True(parted, brain + ": the noisy noses stepped and drove as the exact ones: the held readings never reached the brain's drive");
+
+            // The held column and the flag were sized to the links and uploaded with the blocks.
+            Assert.True(backend.HeldCells > 4, "the held column is a stub in a nose world");
+            Assert.True(backend.NoseFlagRows > 4, "the nose flag is a stub in a nose world");
+            Assert.True(backend.HeldBytesUp > 0, "no block uploaded the held column");
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
+        }
+
+        /// <summary>
+        /// D235: the card reads only the held sniff, so a nosed body whose senses read their tips on every step (a bench's,
+        /// <c>HeldSniff</c> off) would part from the solver; the card refuses it when it packs the body.
+        /// </summary>
+        [Fact]
+        public void ANoseThatIsNotHeldIsRefused()
+        {
+            (DynamicsWorld gpu, World core) = NosePair(null, new NoseCell());
+            PopulateNoses(gpu, core, 2, 11UL, 1, new[] { SensorChannel.Chemical }, false);
+            gpu.Creatures[1].Senses.HeldSniff = false;
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            Exception thrown = Assert.ThrowsAny<Exception>(() => gpu.StepBlock(1));
+            Exception refused = thrown is AggregateException all ? all.Flatten().InnerExceptions[0] : thrown;
+            Assert.IsType<InvalidOperationException>(refused);
+            Assert.Contains("HeldSniff", refused.Message);
+        }
+
+        /// <summary>
+        /// D235: in a world without the nose the card's new columns are stubs, one cell each, and no block moves a byte
+        /// of the held column. The world smells at every part's centre, as it did, and is the solver's to the bit.
+        /// </summary>
+        [Fact]
+        public void AWorldWithoutTheNoseHoldsOneCellStubsAndUploadsNoHeldBytes()
+        {
+            var settings = new Dictionary<string, string>
+            {
+                { "EVOSIM_SENSE_SCENT", "1" }, { "EVOSIM_CORPSE_DECAY", "0.000385" },
+            };
+            SensorChannel[] pool = { SensorChannel.Scent, SensorChannel.Chemical };
+
+            (DynamicsWorld cpu, World coreA) = Pair(true, false, settings);
+            (DynamicsWorld gpu, World coreB) = Pair(true, false, settings);
+            Assert.Null(gpu.Config.Nose);
+
+            Populate(cpu, coreA, 6, 11UL, 1, pool);
+            Populate(gpu, coreB, 6, 11UL, 1, pool);
+
+            Vec3 axis = GpuTank.Axis(coreA);
+            Smell(coreA.Scent, axis, 0);
+            Smell(coreB.Scent, axis, 0);
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            for (int block = 0; block < 3; block++)
+            {
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, "without the nose, after block " + block);
+                Smell(coreA.Scent, axis, block + 1);
+                Smell(coreB.Scent, axis, block + 1);
+            }
+
+            // One cell a size class (there are four) for the held column, one row a class for the flag.
+            Assert.Equal(4L, backend.HeldCells);
+            Assert.Equal(4L, backend.NoseFlagRows);
+            Assert.Equal(0L, backend.HeldBytesUp);
+            Assert.Equal(0, backend.RefusedForClass);
         }
 
         /// <summary>

@@ -669,6 +669,18 @@ namespace Evosim.Farm
                          " s upkeep " + F(cell.UpkeepWattsPerCubicMetre) + " W/m3 bud x" + F(cell.BudWeight);
             }
 
+            // D235: only noses smell in this world, and with what numbers.
+            if (config.CellTypes.Contains(CellTypeIds.Nose))
+            {
+                var nose = (NoseCell)config.CellTypes.Resolve(CellTypeIds.Nose);
+                token += " · nose noise leaf " + F(nose.LeafNoise) + "/" + F(nose.LeafBackground) +
+                         " carrion " + F(nose.CarrionNoise) + "/" + F(nose.CarrionBackground) +
+                         " chemical " + F(nose.ChemicalNoise) + "/" + F(nose.ChemicalBackground) +
+                         " ref " + F(nose.ReferenceAreaSquareMetres) + " m2 upkeep " + F(nose.UpkeepWattsPerCubicMetre) +
+                         " W/m3 " + F(nose.UpkeepWattsPerSquareMetre) + " W/m2 facing " + (nose.FacingIntake ? "on" : "off") +
+                         " bud x" + F(nose.BudWeight);
+            }
+
             return token;
         }
 

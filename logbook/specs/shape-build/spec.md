@@ -316,7 +316,7 @@ threads on cores 22 to 31:
 4. "fin" again, at group 32, to repeat the baseline;
 5. "family" again, at group 64.
 
-The scripts and reads are under `scratch/shape-build/card/`.
+The scripts and reads are under `logbook/specs/shape-build/card/`.
 
 - **With every switch off, the build steps `r62cf` bit for bit.** On each seed, all 60 stats samples to 600 s and all
   601 digest rows to step 60,000 equal `r62cf`'s own. The lineage is byte-equal over 1,688, 1,452 and 1,410 lines.
@@ -336,7 +336,7 @@ The scripts and reads are under `scratch/shape-build/card/`.
 The bench's record mode ran on `runs/r62p-t3-6201` at 20,700 s: 9,036 bodies, 484 of them jointed, 14 threads, the fin
 law on in both arms, and three repeats of 2,000 steps. The run's own config predates nine tunables and the build refuses
 it. So the read used that file forwarded by `scripts/nursery-config-forward.py`, each key at the default that leaves
-the world as it ran (`scratch/shape-build/r62p-t3-6201-config-fwd.json`).
+the world as it ran (`logbook/specs/shape-build/r62p-t3-6201-config-fwd.json`).
 
 - **The recorded crowd** steps at a median of 3.539 ms (3.539, 3.539, 3.481).
 - **Every jointed node turned family** steps at 3.587 ms (3.341, 3.610, 3.587), which is +1.4 %. The nodes were made from
@@ -350,3 +350,43 @@ the world as it ran (`scratch/shape-build/r62p-t3-6201-config-fwd.json`).
   self-overlap test reads a family part's true shape (step 1), which is smaller than its box, so a child that was pruned
   can grow. A body at rest costs less, so the family arm's +1.4 % may read low, by at most about three bodies' share,
   about 0.03 %. That is two orders of magnitude inside the bar. No rerun was taken.
+
+## As built, the landing (branch shape-land, 6f3c4d93)
+
+`shape-land` is `shape-build` merged with main twice (`4a69f250`, then `6f3c4d93` for main at `26691117`), with the
+nose bench's five configs brought forward to the merged format (`dfe2dc60`), `remains-farm` merged (`a1a64ba1`) and
+G5's launchers (`3edf6ab2`). It lands the nose's code with its switch off, since G3 is still open. The kernels
+regenerate from the merged templates with no diff. The suites and the sitting below ran on 2026-10-29, and their
+scripts and the sitting's read are under `logbook/specs/shape-build/merged/`.
+
+### The closing suites
+
+They ran off the card in Release, on one lane of four cores:
+
+- **Core** passes 1,688 of 1,688, and 1,722 of 1,722 with the Slow trait, at `dfe2dc60`. No later commit touches Core.
+- **Dynamics** passes 428, with main's own `MirroredPoseTests` skip.
+- **The Farm** passes 498 of 501 at `3edf6ab2`. The three failures were `GpuScentTests`: the disk cleanup had removed
+  the checkpoint they pinned, r57-s2's at 47,000 s, that afternoon. Main's `9442b689` moved them to 48,000 s, and they
+  pass 6 of 6 at `6f3c4d93`.
+- **The nursery** passes 481, with 2 skips, once two gitignored pools that the nose bench's recipes name are in place
+  (`bb54586911037b0c.tsv` and `e508f52292c0a05b.tsv`, copied from the nose lane's worktree).
+- **`GpuMeanTests` has no result.** It crashes ILGPU's CPU accelerator unpinned as well as pinned
+  (`src/Evosim.Farm.Gpu/CLAUDE.md`). The kernels' regeneration check and the sitting below stand in for it.
+
+### The merged sitting
+
+Four card groups ran at `6f3c4d93`, one after another, each founded for 600 s at 10 threads on cores 22 to 31. The
+nose lane's nursery search ran beside them on the processor alone, on cores 24 to 31. The build's hashes are farm
+`dc035ea9779311e1`, Dynamics `6a5a06a4d8eeb78b` and Core `811b6e062fe6d263`.
+
+- **With every new switch off, the build steps `r63c-b` bit for bit.** On 6202 and 6203, all 60 stats samples to
+  600 s and all 601 digest rows to step 60,000 equal those of `r63c-b`'s own runs (`2026-10-29-123625-716cd9ee`). The
+  lineage is byte-equal over 1,661 and 1,613 lines. G5's arm "off" reuses those runs on the strength of this.
+- **And `r62cf` bit for bit**, on 6202, 6203 and 6204, as at `b018c2bb`: the lineage is byte-equal over 1,688, 1,452
+  and 1,410 lines. The config reads `9adc2be043e22219`, not `r62cf`'s `bcc3af9821602b3e`, because the merged format
+  carries thirteen more keys, each at the value that leaves the world as it was.
+- **G5's arm "on" gives the same digest at groups 32 and 64.** On 6202 and 6203 (config `f73b299db0a24445`), the
+  stats and digests are identical, and the lineage is byte-equal over 1,666 and 1,581 lines.
+- Every world ran at 2.2 to 3.2 times real time beside the search, and none diverged. The busy check refused two
+  launches, neither of which reached the card: one for the search, which `-AllowBeside` then admitted, and one for a
+  test suite started between groups, which was stopped.

@@ -284,6 +284,12 @@ namespace Evosim.Farm
             solver.Senses.LeafScent = World.LeafScent;
             solver.Senses.Reserve = creature;
 
+            // D235: a nose's noise is keyed on the world's seed and this organism, and Step sniffs
+            // it once per metabolic step (SniffNoses). Read only in a world whose table lists the nose.
+            solver.Senses.HeldSniff = true;
+            solver.Senses.NoiseSeed = World.Seed;
+            solver.Senses.BodyId = creature.Id;
+
             // The throw trace's ring — jointed bodies only, which is the farm's rule since
             // 2026-09-20: writing it costs a fifth of the harness and every throw it was built
             // for was jointed.
@@ -583,6 +589,12 @@ namespace Evosim.Farm
             solver.Senses.Scent = World.Scent;
             solver.Senses.LeafScent = World.LeafScent;
             solver.Senses.Reserve = creature;
+
+            // D235: a nose's noise is keyed on the world's seed and this organism, and Step sniffs
+            // it once per metabolic step (SniffNoses). Read only in a world whose table lists the nose.
+            solver.Senses.HeldSniff = true;
+            solver.Senses.NoiseSeed = World.Seed;
+            solver.Senses.BodyId = creature.Id;
 
             // D123 through a plan change (round 49). Core has carried the step's contact and
             // damage records onto the new plan's indices, so the rebuilt body reads, on every

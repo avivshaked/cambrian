@@ -117,6 +117,14 @@ namespace Evosim.Core
             }
         }
 
+        /// <summary>
+        /// True for the chemical senses a nose carries in a world whose table lists it (D235): the
+        /// leaf smell in both forms, the carrion smell and the chemical sense.
+        /// </summary>
+        public static bool IsSmell(this SensorChannel channel) =>
+            channel == SensorChannel.LeafScent || channel == SensorChannel.LeafScentDirection ||
+            channel == SensorChannel.Scent || channel == SensorChannel.Chemical;
+
         /// <summary>Draws a channel and a valid index for it, from the run's own pool.</summary>
         /// <param name="rng">The stream the draw comes from.</param>
         /// <param name="weight">The connection strength the new input carries.</param>

@@ -1,0 +1,92 @@
+{
+  "format": 1,
+  "name": "nose-graft-film",
+  "description": "D235's graft film: grafted nose, not evolved. D178's ten founders (rounds/nursery/pools/410a70db44a4b20a.tsv), each with a nose grafted by NoseGraft (Evosim.Nursery --graft-nose): a box of 0.1 m2, three times as long as wide, standing on the root's top face toward its front, on a fixed joint, every leaf-smell link moved onto it with weights summed. Swum as the bench swims a pool, every brain as written, four to a tank (4, 4 and 2), for 300 s in leaf-direction-patches-s2-w5's patchy tank and its world, the round-60 world, whose config here, 3a95d053dd97082d, is 9fa947462638667c's (e80c201e54b3963f on integration-1's format) less mouth.killSwallowsBody, which was false and which branch nose's reader does not have, with the nose appended to the cell-type table at its defaults and nothing else changed: noise from the area law, the facing intake off. Two episodes, under the body's own brain and with the leaf smell knocked out. A film and nothing scored: the bodies were bred to whole-body smell, not to a nose, and a knockout that matters says only that the moved links still steer. The pool, 2a101bfbce346e65, is what --graft-nose wrote from 410a70db44a4b20a.",
+  "seed": "0x1",
+  "world": {
+    "config": "rounds/nursery/configs/3a95d053dd97082d.json",
+    "configHash": "3a95d053dd97082d",
+    "overrides": {
+      "AgeHazardBaseSeconds": 0,
+      "AgeRepairExponent": 0,
+      "AgeingPerBirth": 0,
+      "AgeingPerWound": 0,
+      "BedShoreDepthMetres": 0,
+      "BedShoreFadeMetres": 0,
+      "BedTiltMetres": 0,
+      "Fluid.SpinDragCoefficient": 0.5,
+      "Fluid.TurningDrag": "Spin",
+      "FoundingTricklePerSecond": 0,
+      "FoundingTricklePoolCount": 0,
+      "FoundingTricklePoolHash": "",
+      "FoundingTricklePoolShare": 0,
+      "InitialMatterPerCubicMetre": 0,
+      "LeafScent": "Direction",
+      "LeafScentRangeMetres": 6,
+      "MatterBudgetUnits": 0,
+      "MatterIslandWavelengthMetres": 0,
+      "ReefCover": 0,
+      "UnbittenDeathsLeaveNoCorpse": true,
+      "WorldAreaSquareMetres": 3400
+    }
+  },
+  "bodies": {
+    "source": "pool",
+    "founders": 0,
+    "trunk": null,
+    "pool": "rounds/nursery/pools/2a101bfbce346e65.tsv",
+    "keep": null
+  },
+  "setup": {
+    "seconds": 300,
+    "dt": 0.01,
+    "tankSize": 4,
+    "floorClosed": true,
+    "birthsHeld": true,
+    "snow": null,
+    "carrion": {
+      "count": 0,
+      "joules": 40
+    },
+    "start": {
+      "aboveBed": 11.5
+    },
+    "purse": {
+      "rule": "grown",
+      "seconds": 3830
+    }
+  },
+  "leaves": {
+    "pool": "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz",
+    "count": 31,
+    "spentUnitsPerCubicMetre": 0.004237,
+    "patches": {
+      "count": 3,
+      "radius": 6,
+      "ring": 21
+    }
+  },
+  "search": null,
+  "reward": {
+    "class": "EnergyReturn",
+    "parameters": {
+      "chargeDeathToEnd": true
+    }
+  },
+  "exam": {
+    "episodes": 2,
+    "salt": "0x6e6f7365",
+    "controls": [
+      {
+        "kind": "own"
+      },
+      {
+        "kind": "knockout",
+        "channels": [
+          "LeafScent",
+          "LeafScentDirection"
+        ]
+      }
+    ]
+  }
+}

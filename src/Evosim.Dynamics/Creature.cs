@@ -424,6 +424,7 @@ namespace Evosim.Dynamics
 
             // D231's two refusals come before anything is built: a body the switch cannot push is never made.
             RefuseStrokeAssembly(config);
+            RefuseFamilyStroke(config, phenotype);
 
             Id = id;
             Phenotype = phenotype;
@@ -495,6 +496,13 @@ namespace Evosim.Dynamics
             {
                 AllocateStrokeAssembly();
                 WriteStrokeAssembly();
+            }
+
+            // D255's family limb constants, only when the fin law is on and a family part has a joint.
+            if (config.ShapedAddedMass && HasFamilyJoint(phenotype))
+            {
+                AllocateFamilyStroke();
+                WriteFamilyStroke();
             }
 
             // ---- state and scratch
@@ -826,7 +834,7 @@ namespace Evosim.Dynamics
             var reach = new double[Links];
             for (int i = 0; i < Links; i++)
             {
-                if (HasHullCore(i))
+                if (Phenotype.Parts[i].Family != null)
                 {
                     reach[i] = FamilyReach(Phenotype.Parts[i]);
                     continue;
@@ -841,18 +849,21 @@ namespace Evosim.Dynamics
 
         /// <summary>
         /// Whether link <paramref name="i"/> has a hull core: the world is on the true shape and the link's
-        /// part is a family part. Only then is its broadphase sphere the family's reach rather than the
-        /// half-diagonal; a world on the spheres keeps the half-diagonal, which is that world's contact shape.
+        /// part is a family part. Only then is its core the hull of the contact core's points. Its broadphase
+        /// sphere is the family's reach in either contact shape (<see cref="FamilyReach"/>), never the half-diagonal.
         /// </summary>
         private bool HasHullCore(int i) => LinkCoreHull != null && Phenotype.Parts[i].Family != null;
 
         /// <summary>
-        /// A family part's broadphase radius at its present size: the geometry's reach at the reference size
-        /// (every core point plus the margin, and every point of the solid) times the part's
-        /// <see cref="PhenotypePart.FamilyScale"/>. The half-diagonal does not hold a tapered part: a taper of 4
-        /// reaches 1.6 half-extents at its wide end.
+        /// A family part's broadphase radius at its present size, for both contact shapes: the geometry's reach
+        /// at the reference size times the part's <see cref="PhenotypePart.FamilyScale"/>. With a hull core it is
+        /// every core point plus the margin and every point of the solid; with sphere contact there is no core, and
+        /// it is the solid's reach alone (D255), so that no contact core is built. The half-diagonal does not hold
+        /// a tapered part: a taper of 4 reaches 1.6 half-extents at its wide end, and its pole stands farther than
+        /// b from the origin.
         /// </summary>
-        private static double FamilyReach(PhenotypePart part) => part.Family.ReferenceReach * (double)part.FamilyScale;
+        private double FamilyReach(PhenotypePart part) =>
+            (LinkCoreHull != null ? part.Family.ReferenceReach : part.Family.ReferenceSolidReach) * (double)part.FamilyScale;
 
         /// <summary>
         /// The rest axis of one degree of freedom, in the joint frame — X for the first,

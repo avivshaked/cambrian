@@ -457,6 +457,60 @@ namespace Evosim.Nursery
             }
             return others;
         }
+
+        /// <summary>
+        /// Every living body that is not a member, with its genome and the solver's pose of each of its links (none while the solver holds no
+        /// body for it): what a film draws the leaf tank's leaves from (D235's graft film). A copy, which names each body by its id and hands
+        /// out no genome; <see cref="GenomeTextOf"/> gives one as text.
+        /// </summary>
+        public IReadOnlyList<OtherBodyPose> OtherPoses()
+        {
+            var members = new HashSet<long>();
+            foreach (Organism o in _focal) if (o != null) members.Add(o.Id);
+            var others = new List<OtherBodyPose>();
+            foreach (Organism o in _world.Living)
+            {
+                if (members.Contains(o.Id)) continue;
+                LinkPose[] poses = Array.Empty<LinkPose>();
+                if (_sim.TryPose(o.Id, out Creature c))
+                {
+                    poses = new LinkPose[c.Links];
+                    for (int l = 0; l < c.Links; l++)
+                    {
+                        poses[l] = new LinkPose(c.Position[3 * l], c.Position[3 * l + 1], c.Position[3 * l + 2],
+                            c.Rotation[4 * l], c.Rotation[4 * l + 1], c.Rotation[4 * l + 2], c.Rotation[4 * l + 3]);
+                    }
+                }
+
+                others.Add(new OtherBodyPose(o.Id, poses));
+            }
+            return others;
+        }
+
+        /// <summary>
+        /// The genome of the living body <paramref name="id"/> as <see cref="GenomeJson"/> writes it, or null when no living body has that id:
+        /// text, so the caller holds a copy and never the organism's own object.
+        /// </summary>
+        public string GenomeTextOf(long id)
+        {
+            foreach (Organism o in _world.Living)
+            {
+                if (o.Id == id) return GenomeJson.Write(o.Genome);
+            }
+            return null;
+        }
+    }
+
+    /// <summary>One living body that is not a member, by its id, and the solver's pose of each link (<see cref="EpisodeProbe.OtherPoses"/>).</summary>
+    public readonly struct OtherBodyPose
+    {
+        public readonly long Id;
+        public readonly LinkPose[] Poses;
+
+        public OtherBodyPose(long id, LinkPose[] poses)
+        {
+            Id = id; Poses = poses;
+        }
     }
 
     /// <summary>One living body that is not a member, as it now stands: its id, its place as the world last knew it, its tissue flags and its joules. A copy.</summary>

@@ -524,6 +524,7 @@ namespace Evosim.Core
                     ChildAnchorLocal = part.ChildAnchorLocal * linear,
                     Neurons = part.Neurons,
                     PathId = part.PathId,
+                    Smells = part.Smells,
                 });
             }
 
@@ -653,6 +654,7 @@ namespace Evosim.Core
                     ChildAnchorLocal = part.ChildAnchorLocal,
                     Neurons = part.Neurons,
                     PathId = part.PathId,
+                    Smells = part.Smells,
                 });
             }
 
@@ -812,6 +814,7 @@ namespace Evosim.Core
                     ChildAnchorLocal = asRoot ? default(Float3) : part.ChildAnchorLocal,
                     Neurons = part.Neurons,
                     PathId = part.PathId,
+                    Smells = part.Smells,
                 });
             }
 

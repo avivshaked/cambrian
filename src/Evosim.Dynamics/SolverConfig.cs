@@ -291,6 +291,13 @@ namespace Evosim.Dynamics
         /// </summary>
         public AnchoringCell Anchoring;
 
+        /// <summary>
+        /// The nose of the world's table, whose numbers a nose part smells with (D235,
+        /// <see cref="CreatureSenses"/>); null in a world whose table has none, where every part
+        /// smells exactly as before.
+        /// </summary>
+        public NoseCell Nose;
+
         // ---- sensors
 
         public double FlowFullScaleMetresPerSecond = 0.3;
@@ -393,6 +400,9 @@ namespace Evosim.Dynamics
                 RockTouch = config.SenseBedTouch,
                 Anchoring = config.CellTypes.Contains(CellTypeIds.Anchoring)
                     ? (AnchoringCell)config.CellTypes.Resolve(CellTypeIds.Anchoring)
+                    : null,
+                Nose = config.CellTypes.Contains(CellTypeIds.Nose)
+                    ? (NoseCell)config.CellTypes.Resolve(CellTypeIds.Nose)
                     : null,
 
                 WorldDepthMetres = config.WorldDepthMetres,

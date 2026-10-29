@@ -73,9 +73,22 @@ namespace __NS__
         // one-wide otherwise.
         public readonly Seg<int> StrokeParts;
         public readonly Seg<Real> StrokeAlong, StrokeMass, StrokeMoment;
+        // D255's family limb under the fin law: a degree of freedom each, indexed like DofStart: the added mass of
+        // the family part moving along that degree's stroke, and that mass's first moment about the joint
+        // (Creature.FamilyAddedMass, FamilyFirstMoment). 0 for a degree of a link that is not a family link. A degree of
+        // freedom wide only in a world that runs the fin law, one-wide otherwise.
+        public readonly Seg<Real> FamMass, FamMoment;
         // D234's mirrored twin: each link's mask of the degrees of freedom read negated. A link wide only in
         // a world whose bodies reflect their drive, one-wide otherwise.
         public readonly Seg<int> MirrorMask;
+        // D235's nose: 1 on a nose link. A link wide only in a world whose table lists the nose, one-wide otherwise.
+        public readonly Seg<int> NoseFlag;
+        // D235's held sniff, six floats a link, filled from each live slot's CreatureSenses at every block and
+        // uploaded with the block's columns. A column of its own, not an arena's row: in a world without the nose it
+        // is a one-cell stub that belongs to no copy list, so no block ever moves its byte (HeldBytesUp counts them).
+        public readonly Col<float> NoseHeld;
+        public readonly bool Nose;
+        public long HeldBytesUp;
         public readonly Seg<float> Bend;
         public readonly Seg<double> EPower, EBend, EPowerTarget, EBendTarget, EPowerRate, EBendRate, EHoldLeft;
 
@@ -101,7 +114,7 @@ namespace __NS__
         public readonly Seg<double> TTime;
         public readonly Seg<int> Enabled, Held, TCursor, FirstBadLink, Resized, Poison, Pending;
 
-        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower, bool shapedMass, bool strokeAssembly, bool mirroredDrive)
+        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower, bool shapedMass, bool strokeAssembly, bool mirroredDrive, bool nose)
         {
             _acc = acc;
             _stream = stream;
@@ -138,11 +151,14 @@ namespace __NS__
 
             int gs = shapedMass ? L : 0;
             ShapeCode = C<int>(gs, Constant); HalfExt = C<Real>(3 * gs, Constant);
+            int fd = shapedMass ? D : 0;
+            FamMass = C<Real>(fd, Constant); FamMoment = C<Real>(fd, Constant);
 
             int sa = strokeAssembly ? L : 0, sd = strokeAssembly ? D : 0;
             StrokeParts = C<int>(sa, Constant);
             StrokeAlong = C<Real>(sd, Constant); StrokeMass = C<Real>(sd, Constant); StrokeMoment = C<Real>(sd, Constant);
             MirrorMask = C<int>(mirroredDrive ? L : 0, Constant);
+            NoseFlag = C<int>(nose ? L : 0, Constant);
             Bend = C<float>(gd, Down);
             EPower = C<double>(gd, Down); EBend = C<double>(gd, Down);
             EPowerTarget = C<double>(gd, Down); EBendTarget = C<double>(gd, Down);
@@ -150,6 +166,18 @@ namespace __NS__
             EHoldLeft = C<double>(gd, Down);
 
             PCentre = Widening<Real>(3); PNormal = Widening<Real>(3); PArea = Widening<Real>(1);
+
+            Nose = nose;
+            if (nose)
+            {
+                NoseHeld = new Col<float>(acc, stream, 6 * L, Cap);
+                _all.Add(NoseHeld);
+                _block.Add(NoseHeld);
+            }
+            else
+            {
+                NoseHeld = new Col<float>(acc, stream, 1, 1);
+            }
 
             BasePos = C<Real>(3, Down); BaseCarry = C<Real>(3, Down); BaseRot = C<Real>(4, Down);
             Q = C<Real>(D, Down); Qd = C<Real>(D, Down); Tau = C<Real>(D, Down); LimitImplicit = C<Real>(D, Down);
@@ -314,6 +342,8 @@ namespace __NS__
                 foreach (IColumn c in Dirty ? _all : _block) c.UpUsedQueued(used);
             }
 
+            if (Nose) HeldBytesUp += NoseHeld.BytesFor(used);
+
             Dirty = false;
             _packCount = 0;
         }
@@ -381,7 +411,8 @@ namespace __NS__
             LinkPower = LinkPower.View, ShapeCode = ShapeCode.View, HalfExt = HalfExt.View,
             StrokeParts = StrokeParts.View, StrokeAlong = StrokeAlong.View,
             StrokeMass = StrokeMass.View, StrokeMoment = StrokeMoment.View,
-            MirrorMask = MirrorMask.View,
+            FamMass = FamMass.View, FamMoment = FamMoment.View,
+            MirrorMask = MirrorMask.View, NoseFlag = NoseFlag.View,
         };
 
         public SPanels PanelSet => new SPanels { Centre = PCentre.View, Normal = PNormal.View, Area = PArea.View };
@@ -414,8 +445,8 @@ namespace __NS__
 
         public SBrain BrainSet => new SBrain
         {
-            S = S.View, Mem = Mem.View, Reserve = Reserve.View, Damage = Damage.View, Parity = Parity.View,
-            Contact = Contact.View, Gates = Gates.View, Clock = Clock.View,
+            S = S.View, Mem = Mem.View, Reserve = Reserve.View, Damage = Damage.View, NoseHeld = NoseHeld.View,
+            Parity = Parity.View, Contact = Contact.View, Gates = Gates.View, Clock = Clock.View,
         };
 
         public STrace TraceSet => new STrace
@@ -428,6 +459,7 @@ namespace __NS__
         public void Dispose()
         {
             foreach (IColumn c in _all) c.Dispose();
+            if (!Nose) NoseHeld.Dispose();
             _packSlots.Dispose();
         }
     }
@@ -500,6 +532,21 @@ namespace __NS__
         public long NeuronsAtCeilingMost { get; private set; }
 
         public long BedAnglesPastGuard { get; private set; }
+
+        public long HeldCells
+        {
+            get { long n = 0; foreach (ClassSet set in _classes) n += set.NoseHeld.Host.LongLength; return n; }
+        }
+
+        public long HeldBytesUp
+        {
+            get { long n = 0; foreach (ClassSet set in _classes) n += set.HeldBytesUp; return n; }
+        }
+
+        public long NoseFlagRows
+        {
+            get { long n = 0; foreach (ClassSet set in _classes) n += set.NoseFlag.Width; return n; }
+        }
 
         // ---- the globals, by global slot
         private int _gcap = 16;
@@ -696,7 +743,7 @@ namespace __NS__
             _classes = new ClassSet[options.ClassLinks.Length];
             for (int k = 0; k < _classes.Length; k++)
             {
-                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower, world.ShapedMass, world.StrokeAssembly, world.MirroredDrive);
+                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower, world.ShapedMass, world.StrokeAssembly, world.MirroredDrive, world.Nose);
             }
 
             int oc = options.OverlapCap;
@@ -988,7 +1035,7 @@ namespace __NS__
                 UseRestore = w.UseRestore ? 1 : 0, FloorRestores = w.FloorRestores ? 1 : 0,
                 CreatureContact = w.CreatureContact ? 1 : 0, OffsetTorque = w.OffsetTorque ? 1 : 0,
                 ShapedMass = w.ShapedMass ? 1 : 0,
-                MirrorDrive = w.MirroredDrive ? 1 : 0,
+                MirrorDrive = w.MirroredDrive ? 1 : 0, Nose = w.Nose ? 1 : 0,
                 TrueShape = w.TrueShape ? 1 : 0, AtPoint = w.AtPoint ? 1 : 0,
                 StrokeAssembly = w.StrokeAssembly ? 1 : 0,
                 BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
@@ -2443,7 +2490,13 @@ namespace __NS__
                     Float3 h = part.HalfExtents;
                     int at = l * N + i;
                     int a3 = (3 * l) * N + i;
-                    if (part.ShapeId == ShapeIds.Sphere)
+                    if (part.Family != null)
+                    {
+                        // D255: a family part (D233) takes the strip integral of its true slices, which the host body
+                        // carries by degree of freedom (below). No half-extents are written, and the kernel reads none.
+                        s.ShapeCode.Host[at] = 3;
+                    }
+                    else if (part.ShapeId == ShapeIds.Sphere)
                     {
                         s.ShapeCode.Host[at] = 0;
                     }
@@ -2466,6 +2519,33 @@ namespace __NS__
                         throw new ArgumentException(
                             "The fin law has no added mass for the shape '" + part.ShapeId +
                             "'; it knows box, capsule and sphere.");
+                    }
+                }
+
+                // D255: a family link's added mass and first moment, the host body's own per-degree tables
+                // (Creature.FamilyAddedMass, FamilyFirstMoment, indexed like DofStart) as WriteFamilyStroke left them
+                // at its build and at its last resize. A resize re-packs the body whole, so the card never holds the
+                // numbers of an old size. Every degree is written, 0 for any other link or when the tables are null
+                // (a body with no family joint), so a slot's earlier body leaves nothing behind.
+                for (int d = 0; d < dof; d++)
+                {
+                    int at = d * N + i;
+                    s.FamMass.Host[at] = 0;
+                    s.FamMoment.Host[at] = 0;
+                }
+
+                if (c.FamilyAddedMass != null && c.FamilyFirstMoment != null)
+                {
+                    for (int l = 0; l < links; l++)
+                    {
+                        if (c.Phenotype.Parts[l].Family == null) continue;
+                        for (int k = 0; k < c.DofCount[l]; k++)
+                        {
+                            int d = c.DofStart[l] + k;
+                            int at = d * N + i;
+                            s.FamMass.Host[at] = (Real)c.FamilyAddedMass[d];
+                            s.FamMoment.Host[at] = (Real)c.FamilyFirstMoment[d];
+                        }
                     }
                 }
             }
@@ -2518,6 +2598,29 @@ namespace __NS__
                             "Body " + c.Id + " reflects a mirrored part's joint drive, and the gpu engine was built for " +
                             "a world that does not (EVOSIM_REFLECT_MIRRORED_ANCHORS).");
                     }
+                }
+            }
+
+            // D235's nose: 1 on each nose link, a flag for every link so that a slot's earlier body leaves nothing
+            // behind. A world that does not list the nose sizes no column for it, and no body there has a nose link.
+            if (_w.Nose)
+            {
+                CreatureSenses senses = c.Senses;
+                bool nosed = false;
+                for (int l = 0; l < links; l++)
+                {
+                    bool nose = senses.IsNose(l);
+                    s.NoseFlag.Host[l * N + i] = nose ? 1 : 0;
+                    nosed |= nose;
+                }
+
+                // The card reads only what Sniff held (CreatureSenses.HeldSniff, as the farm sets it). A bench's body
+                // reads its noses' tips on every step instead, which the card does not, and would part from the solver.
+                if (nosed && !senses.HeldSniff)
+                {
+                    throw new InvalidOperationException(
+                        "Body " + c.Id + " has a nose whose senses read its tip on every step (HeldSniff is off); " +
+                        "the gpu engine reads only the held sniff. Set HeldSniff and call Sniff, as the farm does.");
                 }
             }
 
@@ -2942,6 +3045,27 @@ namespace __NS__
             {
                 s.Contact.Host[l * N + i] = contact != null && l < contact.Length && contact[l] ? 1 : 0;
                 s.Damage.Host[l * N + i] = damage != null && l < damage.Length ? damage[l] : 0f;
+            }
+
+            // D235: each nose link's held sniff, as Simulation's Sniff left it in the body's CreatureSenses before
+            // this block (a block never crosses a metabolic step). The six floats are copied as they stand; the
+            // kernel reads them for a nose link only, so the rows of any other link are never written here.
+            if (_w.Nose)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    if (!senses.IsNose(l)) continue;
+
+                    senses.HeldSmell(l, out float chemical, out float scent, out float leaf,
+                                     out float directionX, out float directionY, out float directionZ);
+                    int held = 6 * l;
+                    s.NoseHeld.Host[held * N + i] = chemical;
+                    s.NoseHeld.Host[(held + 1) * N + i] = scent;
+                    s.NoseHeld.Host[(held + 2) * N + i] = leaf;
+                    s.NoseHeld.Host[(held + 3) * N + i] = directionX;
+                    s.NoseHeld.Host[(held + 4) * N + i] = directionY;
+                    s.NoseHeld.Host[(held + 5) * N + i] = directionZ;
+                }
             }
 
             s.Enabled.Host[i] = c.HasTrace ? 1 : 0;

@@ -62,6 +62,19 @@ namespace Evosim.Core
                     n["reserveLagSeconds"].AsFloat(),
                     upkeep),
 
+                [CellTypeIds.Nose] = (n, upkeep) => new NoseCell(
+                    upkeep,
+                    n["upkeepWattsPerSquareMetre"].AsFloat(),
+                    n["referenceAreaSquareMetres"].AsFloat(),
+                    n["leafNoise"].AsFloat(),
+                    n["leafBackground"].AsFloat(),
+                    n["carrionNoise"].AsFloat(),
+                    n["carrionBackground"].AsFloat(),
+                    n["chemicalNoise"].AsFloat(),
+                    n["chemicalBackground"].AsFloat(),
+                    n["facingIntake"].AsBool(),
+                    n["intakeFullScaleMetresPerSecond"].AsFloat()),
+
                 [CellTypeIds.Fat] = (n, upkeep) =>
                     new FatCell(n["storeRoomJoulesPerCubicMetre"].AsFloat(), upkeep),
             };

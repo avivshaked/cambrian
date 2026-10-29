@@ -222,6 +222,18 @@ namespace Evosim.Core
         /// </summary>
         public ulong PathId { get; internal set; }
 
+        /// <summary>
+        /// Whether this part may smell: false on every part that is not a nose, in a body
+        /// developed against a table that lists the nose (D235). True everywhere else, which is
+        /// every body of every world before the nose.
+        /// </summary>
+        /// <remarks>
+        /// Set by <see cref="Developer.Develop"/> from the table it is handed, and carried by every
+        /// copy of the part, so the one brain's ports (<see cref="CentralWiring.IndicesOn"/>) and the
+        /// senses read the same rule. The smells are the channels <see cref="SensorChannels.IsSmell"/> names.
+        /// </remarks>
+        public bool Smells { get; internal set; } = true;
+
         /// <summary>Volume in m³, computed by this part's shape when the part was built.</summary>
         /// <remarks>
         /// Stored rather than derived, because deriving it needs the shape registry and this is

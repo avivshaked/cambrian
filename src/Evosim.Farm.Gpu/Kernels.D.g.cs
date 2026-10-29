@@ -81,12 +81,21 @@ namespace Evosim.Farm.Gpu.Dbl
         // first moment about the joint. One row wide when the switch is off.
         public ArrayView<int> StrokeParts;
         public ArrayView<Real> StrokeAlong, StrokeMass, StrokeMoment;
+
+        // D255's family limb under the fin law (shape code 3), a degree of freedom each, indexed like DofStart: the
+        // added mass of the part moving along that degree's stroke and that mass's first moment about the joint,
+        // as the host body holds them (Creature.FamilyAddedMass, FamilyFirstMoment). 0 for a degree of a link that
+        // is not a family link. One row wide when the fin law is off.
+        public ArrayView<Real> FamMass, FamMoment;
         // D234's mirrored twin, a link each: the bit mask of the degrees of freedom whose signed
         // quantities are read negated (Creature.MirrorMask). A link wide only in a world whose bodies
         // reflect their drive, a one-wide stub otherwise, and then never read (cfg.MirrorDrive is 0). Bit d is
         // degree of freedom d; bit 3 says the part reflects the vectors its senses read in its own frame, and
         // bits 4 and 5 are the axis of that reflection (Creature.FrameNormal).
         public ArrayView<int> MirrorMask;
+        // D235's nose, a link each: 1 on a nose link. A link wide only in a world whose table lists the nose, a
+        // one-wide stub otherwise, and then never read (cfg.Nose is 0).
+        public ArrayView<int> NoseFlag;
     }
 
     public struct SPanels { public ArrayView<Real> Centre, Normal, Area; }
@@ -128,6 +137,10 @@ namespace Evosim.Farm.Gpu.Dbl
     public struct SBrain
     {
         public ArrayView<float> S, Mem, Reserve, Damage;
+        // D235: each nose link's held sniff, six floats a link (chemical, scent, leaf, direction x, y, z), rows
+        // (6 * link + k) * N + slot, filled on the host from CreatureSenses at every block. A one-cell stub, never
+        // filled or read, in a world without the nose (cfg.Nose is 0).
+        public ArrayView<float> NoseHeld;
         public ArrayView<int> Parity, Contact, Gates;
         public ArrayView<double> Clock;
     }
@@ -253,6 +266,7 @@ namespace Evosim.Farm.Gpu.Dbl
         public int OffsetTorque, SplitColumns, Redo, BendAndPower, TurningDrag, RockTouch, Anchoring;
         public int ShapedMass;   // D229: the limb pushes take the part's shaped added mass (Fluid.AddedMassOf)
         public int MirrorDrive;  // D234: a mirrored twin's drive and senses are read through its link's mirror mask
+        public int Nose;         // D235: only nose links smell, and they read the held sniff the host left (SBrain.NoseHeld); no field is read for a smell
         public int AnyRemains;   // D220: 1 for a block in which some body is remains; 0 reads no remains flag at all
         public int TrueShape;    // D228: a part touches as its convex core with a margin (SolverConfig.ContactShape)
         public int StrokeAssembly;   // D231: the powered stroke pushes the assembly welded beyond a jointed link (SolverConfig.StrokePushesAssembly)
@@ -1644,6 +1658,18 @@ namespace Evosim.Farm.Gpu.Dbl
                 }
             }
 
+            // D235: in a nose world a part that is not a nose reads zero on the four smell channels, whatever the
+            // gates (SensorChannels.IsSmell), the chemical sense's standing-in constant included. The nose links ride
+            // in the same word as the rock's bits, a bit a link from bit 16 (a class holds at most 16 links), so
+            // that SensorRead, which already takes the word, needs no new argument. SRock reads only bits 0 to 15.
+            if (!remains && cfg.Nose != 0)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    if (b.NoseFlag[l * N + i] != 0) rock |= 1 << (16 + l);
+                }
+            }
+
             // The brain reads the two gates itself (SensorRead): a body with no field or no
             // reserve source reads the standing-in constant on those channels. Remains run none.
             if (!remains)
@@ -1898,7 +1924,14 @@ namespace Evosim.Farm.Gpu.Dbl
                             // (shape 0) keeps the unshaped line.
                             int shapeCode = cfg.ShapedMass != 0 ? b.ShapeCode[fl * N + i] : 0;
                             Real hx0 = 0, hx1 = 0, hx2 = 0;
-                            if (shapeCode != 0)
+
+                            // D255, as Fluid.Apply: a family limb (shape code 3) takes the strip integral its host body
+                            // carries for each degree of freedom, in place of D229's lines. It reads no half-extents.
+                            // Not entered for any other part, whose lines below are unchanged.
+                            bool family = shapeCode == 3;
+                            Real familySum = 0;
+                            Real familyMass = 0;
+                            if (shapeCode != 0 && !family)
                             {
                                 hx0 = b.HalfExt[(3 * fl) * N + i];
                                 hx1 = b.HalfExt[(3 * fl + 1) * N + i];
@@ -1932,7 +1965,16 @@ namespace Evosim.Farm.Gpu.Dbl
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
 
-                                if (shapeCode != 0)
+                                if (family)
+                                {
+                                    // q_d as above, times the degree's I1 and M, which the host wrote at build and
+                                    // at every resize (Fluid.Apply's familyQ).
+                                    Real familyQ = sv * omega * sv * omega * ((Real)1.0 - along * along);
+                                    familySum += familyQ * b.FamMoment[(fstart + d) * N + i];
+                                    familyMass += familyQ * b.FamMass[(fstart + d) * N + i];
+                                }
+
+                                if (shapeCode != 0 && !family)
                                 {
                                     V3 motion = V3.Cross(dofAxis, axis);
                                     Real motionLength = motion.Magnitude;
@@ -1952,7 +1994,7 @@ namespace Evosim.Farm.Gpu.Dbl
                             {
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
-                                if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
+                                if (shapeCode != 0 && !family) push = cfg.LimbPush * shapedSum;
 
                                 // D231: C_T times the sum of q_d I1_d, and the push-weighted lever
                                 // (sum q_d I1_d) / (sum q_d M_d). Another link's lever is the reach.
@@ -1961,6 +2003,12 @@ namespace Evosim.Farm.Gpu.Dbl
                                 {
                                     push = cfg.LimbPush * assemblySum;
                                     lever = AssemblyLeverOf(assemblySum, assemblyMass, linkReach);
+                                }
+                                else if (family)
+                                {
+                                    // D255: the same law for a family limb, from the strip integral of its true slices.
+                                    push = cfg.LimbPush * familySum;
+                                    lever = AssemblyLeverOf(familySum, familyMass, linkReach);
                                 }
 
                                 linkForce = linkForce + axis * (-push);
@@ -2766,6 +2814,18 @@ namespace Evosim.Farm.Gpu.Dbl
                 }
             }
 
+            // D235: in a nose world a part that is not a nose reads zero on the four smell channels, whatever the
+            // gates (SensorChannels.IsSmell), the chemical sense's standing-in constant included. The nose links ride
+            // in the same word as the rock's bits, a bit a link from bit 16 (a class holds at most 16 links), so
+            // that SensorRead, which already takes the word, needs no new argument. SRock reads only bits 0 to 15.
+            if (!remains && cfg.Nose != 0)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    if (b.NoseFlag[l * N + i] != 0) rock |= 1 << (16 + l);
+                }
+            }
+
             // The brain reads the two gates itself (SensorRead): a body with no field or no
             // reserve source reads the standing-in constant on those channels. Remains run none.
             if (!remains)
@@ -3020,7 +3080,14 @@ namespace Evosim.Farm.Gpu.Dbl
                             // (shape 0) keeps the unshaped line.
                             int shapeCode = cfg.ShapedMass != 0 ? b.ShapeCode[fl * N + i] : 0;
                             Real hx0 = 0, hx1 = 0, hx2 = 0;
-                            if (shapeCode != 0)
+
+                            // D255, as Fluid.Apply: a family limb (shape code 3) takes the strip integral its host body
+                            // carries for each degree of freedom, in place of D229's lines. It reads no half-extents.
+                            // Not entered for any other part, whose lines below are unchanged.
+                            bool family = shapeCode == 3;
+                            Real familySum = 0;
+                            Real familyMass = 0;
+                            if (shapeCode != 0 && !family)
                             {
                                 hx0 = b.HalfExt[(3 * fl) * N + i];
                                 hx1 = b.HalfExt[(3 * fl + 1) * N + i];
@@ -3054,7 +3121,16 @@ namespace Evosim.Farm.Gpu.Dbl
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
 
-                                if (shapeCode != 0)
+                                if (family)
+                                {
+                                    // q_d as above, times the degree's I1 and M, which the host wrote at build and
+                                    // at every resize (Fluid.Apply's familyQ).
+                                    Real familyQ = sv * omega * sv * omega * ((Real)1.0 - along * along);
+                                    familySum += familyQ * b.FamMoment[(fstart + d) * N + i];
+                                    familyMass += familyQ * b.FamMass[(fstart + d) * N + i];
+                                }
+
+                                if (shapeCode != 0 && !family)
                                 {
                                     V3 motion = V3.Cross(dofAxis, axis);
                                     Real motionLength = motion.Magnitude;
@@ -3074,7 +3150,7 @@ namespace Evosim.Farm.Gpu.Dbl
                             {
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
-                                if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
+                                if (shapeCode != 0 && !family) push = cfg.LimbPush * shapedSum;
 
                                 // D231: C_T times the sum of q_d I1_d, and the push-weighted lever
                                 // (sum q_d I1_d) / (sum q_d M_d). Another link's lever is the reach.
@@ -3083,6 +3159,12 @@ namespace Evosim.Farm.Gpu.Dbl
                                 {
                                     push = cfg.LimbPush * assemblySum;
                                     lever = AssemblyLeverOf(assemblySum, assemblyMass, linkReach);
+                                }
+                                else if (family)
+                                {
+                                    // D255: the same law for a family limb, from the strip integral of its true slices.
+                                    push = cfg.LimbPush * familySum;
+                                    lever = AssemblyLeverOf(familySum, familyMass, linkReach);
                                 }
 
                                 linkForce = linkForce + axis * (-push);
@@ -3888,6 +3970,18 @@ namespace Evosim.Farm.Gpu.Dbl
                 }
             }
 
+            // D235: in a nose world a part that is not a nose reads zero on the four smell channels, whatever the
+            // gates (SensorChannels.IsSmell), the chemical sense's standing-in constant included. The nose links ride
+            // in the same word as the rock's bits, a bit a link from bit 16 (a class holds at most 16 links), so
+            // that SensorRead, which already takes the word, needs no new argument. SRock reads only bits 0 to 15.
+            if (!remains && cfg.Nose != 0)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    if (b.NoseFlag[l * N + i] != 0) rock |= 1 << (16 + l);
+                }
+            }
+
             // The brain reads the two gates itself (SensorRead): a body with no field or no
             // reserve source reads the standing-in constant on those channels. Remains run none.
             if (!remains)
@@ -4142,7 +4236,14 @@ namespace Evosim.Farm.Gpu.Dbl
                             // (shape 0) keeps the unshaped line.
                             int shapeCode = cfg.ShapedMass != 0 ? b.ShapeCode[fl * N + i] : 0;
                             Real hx0 = 0, hx1 = 0, hx2 = 0;
-                            if (shapeCode != 0)
+
+                            // D255, as Fluid.Apply: a family limb (shape code 3) takes the strip integral its host body
+                            // carries for each degree of freedom, in place of D229's lines. It reads no half-extents.
+                            // Not entered for any other part, whose lines below are unchanged.
+                            bool family = shapeCode == 3;
+                            Real familySum = 0;
+                            Real familyMass = 0;
+                            if (shapeCode != 0 && !family)
                             {
                                 hx0 = b.HalfExt[(3 * fl) * N + i];
                                 hx1 = b.HalfExt[(3 * fl + 1) * N + i];
@@ -4176,7 +4277,16 @@ namespace Evosim.Farm.Gpu.Dbl
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
 
-                                if (shapeCode != 0)
+                                if (family)
+                                {
+                                    // q_d as above, times the degree's I1 and M, which the host wrote at build and
+                                    // at every resize (Fluid.Apply's familyQ).
+                                    Real familyQ = sv * omega * sv * omega * ((Real)1.0 - along * along);
+                                    familySum += familyQ * b.FamMoment[(fstart + d) * N + i];
+                                    familyMass += familyQ * b.FamMass[(fstart + d) * N + i];
+                                }
+
+                                if (shapeCode != 0 && !family)
                                 {
                                     V3 motion = V3.Cross(dofAxis, axis);
                                     Real motionLength = motion.Magnitude;
@@ -4196,7 +4306,7 @@ namespace Evosim.Farm.Gpu.Dbl
                             {
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
-                                if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
+                                if (shapeCode != 0 && !family) push = cfg.LimbPush * shapedSum;
 
                                 // D231: C_T times the sum of q_d I1_d, and the push-weighted lever
                                 // (sum q_d I1_d) / (sum q_d M_d). Another link's lever is the reach.
@@ -4205,6 +4315,12 @@ namespace Evosim.Farm.Gpu.Dbl
                                 {
                                     push = cfg.LimbPush * assemblySum;
                                     lever = AssemblyLeverOf(assemblySum, assemblyMass, linkReach);
+                                }
+                                else if (family)
+                                {
+                                    // D255: the same law for a family limb, from the strip integral of its true slices.
+                                    push = cfg.LimbPush * familySum;
+                                    lever = AssemblyLeverOf(familySum, familyMass, linkReach);
                                 }
 
                                 linkForce = linkForce + axis * (-push);
@@ -5010,6 +5126,18 @@ namespace Evosim.Farm.Gpu.Dbl
                 }
             }
 
+            // D235: in a nose world a part that is not a nose reads zero on the four smell channels, whatever the
+            // gates (SensorChannels.IsSmell), the chemical sense's standing-in constant included. The nose links ride
+            // in the same word as the rock's bits, a bit a link from bit 16 (a class holds at most 16 links), so
+            // that SensorRead, which already takes the word, needs no new argument. SRock reads only bits 0 to 15.
+            if (!remains && cfg.Nose != 0)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    if (b.NoseFlag[l * N + i] != 0) rock |= 1 << (16 + l);
+                }
+            }
+
             // The brain reads the two gates itself (SensorRead): a body with no field or no
             // reserve source reads the standing-in constant on those channels. Remains run none.
             if (!remains)
@@ -5264,7 +5392,14 @@ namespace Evosim.Farm.Gpu.Dbl
                             // (shape 0) keeps the unshaped line.
                             int shapeCode = cfg.ShapedMass != 0 ? b.ShapeCode[fl * N + i] : 0;
                             Real hx0 = 0, hx1 = 0, hx2 = 0;
-                            if (shapeCode != 0)
+
+                            // D255, as Fluid.Apply: a family limb (shape code 3) takes the strip integral its host body
+                            // carries for each degree of freedom, in place of D229's lines. It reads no half-extents.
+                            // Not entered for any other part, whose lines below are unchanged.
+                            bool family = shapeCode == 3;
+                            Real familySum = 0;
+                            Real familyMass = 0;
+                            if (shapeCode != 0 && !family)
                             {
                                 hx0 = b.HalfExt[(3 * fl) * N + i];
                                 hx1 = b.HalfExt[(3 * fl + 1) * N + i];
@@ -5298,7 +5433,16 @@ namespace Evosim.Farm.Gpu.Dbl
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
 
-                                if (shapeCode != 0)
+                                if (family)
+                                {
+                                    // q_d as above, times the degree's I1 and M, which the host wrote at build and
+                                    // at every resize (Fluid.Apply's familyQ).
+                                    Real familyQ = sv * omega * sv * omega * ((Real)1.0 - along * along);
+                                    familySum += familyQ * b.FamMoment[(fstart + d) * N + i];
+                                    familyMass += familyQ * b.FamMass[(fstart + d) * N + i];
+                                }
+
+                                if (shapeCode != 0 && !family)
                                 {
                                     V3 motion = V3.Cross(dofAxis, axis);
                                     Real motionLength = motion.Magnitude;
@@ -5318,7 +5462,7 @@ namespace Evosim.Farm.Gpu.Dbl
                             {
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
-                                if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
+                                if (shapeCode != 0 && !family) push = cfg.LimbPush * shapedSum;
 
                                 // D231: C_T times the sum of q_d I1_d, and the push-weighted lever
                                 // (sum q_d I1_d) / (sum q_d M_d). Another link's lever is the reach.
@@ -5327,6 +5471,12 @@ namespace Evosim.Farm.Gpu.Dbl
                                 {
                                     push = cfg.LimbPush * assemblySum;
                                     lever = AssemblyLeverOf(assemblySum, assemblyMass, linkReach);
+                                }
+                                else if (family)
+                                {
+                                    // D255: the same law for a family limb, from the strip integral of its true slices.
+                                    push = cfg.LimbPush * familySum;
+                                    lever = AssemblyLeverOf(familySum, familyMass, linkReach);
                                 }
 
                                 linkForce = linkForce + axis * (-push);
@@ -8275,23 +8425,51 @@ namespace Evosim.Farm.Gpu.Dbl
                     sUp[bl] = (float)rotationMatrix[9 * bl + 4];
                 }
 
-                if (smells)
+                if (cfg.Nose != 0)
                 {
-                    float density = EdibleDensityAt((float)px, (float)py, (float)pz, w, cfg, ref lost);
-                    sChem[bl] = density > 0f ? density / (density + cfg.ChemHalf) : 0f;
+                    // D235, CreatureSenses.Sample in a nose world: no part smells at its centre. A nose link holds
+                    // what the host's last Sniff left, copied as it stands (CreatureSenses.HeldSmell); every other
+                    // link holds zero. No field is read, so the chemical sense's walk cannot lose the body here.
+                    if (b.NoseFlag[bl * cfg.N + i] != 0)
+                    {
+                        int held = 6 * bl;
+                        sChem[bl] = br.NoseHeld[held * cfg.N + i];
+                        sScent[bl] = br.NoseHeld[(held + 1) * cfg.N + i];
+                        sLeaf[4 * bl] = br.NoseHeld[(held + 2) * cfg.N + i];
+                        sLeaf[4 * bl + 1] = br.NoseHeld[(held + 3) * cfg.N + i];
+                        sLeaf[4 * bl + 2] = br.NoseHeld[(held + 4) * cfg.N + i];
+                        sLeaf[4 * bl + 3] = br.NoseHeld[(held + 5) * cfg.N + i];
+                    }
+                    else
+                    {
+                        sChem[bl] = 0f;
+                        sScent[bl] = 0f;
+                        sLeaf[4 * bl] = 0f;
+                        sLeaf[4 * bl + 1] = 0f;
+                        sLeaf[4 * bl + 2] = 0f;
+                        sLeaf[4 * bl + 3] = 0f;
+                    }
                 }
-
-                if (readsScent)
+                else
                 {
-                    float sc = ScentAt((float)px, (float)py, (float)pz, w, cfg);
-                    sScent[bl] = sc > 0f ? sc / (sc + cfg.ScentHalf) : 0f;
+                    if (smells)
+                    {
+                        float density = EdibleDensityAt((float)px, (float)py, (float)pz, w, cfg, ref lost);
+                        sChem[bl] = density > 0f ? density / (density + cfg.ChemHalf) : 0f;
+                    }
+
+                    if (readsScent)
+                    {
+                        float sc = ScentAt((float)px, (float)py, (float)pz, w, cfg);
+                        sScent[bl] = sc > 0f ? sc / (sc + cfg.ScentHalf) : 0f;
+                    }
                 }
 
                 // D234: a part that reflects reads the vectors in its own frame with the component along the
                 // reflection's axis negated (CreatureSenses, Creature.ReflectFrameVector). 0 reflects nothing.
                 int frameMirror = cfg.MirrorDrive != 0 ? b.MirrorMask[bl * cfg.N + i] : 0;
 
-                if (leaves) SampleLeaf(bl, (float)px, (float)py, (float)pz, rotationMatrix, readsLeafDir, frameMirror, sLeaf, w, cfg);
+                if (leaves && cfg.Nose == 0) SampleLeaf(bl, (float)px, (float)py, (float)pz, rotationMatrix, readsLeafDir, frameMirror, sLeaf, w, cfg);
 
                 if (readsFlow)
                 {
@@ -8820,6 +8998,14 @@ namespace Evosim.Farm.Gpu.Dbl
             int N = cfg.N;
             if (part < 0 || part >= links) return 0f;
 
+            // D235: in a nose world a part that is not a nose reads zero on the four smell channels, under either
+            // brain (SensorChannels.IsSmell): the nose links are the word's bits 16 and up.
+            if (cfg.Nose != 0 && ((rock >> (16 + part)) & 1) == 0 &&
+                (channel == SChemical || channel == SScent || channel == SLeaf || channel == SLeafDir))
+            {
+                return 0f;
+            }
+
             switch (channel)
             {
                 case SDepth: return sDepth[part];
@@ -9194,7 +9380,10 @@ namespace Evosim.Farm.Gpu.Dbl
                         int shapeCode = b.ShapeCode[i * n + c];
                         V3 swingMotion = V3.Cross(across, axis);
                         Real acrossLength = swingMotion.Magnitude;
-                        if (acrossLength > 0 && shapeCode != 0)
+                        // D255: shape code 3 (a family part) is never read as a box here. The host refuses a family limb
+                        // under the swing push when the body is built (Creature.RefuseFamilyStroke), so this guard is never
+                        // reached; it stops a future path reading the code's unwritten half-extents as one.
+                        if (acrossLength > 0 && shapeCode != 0 && shapeCode != 3)
                         {
                             V3 swingDirection = swingMotion * ((Real)1.0 / acrossLength);
                             addedMass = ShapedAddedMass(
@@ -12870,9 +13059,22 @@ namespace Evosim.Farm.Gpu.Dbl
         // one-wide otherwise.
         public readonly Seg<int> StrokeParts;
         public readonly Seg<Real> StrokeAlong, StrokeMass, StrokeMoment;
+        // D255's family limb under the fin law: a degree of freedom each, indexed like DofStart: the added mass of
+        // the family part moving along that degree's stroke, and that mass's first moment about the joint
+        // (Creature.FamilyAddedMass, FamilyFirstMoment). 0 for a degree of a link that is not a family link. A degree of
+        // freedom wide only in a world that runs the fin law, one-wide otherwise.
+        public readonly Seg<Real> FamMass, FamMoment;
         // D234's mirrored twin: each link's mask of the degrees of freedom read negated. A link wide only in
         // a world whose bodies reflect their drive, one-wide otherwise.
         public readonly Seg<int> MirrorMask;
+        // D235's nose: 1 on a nose link. A link wide only in a world whose table lists the nose, one-wide otherwise.
+        public readonly Seg<int> NoseFlag;
+        // D235's held sniff, six floats a link, filled from each live slot's CreatureSenses at every block and
+        // uploaded with the block's columns. A column of its own, not an arena's row: in a world without the nose it
+        // is a one-cell stub that belongs to no copy list, so no block ever moves its byte (HeldBytesUp counts them).
+        public readonly Col<float> NoseHeld;
+        public readonly bool Nose;
+        public long HeldBytesUp;
         public readonly Seg<float> Bend;
         public readonly Seg<double> EPower, EBend, EPowerTarget, EBendTarget, EPowerRate, EBendRate, EHoldLeft;
 
@@ -12898,7 +13100,7 @@ namespace Evosim.Farm.Gpu.Dbl
         public readonly Seg<double> TTime;
         public readonly Seg<int> Enabled, Held, TCursor, FirstBadLink, Resized, Poison, Pending;
 
-        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower, bool shapedMass, bool strokeAssembly, bool mirroredDrive)
+        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower, bool shapedMass, bool strokeAssembly, bool mirroredDrive, bool nose)
         {
             _acc = acc;
             _stream = stream;
@@ -12935,11 +13137,14 @@ namespace Evosim.Farm.Gpu.Dbl
 
             int gs = shapedMass ? L : 0;
             ShapeCode = C<int>(gs, Constant); HalfExt = C<Real>(3 * gs, Constant);
+            int fd = shapedMass ? D : 0;
+            FamMass = C<Real>(fd, Constant); FamMoment = C<Real>(fd, Constant);
 
             int sa = strokeAssembly ? L : 0, sd = strokeAssembly ? D : 0;
             StrokeParts = C<int>(sa, Constant);
             StrokeAlong = C<Real>(sd, Constant); StrokeMass = C<Real>(sd, Constant); StrokeMoment = C<Real>(sd, Constant);
             MirrorMask = C<int>(mirroredDrive ? L : 0, Constant);
+            NoseFlag = C<int>(nose ? L : 0, Constant);
             Bend = C<float>(gd, Down);
             EPower = C<double>(gd, Down); EBend = C<double>(gd, Down);
             EPowerTarget = C<double>(gd, Down); EBendTarget = C<double>(gd, Down);
@@ -12947,6 +13152,18 @@ namespace Evosim.Farm.Gpu.Dbl
             EHoldLeft = C<double>(gd, Down);
 
             PCentre = Widening<Real>(3); PNormal = Widening<Real>(3); PArea = Widening<Real>(1);
+
+            Nose = nose;
+            if (nose)
+            {
+                NoseHeld = new Col<float>(acc, stream, 6 * L, Cap);
+                _all.Add(NoseHeld);
+                _block.Add(NoseHeld);
+            }
+            else
+            {
+                NoseHeld = new Col<float>(acc, stream, 1, 1);
+            }
 
             BasePos = C<Real>(3, Down); BaseCarry = C<Real>(3, Down); BaseRot = C<Real>(4, Down);
             Q = C<Real>(D, Down); Qd = C<Real>(D, Down); Tau = C<Real>(D, Down); LimitImplicit = C<Real>(D, Down);
@@ -13111,6 +13328,8 @@ namespace Evosim.Farm.Gpu.Dbl
                 foreach (IColumn c in Dirty ? _all : _block) c.UpUsedQueued(used);
             }
 
+            if (Nose) HeldBytesUp += NoseHeld.BytesFor(used);
+
             Dirty = false;
             _packCount = 0;
         }
@@ -13178,7 +13397,8 @@ namespace Evosim.Farm.Gpu.Dbl
             LinkPower = LinkPower.View, ShapeCode = ShapeCode.View, HalfExt = HalfExt.View,
             StrokeParts = StrokeParts.View, StrokeAlong = StrokeAlong.View,
             StrokeMass = StrokeMass.View, StrokeMoment = StrokeMoment.View,
-            MirrorMask = MirrorMask.View,
+            FamMass = FamMass.View, FamMoment = FamMoment.View,
+            MirrorMask = MirrorMask.View, NoseFlag = NoseFlag.View,
         };
 
         public SPanels PanelSet => new SPanels { Centre = PCentre.View, Normal = PNormal.View, Area = PArea.View };
@@ -13211,8 +13431,8 @@ namespace Evosim.Farm.Gpu.Dbl
 
         public SBrain BrainSet => new SBrain
         {
-            S = S.View, Mem = Mem.View, Reserve = Reserve.View, Damage = Damage.View, Parity = Parity.View,
-            Contact = Contact.View, Gates = Gates.View, Clock = Clock.View,
+            S = S.View, Mem = Mem.View, Reserve = Reserve.View, Damage = Damage.View, NoseHeld = NoseHeld.View,
+            Parity = Parity.View, Contact = Contact.View, Gates = Gates.View, Clock = Clock.View,
         };
 
         public STrace TraceSet => new STrace
@@ -13225,6 +13445,7 @@ namespace Evosim.Farm.Gpu.Dbl
         public void Dispose()
         {
             foreach (IColumn c in _all) c.Dispose();
+            if (!Nose) NoseHeld.Dispose();
             _packSlots.Dispose();
         }
     }
@@ -13297,6 +13518,21 @@ namespace Evosim.Farm.Gpu.Dbl
         public long NeuronsAtCeilingMost { get; private set; }
 
         public long BedAnglesPastGuard { get; private set; }
+
+        public long HeldCells
+        {
+            get { long n = 0; foreach (ClassSet set in _classes) n += set.NoseHeld.Host.LongLength; return n; }
+        }
+
+        public long HeldBytesUp
+        {
+            get { long n = 0; foreach (ClassSet set in _classes) n += set.HeldBytesUp; return n; }
+        }
+
+        public long NoseFlagRows
+        {
+            get { long n = 0; foreach (ClassSet set in _classes) n += set.NoseFlag.Width; return n; }
+        }
 
         // ---- the globals, by global slot
         private int _gcap = 16;
@@ -13493,7 +13729,7 @@ namespace Evosim.Farm.Gpu.Dbl
             _classes = new ClassSet[options.ClassLinks.Length];
             for (int k = 0; k < _classes.Length; k++)
             {
-                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower, world.ShapedMass, world.StrokeAssembly, world.MirroredDrive);
+                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower, world.ShapedMass, world.StrokeAssembly, world.MirroredDrive, world.Nose);
             }
 
             int oc = options.OverlapCap;
@@ -13825,7 +14061,7 @@ namespace Evosim.Farm.Gpu.Dbl
                 UseRestore = w.UseRestore ? 1 : 0, FloorRestores = w.FloorRestores ? 1 : 0,
                 CreatureContact = w.CreatureContact ? 1 : 0, OffsetTorque = w.OffsetTorque ? 1 : 0,
                 ShapedMass = w.ShapedMass ? 1 : 0,
-                MirrorDrive = w.MirroredDrive ? 1 : 0,
+                MirrorDrive = w.MirroredDrive ? 1 : 0, Nose = w.Nose ? 1 : 0,
                 TrueShape = w.TrueShape ? 1 : 0, AtPoint = w.AtPoint ? 1 : 0,
                 StrokeAssembly = w.StrokeAssembly ? 1 : 0,
                 BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
@@ -15280,7 +15516,13 @@ namespace Evosim.Farm.Gpu.Dbl
                     Float3 h = part.HalfExtents;
                     int at = l * N + i;
                     int a3 = (3 * l) * N + i;
-                    if (part.ShapeId == ShapeIds.Sphere)
+                    if (part.Family != null)
+                    {
+                        // D255: a family part (D233) takes the strip integral of its true slices, which the host body
+                        // carries by degree of freedom (below). No half-extents are written, and the kernel reads none.
+                        s.ShapeCode.Host[at] = 3;
+                    }
+                    else if (part.ShapeId == ShapeIds.Sphere)
                     {
                         s.ShapeCode.Host[at] = 0;
                     }
@@ -15303,6 +15545,33 @@ namespace Evosim.Farm.Gpu.Dbl
                         throw new ArgumentException(
                             "The fin law has no added mass for the shape '" + part.ShapeId +
                             "'; it knows box, capsule and sphere.");
+                    }
+                }
+
+                // D255: a family link's added mass and first moment, the host body's own per-degree tables
+                // (Creature.FamilyAddedMass, FamilyFirstMoment, indexed like DofStart) as WriteFamilyStroke left them
+                // at its build and at its last resize. A resize re-packs the body whole, so the card never holds the
+                // numbers of an old size. Every degree is written, 0 for any other link or when the tables are null
+                // (a body with no family joint), so a slot's earlier body leaves nothing behind.
+                for (int d = 0; d < dof; d++)
+                {
+                    int at = d * N + i;
+                    s.FamMass.Host[at] = 0;
+                    s.FamMoment.Host[at] = 0;
+                }
+
+                if (c.FamilyAddedMass != null && c.FamilyFirstMoment != null)
+                {
+                    for (int l = 0; l < links; l++)
+                    {
+                        if (c.Phenotype.Parts[l].Family == null) continue;
+                        for (int k = 0; k < c.DofCount[l]; k++)
+                        {
+                            int d = c.DofStart[l] + k;
+                            int at = d * N + i;
+                            s.FamMass.Host[at] = (Real)c.FamilyAddedMass[d];
+                            s.FamMoment.Host[at] = (Real)c.FamilyFirstMoment[d];
+                        }
                     }
                 }
             }
@@ -15355,6 +15624,29 @@ namespace Evosim.Farm.Gpu.Dbl
                             "Body " + c.Id + " reflects a mirrored part's joint drive, and the gpu engine was built for " +
                             "a world that does not (EVOSIM_REFLECT_MIRRORED_ANCHORS).");
                     }
+                }
+            }
+
+            // D235's nose: 1 on each nose link, a flag for every link so that a slot's earlier body leaves nothing
+            // behind. A world that does not list the nose sizes no column for it, and no body there has a nose link.
+            if (_w.Nose)
+            {
+                CreatureSenses senses = c.Senses;
+                bool nosed = false;
+                for (int l = 0; l < links; l++)
+                {
+                    bool nose = senses.IsNose(l);
+                    s.NoseFlag.Host[l * N + i] = nose ? 1 : 0;
+                    nosed |= nose;
+                }
+
+                // The card reads only what Sniff held (CreatureSenses.HeldSniff, as the farm sets it). A bench's body
+                // reads its noses' tips on every step instead, which the card does not, and would part from the solver.
+                if (nosed && !senses.HeldSniff)
+                {
+                    throw new InvalidOperationException(
+                        "Body " + c.Id + " has a nose whose senses read its tip on every step (HeldSniff is off); " +
+                        "the gpu engine reads only the held sniff. Set HeldSniff and call Sniff, as the farm does.");
                 }
             }
 
@@ -15779,6 +16071,27 @@ namespace Evosim.Farm.Gpu.Dbl
             {
                 s.Contact.Host[l * N + i] = contact != null && l < contact.Length && contact[l] ? 1 : 0;
                 s.Damage.Host[l * N + i] = damage != null && l < damage.Length ? damage[l] : 0f;
+            }
+
+            // D235: each nose link's held sniff, as Simulation's Sniff left it in the body's CreatureSenses before
+            // this block (a block never crosses a metabolic step). The six floats are copied as they stand; the
+            // kernel reads them for a nose link only, so the rows of any other link are never written here.
+            if (_w.Nose)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    if (!senses.IsNose(l)) continue;
+
+                    senses.HeldSmell(l, out float chemical, out float scent, out float leaf,
+                                     out float directionX, out float directionY, out float directionZ);
+                    int held = 6 * l;
+                    s.NoseHeld.Host[held * N + i] = chemical;
+                    s.NoseHeld.Host[(held + 1) * N + i] = scent;
+                    s.NoseHeld.Host[(held + 2) * N + i] = leaf;
+                    s.NoseHeld.Host[(held + 3) * N + i] = directionX;
+                    s.NoseHeld.Host[(held + 4) * N + i] = directionY;
+                    s.NoseHeld.Host[(held + 5) * N + i] = directionZ;
+                }
             }
 
             s.Enabled.Host[i] = c.HasTrace ? 1 : 0;

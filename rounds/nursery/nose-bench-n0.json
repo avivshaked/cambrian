@@ -1,0 +1,109 @@
+{
+  "format": 1,
+  "name": "nose-bench-n0",
+  "description": "nose-bench-n0 is D235's nose bench: the patch tank of leaf-direction-patches-w9 (31 leaves in 3 patches of 6 m radius on a ring of 21 m, its leaf pool and spent units, a purse grown over 3,830 s, 1,800 s episodes, a tank of 8, the energy return, the body search) in the world of round 62's r62cf, whose config (recorded hash bcc3af9821602b3e) stands on this build's format with fluid.strokePushesAssembly inserted at false (ecbba999e231021c), and this recipe's world config is that file. It is arm N0, the whole-body leaf smell (LeafScent Direction) with no nose, D178's ten founders (rounds/nursery/pools/410a70db44a4b20a.tsv). The exam is 16 episodes under own, brainless and the knockout of LeafScent and LeafScentDirection. The world overrides are the tank's differences from r62cf, and nothing else: WorldShape Tank (r62cf is a Box), WorldAreaSquareMetres 3400, no snow food (MatterBudgetUnits 0, InitialMatterPerCubicMetre 0, MatterIslandWavelengthMetres 0, MatterInfluxPerSecond 0), no islands to bury under or fence (MatterIslandGlassMarginMetres 0, MatterBurialDesertPerSecond -1), no founding trickle (FoundingTricklePerSecond 0, FoundingTricklePoolCount 0, FoundingTricklePoolHash \"\", FoundingTricklePoolShare 0), and the settings the tank refuses in a box's world: PatchesAcross 1 (r62cf has 3), Current.Mode Transport (r62cf has Ocean, at the same speed of 0.02 m/s), ReadAcrossSeams false, and ReefShape Mushroom (r62cf has Coral, which grows from the islands, with ReefCover 0 as it stands). Ageing, corpses, the bed, the spin drag and every other value are r62cf's; world.seedOverrides stays at landscape=11.",
+  "seed": "0x1",
+  "world": {
+    "config": "rounds/nursery/configs/ecbba999e231021c.json",
+    "configHash": "ecbba999e231021c",
+    "overrides": {
+      "Current.Mode": "Transport",
+      "FoundingTricklePerSecond": 0,
+      "FoundingTricklePoolCount": 0,
+      "FoundingTricklePoolHash": "",
+      "FoundingTricklePoolShare": 0,
+      "InitialMatterPerCubicMetre": 0,
+      "MatterBudgetUnits": 0,
+      "MatterBurialDesertPerSecond": -1,
+      "MatterInfluxPerSecond": 0,
+      "MatterIslandGlassMarginMetres": 0,
+      "MatterIslandWavelengthMetres": 0,
+      "PatchesAcross": 1,
+      "ReadAcrossSeams": false,
+      "ReefShape": "Mushroom",
+      "WorldAreaSquareMetres": 3400,
+      "WorldShape": "Tank"
+    }
+  },
+  "bodies": {
+    "source": "pool",
+    "founders": 0,
+    "trunk": null,
+    "pool": "rounds/nursery/pools/410a70db44a4b20a.tsv",
+    "keep": null,
+    "brains": "kept"
+  },
+  "setup": {
+    "seconds": 1800,
+    "dt": 0.01,
+    "tankSize": 8,
+    "floorClosed": true,
+    "birthsHeld": true,
+    "snow": null,
+    "carrion": {
+      "count": 0,
+      "joules": 40
+    },
+    "start": {
+      "aboveBed": 11.5
+    },
+    "purse": {
+      "rule": "grown",
+      "seconds": 3830
+    }
+  },
+  "leaves": {
+    "pool": "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz",
+    "count": 31,
+    "spentUnitsPerCubicMetre": 0.004237,
+    "patches": {
+      "count": 3,
+      "radius": 6,
+      "ring": 21
+    }
+  },
+  "search": {
+    "population": 48,
+    "draws": 8,
+    "generations": 60,
+    "elites": 8,
+    "tournament": 3,
+    "perBody": true,
+    "evolve": "kind",
+    "evolveEnvelope": false,
+    "crossover": null,
+    "stop": {
+      "measure": "eaten",
+      "window": 5,
+      "gain": 0.05,
+      "over": 10,
+      "floor": 20
+    }
+  },
+  "reward": {
+    "class": "EnergyReturn",
+    "parameters": {
+      "chargeDeathToEnd": true
+    }
+  },
+  "exam": {
+    "episodes": 16,
+    "salt": "0x62656e6368",
+    "controls": [
+      {
+        "kind": "own"
+      },
+      {
+        "kind": "brainless"
+      },
+      {
+        "kind": "knockout",
+        "channels": [
+          "LeafScent",
+          "LeafScentDirection"
+        ]
+      }
+    ],
+    "pool": "tops"
+  }
+}

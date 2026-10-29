@@ -1212,6 +1212,239 @@ namespace Evosim.Core
             return directions;
         }
 
+        // ---------------------------------------------------------------- the axis through the origin
+
+        /// <summary>
+        /// Where the shifted frame's X, Y or Z axis leaves the solid: the signed coordinate along that axis,
+        /// metres. The mouth point's closed form (<see cref="MouthPoint"/>).
+        /// </summary>
+        /// <param name="h">The half-extents.</param>
+        /// <param name="axis">0 for X, 1 for Y, 2 for Z.</param>
+        /// <param name="negative">True for the end on the negative side.</param>
+        /// <remarks>
+        /// The frame's origin stands at the untapered solid's <c>t0 = y_c/b</c> (<see cref="CentreOffset"/>), so the
+        /// ends along Y are <c>b − y_c</c> and <c>−(b + y_c)</c>. Along X the axis runs through the slice at t0, whose
+        /// reach on its own axis is the profile's <c>w(t0) = (1 − |t0|^(2/ε1))^(ε1/2)</c> times the half-extent and
+        /// the taper <c>f(t0) = 1 + k·t0</c>; along Z the same with c. The inside function of the point returned is 1.
+        /// </remarks>
+        public float AxisReach(Float3 h, int axis, bool negative)
+        {
+            if ((uint)axis > 2u) throw new ArgumentOutOfRangeException(nameof(axis), axis, "An axis is 0, 1 or 2.");
+
+            double b = AbsB(h);
+            double t0 = _centreFactor;
+            double value;
+
+            if (axis == 1)
+            {
+                value = negative ? -(b + t0 * b) : b - t0 * b;
+            }
+            else
+            {
+                double s = 1.0 - Math.Pow(Math.Abs(t0), _profilePower);
+                double w = s > 0.0 ? Math.Pow(s, _e1 / 2.0) : 0.0;
+                double reach = (axis == 0 ? AbsA(h) : AbsC(h)) * w * (1.0 + _k * t0);
+                value = negative ? -reach : reach;
+            }
+
+            return (float)value;
+        }
+
+        // ---------------------------------------------------------------- the strip integral (D255)
+
+        /// <summary>
+        /// The lattice resolution of the fin law's strip integral: cells along a face edge of the cube whose
+        /// surface points the hull is taken over, so one more points than that
+        /// (<see cref="StrokeIntegrals(Double3[], Double3, Double3, Double3, out double, out double)"/>). Even,
+        /// so that the lattice has a point on each midline and the sharp ridge of a diamond section is met.
+        /// </summary>
+        public const int StrokeResolution = 24;
+
+        /// <summary>
+        /// The surface as a cube lattice, in the shifted frame: <paramref name="resolution"/> cells along each face
+        /// edge, so <c>resolution + 1</c> points with the ends included, on each of six faces, in a fixed order (face
+        /// axis, side, then the two cube coordinates), each pushed onto the surface as
+        /// <see cref="SurfacePointAndNormal"/> pushes a cube point. Points on a cube edge appear on both faces. An
+        /// even resolution puts a point on each midline of a face, so the surface's points on the frame's axes are in
+        /// the set.
+        /// </summary>
+        public Double3[] SurfaceLattice(Float3 h, int resolution)
+        {
+            if (resolution < 2) throw new ArgumentOutOfRangeException(nameof(resolution), resolution, "At least two cells a face edge.");
+
+            double a = AbsA(h), b = AbsB(h), c = AbsC(h);
+            int points1 = resolution + 1;
+            var points = new Double3[6 * points1 * points1];
+            if (!(a > 0.0 && b > 0.0 && c > 0.0)) return points;
+
+            int at = 0;
+            double span = resolution;
+            for (int axis = 0; axis < 3; axis++)
+            {
+                int u = (axis + 1) % 3;
+                int v = (axis + 2) % 3;
+
+                for (int side = 0; side < 2; side++)
+                {
+                    double sign = side == 0 ? 1.0 : -1.0;
+
+                    for (int p = 0; p < points1; p++)
+                    {
+                        for (int q = 0; q < points1; q++)
+                        {
+                            points[at++] = MapCube(
+                                CubePoint(axis, sign, u, -1.0 + 2.0 * p / span, v, -1.0 + 2.0 * q / span), a, b, c, out _);
+                        }
+                    }
+                }
+            }
+
+            return points;
+        }
+
+        /// <summary>
+        /// D255's strip integrals of the solid for one limb and one stroke: the added mass and its first moment
+        /// about the joint, per unit density, <c>M/ρ = ∫ π/4 c(s)² ds</c> and <c>I1/ρ = ∫ π/4 c(s)² s ds</c>.
+        /// </summary>
+        /// <param name="h">The half-extents.</param>
+        /// <param name="joint">The joint point J, in the shifted frame.</param>
+        /// <param name="axis">The limb's unit axis â, in that frame, joint to origin.</param>
+        /// <param name="stroke">The unit stroke direction m, in that frame.</param>
+        /// <param name="resolution">Cells along a face edge of the lattice (<see cref="StrokeResolution"/>).</param>
+        /// <param name="massOverDensity">M/ρ, m³.</param>
+        /// <param name="firstMomentOverDensity">I1/ρ, m⁴.</param>
+        public void StrokeIntegrals(
+            Float3 h, Double3 joint, Double3 axis, Double3 stroke, int resolution,
+            out double massOverDensity, out double firstMomentOverDensity) =>
+            StrokeIntegrals(SurfaceLattice(h, resolution), joint, axis, stroke, out massOverDensity, out firstMomentOverDensity);
+
+        /// <summary>
+        /// <see cref="StrokeIntegrals(Float3, Double3, Double3, Double3, int, out double, out double)"/> over a lattice
+        /// already made (<see cref="SurfaceLattice"/>).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The slice by projection.</b> The slice of a convex body at distance s from the joint along the limb has
+        /// the width along n = â × m (unit) that the body's projection onto the plane of â and n has at s. So each
+        /// lattice point goes to <c>(s, u) = ((x − J)·â, x·n)</c>, the planar convex hull is taken by Andrew's monotone
+        /// chain, and the width <c>c(s)</c> is the hull's upper chain less its lower. Between two consecutive sorted
+        /// hull vertex s values both chains are straight, so c is linear there and Simpson's rule is exact for c² and
+        /// for c²·s.
+        /// </para>
+        /// <para>
+        /// <b>Deterministic:</b> doubles throughout; the points are sorted by s and then u, a total order, so the sorted
+        /// array is the same whatever the sort's path; the pieces are summed in order of s.
+        /// </para>
+        /// <para>
+        /// Returns 0 and 0 when the stroke has no part across the axis (â × m is zero) or the lattice has no
+        /// extent.
+        /// </para>
+        /// </remarks>
+        public static void StrokeIntegrals(
+            Double3[] lattice, Double3 joint, Double3 axis, Double3 stroke,
+            out double massOverDensity, out double firstMomentOverDensity)
+        {
+            if (lattice == null) throw new ArgumentNullException(nameof(lattice));
+
+            massOverDensity = 0.0;
+            firstMomentOverDensity = 0.0;
+
+            Double3 side = Double3.Cross(axis, stroke);
+            double sideLength = side.Length;
+            if (!(sideLength > 0.0)) return;
+            side = side * (1.0 / sideLength);
+
+            var points = new StripPoint[lattice.Length];
+            for (int i = 0; i < lattice.Length; i++)
+            {
+                points[i] = new StripPoint(Double3.Dot(lattice[i] - joint, axis), Double3.Dot(lattice[i], side));
+            }
+
+            Array.Sort(points, CompareStripPoints);
+
+            // Andrew's monotone chain. The lower chain runs left to right and ends at the last point; the upper
+            // chain, built from the points in reverse, runs right to left and ends at the first. A turn that is not
+            // strictly left is popped, so collinear points and repeats drop out.
+            var chain = new StripPoint[2 * points.Length + 2];
+            int count = 0;
+            for (int i = 0; i < points.Length; i++)
+            {
+                while (count >= 2 && StripTurn(chain[count - 2], chain[count - 1], points[i]) <= 0.0) count--;
+                chain[count++] = points[i];
+            }
+
+            int lowerCount = count;
+            for (int i = points.Length - 2, floor = count + 1; i >= 0; i--)
+            {
+                while (count >= floor && StripTurn(chain[count - 2], chain[count - 1], points[i]) <= 0.0) count--;
+                chain[count++] = points[i];
+            }
+
+            var lower = new StripPoint[lowerCount];
+            Array.Copy(chain, 0, lower, 0, lowerCount);
+
+            // The upper chain in increasing s: the chain from its last point back to the one shared with the lower.
+            int upperCount = count - lowerCount + 1;
+            var upper = new StripPoint[upperCount];
+            for (int i = 0; i < upperCount; i++) upper[i] = chain[count - 1 - i];
+
+            // The breakpoints: every distinct s of a hull vertex, in order.
+            var cuts = new double[lowerCount + upperCount];
+            for (int i = 0; i < lowerCount; i++) cuts[i] = lower[i].S;
+            for (int i = 0; i < upperCount; i++) cuts[lowerCount + i] = upper[i].S;
+            Array.Sort(cuts);
+
+            double mass = 0.0, moment = 0.0;
+            int atLower = 0, atUpper = 0;
+
+            for (int p = 0; p + 1 < cuts.Length; p++)
+            {
+                double from = cuts[p], to = cuts[p + 1];
+                double length = to - from;
+                if (!(length > 0.0)) continue;
+
+                while (atLower + 1 < lowerCount && lower[atLower + 1].S <= from) atLower++;
+                while (atUpper + 1 < upperCount && upper[atUpper + 1].S <= from) atUpper++;
+                if (atLower + 1 >= lowerCount || atUpper + 1 >= upperCount) continue;
+
+                double widthFrom = StripAt(upper, atUpper, from) - StripAt(lower, atLower, from);
+                double widthTo = StripAt(upper, atUpper, to) - StripAt(lower, atLower, to);
+                double widthMid = 0.5 * (widthFrom + widthTo);
+                double mid = 0.5 * (from + to);
+
+                double sixth = length / 6.0;
+                double a2 = widthFrom * widthFrom, m2 = widthMid * widthMid, b2 = widthTo * widthTo;
+                mass += sixth * (a2 + 4.0 * m2 + b2);
+                moment += sixth * (a2 * from + 4.0 * m2 * mid + b2 * to);
+            }
+
+            double quarterPi = Math.PI / 4.0;
+            massOverDensity = quarterPi * mass;
+            firstMomentOverDensity = quarterPi * moment;
+        }
+
+        private readonly struct StripPoint
+        {
+            public readonly double S, U;
+            public StripPoint(double s, double u) { S = s; U = u; }
+        }
+
+        private static int CompareStripPoints(StripPoint a, StripPoint b)
+        {
+            int bySide = a.S.CompareTo(b.S);
+            return bySide != 0 ? bySide : a.U.CompareTo(b.U);
+        }
+
+        private static double StripTurn(StripPoint o, StripPoint a, StripPoint b) =>
+            (a.S - o.S) * (b.U - o.U) - (a.U - o.U) * (b.S - o.S);
+
+        // The chain's height at s along its segment from vertex i to i + 1, which is not vertical.
+        private static double StripAt(StripPoint[] chain, int i, double s)
+        {
+            StripPoint p = chain[i], q = chain[i + 1];
+            return p.U + (q.U - p.U) * ((s - p.S) / (q.S - p.S));
+        }
+
         // ---------------------------------------------------------------- helpers
 
         /// <summary>F of the untapered solid at a point already divided by its half-extents.</summary>

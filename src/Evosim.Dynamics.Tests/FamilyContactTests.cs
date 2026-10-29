@@ -484,7 +484,7 @@ namespace Evosim.Dynamics.Tests
         }
 
         [Fact]
-        public void ANamedPartsReachIsStillItsHalfDiagonalAndAFamilyPartInASpheresWorldKeepsIt()
+        public void ANamedPartsReachIsStillItsHalfDiagonalAndAFamilyPartInASpheresWorldTakesTheSolidsReach()
         {
             var half = new Float3(0.2f, 0.45f, 0.15f);
             double diagonal = Math.Sqrt((double)half.X * half.X + (double)half.Y * half.Y + (double)half.Z * half.Z);
@@ -492,9 +492,12 @@ namespace Evosim.Dynamics.Tests
             Creature named = BoxBody(Config(ContactShapeForm.TrueShape), half, 1, Vec3.Zero, QuatD.Identity);
             Assert.Equal(Bits(diagonal), Bits(named.LinkReach[0]));
 
-            // A world on the spheres has no hull core, so a family part there has the half-diagonal, as before.
-            var spheres = new Creature(2, Adult(new PartForm(0.6f, 1f, 1.5f), half), Config(ContactShapeForm.Spheres), Family);
-            Assert.Equal(Bits(diagonal), Bits(spheres.LinkReach[0]));
+            // D255. A world on the spheres has no hull core, but its family part's sphere still holds the part: the
+            // solid's reach about its origin, which the half-diagonal does not.
+            Phenotype adult = Adult(new PartForm(0.6f, 1f, 1.5f), half);
+            var spheres = new Creature(2, adult, Config(ContactShapeForm.Spheres), Family);
+            Assert.Equal(Bits(adult.Parts[0].Family.ReferenceSolidReach), Bits(spheres.LinkReach[0]));
+            Assert.True(spheres.LinkReach[0] > diagonal);
         }
 
         // ------------------------------------------------------------ the surfaces

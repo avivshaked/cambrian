@@ -48,6 +48,15 @@ namespace Evosim.Farm.Gpu
 
         int LinkPoolCapacity { get; }
 
+        /// <summary>D235, for the tests: the cells of the held-sniff columns across the classes (one a class in a world without the nose).</summary>
+        long HeldCells { get; }
+
+        /// <summary>D235, for the tests: the bytes of the held-sniff columns the blocks have uploaded so far (none in a world without the nose).</summary>
+        long HeldBytesUp { get; }
+
+        /// <summary>D235, for the tests: the rows of the nose-flag columns across the classes (one a class in a world without the nose, else the class's links).</summary>
+        long NoseFlagRows { get; }
+
         /// <summary>The scent's fill on the card from the world's corpses (GpuScent), under <see cref="GpuOptions.Scent"/>.</summary>
         void FillScentOnCard(World world);
     }
@@ -253,11 +262,12 @@ namespace Evosim.Farm.Gpu
                 stepped.ShapedAddedMass != built.ShapedAddedMass || stepped.StrokePushesAssembly != built.StrokePushesAssembly ||
                 stepped.ContactShape != built.ContactShape ||
                 stepped.MirroredDrive != built.MirroredDrive ||
+                (stepped.Nose != null) != (built.Nose != null) ||
                 stepped.SeamLengthMetres != built.SeamLengthMetres || stepped.SeamWidthMetres != built.SeamWidthMetres)
             {
                 throw new InvalidOperationException(
                     "The gpu engine was built for one world and handed another to step: its current, " +
-                    "bed, reefs, step, pace factor, contact model, contact shape, added-mass law, stroke assembly or mirrored-joint drive differ from the ones its kernels read.");
+                    "bed, reefs, step, pace factor, contact model, contact shape, added-mass law, stroke assembly, mirrored-joint drive or nose differ from the ones its kernels read.");
             }
         }
 
@@ -315,6 +325,12 @@ namespace Evosim.Farm.Gpu
         internal long PoolRelays => _runner.PoolRelays;
 
         internal int LinkPoolCapacity => _runner.LinkPoolCapacity;
+
+        internal long HeldCells => _runner.HeldCells;
+
+        internal long HeldBytesUp => _runner.HeldBytesUp;
+
+        internal long NoseFlagRows => _runner.NoseFlagRows;
 
         /// <summary>The header's words after <c>engine</c>: <c>gpu single cpu-accelerator g4 classes 2/4/8/16</c>.</summary>
         public string HeaderToken() =>

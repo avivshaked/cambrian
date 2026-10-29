@@ -524,6 +524,8 @@ namespace Evosim.Nursery.Tests
             "ClockSeconds",
             // D241: the adult's tissue, the body fraction and the adult's standing watts, as numbers, to read a body placed grown under the climb.
             "AdultTissue", "BodyFraction", "AdultStandingWatts",
+            // D235's graft film: the leaves' poses by id, as copies, and a body's genome as text, so the probe hands out no organism or genome.
+            "OtherPoses", "GenomeTextOf",
         };
 
         [Fact]

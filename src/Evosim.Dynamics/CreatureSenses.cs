@@ -47,6 +47,18 @@ namespace Evosim.Dynamics
     /// <b>Flow is one step stale here too.</b> It is filled by the previous step's drag pass,
     /// which is the farm's ordering exactly: <c>Sample</c> runs before <c>Fluid.Apply</c>.
     /// </para>
+    /// <para>
+    /// <b>In a world whose table lists the nose, only noses smell</b> (D235, <see cref="NoseCell"/>).
+    /// The leaf smell, the carrion smell and the chemical sense read zero on every other part. A
+    /// nose reads them at its tip (<see cref="MouthPoint.Local"/>), with noise that falls with its
+    /// area, once per metabolic step: the farm calls <see cref="Sniff"/> for every body before the
+    /// step's physics block, and the readings hold through the block. The noise is a hash of
+    /// <see cref="NoiseSeed"/>, <see cref="BodyId"/>, the part's path and the metabolic step's
+    /// index, so it is stateless and no checkpoint carries it: a resumed world sniffs at the
+    /// restored index from the restored poses, as the unbroken run did. Without
+    /// <see cref="HeldSniff"/> (a bench) a nose reads its tip exactly on every step. A world whose
+    /// table lacks the nose reads every part as before, to the bit.
+    /// </para>
     /// </remarks>
     public sealed class CreatureSenses : ISensorField
     {
@@ -82,6 +94,10 @@ namespace Evosim.Dynamics
         private readonly float[] _scent;
         private readonly float _scentHalfScale;
         private float _energy;
+
+        // D235: the world's nose, or null, and which parts are noses.
+        private readonly NoseCell _nose;
+        private readonly bool[] _isNose;
 
         private readonly float _worldDepthMetres;
         private readonly float _chemicalHalfScale;
@@ -150,6 +166,20 @@ namespace Evosim.Dynamics
         /// </summary>
         public float[] Damage { get; set; }
 
+        /// <summary>
+        /// True where something calls <see cref="Sniff"/> once per metabolic step, as the farm does
+        /// (D235): <see cref="Sample"/> then leaves the noses' readings as the last sniff left
+        /// them. False, a bench's, reads a nose's tip exactly on every step, with no noise. Read
+        /// only in a world whose table lists the nose.
+        /// </summary>
+        public bool HeldSniff { get; set; }
+
+        /// <summary>The world's seed, which keys a nose's noise (D235). Set with <see cref="HeldSniff"/>.</summary>
+        public ulong NoiseSeed { get; set; }
+
+        /// <summary>The organism's id, which keys a nose's noise (D235). Set with <see cref="HeldSniff"/>.</summary>
+        public long BodyId { get; set; }
+
         public CreatureSenses(Creature body, SolverConfig config)
         {
             _body = body;
@@ -191,12 +221,52 @@ namespace Evosim.Dynamics
             _scent = new float[body.Links];
             _scentHalfScale = (float)System.Math.Max(1e-6, config.ScentHalfScaleJoules);
 
+            // A part's type does not change while this body lives: growth keeps it and a plan
+            // change builds a new body. The type is read rather than PhenotypePart.Smells, so a
+            // body grown against the wrong table still smells by the world's rule.
+            _nose = config.Nose;
+            _isNose = new bool[body.Links];
+            if (_nose != null)
+            {
+                for (int b = 0; b < body.Links; b++)
+                {
+                    _isNose[b] = body.Phenotype.Parts[b].CellTypeId == CellTypeIds.Nose;
+                }
+            }
+
             int dof = body.Dof > 0 ? body.Dof : 1;
             _angle = new float[dof];
             _rate = new float[dof];
             _stroke = new float[dof];
             _hold = new float[dof];
             _ramp = new float[dof];
+        }
+
+        /// <summary>True where this link is a nose in a world whose table lists the nose (D235); false everywhere in a world without one.</summary>
+        public bool IsNose(int link) => _nose != null && link >= 0 && link < _isNose.Length && _isNose[link];
+
+        /// <summary>
+        /// One link's held smell readings exactly as the last <see cref="Sniff"/> (or the last
+        /// <see cref="Sample"/> that found the link not finite) left them: the chemical, the carrion
+        /// scent, the leaf strength and the leaf direction's three. The card's port copies these into
+        /// its kernel for a nose link (D235), so it reads the floats the solver's brain would. A link
+        /// out of range reads zeros.
+        /// </summary>
+        public void HeldSmell(int link, out float chemical, out float scent, out float leaf,
+                              out float directionX, out float directionY, out float directionZ)
+        {
+            if (link < 0 || link >= _leaf.Length)
+            {
+                chemical = scent = leaf = directionX = directionY = directionZ = 0f;
+                return;
+            }
+
+            chemical = _chemical[link];
+            scent = _scent[link];
+            leaf = _leaf[link];
+            directionX = _leafDirection[3 * link];
+            directionY = _leafDirection[3 * link + 1];
+            directionZ = _leafDirection[3 * link + 2];
         }
 
         /// <summary>Reads the body. Call once per step, before <c>Brain.Step</c>.</summary>
@@ -230,6 +300,12 @@ namespace Evosim.Dynamics
 
             int patch = _body.Patch;
             if (smells && (patch < 0 || patch >= Nutrients.PatchCount)) patch = 0;
+
+            // D235: in a nose world no part smells at its centre; the noses are read after the loop.
+            bool nosed = _nose != null;
+            bool partsSmell = !nosed && smells;
+            bool partsScent = !nosed && scents;
+            bool partsLeaf = !nosed && leaves;
 
             for (int b = 0; b < _body.Links; b++)
             {
@@ -274,7 +350,7 @@ namespace Evosim.Dynamics
                     _up[b] = (float)_body.RotationMatrix[9 * b + 4];
                 }
 
-                if (smells)
+                if (partsSmell)
                 {
                     // The *edible* density and not the field's own, at the part's own position
                     // and in the creature's own patch: what a mouth may draw is what a nose
@@ -286,13 +362,13 @@ namespace Evosim.Dynamics
                     _chemical[b] = density > 0f ? density / (density + _chemicalHalfScale) : 0f;
                 }
 
-                if (scents)
+                if (partsScent)
                 {
                     float s = Scent.At((float)px, (float)py, (float)pz);
                     _scent[b] = s > 0f ? s / (s + _scentHalfScale) : 0f;
                 }
 
-                if (leaves) SampleLeaf(b, (float)px, (float)py, (float)pz);
+                if (partsLeaf) SampleLeaf(b, (float)px, (float)py, (float)pz);
 
                 if (_readsFlow)
                 {
@@ -335,6 +411,152 @@ namespace Evosim.Dynamics
 
                     if (_readsDrive) SampleDrive(b, offset + d);
                 }
+            }
+
+            // A bench's nose: its tip, exactly, on every step. A farm body's noses are read by Sniff.
+            if (nosed && !HeldSniff && (smells || scents || leaves)) ReadNoses(smells, scents, leaves, patch, false, 0);
+        }
+
+        /// <summary>
+        /// D235's sniff: every nose part reads, at its tip and with its noise, the smells this body
+        /// reads, and holds them until the next sniff. The farm calls it for every body once per
+        /// metabolic step, before that step's physics block; see the class remarks.
+        /// </summary>
+        /// <param name="metabolicStep">
+        /// The sniff's index: the farm's physics steps over its steps per metabolic step, which a
+        /// checkpoint restores. It keys the noise with <see cref="NoiseSeed"/>, <see cref="BodyId"/>
+        /// and the part's path (<see cref="NoseCell.SniffKey"/>).
+        /// </param>
+        /// <remarks>
+        /// Reads only what nothing writes between the metabolic step and the block: the poses, the
+        /// phenotype after growth, the fields, and <see cref="Creature.RelativeVelocity"/>, which
+        /// <c>Fluid.Apply</c> wrote at the last physics step. The card's port calls this same method
+        /// on the poses it reads back, so the two engines sniff by one piece of code.
+        /// </remarks>
+        public void Sniff(long metabolicStep)
+        {
+            if (_nose == null) return;
+
+            bool smells = _readsChemical && Nutrients != null;
+            bool scents = _readsScent && Scent != null;
+            bool leaves = (_readsLeaf || _readsLeafDirection) && LeafScent != null;
+            if (!smells && !scents && !leaves) return;
+
+            int patch = _body.Patch;
+            if (smells && (patch < 0 || patch >= Nutrients.PatchCount)) patch = 0;
+
+            ReadNoses(smells, scents, leaves, patch, true, metabolicStep);
+        }
+
+        // Every nose part's smells at its tip: with the sniff's noise, or exactly.
+        private void ReadNoses(bool smells, bool scents, bool leaves, int patch, bool noisy, long sniff)
+        {
+            Phenotype phenotype = _body.Phenotype;
+
+            for (int b = 0; b < _body.Links; b++)
+            {
+                if (!_isNose[b]) continue;
+
+                Vec3 centre = Vec3.Read(_body.Position, 3 * b);
+                double finite = centre.X + centre.Y + centre.Z;
+                if (double.IsNaN(finite) || double.IsInfinity(finite))
+                {
+                    _chemical[b] = 0f;
+                    _scent[b] = 0f;
+                    _leaf[b] = 0f;
+                    _leafDirection[3 * b] = 0f;
+                    _leafDirection[3 * b + 1] = 0f;
+                    _leafDirection[3 * b + 2] = 0f;
+                    continue;
+                }
+
+                // The tip, as a mouth's is found, posed as the farm poses a mouth: in double, narrowed once.
+                PhenotypePart part = phenotype.Parts[b];
+                Float3 t = MouthPoint.Local(phenotype, b);
+                var tipLocal = new Vec3(t.X, t.Y, t.Z);
+                Mat3 rotation = Mat3.Read(_body.RotationMatrix, 9 * b);
+                Vec3 tip = centre + rotation * tipLocal;
+                float tx = (float)tip.X, ty = (float)tip.Y, tz = (float)tip.Z;
+
+                double reach = tipLocal.Magnitude;
+                double length = 2.0 * reach;
+                double area = part.SurfaceArea;
+                if (_nose.FacingIntake && reach > 0.0)
+                {
+                    Vec3 outward = rotation * (tipLocal * (1.0 / reach));
+                    Vec3 moving = Vec3.Read(_body.RelativeVelocity, 3 * b);
+                    area = _nose.EffectiveArea(area, moving.X * outward.X + moving.Y * outward.Y + moving.Z * outward.Z);
+                }
+
+                ulong key = noisy ? NoseCell.SniffKey(NoiseSeed, BodyId, part.PathId, sniff) : 0UL;
+
+                if (smells)
+                {
+                    float density = Nutrients.EdibleDensityAt(new FieldPoint(new Float3(tx, ty, tz), patch));
+                    double c = Count(NoseSmell.Chemical, density, area, key, noisy);
+                    _chemical[b] = c > 0.0 ? (float)(c / (c + _chemicalHalfScale)) : 0f;
+                }
+
+                if (scents)
+                {
+                    double c = Count(NoseSmell.Carrion, Scent.At(tx, ty, tz), area, key, noisy);
+                    _scent[b] = c > 0.0 ? (float)(c / (c + _scentHalfScale)) : 0f;
+                }
+
+                if (leaves) SniffLeaf(b, tx, ty, tz, rotation, area, length, key, noisy);
+            }
+        }
+
+        // What a nose counts of one smell: the field plus its noise, never below zero.
+        private double Count(NoseSmell smell, float field, double area, ulong key, bool noisy) =>
+            noisy
+                ? _nose.Read(smell, field, area, NoseCell.Normal(key, (int)smell))
+                : field > 0f ? field : 0.0;
+
+        /// <summary>
+        /// D167's leaf smell at a nose's tip (D235): the noisy count squashed, and in the direction
+        /// form the gradient in the part's own frame with <c>4σ / L</c> of noise on each axis,
+        /// unit length, times the strength.
+        /// </summary>
+        private void SniffLeaf(
+            int b, float tx, float ty, float tz, Mat3 rotation, double area, double length, ulong key, bool noisy)
+        {
+            float s = LeafScent.At(tx, ty, tz);
+            double c = Count(NoseSmell.Leaf, s, area, key, noisy);
+            float strength = c > 0.0 ? (float)(c / (c + _leafHalfScale)) : 0f;
+            _leaf[b] = strength;
+
+            if (!_readsLeafDirection) return;
+
+            // D234: reflected as SampleLeaf reflects it, and the noise drawn in the frame the part reads.
+            Float3 g = LeafScent.GradientAt(tx, ty, tz);
+            Vec3 local = _body.ReflectFrameVector(b, rotation.TransposedTimes(new Vec3(g.X, g.Y, g.Z)));
+            if (noisy)
+            {
+                double spread = _nose.GradientSigma(NoseSmell.Leaf, s, area, length);
+                if (spread > 0.0)
+                {
+                    local = new Vec3(
+                        local.X + spread * NoseCell.Normal(key, NoseCell.GradientDrawX),
+                        local.Y + spread * NoseCell.Normal(key, NoseCell.GradientDrawX + 1),
+                        local.Z + spread * NoseCell.Normal(key, NoseCell.GradientDrawX + 2));
+                }
+            }
+
+            double magnitude = local.Magnitude;
+            int at = 3 * b;
+            if (magnitude > 0 && strength > 0f)
+            {
+                double scale = strength / magnitude;
+                _leafDirection[at] = (float)(local.X * scale);
+                _leafDirection[at + 1] = (float)(local.Y * scale);
+                _leafDirection[at + 2] = (float)(local.Z * scale);
+            }
+            else
+            {
+                _leafDirection[at] = 0f;
+                _leafDirection[at + 1] = 0f;
+                _leafDirection[at + 2] = 0f;
             }
         }
 
@@ -391,6 +613,9 @@ namespace Evosim.Dynamics
         public float Read(int partIndex, SensorChannel channel, int index)
         {
             if (partIndex < 0 || partIndex >= _depth.Length) return 0f;
+
+            // D235: in a nose world a part that is not a nose smells nothing, under either brain.
+            if (_nose != null && !_isNose[partIndex] && channel.IsSmell()) return 0f;
 
             switch (channel)
             {

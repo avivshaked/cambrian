@@ -116,6 +116,13 @@ namespace Evosim.Core
                 parentAnchorLocal: Float3.Zero,
                 childAnchorLocal: Float3.Zero);
 
+            // D235: in a world whose table lists the nose, only noses smell. Nothing is touched under
+            // any other table, so every part keeps Smells' default and every body is the one before.
+            if (cellTypes != null && cellTypes.Contains(CellTypeIds.Nose))
+            {
+                foreach (PhenotypePart part in phenotype.Parts) part.Smells = part.CellTypeId == CellTypeIds.Nose;
+            }
+
             // D113: each part's distance from the root, once the body is whole, which is what the
             // support cost is priced on. Measured from the root part's own centre and not from
             // the frame's origin, so a root transform moves nothing a body pays.
@@ -210,6 +217,11 @@ namespace Evosim.Core
 
             transform.Decompose(out Float3 position, out Quat rotation, out _, out bool mirrored);
 
+            // D233. A family part measures its surface once, here, at the size it is built at, and
+            // its area, its exposure and its drag all read that one set of panels (scaled, in a
+            // grown copy). A named part measures its area from the shape, as it always did.
+            FamilyGeometry family = FamilyGeometry.For(shape, node.Form, halfExtents);
+
             // DevelopmentLimits.MaxBodyReachMetres: the far corner of this part, bounded above by
             // its centre's distance from the root's origin plus its half diagonal, must lie within
             // the bound. Pruned with its subtree, as the part cap prunes, and counted apart from
@@ -217,10 +229,13 @@ namespace Evosim.Core
             float reach = limits.MaxBodyReachMetres;
             if (reach > 0f)
             {
-                float halfDiagonal = (float)System.Math.Sqrt(
-                    (double)halfExtents.X * halfExtents.X +
-                    (double)halfExtents.Y * halfExtents.Y +
-                    (double)halfExtents.Z * halfExtents.Z);
+                // D255: a family part's bound is its geometry's reach about its origin, not the box's half diagonal.
+                float halfDiagonal = family != null
+                    ? (float)family.ReferenceSolidReach
+                    : (float)System.Math.Sqrt(
+                        (double)halfExtents.X * halfExtents.X +
+                        (double)halfExtents.Y * halfExtents.Y +
+                        (double)halfExtents.Z * halfExtents.Z);
                 float centre = (float)System.Math.Sqrt(
                     (double)position.X * position.X +
                     (double)position.Y * position.Y +
@@ -232,11 +247,6 @@ namespace Evosim.Core
                     return;
                 }
             }
-
-            // D233. A family part measures its surface once, here, at the size it is built at, and
-            // its area, its exposure and its drag all read that one set of panels (scaled, in a
-            // grown copy). A named part measures its area from the shape, as it always did.
-            FamilyGeometry family = FamilyGeometry.For(shape, node.Form, halfExtents);
 
             PhenotypePart part = phenotype.Add(new PhenotypePart
             {
@@ -292,6 +302,10 @@ namespace Evosim.Core
                 Neurons = node.Neurons,
                 PathId = pathId,
             });
+
+            // D255: the fin law's strip integral reads the joint's place on a family part at the size the developer
+            // built it at, which is this anchor, and nowhere is it recovered from a scaled copy's by dividing.
+            if (family != null) family.SetReferenceChildAnchor(part.ChildAnchorLocal);
 
             // Beside the part and in the same order, so partPaths[i] is the path of Parts[i].
             partPaths?.Add(path.ToArray());
