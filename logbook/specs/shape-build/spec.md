@@ -148,16 +148,20 @@ The tests use xUnit with at most 2 threads, one MSBuild node, BelowNormal, on co
 
 These are taken in slots the coordinator books.
 
-- **Pace with the family on.** A bench read of a crowded second of the t3 world, as step 4's plan below sets out. The fin
-  law is on in both arms:
+- **Pace with the family on: the gate, on the card.** Rounds step on the card, and r63b's G0 pace was read there. So the
+  15 % gate is read at the card identity sitting. There the family-on world is timed against the same world with the
+  family off, on one card and one build. The family-on world's step is to be no more than 15 % slower. The coordinator
+  ruled this on 2026-10-29.
+- **Pace with the family on: the host diagnostic.** A bench read of a crowded second of the t3 world, as step 4's plan
+  below sets out. The fin law is on in both arms:
   - as recorded;
   - with every jointed part turned into its nearest family member, which is the worst case.
 
-  The read times the step and the build per body separately. The gate is the step no more than 15 % slower. The build
-  cost per birth is reported beside it.
+  The read times the solver's step and the build per body separately, and reports the build cost per birth. No gate rests
+  on it. Beside the card's number, it says whether a slowdown comes from the solver or from the card.
 - **Pace with the family off.** The bit-for-bit test above covers it. The pace read is the build's ordinary farm pace
   check on a quiet machine.
-- **Card identity sitting** with the family on, at groups 32 and 64.
+- **Card identity sitting** with the family on, at groups 32 and 64. It carries the pace gate's two timed arms.
 
 ## The order
 
@@ -223,7 +227,7 @@ None of them touches the fin-law lines. I rebase `shape-build` on main once the 
 - Family on the card: a one-limb family body under the powered stroke, with the fin law on, gives the same digest on the card in double as on the host, step for step, for 2,000 steps. It also gives the same digest at groups 32 and 64.
 - The refusal test is moved, to refuse the family only under true-shape contact.
 
-**Machine time.** Regeneration and the filtered card tests take about 30 minutes in a slot with nothing else on the card. G0's identity sitting with the family on takes about 1.5 hours, booked by the coordinator.
+**Machine time.** Regeneration and the filtered card tests take about 30 minutes in a slot with nothing else on the card. G0's identity sitting with the family on takes about 1.5 hours, booked by the coordinator. The sitting adds one arm: the same world with the family off, timed beside the family-on arm on the same card and build. That pair is the 15 % pace gate (section 5).
 
 ## Step 4's plan: the pace read
 
@@ -262,5 +266,6 @@ The read, in a quiet slot the coordinator books: second 20700 of `runs/r62p-t3-6
   the fin law's cost per limb beside it.
 
 The arms run at the farm's thread count. Each arm has 200 warm-up steps and 2000 timed steps, three repeats each, and the median is
-taken. The gate is the converted arm's step at most 15 % slower than the recorded arm's. The bench counts the bodies it
+taken. The converted arm's step against the recorded arm's is the host's share of any slowdown; the gate itself is read
+on the card (section 5). The bench counts the bodies it
 refused and the poses it left at rest. The two arms must agree on both counts, or the comparison is of different crowds.
