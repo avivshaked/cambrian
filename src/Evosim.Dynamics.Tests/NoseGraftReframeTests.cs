@@ -107,7 +107,7 @@ namespace Evosim.Dynamics.Tests
         [Fact]
         public void TheGraftedNoseFeelsTheLeafAsTheWholeBodyDidAtRest()
         {
-            RunConfig plain = Config("ecbba999e231021c"), nosed = Config("65b1104575c3a888");
+            RunConfig plain = Config("9adc2be043e22219"), nosed = Config("3976418af5a1286d");
             Check(plain, nosed, genome => NoseGraft.Graft(
                 genome, nosed.CellTypes, genome.RootIndex, Anchor, Axis, Area, nosed.Development, nosed.Shapes, Slenderness));
         }
@@ -120,7 +120,7 @@ namespace Evosim.Dynamics.Tests
         [Fact]
         public void ASplitPairFeelsTheLeafAsTheWholeBodyDidAtRest()
         {
-            RunConfig plain = Config("ecbba999e231021c"), nosed = Config("65b1104575c3a888");
+            RunConfig plain = Config("9adc2be043e22219"), nosed = Config("3976418af5a1286d");
             plain.Development.ReflectMirroredAnchors = true;
             nosed.Development.ReflectMirroredAnchors = true;
             var side = new Float3(0.5f, 0.6f, -1f);
