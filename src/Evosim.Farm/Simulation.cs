@@ -423,6 +423,11 @@ namespace Evosim.Farm
                 _phaseTicks[PhaseFinite] += Now() - phaseStarted;
             }
 
+            // D235: the noses sniff once per metabolic step, here, after every rebuild and kill of the
+            // reconcile and the check above and before the block's first physics step, which is
+            // where the body's Sample would have read the same poses. Nothing in a world without the nose.
+            if (Solver.Nose != null && Steps % StepsPerMetabolicStep == 0) SniffNoses();
+
             // The profile's denominator, taken where the work it measures is about to happen.
             _bodyStepSum += _order.Count;
             _linkStepSum += Dynamics.TotalLinks();
@@ -481,6 +486,23 @@ namespace Evosim.Farm
 
             NoteHarnessWall(stepStarted, bucketedAtEntry);
             return true;
+        }
+
+        /// <summary>
+        /// D235's sniff: every body's noses read their smells at their tips, with the noise of this
+        /// metabolic step, and hold them through the block (<see cref="CreatureSenses.Sniff"/>).
+        /// </summary>
+        /// <remarks>
+        /// The index is <see cref="Steps"/> over <see cref="StepsPerMetabolicStep"/>, which a
+        /// checkpoint restores, so a resumed world sniffs as the unbroken run did. Serial, in the
+        /// solver's list order: each body writes only its own readings, and a sniff is a handful of
+        /// field reads per nose, once per metabolic step.
+        /// </remarks>
+        private void SniffNoses()
+        {
+            long index = Steps / StepsPerMetabolicStep;
+            IReadOnlyList<Creature> bodies = Dynamics.Creatures;
+            for (int i = 0; i < bodies.Count; i++) bodies[i].Senses.Sniff(index);
         }
 
         /// <summary>

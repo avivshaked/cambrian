@@ -1,0 +1,459 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Xunit;
+using Xunit.Abstractions;
+
+namespace Evosim.Core.Tests
+{
+    /// <summary>
+    /// D235's graft: a nose stood on a bred swimmer, every old part and port kept, the smell links
+    /// moved onto the nose. Run on D178's ten founders (<c>inocula/r59-direction-tops</c>), the
+    /// bodies the graft's film swims.
+    /// </summary>
+    public sealed class NoseGraftTests
+    {
+        private readonly ITestOutputHelper _out;
+
+        public NoseGraftTests(ITestOutputHelper output) => _out = output;
+
+        private static readonly CellTypeRegistry Table = CellTypeRegistry.Standard.Appending(new NoseCell());
+
+        /// <summary>On the root's top face, toward its front: the mouth looks along -z, away from the link at +z.</summary>
+        private static readonly Float3 Anchor = new Float3(0f, 1f, -0.7f);
+        private static readonly Float3 Up = new Float3(0f, 1f, 0f);
+
+        private List<(string Name, Genome Genome)> Founders()
+        {
+            string folder = Path.GetFullPath(Path.Combine(
+                Directory.GetCurrentDirectory(), "..", "..", "..", "..", "..", "inocula", "r59-direction-tops"));
+            if (!Directory.Exists(folder))
+            {
+                _out.WriteLine($"no founders at {folder} — skipped");
+                return new List<(string, Genome)>();
+            }
+
+            return Directory.GetFiles(folder, "*.json").OrderBy(f => f, StringComparer.Ordinal)
+                .Select(f => (Path.GetFileName(f), GenomeJson.Read(File.ReadAllText(f)))).ToList();
+        }
+
+        private static NoseGraftResult Graft(Genome g) => NoseGraft.Graft(g, Table, g.RootIndex, Anchor, Up);
+
+        [Fact]
+        public void TheGraftAddsOneNoseOfTheReferenceAreaAndKeepsEveryPartItsPathAndTheMouth()
+        {
+            foreach ((string name, Genome genome) in Founders())
+            {
+                string was = GenomeJson.Write(genome);
+                NoseGraftResult graft = Graft(genome);
+                Assert.Equal(was, GenomeJson.Write(genome));
+
+                Phenotype before = Developer.Develop(genome, cellTypes: Table);
+                Phenotype after = Developer.Develop(graft.Genome, cellTypes: Table);
+                Assert.Equal(before.Parts.Count + 1, after.Parts.Count);
+                for (int i = 0; i < before.Parts.Count; i++)
+                {
+                    Assert.Equal(before.Parts[i].PathId, after.Parts[i].PathId);
+                    Assert.Equal(before.Parts[i].CellTypeId, after.Parts[i].CellTypeId);
+                    Assert.False(after.Parts[i].Smells);
+                }
+
+                PhenotypePart nose = after.Parts[after.Parts.Count - 1];
+                Assert.Equal(CellTypeIds.Nose, nose.CellTypeId);
+                Assert.True(nose.Smells);
+                Assert.Equal(graft.NosePath, nose.PathId);
+                Assert.InRange(nose.SurfaceArea, 0.1f * 0.999f, 0.1f * 1.001f);
+                Assert.Equal(MouthPoint.Local(before, 0), MouthPoint.Local(after, 0));
+
+                // The nose stands up off the root's top face, unrotated, its tip at the far end.
+                Float3 local = MouthPoint.Local(after, nose.Index);
+                Float3 tip = new Float3(nose.Position.X + local.X, nose.Position.Y + local.Y, nose.Position.Z + local.Z);
+                Assert.True(local.Y > 0f);
+                Assert.True(tip.Y > before.Parts[0].HalfExtents.Y);
+                _out.WriteLine($"{name}: nose {nose.HalfExtents}, area {nose.SurfaceArea:0.0000} m², tip {tip}, " +
+                    $"{graft.LinksMoved} links moved into {graft.LinksMade}, {graft.DirectionLinksReframed} reframed");
+            }
+        }
+
+        /// <summary>
+        /// The nose touches its host: the joint's anchor lies on the root's top face, both sides of the joint name one
+        /// point, and the nose's box stands on that face with its whole footprint inside it. Asked on 2026-10-27, when a
+        /// film drew the nose a body-width off the swimmer.
+        /// </summary>
+        [Fact]
+        public void TheNoseStandsOnTheHostsFaceAndItsAnchorIsOnTheHostsSurface()
+        {
+            foreach ((string name, Genome genome) in Founders())
+                AssertStandsOn(name, Graft(genome).Genome, 1, 1f);
+        }
+
+        /// <summary>The short nose of the second graft film: 6 by 6 by 9 cm, on the root's front face above the mouth, pointing the way the body swims.</summary>
+        private static readonly Float3 Front = new Float3(0f, 0.6f, -1f), Forward = new Float3(0f, 0f, -1f);
+        private const float SnoutArea = 0.0288f, SnoutSlenderness = 1.5f;
+
+        [Fact]
+        public void TheShortSnoutStandsOnTheFrontFaceAboveTheMouthAtItsSize()
+        {
+            foreach ((string name, Genome genome) in Founders())
+            {
+                NoseGraftResult graft = NoseGraft.Graft(genome, Table, genome.RootIndex, Front, Forward, SnoutArea, slenderness: SnoutSlenderness);
+                PhenotypePart nose = AssertStandsOn(name, graft.Genome, 2, -1f);
+                Assert.InRange(nose.HalfExtents.X, 0.0299f, 0.0301f);
+                Assert.InRange(nose.HalfExtents.Y, 0.0299f, 0.0301f);
+                Assert.InRange(nose.HalfExtents.Z, 0.0449f, 0.0451f);
+
+                // Clear of the mouth, which a box root takes at its front face's centre.
+                Phenotype body = Developer.Develop(graft.Genome, cellTypes: Table);
+                Float3 mouth = MouthPoint.Local(body, 0);
+                Assert.Equal(-body.Parts[0].HalfExtents.Z, mouth.Z);
+                Float3 c = body.Parts[0].Rotation.Conjugate.Rotate(nose.Position - body.Parts[0].Position);
+                Assert.True(c.Y - nose.HalfExtents.Y > mouth.Y, $"{name}: the snout's underside at {c.Y - nose.HalfExtents.Y} covers the mouth at {mouth.Y}");
+            }
+        }
+
+        /// <summary>
+        /// The nose touches its host on the face <paramref name="along"/> and <paramref name="sign"/> name: the anchor on that face within its
+        /// edges, both sides of the joint at one world point, the nose unturned in the host's frame, its base on the face and its whole
+        /// footprint inside it.
+        /// </summary>
+        private PhenotypePart AssertStandsOn(
+            string name, Genome grafted, int along, float sign, DevelopmentLimits limits = null, int fromEnd = 0)
+        {
+            const float tolerance = 1e-5f;
+            Phenotype body = Developer.Develop(grafted, limits, cellTypes: Table);
+            PhenotypePart host = body.Parts[0], nose = body.Parts[body.Parts.Count - 1 - fromEnd];
+            Assert.Equal(ShapeIds.Box, host.ShapeId);
+            Assert.Equal(ShapeIds.Box, nose.ShapeId);
+            Assert.Equal(0, nose.ParentIndex);
+
+            Float3 h = host.HalfExtents, a = nose.ParentAnchorLocal, n = nose.HalfExtents;
+            Float3 c = host.Rotation.Conjugate.Rotate(nose.Position - host.Position);
+            Float3 outward = host.Rotation.Conjugate.Rotate(nose.Rotation.Rotate(nose.ChildAnchorLocal * -1f));
+            Assert.InRange(sign * a[along], h[along] - tolerance, h[along] + tolerance);
+            Assert.InRange(sign * c[along] - n[along], h[along] - tolerance, h[along] + tolerance);
+            Assert.True(sign * outward[along] > 0f, $"{name}: the nose points along {outward} in the host's frame");
+            for (int i = 0; i < 3; i++)
+            {
+                if (i == along) continue;
+                Assert.InRange(Math.Abs(a[i]), 0f, h[i] + tolerance);
+                Assert.True(Math.Abs(c[i]) + n[i] <= h[i] + tolerance,
+                    $"{name}: the nose's footprint on axis {i}, {c[i]} ± {n[i]}, leaves the face's ± {h[i]}");
+                Assert.True(Math.Abs(outward[i]) < tolerance, $"{name}: the nose leans along axis {i}: {outward}");
+            }
+
+            // Both sides of the joint name the same point in the world.
+            Float3 fromHost = host.Position + host.Rotation.Rotate(nose.ParentAnchorLocal);
+            Float3 fromNose = nose.Position + nose.Rotation.Rotate(nose.ChildAnchorLocal);
+            Assert.True(Float3.Dot(fromHost - fromNose, fromHost - fromNose) < tolerance * tolerance,
+                $"{name}: the joint is at {fromHost} on the host and {fromNose} on the nose");
+            _out.WriteLine($"{name}: host {h}, nose centre {c} in the host's frame, half-extents {n}");
+            return nose;
+        }
+
+        // ------------------------------------------------------------------ a mirrored pair
+
+        /// <summary>Development that reflects a mirrored edge's anchors (D228), which a pair needs.</summary>
+        private static readonly DevelopmentLimits Reflecting = new DevelopmentLimits { ReflectMirroredAnchors = true };
+
+        /// <summary>Two short snouts on the front face, either side of the middle, mirrored in x.</summary>
+        private static readonly Float3 FrontSide = new Float3(0.5f, 0.6f, -1f);
+
+        private static NoseGraftResult Pair(Genome g, NosePairLinks links = NosePairLinks.First) =>
+            NoseGraft.Graft(g, Table, g.RootIndex, FrontSide, Forward, SnoutArea, Reflecting, slenderness: SnoutSlenderness,
+                mirror: 0, pairLinks: links);
+
+        /// <summary>
+        /// A pair mirrored in x: two snouts of the one size, each standing on the front face, their centres mirror images in
+        /// the host's x, apart, the second reflected and reading through its reflected frame (D234), every old part kept.
+        /// </summary>
+        [Fact]
+        public void AMirroredPairStandsOnTheFrontFaceAsMirrorImages()
+        {
+            foreach ((string name, Genome genome) in Founders())
+            {
+                NoseGraftResult graft = Pair(genome);
+                Phenotype before = Developer.Develop(genome, Reflecting, cellTypes: Table);
+                Phenotype body = Developer.Develop(graft.Genome, Reflecting, cellTypes: Table);
+                Assert.Equal(before.Parts.Count + 2, body.Parts.Count);
+                for (int i = 0; i < before.Parts.Count; i++) Assert.Equal(before.Parts[i].PathId, body.Parts[i].PathId);
+                Assert.Equal(MouthPoint.Local(before, 0), MouthPoint.Local(body, 0));
+
+                PhenotypePart twin = AssertStandsOn(name, graft.Genome, 2, -1f, Reflecting, 0);
+                PhenotypePart first = AssertStandsOn(name, graft.Genome, 2, -1f, Reflecting, 1);
+                Assert.Equal(CellTypeIds.Nose, first.CellTypeId);
+                Assert.Equal(CellTypeIds.Nose, twin.CellTypeId);
+                Assert.False(first.Mirrored);
+                Assert.True(twin.Mirrored);
+                Assert.True(twin.ReflectedDrive);
+                Assert.Equal(graft.NosePath, first.PathId);
+                Assert.Equal(graft.TwinPath, twin.PathId);
+                Assert.NotEqual(graft.NosePath, graft.TwinPath);
+                Assert.Equal(first.HalfExtents, twin.HalfExtents);
+                Assert.InRange(twin.SurfaceArea, SnoutArea * 0.999f, SnoutArea * 1.001f);
+
+                PhenotypePart host = body.Parts[0];
+                Float3 a = host.Rotation.Conjugate.Rotate(first.Position - host.Position);
+                Float3 b = host.Rotation.Conjugate.Rotate(twin.Position - host.Position);
+                Assert.InRange(a.X + b.X, -1e-5f, 1e-5f);
+                Assert.InRange(a.Y - b.Y, -1e-5f, 1e-5f);
+                Assert.InRange(a.Z - b.Z, -1e-5f, 1e-5f);
+                Assert.True(Math.Abs(a.X) > first.HalfExtents.X, $"{name}: the pair overlaps, centres at x = ±{Math.Abs(a.X)}");
+            }
+        }
+
+        /// <summary>
+        /// A pair's moved links: onto the first nose alone, as the one-nose graft moves them, or onto both at half weight,
+        /// so that each (channel, index, target) carries the one-nose graft's weight summed over the two.
+        /// </summary>
+        [Fact]
+        public void APairsLinksGoToTheFirstNoseOrSplitInHalves()
+        {
+            foreach ((string name, Genome genome) in Founders())
+            {
+                NoseGraftResult one = NoseGraft.Graft(genome, Table, genome.RootIndex, FrontSide, Forward, SnoutArea, Reflecting,
+                    slenderness: SnoutSlenderness);
+                NoseGraftResult first = Pair(genome, NosePairLinks.First);
+                NoseGraftResult split = Pair(genome, NosePairLinks.Split);
+                Assert.Equal(0UL, one.TwinPath);
+                Assert.Equal(one.LinksMoved, first.LinksMoved);
+                Assert.Equal(one.LinksMade, first.LinksMade);
+                Assert.Equal(2 * one.LinksMade, split.LinksMade);
+
+                // Keyed by (on the twin, channel, index, target).
+                Dictionary<(bool, SensorChannel, int, ulong), double> Weights(NoseGraftResult r, Phenotype body)
+                {
+                    Dictionary<ulong, BrainPort> ports = CentralWiring.AllPorts(body);
+                    var w = new Dictionary<(bool, SensorChannel, int, ulong), double>();
+                    int count = r.TwinPath == 0 ? 1 : 2;
+                    foreach (BrainLink l in r.Genome.Brain.Links)
+                    {
+                        if (!ports.TryGetValue(l.From, out BrainPort port) || !port.Channel.IsSmell()) continue;
+                        Assert.True(port.Part >= body.Parts.Count - count, $"{name}: a smell link reads part {port.Part}, not a nose");
+                        var key = (r.TwinPath != 0 && body.Parts[port.Part].PathId == r.TwinPath, port.Channel, port.Index, l.To);
+                        w[key] = (w.TryGetValue(key, out double v) ? v : 0) + l.Weight;
+                    }
+
+                    return w;
+                }
+
+                double At(Dictionary<(bool, SensorChannel, int, ulong), double> w, (bool, SensorChannel, int, ulong) key) =>
+                    w.TryGetValue(key, out double v) ? v : 0.0;
+
+                // A scalar smell reads the same at either nose, so its two halves sum to the one nose's weight. A direction
+                // component is reframed onto each nose (the twin's frame is reflected), so only the first nose, whose frame is
+                // the one nose's, carries exactly half of it; NoseGraftReframeTests checks the twin's half by what it reads.
+                var single = Weights(one, Developer.Develop(one.Genome, Reflecting, cellTypes: Table));
+                Phenotype splitBody = Developer.Develop(split.Genome, Reflecting, cellTypes: Table);
+                var halves = Weights(split, splitBody);
+                foreach (var kv in single)
+                {
+                    (bool _, SensorChannel channel, int index, ulong to) = kv.Key;
+                    double onFirst = At(halves, (false, channel, index, to)), onTwin = At(halves, (true, channel, index, to));
+                    if (channel == SensorChannel.LeafScentDirection) Assert.Equal(kv.Value / 2, onFirst, 5);
+                    else Assert.Equal(kv.Value, onFirst + onTwin, 5);
+                }
+
+                // Under First the twin's ports are read by nothing.
+                Phenotype firstBody = Developer.Develop(first.Genome, Reflecting, cellTypes: Table);
+                Dictionary<ulong, BrainPort> firstPorts = CentralWiring.AllPorts(firstBody);
+                int twinIndex = firstBody.Parts.Count - 1;
+                Assert.DoesNotContain(first.Genome.Brain.Links, l => firstPorts.TryGetValue(l.From, out BrainPort p) && p.Part == twinIndex);
+            }
+        }
+
+        [Fact]
+        public void APairIsRefusedWithoutReflectedAnchorsOrOnTheMirrorPlane()
+        {
+            List<(string Name, Genome Genome)> founders = Founders();
+            if (founders.Count == 0) return;
+            Genome g = founders[0].Genome;
+
+            Assert.Throws<ArgumentException>(() => NoseGraft.Graft(g, Table, 0, FrontSide, Forward, SnoutArea, null,
+                slenderness: SnoutSlenderness, mirror: 0));
+            Assert.Throws<ArgumentException>(() => NoseGraft.Graft(g, Table, 0, Front, Forward, SnoutArea, Reflecting,
+                slenderness: SnoutSlenderness, mirror: 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => NoseGraft.Graft(g, Table, 0, FrontSide, Forward, SnoutArea, Reflecting,
+                slenderness: SnoutSlenderness, mirror: 3));
+        }
+
+        [Fact]
+        public void TheSmellLinksMoveOntoTheNoseSummedAndEveryOtherLinkIsKept()
+        {
+            int moved = 0;
+            foreach ((string name, Genome genome) in Founders())
+            {
+                NoseGraftResult graft = Graft(genome);
+                Phenotype before = Developer.Develop(genome, cellTypes: Table);
+                Phenotype after = Developer.Develop(graft.Genome, cellTypes: Table);
+
+                var smellPorts = new Dictionary<ulong, (SensorChannel, int)>();
+                var partOfPort = new Dictionary<ulong, PhenotypePart>();
+                foreach (PhenotypePart part in before.Parts)
+                {
+                    foreach (SensorChannel c in (SensorChannel[])Enum.GetValues(typeof(SensorChannel)))
+                    {
+                        if (!c.IsSmell()) continue;
+                        for (int i = 0; i < c.IndexCount(); i++)
+                        {
+                            smellPorts[BrainIds.Port(part.PathId, c, i)] = (c, i);
+                            partOfPort[BrainIds.Port(part.PathId, c, i)] = part;
+                        }
+                    }
+                }
+
+                List<BrainLink> old = genome.Brain.Links;
+                List<BrainLink> now = graft.Genome.Brain.Links;
+                var others = old.Where(l => !smellPorts.ContainsKey(l.From)).Select(Key).ToList();
+                Assert.Equal(others, now.Take(others.Count).Select(Key).ToList());
+
+                var expected = new Dictionary<(ulong, ulong), double>();
+                foreach (BrainLink l in old.Where(l => smellPorts.ContainsKey(l.From)))
+                {
+                    (SensorChannel c, int i) = smellPorts[l.From];
+                    PhenotypePart nosePart = after.Parts[after.Parts.Count - 1];
+                    for (int k = 0; k < (c == SensorChannel.LeafScentDirection ? 3 : 1); k++)
+                    {
+                        // A direction component moves by the rotation between the part's frame and the nose's, at rest.
+                        double scale = c == SensorChannel.LeafScentDirection ? FrameMap(partOfPort[l.From], nosePart, i, k) : 1.0;
+                        if (Math.Abs(scale) < 1e-6) continue;
+                        var pair = (BrainIds.Port(graft.NosePath, c, c == SensorChannel.LeafScentDirection ? k : i), l.To);
+                        expected[pair] = (expected.TryGetValue(pair, out double w) ? w : 0) + scale * l.Weight;
+                    }
+                }
+
+                List<BrainLink> made = now.Skip(others.Count).ToList();
+                Assert.Equal(expected.Count, made.Count);
+                Assert.Equal(graft.LinksMade, made.Count);
+                Assert.Equal(old.Count - others.Count, graft.LinksMoved);
+                Dictionary<ulong, BrainPort> ports = CentralWiring.AllPorts(after);
+                foreach (BrainLink l in made)
+                {
+                    Assert.Equal(expected[(l.From, l.To)], l.Weight, 5);
+                    Assert.True(ports.ContainsKey(l.From), "a moved link reads a port the grafted body has");
+                    Assert.Equal(after.Parts.Count - 1, ports[l.From].Part);
+                }
+
+                // Under the nose's table no old part keeps a smell port, so nothing was left reading nothing.
+                Assert.DoesNotContain(smellPorts.Keys, k => ports.ContainsKey(k));
+                moved += graft.LinksMoved;
+            }
+
+            // D178's founders were bred to the leaf's direction, so they read it: the graft had work to do.
+            if (Founders().Count > 0) Assert.True(moved > 0);
+        }
+
+        [Fact]
+        public void TheGraftedGenomeSurvivesTheFile()
+        {
+            foreach (var (_, genome) in Founders())
+            {
+                string text = GenomeJson.Write(Graft(genome).Genome);
+                Assert.Equal(text, GenomeJson.Write(GenomeJson.Read(text)));
+            }
+        }
+
+        [Fact]
+        public void TheGraftRefusesWhatItCannotDoHonestly()
+        {
+            List<(string Name, Genome Genome)> founders = Founders();
+            if (founders.Count == 0) return;
+            Genome g = founders[0].Genome;
+
+            // A table without the nose, where the nose would not develop.
+            Assert.Throws<ArgumentException>(() => NoseGraft.Graft(g, CellTypeRegistry.Standard, 0, Anchor, Up));
+
+            // A per-part brain, which has no ports to move.
+            Genome perPart = g.Clone();
+            perPart.Brain = null;
+            Assert.Throws<ArgumentException>(() => NoseGraft.Graft(perPart, Table, 0, Anchor, Up));
+
+            // An anchor off the face the axis names, and an axis that is not an axis.
+            Assert.Throws<ArgumentException>(() => NoseGraft.Graft(g, Table, 0, new Float3(0f, 0.5f, -0.7f), Up));
+            Assert.Throws<ArgumentException>(() => NoseGraft.Graft(g, Table, 0, Anchor, new Float3(0f, 0.7f, 0.7f)));
+
+            // A second nose.
+            Assert.Throws<ArgumentException>(() => Graft(Graft(g).Genome));
+        }
+
+        private static (ulong, ulong, float) Key(BrainLink l) => (l.From, l.To, l.Weight);
+
+        /// <summary>
+        /// M[j, k]: the part's reading of component j per unit of the nose's reading of component k, for two parts that
+        /// reflect nothing. The part reads Rpᵀ g and the nose Rnᵀ g, so the part's j-th axis expressed in the nose's frame
+        /// is column j of Rnᵀ Rp, and M[j, k] is the k-th entry of it.
+        /// </summary>
+        private static double FrameMap(PhenotypePart part, PhenotypePart nose, int j, int k)
+        {
+            Assert.False(part.ReflectedDrive || nose.ReflectedDrive);
+            var axes = new[] { new Float3(1f, 0f, 0f), new Float3(0f, 1f, 0f), new Float3(0f, 0f, 1f) };
+            Float3 axisInNose = nose.Rotation.Conjugate.Rotate(part.Rotation.Rotate(axes[j]));
+            return k == 0 ? axisInNose.X : k == 1 ? axisInNose.Y : axisInNose.Z;
+        }
+
+        /// <summary>
+        /// A body whose every direction link sits on the host grafts to the genome the move-and-sum rule made before the
+        /// reframing: scalar and host links summed on the nose's port of the same index, in the same order and to the bit.
+        /// </summary>
+        [Fact]
+        public void ABodyWhoseDirectionLinksAreAllOnTheHostGraftsAsItDidBeforeTheReframing()
+        {
+            int checkedBodies = 0, hostDirectionLinks = 0;
+            foreach ((string name, Genome founder) in Founders())
+            {
+                Genome genome = founder.Clone();
+                Phenotype before = Developer.Develop(genome, cellTypes: Table);
+                ulong hostPath = before.Parts[0].PathId;
+                var directionPorts = new HashSet<ulong>();
+                var hostDirection = new HashSet<ulong>();
+                foreach (PhenotypePart part in before.Parts)
+                {
+                    for (int i = 0; i < SensorChannel.LeafScentDirection.IndexCount(); i++)
+                    {
+                        directionPorts.Add(BrainIds.Port(part.PathId, SensorChannel.LeafScentDirection, i));
+                        if (part.PathId == hostPath) hostDirection.Add(BrainIds.Port(part.PathId, SensorChannel.LeafScentDirection, i));
+                    }
+                }
+
+                genome.Brain.Links.RemoveAll(l => directionPorts.Contains(l.From) && !hostDirection.Contains(l.From));
+                hostDirectionLinks += genome.Brain.Links.Count(l => hostDirection.Contains(l.From));
+                NoseGraftResult graft = Graft(genome);
+                Assert.Equal(0, graft.DirectionLinksReframed);
+
+                // The rule as it stood: every smell link onto the nose's port of its own channel and index, summed.
+                var smellPorts = new Dictionary<ulong, (SensorChannel, int)>();
+                foreach (PhenotypePart part in before.Parts)
+                {
+                    foreach (SensorChannel c in (SensorChannel[])Enum.GetValues(typeof(SensorChannel)))
+                    {
+                        if (!c.IsSmell()) continue;
+                        for (int i = 0; i < c.IndexCount(); i++) smellPorts[BrainIds.Port(part.PathId, c, i)] = (c, i);
+                    }
+                }
+
+                var kept = new List<BrainLink>();
+                var made = new List<BrainLink>();
+                var byPair = new Dictionary<(ulong, ulong), BrainLink>();
+                foreach (BrainLink l in genome.Brain.Links)
+                {
+                    if (!smellPorts.TryGetValue(l.From, out var port)) { kept.Add(l); continue; }
+                    ulong from = BrainIds.Port(graft.NosePath, port.Item1, port.Item2);
+                    if (byPair.TryGetValue((from, l.To), out BrainLink into)) { into.Weight += l.Weight; continue; }
+                    var moved = new BrainLink { From = from, To = l.To, Weight = l.Weight };
+                    byPair[(from, l.To)] = moved;
+                    made.Add(moved);
+                }
+
+                Assert.Equal(kept.Concat(made).Select(Key).ToList(), graft.Genome.Brain.Links.Select(Key).ToList());
+                checkedBodies++;
+                _out.WriteLine($"{name}: {graft.LinksMoved} links moved into {graft.LinksMade}, as before");
+            }
+
+            if (Founders().Count > 0)
+            {
+                Assert.True(checkedBodies > 0);
+                Assert.True(hostDirectionLinks > 0, "the host's direction links were not under test");
+            }
+        }
+    }
+}

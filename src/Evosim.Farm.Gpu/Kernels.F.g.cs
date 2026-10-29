@@ -87,6 +87,9 @@ namespace Evosim.Farm.Gpu.Sgl
         // degree of freedom d; bit 3 says the part reflects the vectors its senses read in its own frame, and
         // bits 4 and 5 are the axis of that reflection (Creature.FrameNormal).
         public ArrayView<int> MirrorMask;
+        // D235's nose, a link each: 1 on a nose link. A link wide only in a world whose table lists the nose, a
+        // one-wide stub otherwise, and then never read (cfg.Nose is 0).
+        public ArrayView<int> NoseFlag;
     }
 
     public struct SPanels { public ArrayView<Real> Centre, Normal, Area; }
@@ -128,6 +131,10 @@ namespace Evosim.Farm.Gpu.Sgl
     public struct SBrain
     {
         public ArrayView<float> S, Mem, Reserve, Damage;
+        // D235: each nose link's held sniff, six floats a link (chemical, scent, leaf, direction x, y, z), rows
+        // (6 * link + k) * N + slot, filled on the host from CreatureSenses at every block. A one-cell stub, never
+        // filled or read, in a world without the nose (cfg.Nose is 0).
+        public ArrayView<float> NoseHeld;
         public ArrayView<int> Parity, Contact, Gates;
         public ArrayView<double> Clock;
     }
@@ -253,6 +260,7 @@ namespace Evosim.Farm.Gpu.Sgl
         public int OffsetTorque, SplitColumns, Redo, BendAndPower, TurningDrag, RockTouch, Anchoring;
         public int ShapedMass;   // D229: the limb pushes take the part's shaped added mass (Fluid.AddedMassOf)
         public int MirrorDrive;  // D234: a mirrored twin's drive and senses are read through its link's mirror mask
+        public int Nose;         // D235: only nose links smell, and they read the held sniff the host left (SBrain.NoseHeld); no field is read for a smell
         public int AnyRemains;   // D220: 1 for a block in which some body is remains; 0 reads no remains flag at all
         public int TrueShape;    // D228: a part touches as its convex core with a margin (SolverConfig.ContactShape)
         public int StrokeAssembly;   // D231: the powered stroke pushes the assembly welded beyond a jointed link (SolverConfig.StrokePushesAssembly)
@@ -1640,6 +1648,18 @@ namespace Evosim.Farm.Gpu.Sgl
                 }
             }
 
+            // D235: in a nose world a part that is not a nose reads zero on the four smell channels, whatever the
+            // gates (SensorChannels.IsSmell), the chemical sense's standing-in constant included. The nose links ride
+            // in the same word as the rock's bits, a bit a link from bit 16 (a class holds at most 16 links), so
+            // that SensorRead, which already takes the word, needs no new argument. SRock reads only bits 0 to 15.
+            if (!remains && cfg.Nose != 0)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    if (b.NoseFlag[l * N + i] != 0) rock |= 1 << (16 + l);
+                }
+            }
+
             // The brain reads the two gates itself (SensorRead): a body with no field or no
             // reserve source reads the standing-in constant on those channels. Remains run none.
             if (!remains)
@@ -2759,6 +2779,18 @@ namespace Evosim.Farm.Gpu.Sgl
                 for (int l = 0; l < links; l++)
                 {
                     if (gl.RockTouched[g * LinkStride + l] != 0) rock |= 1 << l;
+                }
+            }
+
+            // D235: in a nose world a part that is not a nose reads zero on the four smell channels, whatever the
+            // gates (SensorChannels.IsSmell), the chemical sense's standing-in constant included. The nose links ride
+            // in the same word as the rock's bits, a bit a link from bit 16 (a class holds at most 16 links), so
+            // that SensorRead, which already takes the word, needs no new argument. SRock reads only bits 0 to 15.
+            if (!remains && cfg.Nose != 0)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    if (b.NoseFlag[l * N + i] != 0) rock |= 1 << (16 + l);
                 }
             }
 
@@ -3884,6 +3916,18 @@ namespace Evosim.Farm.Gpu.Sgl
                 }
             }
 
+            // D235: in a nose world a part that is not a nose reads zero on the four smell channels, whatever the
+            // gates (SensorChannels.IsSmell), the chemical sense's standing-in constant included. The nose links ride
+            // in the same word as the rock's bits, a bit a link from bit 16 (a class holds at most 16 links), so
+            // that SensorRead, which already takes the word, needs no new argument. SRock reads only bits 0 to 15.
+            if (!remains && cfg.Nose != 0)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    if (b.NoseFlag[l * N + i] != 0) rock |= 1 << (16 + l);
+                }
+            }
+
             // The brain reads the two gates itself (SensorRead): a body with no field or no
             // reserve source reads the standing-in constant on those channels. Remains run none.
             if (!remains)
@@ -5003,6 +5047,18 @@ namespace Evosim.Farm.Gpu.Sgl
                 for (int l = 0; l < links; l++)
                 {
                     if (gl.RockTouched[g * LinkStride + l] != 0) rock |= 1 << l;
+                }
+            }
+
+            // D235: in a nose world a part that is not a nose reads zero on the four smell channels, whatever the
+            // gates (SensorChannels.IsSmell), the chemical sense's standing-in constant included. The nose links ride
+            // in the same word as the rock's bits, a bit a link from bit 16 (a class holds at most 16 links), so
+            // that SensorRead, which already takes the word, needs no new argument. SRock reads only bits 0 to 15.
+            if (!remains && cfg.Nose != 0)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    if (b.NoseFlag[l * N + i] != 0) rock |= 1 << (16 + l);
                 }
             }
 
@@ -8271,23 +8327,51 @@ namespace Evosim.Farm.Gpu.Sgl
                     sUp[bl] = (float)rotationMatrix[9 * bl + 4];
                 }
 
-                if (smells)
+                if (cfg.Nose != 0)
                 {
-                    float density = EdibleDensityAt((float)px, (float)py, (float)pz, w, cfg, ref lost);
-                    sChem[bl] = density > 0f ? density / (density + cfg.ChemHalf) : 0f;
+                    // D235, CreatureSenses.Sample in a nose world: no part smells at its centre. A nose link holds
+                    // what the host's last Sniff left, copied as it stands (CreatureSenses.HeldSmell); every other
+                    // link holds zero. No field is read, so the chemical sense's walk cannot lose the body here.
+                    if (b.NoseFlag[bl * cfg.N + i] != 0)
+                    {
+                        int held = 6 * bl;
+                        sChem[bl] = br.NoseHeld[held * cfg.N + i];
+                        sScent[bl] = br.NoseHeld[(held + 1) * cfg.N + i];
+                        sLeaf[4 * bl] = br.NoseHeld[(held + 2) * cfg.N + i];
+                        sLeaf[4 * bl + 1] = br.NoseHeld[(held + 3) * cfg.N + i];
+                        sLeaf[4 * bl + 2] = br.NoseHeld[(held + 4) * cfg.N + i];
+                        sLeaf[4 * bl + 3] = br.NoseHeld[(held + 5) * cfg.N + i];
+                    }
+                    else
+                    {
+                        sChem[bl] = 0f;
+                        sScent[bl] = 0f;
+                        sLeaf[4 * bl] = 0f;
+                        sLeaf[4 * bl + 1] = 0f;
+                        sLeaf[4 * bl + 2] = 0f;
+                        sLeaf[4 * bl + 3] = 0f;
+                    }
                 }
-
-                if (readsScent)
+                else
                 {
-                    float sc = ScentAt((float)px, (float)py, (float)pz, w, cfg);
-                    sScent[bl] = sc > 0f ? sc / (sc + cfg.ScentHalf) : 0f;
+                    if (smells)
+                    {
+                        float density = EdibleDensityAt((float)px, (float)py, (float)pz, w, cfg, ref lost);
+                        sChem[bl] = density > 0f ? density / (density + cfg.ChemHalf) : 0f;
+                    }
+
+                    if (readsScent)
+                    {
+                        float sc = ScentAt((float)px, (float)py, (float)pz, w, cfg);
+                        sScent[bl] = sc > 0f ? sc / (sc + cfg.ScentHalf) : 0f;
+                    }
                 }
 
                 // D234: a part that reflects reads the vectors in its own frame with the component along the
                 // reflection's axis negated (CreatureSenses, Creature.ReflectFrameVector). 0 reflects nothing.
                 int frameMirror = cfg.MirrorDrive != 0 ? b.MirrorMask[bl * cfg.N + i] : 0;
 
-                if (leaves) SampleLeaf(bl, (float)px, (float)py, (float)pz, rotationMatrix, readsLeafDir, frameMirror, sLeaf, w, cfg);
+                if (leaves && cfg.Nose == 0) SampleLeaf(bl, (float)px, (float)py, (float)pz, rotationMatrix, readsLeafDir, frameMirror, sLeaf, w, cfg);
 
                 if (readsFlow)
                 {
@@ -8812,6 +8896,14 @@ namespace Evosim.Farm.Gpu.Sgl
         {
             int N = cfg.N;
             if (part < 0 || part >= links) return 0f;
+
+            // D235: in a nose world a part that is not a nose reads zero on the four smell channels, under either
+            // brain (SensorChannels.IsSmell): the nose links are the word's bits 16 and up.
+            if (cfg.Nose != 0 && ((rock >> (16 + part)) & 1) == 0 &&
+                (channel == SChemical || channel == SScent || channel == SLeaf || channel == SLeafDir))
+            {
+                return 0f;
+            }
 
             switch (channel)
             {
@@ -12855,6 +12947,14 @@ namespace Evosim.Farm.Gpu.Sgl
         // D234's mirrored twin: each link's mask of the degrees of freedom read negated. A link wide only in
         // a world whose bodies reflect their drive, one-wide otherwise.
         public readonly Seg<int> MirrorMask;
+        // D235's nose: 1 on a nose link. A link wide only in a world whose table lists the nose, one-wide otherwise.
+        public readonly Seg<int> NoseFlag;
+        // D235's held sniff, six floats a link, filled from each live slot's CreatureSenses at every block and
+        // uploaded with the block's columns. A column of its own, not an arena's row: in a world without the nose it
+        // is a one-cell stub that belongs to no copy list, so no block ever moves its byte (HeldBytesUp counts them).
+        public readonly Col<float> NoseHeld;
+        public readonly bool Nose;
+        public long HeldBytesUp;
         public readonly Seg<float> Bend;
         public readonly Seg<double> EPower, EBend, EPowerTarget, EBendTarget, EPowerRate, EBendRate, EHoldLeft;
 
@@ -12880,7 +12980,7 @@ namespace Evosim.Farm.Gpu.Sgl
         public readonly Seg<double> TTime;
         public readonly Seg<int> Enabled, Held, TCursor, FirstBadLink, Resized, Poison, Pending;
 
-        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower, bool shapedMass, bool strokeAssembly, bool mirroredDrive)
+        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower, bool shapedMass, bool strokeAssembly, bool mirroredDrive, bool nose)
         {
             _acc = acc;
             _stream = stream;
@@ -12922,6 +13022,7 @@ namespace Evosim.Farm.Gpu.Sgl
             StrokeParts = C<int>(sa, Constant);
             StrokeAlong = C<Real>(sd, Constant); StrokeMass = C<Real>(sd, Constant); StrokeMoment = C<Real>(sd, Constant);
             MirrorMask = C<int>(mirroredDrive ? L : 0, Constant);
+            NoseFlag = C<int>(nose ? L : 0, Constant);
             Bend = C<float>(gd, Down);
             EPower = C<double>(gd, Down); EBend = C<double>(gd, Down);
             EPowerTarget = C<double>(gd, Down); EBendTarget = C<double>(gd, Down);
@@ -12929,6 +13030,18 @@ namespace Evosim.Farm.Gpu.Sgl
             EHoldLeft = C<double>(gd, Down);
 
             PCentre = Widening<Real>(3); PNormal = Widening<Real>(3); PArea = Widening<Real>(1);
+
+            Nose = nose;
+            if (nose)
+            {
+                NoseHeld = new Col<float>(acc, stream, 6 * L, Cap);
+                _all.Add(NoseHeld);
+                _block.Add(NoseHeld);
+            }
+            else
+            {
+                NoseHeld = new Col<float>(acc, stream, 1, 1);
+            }
 
             BasePos = C<Real>(3, Down); BaseCarry = C<Real>(3, Down); BaseRot = C<Real>(4, Down);
             Q = C<Real>(D, Down); Qd = C<Real>(D, Down); Tau = C<Real>(D, Down); LimitImplicit = C<Real>(D, Down);
@@ -13093,6 +13206,8 @@ namespace Evosim.Farm.Gpu.Sgl
                 foreach (IColumn c in Dirty ? _all : _block) c.UpUsedQueued(used);
             }
 
+            if (Nose) HeldBytesUp += NoseHeld.BytesFor(used);
+
             Dirty = false;
             _packCount = 0;
         }
@@ -13160,7 +13275,7 @@ namespace Evosim.Farm.Gpu.Sgl
             LinkPower = LinkPower.View, ShapeCode = ShapeCode.View, HalfExt = HalfExt.View,
             StrokeParts = StrokeParts.View, StrokeAlong = StrokeAlong.View,
             StrokeMass = StrokeMass.View, StrokeMoment = StrokeMoment.View,
-            MirrorMask = MirrorMask.View,
+            MirrorMask = MirrorMask.View, NoseFlag = NoseFlag.View,
         };
 
         public SPanels PanelSet => new SPanels { Centre = PCentre.View, Normal = PNormal.View, Area = PArea.View };
@@ -13193,8 +13308,8 @@ namespace Evosim.Farm.Gpu.Sgl
 
         public SBrain BrainSet => new SBrain
         {
-            S = S.View, Mem = Mem.View, Reserve = Reserve.View, Damage = Damage.View, Parity = Parity.View,
-            Contact = Contact.View, Gates = Gates.View, Clock = Clock.View,
+            S = S.View, Mem = Mem.View, Reserve = Reserve.View, Damage = Damage.View, NoseHeld = NoseHeld.View,
+            Parity = Parity.View, Contact = Contact.View, Gates = Gates.View, Clock = Clock.View,
         };
 
         public STrace TraceSet => new STrace
@@ -13207,6 +13322,7 @@ namespace Evosim.Farm.Gpu.Sgl
         public void Dispose()
         {
             foreach (IColumn c in _all) c.Dispose();
+            if (!Nose) NoseHeld.Dispose();
             _packSlots.Dispose();
         }
     }
@@ -13279,6 +13395,21 @@ namespace Evosim.Farm.Gpu.Sgl
         public long NeuronsAtCeilingMost { get; private set; }
 
         public long BedAnglesPastGuard { get; private set; }
+
+        public long HeldCells
+        {
+            get { long n = 0; foreach (ClassSet set in _classes) n += set.NoseHeld.Host.LongLength; return n; }
+        }
+
+        public long HeldBytesUp
+        {
+            get { long n = 0; foreach (ClassSet set in _classes) n += set.HeldBytesUp; return n; }
+        }
+
+        public long NoseFlagRows
+        {
+            get { long n = 0; foreach (ClassSet set in _classes) n += set.NoseFlag.Width; return n; }
+        }
 
         // ---- the globals, by global slot
         private int _gcap = 16;
@@ -13475,7 +13606,7 @@ namespace Evosim.Farm.Gpu.Sgl
             _classes = new ClassSet[options.ClassLinks.Length];
             for (int k = 0; k < _classes.Length; k++)
             {
-                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower, world.ShapedMass, world.StrokeAssembly, world.MirroredDrive);
+                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower, world.ShapedMass, world.StrokeAssembly, world.MirroredDrive, world.Nose);
             }
 
             int oc = options.OverlapCap;
@@ -13807,7 +13938,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 UseRestore = w.UseRestore ? 1 : 0, FloorRestores = w.FloorRestores ? 1 : 0,
                 CreatureContact = w.CreatureContact ? 1 : 0, OffsetTorque = w.OffsetTorque ? 1 : 0,
                 ShapedMass = w.ShapedMass ? 1 : 0,
-                MirrorDrive = w.MirroredDrive ? 1 : 0,
+                MirrorDrive = w.MirroredDrive ? 1 : 0, Nose = w.Nose ? 1 : 0,
                 TrueShape = w.TrueShape ? 1 : 0, AtPoint = w.AtPoint ? 1 : 0,
                 StrokeAssembly = w.StrokeAssembly ? 1 : 0,
                 BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
@@ -15339,6 +15470,29 @@ namespace Evosim.Farm.Gpu.Sgl
                 }
             }
 
+            // D235's nose: 1 on each nose link, a flag for every link so that a slot's earlier body leaves nothing
+            // behind. A world that does not list the nose sizes no column for it, and no body there has a nose link.
+            if (_w.Nose)
+            {
+                CreatureSenses senses = c.Senses;
+                bool nosed = false;
+                for (int l = 0; l < links; l++)
+                {
+                    bool nose = senses.IsNose(l);
+                    s.NoseFlag.Host[l * N + i] = nose ? 1 : 0;
+                    nosed |= nose;
+                }
+
+                // The card reads only what Sniff held (CreatureSenses.HeldSniff, as the farm sets it). A bench's body
+                // reads its noses' tips on every step instead, which the card does not, and would part from the solver.
+                if (nosed && !senses.HeldSniff)
+                {
+                    throw new InvalidOperationException(
+                        "Body " + c.Id + " has a nose whose senses read its tip on every step (HeldSniff is off); " +
+                        "the gpu engine reads only the held sniff. Set HeldSniff and call Sniff, as the farm does.");
+                }
+            }
+
             if (c.Drive.BendAndPower)
             {
                 for (int l = 0; l < links; l++)
@@ -15760,6 +15914,27 @@ namespace Evosim.Farm.Gpu.Sgl
             {
                 s.Contact.Host[l * N + i] = contact != null && l < contact.Length && contact[l] ? 1 : 0;
                 s.Damage.Host[l * N + i] = damage != null && l < damage.Length ? damage[l] : 0f;
+            }
+
+            // D235: each nose link's held sniff, as Simulation's Sniff left it in the body's CreatureSenses before
+            // this block (a block never crosses a metabolic step). The six floats are copied as they stand; the
+            // kernel reads them for a nose link only, so the rows of any other link are never written here.
+            if (_w.Nose)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    if (!senses.IsNose(l)) continue;
+
+                    senses.HeldSmell(l, out float chemical, out float scent, out float leaf,
+                                     out float directionX, out float directionY, out float directionZ);
+                    int held = 6 * l;
+                    s.NoseHeld.Host[held * N + i] = chemical;
+                    s.NoseHeld.Host[(held + 1) * N + i] = scent;
+                    s.NoseHeld.Host[(held + 2) * N + i] = leaf;
+                    s.NoseHeld.Host[(held + 3) * N + i] = directionX;
+                    s.NoseHeld.Host[(held + 4) * N + i] = directionY;
+                    s.NoseHeld.Host[(held + 5) * N + i] = directionZ;
+                }
             }
 
             s.Enabled.Host[i] = c.HasTrace ? 1 : 0;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.IO;
 using System.Text;
 using Evosim.Core;
@@ -295,6 +296,140 @@ namespace Evosim.Nursery
             FinalDigest = probe.SolverDigest();
             Ended = true;
             Close();
+            File.WriteAllText(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(_framesPath)), "leaves.json"),
+                LeavesJson(_leafOrder.ConvertAll(id => _leaves[id]), _lastFrameSeconds, Math.Max(0, _leafFrameFloats)), new UTF8Encoding(false));
+        }
+
+        // ------------------------------------------------------------------ the leaves
+
+        /// <summary>One body that is not a member, as the frames saw it: first and last, and how far its root went from where it was first seen.</summary>
+        public sealed class LeafTrack
+        {
+            public long Id;
+            public string GenomeText;
+            public double FirstSeconds, LastSeconds, MaxDriftMetres;
+            public LinkPose[] First, Last;
+
+            /// <summary>Where its poses start in a frame of <c>leaf-frames.bin</c>, in floats; -1 for a body first seen after the first frame, which the file does not carry.</summary>
+            public int Column = -1;
+
+            /// <summary>The links the file carries for it: those of its first frame.</summary>
+            public int Links;
+        }
+
+        private readonly Dictionary<long, LeafTrack> _leaves = new Dictionary<long, LeafTrack>();
+        private readonly List<long> _leafOrder = new List<long>();
+        private double _lastFrameSeconds = double.NaN;
+        private BinaryWriter _leafFrames;
+        private int _leafFrameFloats = -1;
+
+        /// <summary>
+        /// At every frame, every body that is not a member and that the solver holds (the leaf tank's leaves): its first pose, its last, and the
+        /// farthest its root has gone from the first; and, for the bodies of the first frame, every link's pose into <c>leaf-frames.bin</c>, a
+        /// frame for each of <c>frames.bin</c>'s, NaN for a body gone or with another number of links. A read of the probe; nothing is written to the world.
+        /// </summary>
+        private void TrackLeaves(EpisodeProbe probe)
+        {
+            double t = probe.PhysicsSeconds;
+            _lastFrameSeconds = t;
+            var now = new Dictionary<long, LinkPose[]>();
+            foreach (OtherBodyPose o in probe.OtherPoses())
+            {
+                if (o.Poses.Length == 0) continue;
+                now[o.Id] = o.Poses;
+                if (!_leaves.TryGetValue(o.Id, out LeafTrack track))
+                {
+                    _leaves[o.Id] = new LeafTrack { Id = o.Id, GenomeText = probe.GenomeTextOf(o.Id), FirstSeconds = t, LastSeconds = t, First = o.Poses, Last = o.Poses, Links = o.Poses.Length };
+                    _leafOrder.Add(o.Id);
+                    continue;
+                }
+
+                track.Last = o.Poses;
+                track.LastSeconds = t;
+                double dx = o.Poses[0].X - track.First[0].X, dy = o.Poses[0].Y - track.First[0].Y, dz = o.Poses[0].Z - track.First[0].Z;
+                track.MaxDriftMetres = Math.Max(track.MaxDriftMetres, Math.Sqrt(dx * dx + dy * dy + dz * dz));
+            }
+
+            if (_leafFrameFloats < 0)
+            {
+                _leafFrameFloats = 0;
+                foreach (long id in _leafOrder)
+                {
+                    _leaves[id].Column = _leafFrameFloats;
+                    _leafFrameFloats += 7 * _leaves[id].Links;
+                }
+
+                string path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(_framesPath)), "leaf-frames.bin");
+                _leafFrames = new BinaryWriter(new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, 1 << 16));
+            }
+
+            if (_leafFrames == null) return;
+            foreach (long id in _leafOrder)
+            {
+                LeafTrack track = _leaves[id];
+                if (track.Column < 0) continue;
+                bool here = now.TryGetValue(id, out LinkPose[] poses) && poses.Length == track.Links;
+                for (int l = 0; l < track.Links; l++)
+                {
+                    if (!here)
+                    {
+                        for (int k = 0; k < 7; k++) _leafFrames.Write(float.NaN);
+                        continue;
+                    }
+
+                    LinkPose p = poses[l];
+                    _leafFrames.Write((float)p.X); _leafFrames.Write((float)p.Y); _leafFrames.Write((float)p.Z);
+                    _leafFrames.Write((float)p.Qx); _leafFrames.Write((float)p.Qy); _leafFrames.Write((float)p.Qz); _leafFrames.Write((float)p.Qw);
+                }
+            }
+        }
+
+        /// <summary>
+        /// <c>leaves.json</c>: each body that was not a member, in the order the frames first saw it, with its genome, its links' poses when first
+        /// and last seen (x, y, z, then the quaternion x, y, z, w, world metres, as the frames write a member's), and, for one gone before the
+        /// last frame, the last frame it was seen in: it left the world between that frame and the next.
+        /// </summary>
+        public static string LeavesJson(IReadOnlyList<LeafTrack> leaves, double lastFrameSeconds, int leafFrameFloats = 0)
+        {
+            var w = new Json.Writer(indent: true);
+            w.BeginObject();
+            w.Field("format", 1);
+            w.Field("note", "every living body that was not a member, read at each frame: its genome, its links' poses (x, y, z, qx, qy, qz, qw) when first and last seen, the farthest its root went from the first, and, if it left the world, the last frame it was in");
+            w.Field("leafFrames", "leaf-frames.bin");
+            w.Field("leafFrameFloats", leafFrameFloats);
+            w.Field("leafFramesEncoding", "float32 little-endian, frame-major, one frame for each of frames.bin's at the same t: for each leaf with a column, from that column, each of its links' x, y, z, qx, qy, qz, qw; NaN when it is gone");
+            w.Field("leafCount", leaves.Count);
+            w.BeginArray("leaves");
+            foreach (LeafTrack l in leaves)
+            {
+                w.BeginObject();
+                w.Field("id", l.Id);
+                w.Field("firstSeen", l.FirstSeconds);
+                w.Field("lastSeen", l.LastSeconds);
+                if (l.LastSeconds < lastFrameSeconds) w.Field("goneAfter", l.LastSeconds); else w.Raw("goneAfter", "null");
+                w.Field("maxDriftMetres", l.MaxDriftMetres);
+                w.Field("column", l.Column);
+                w.Field("links", l.Links);
+                w.Raw("first", Poses(l.First));
+                w.Raw("last", Poses(l.Last));
+                w.Raw("genome", l.GenomeText);
+                w.EndObject();
+            }
+            w.EndArray();
+            w.EndObject();
+            return w.ToString().Replace("\r\n", "\n") + "\n";
+        }
+
+        private static string Poses(LinkPose[] poses)
+        {
+            var sb = new StringBuilder("[");
+            for (int i = 0; i < poses.Length; i++)
+            {
+                LinkPose p = poses[i];
+                if (i > 0) sb.Append(", ");
+                sb.Append('[').Append(string.Join(", ", new[] { p.X, p.Y, p.Z, p.Qx, p.Qy, p.Qz, p.Qw }.Select(v => v.ToString("R", Inv)))).Append(']');
+            }
+            return sb.Append(']').ToString();
         }
 
         public void Dispose() => Close();
@@ -309,6 +444,9 @@ namespace Evosim.Nursery
             _frames = null;
             _framesFile = null;
             _events = null;
+            _leafFrames?.Flush();
+            _leafFrames?.Dispose();
+            _leafFrames = null;
         }
 
         // ------------------------------------------------------------------ the islands
@@ -333,6 +471,7 @@ namespace Evosim.Nursery
         private void Frame(EpisodeProbe probe)
         {
             if (_layout == null) BuildLayout(probe);
+            TrackLeaves(probe);
 
             int written = 0;
             Put(ref written, (float)probe.ClockSeconds);

@@ -50,6 +50,8 @@ namespace Evosim.Farm.Gpu
         public bool StrokeAssembly;
         /// <summary>D234: a mirrored part reflects its joint drive (<c>SolverConfig.MirroredDrive</c>); the card packs each link's mask and applies it.</summary>
         public bool MirroredDrive;
+        /// <summary>D235: the world's table lists the nose (<c>SolverConfig.Nose</c>); the card then reads each nose link's held sniff and every other link's smell as zero.</summary>
+        public bool Nose;
 
         /// <summary>D228: a part touches as its convex core with a margin (<c>SolverConfig.ContactShape</c>), not as the ball of its half-diagonal.</summary>
         public bool TrueShape;
@@ -196,6 +198,7 @@ namespace Evosim.Farm.Gpu
             ShapedMass = s.ShapedAddedMass;
             StrokeAssembly = s.StrokePushesAssembly;
             MirroredDrive = s.MirroredDrive;
+            Nose = s.Nose != null;
             TrueShape = s.ContactShape.IsTrueShape();
             AtPoint = s.ContactShape.AtPoint();
 

@@ -98,6 +98,41 @@ namespace Evosim.Farm.Tests
             Assert.Throws<ArgumentException>(() => Built(new Dictionary<string, string> { { "EVOSIM_LEAF_SCENT", "taste" } }));
         }
 
+        /// <summary>
+        /// D235: <c>EVOSIM_NOSE</c> appends the nose after every other type with its three noises and its bud weight, and at its
+        /// defaults it is <see cref="NoseCell"/>'s own. Unset, the table has no nose.
+        /// </summary>
+        [Fact]
+        public void TheNoseIsAppendedWithItsNoisesAndItsBudWeight()
+        {
+            Assert.False(Built(new Dictionary<string, string>()).CellTypes.Contains(CellTypeIds.Nose));
+
+            RunConfig config = Built(new Dictionary<string, string>
+            {
+                { "EVOSIM_ANCHORING", "1" },
+                { "EVOSIM_NOSE", "1" },
+                { "EVOSIM_NOSE_LEAF_NOISE", "0.5" },
+                { "EVOSIM_NOSE_CARRION_NOISE", "2" },
+                { "EVOSIM_NOSE_CHEMICAL_NOISE", "0.125" },
+                { "EVOSIM_NOSE_BUD_WEIGHT", "0.25" },
+            });
+
+            Assert.Equal(CellTypeRegistry.Standard.Count + 2, config.CellTypes.Count);
+            Assert.Equal(CellTypeRegistry.Standard.Count, config.CellTypes.IndexOf(CellTypeIds.Anchoring));
+            Assert.Equal(CellTypeRegistry.Standard.Count + 1, config.CellTypes.IndexOf(CellTypeIds.Nose));
+
+            var nose = (NoseCell)config.CellTypes.Resolve(CellTypeIds.Nose);
+            var expected = new NoseCell(leafNoise: 0.5f, carrionNoise: 2f, chemicalNoise: 0.125f) { BudWeight = 0.25f };
+            Assert.Equal(expected.FullHashContribution(), nose.FullHashContribution());
+            Assert.Equal(0.25f, nose.BudWeight);
+
+            var plain = (NoseCell)Built(new Dictionary<string, string> { { "EVOSIM_NOSE", "1" } }).CellTypes.Resolve(CellTypeIds.Nose);
+            Assert.Equal(new NoseCell().FullHashContribution(), plain.FullHashContribution());
+
+            // The solver's config carries it, so the bodies read the nose's rule.
+            Assert.NotNull(Evosim.Dynamics.SolverConfig.From(config, 0.01).Nose);
+        }
+
         /// <summary>D229's fin law: <c>EVOSIM_SHAPED_ADDED_MASS</c> reaches the fluid config, and unset it is off.</summary>
         [Fact]
         public void TheShapedAddedMassSwitchReachesTheFluidConfigAndIsOffWhenUnset()

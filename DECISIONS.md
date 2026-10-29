@@ -9496,6 +9496,16 @@ be. Built after D232's kill-meal screen, tested in the nursery before any world 
 **Why.** A smell that every part reads exactly makes a nose's size worth nothing. A noisy count makes size pay, an organ
 makes placement matter, and a price makes size a bet, as the owner asked.
 
+**Note, 2026-10-27 (the graft films, nursery entries 23 to 25).** At this entry's default noise a smaller nose senses
+less clearly, which is the cost the rule was built to make real. Two noses were grafted onto the same ten bred swimmers
+and swum in the same patch tank on the same seed. One was a 25 cm upright stalk of 0.1 m². The other was a 6 by 6 by
+9 cm forward snout of 0.0288 m², whose area law gives 1.9 times the smell noise and 5.2 times the direction noise. The direction reading
+stood 3.4 times higher inside a patch than in open water with the stalk, and 1.8 times with the snout. The body the film
+follows stayed 127 s in its patch with the stalk and 64 s with the snout. The bodies were bred to whole-body smell and
+not to a nose, so this measures the sense and not what evolution makes of it. The noise calibration should start from
+it: at these constants a nose of about 0.03 m² is near the edge of use for a 60 cm swimmer, which is inference.
+`logbook/specs/nose-graft-film-read.md` has the detail.
+
 ### D236
 **The swimmer curriculum: two leaf patches that take turns being fed, so travel pays** · 2026-10-25
 

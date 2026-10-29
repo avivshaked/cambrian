@@ -751,7 +751,7 @@ namespace Evosim.Nursery
             return 0;
         }
 
-        /// <summary>The text of <c>result.json</c>: the episode's seed, the control, and each slot's net as its round-trip text and its 64 bits.</summary>
+        /// <summary>The text of <c>result.json</c>: the episode's seed, the control, and each slot's net as its round-trip text and its 64 bits, and its eaten, work, upkeep, handling and diedAt in joules (diedAt in seconds, null for a survivor).</summary>
         private static string ResultText(RestepPlan plan, RestepOutcome outcome)
         {
             CultureInfo inv = CultureInfo.InvariantCulture;
@@ -772,6 +772,15 @@ namespace Evosim.Nursery
                 {
                     r.Field("net", x.Net.ToString("R", inv));
                     r.Field("bits", BitConverter.DoubleToInt64Bits(x.Net).ToString("x16", inv));
+
+                    // The episode's measures the reward reads (EpisodeRecord): eaten is the joules kept from bites on living leaves under
+                    // contact eating, else from corpses; diedAt is null for a body that lived. Joules over the whole episode.
+                    string Num(double v) => double.IsNaN(v) ? "null" : v.ToString("R", inv);
+                    r.Raw("eaten", Num(x.Eaten));
+                    r.Raw("work", Num(x.Work));
+                    r.Raw("upkeep", Num(x.Upkeep));
+                    r.Raw("handling", Num(x.Handling));
+                    r.Raw("diedAt", Num(x.DiedAt));
                 }
                 else
                 {
