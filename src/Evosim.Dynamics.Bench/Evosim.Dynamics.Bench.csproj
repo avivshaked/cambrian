@@ -25,4 +25,15 @@
     <ProjectReference Include="..\Evosim.Dynamics\Evosim.Dynamics.csproj" />
   </ItemGroup>
 
+  <!--
+    The farm's pose reader, compiled in by link and not by project reference. PoseStream.cs
+    needs nothing but System.IO (its own remarks say so: the Unity project consumes it the same
+    way), while Evosim.Farm.csproj is a console program that pulls in Evosim.Farm.Gpu and ILGPU
+    and defines EVOSIM_GPU. A link takes the one source file, so there is no copy to drift and
+    no second entry point or card library in the bench.
+  -->
+  <ItemGroup>
+    <Compile Include="..\Evosim.Farm\PoseStream.cs" Link="PoseStream.cs" />
+  </ItemGroup>
+
 </Project>
