@@ -9873,3 +9873,18 @@ in any condition set for the world.
 **Why.** No single noise passed both bench marks. At 1/64, size paid (a double snout over a half one by 137 ± 46 J) but a reference snout fell short of whole-body smell. At 1/256 the reference snout matched it and size paid nothing. D235's first condition is judged on bodies evolved over 60 generations, not on founders. At 1/64 a double snout already eats about as well as whole-body smell, at about 0.03 W of upkeep, so the arms test D235's claim that size pays and evolution finds it. The body search mutates a nose's dimensions like any part's (`Mutator.MutateNode`). Every nursery founder is wired to the direction channel, so a strength arm would start blind and would test whether that wiring can evolve, not which form smells better.
 
 **Rejected.** Running at 1/256, which makes the nose a free organ rather than a bet. A second recalibration near 1/90, whose window looks narrower than the bench resolves. Strength-wired founders, whose mapping from a direction link to a strength link is arbitrary.
+
+### D258
+**The heat stop is for sustained heat, and light work may run beside a card run** · 2026-10-29
+
+**Status:** ruled by the owner on 2026-10-29, on the coordinator's recommendation, to move faster at no real cost to the machine's health. It supersedes D183's stop limit.
+
+**Decision.**
+- `-HeatStop` (`scripts/card/heat-stop.ps1`) stops a card run when the CPU is at 98 °C or more on one reading, or at 95 °C or more on every reading for a minute. The card's 80 °C limit and the two blind minutes stay. The render terms take the same CPU limits.
+- At every pace look the coordinator reads the run's temperature log, and tells the owner when the CPU has held 90 °C or more for ten minutes. That pattern points at the cooling, not the load.
+- Light work runs beside a card run: reads, Python analysis and single-thread jobs, on free efficiency cores at BelowNormal. Builds and test suites still wait for a HOLD window.
+- The coordinator's half-hourly heat watch is not armed for card runs, because the launchers read the heat every turn themselves.
+
+**Why.** The i9-13900K throttles itself at 100 °C and is rated to run up to it. The single seconds at 90 to 96 °C behind every stop since 2026-10-12 were one boosting fast core, not the package (`logbook/specs/machine-and-tools.md`). A stop loses nothing, since a run resumes from its checkpoint and replays bit for bit. But avoiding stops kept most of the machine idle beside every card run, which cost far more time than any stop. A minute held at 95 °C, or one reading at 98 °C, is what a cooling fault looks like, and it still stops the run. The limits are judgement, not measurement, and are to be checked against a few days of runs.
+
+**Rejected.** Keeping 90 °C on two readings, which stops on harmless spikes and keeps the machine idle. Capping the CPU's boost in Windows, which ends the spikes but slows all work all the time and is a system change. No stop at all, which would leave a cooling fault unwatched.

@@ -138,12 +138,12 @@ The root file's rules still apply. The entries below were moved word for word, s
     it with the Monitor tool (timeout 1,800,000 ms) on `cd /d/Projects/experiments/evolution-simulator/scratch/heat-watchdog && python heat-watch.py --until "$(date -d '+29 min' '+%Y-%m-%d %H:%M')" 2>&1`,
     and re-arms it from a half-hourly cron, after checking `heat-watch.lock`'s process id is not alive.
     Its fixture tests are `scratch/heat-watchdog/test/run-tests.py`.
-  - **Nothing runs beside a card group.** A card group launched with `-HeatStop` stops every world at the
-    first CPU sample at or over 90 °C. On 2026-10-12 round 58's isolated group stopped so at 12:23, at 91 °C
-    for one sample. A subagent's Python read on every core ran beside it, and reads on four of the
-    group's own cores had ended minutes before (logbook/0139). The group was resumed from a checkpoint and
-    nothing was lost. Since then, no read, build or subagent process of anyone's runs beside a card group,
-    and a subagent's brief says so while one runs.
+  - **Only light work runs beside a card group (D258).** `-HeatStop` stops every world at one CPU reading of
+    98 °C or more, or at 95 °C or more for a minute. Reads, Python and single-thread jobs may run beside a group, on
+    free efficiency cores at BelowNormal. Builds and test suites do not, because their bursts on the fast cores
+    caused every stop under the old limit of 90 °C. That limit stopped round 58's group on 2026-10-12 at 91 °C for
+    one sample, with a subagent's Python read on every core beside it (logbook/0139). The group resumed from a
+    checkpoint and nothing was lost. Held 90 °C for ten minutes is read as a cooling fault and told to the owner.
   - **Nor beside a theatre render step.** `scratch/theatre-realism/batch-heat.ps1` stops a render batch at
     89 °C. On 2026-10-25 at 13:51 it read 90 °C and stopped batch b43. A Farm build at one MSBuild node and
     two threads on logical 2-15, given its slot by the coordinator, ran beside a Unity step, with small test
