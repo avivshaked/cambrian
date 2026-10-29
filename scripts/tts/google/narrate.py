@@ -73,15 +73,15 @@ def beats(script: Path) -> list[dict]:
 
 
 def read_key() -> str:
-    for name in (".env.local", "env.local"):
-        path = HERE / name
+    for path in (HERE / ".env.local", HERE / "env.local", HERE.parents[2] / ".env"):
         if path.is_file():
             for line in path.read_text(encoding="utf-8").splitlines():
                 key, _, value = line.partition("=")
                 value = value.strip().strip('"').strip("'")
                 if key.strip() == "GEMINI_API_KEY" and value and not value.startswith("<"):
                     return value
-    sys.exit("GEMINI_API_KEY not found in scripts/tts/google/.env.local or env.local")
+    sys.exit("Narration needs a Gemini API key: add GEMINI_API_KEY to .env at the repository's root "
+             "(the keys are listed in .env.example), or to scripts/tts/google/.env.local")
 
 
 def main() -> int:

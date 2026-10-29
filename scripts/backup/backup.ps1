@@ -21,7 +21,9 @@ $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [En
 # 1Password asks the owner to approve. Without one, restic asks at the prompt.
 $key = if ($To -eq 'local') { 'EVOSIM_BACKUP_OP_LOCAL' } else { 'EVOSIM_BACKUP_OP_GDRIVE' }
 $line = Get-Content "$R\.env" -ErrorAction SilentlyContinue | Where-Object { $_ -match "^$key=" } | Select-Object -First 1
-if ($line) { $env:RESTIC_PASSWORD_COMMAND = "op read `"$(($line -split '=', 2)[1].Trim())`"" }
+$ref = if ($line) { ($line -split '=', 2)[1].Trim() } else { '' }
+if ($ref) { $env:RESTIC_PASSWORD_COMMAND = "op read `"$ref`"" }
+else { Write-Host "An unattended backup needs $key in .env: a 1Password reference to the store's password (see .env.example). Asking at the prompt instead." }
 $me = [System.Diagnostics.Process]::GetCurrentProcess()
 $me.PriorityClass = 'BelowNormal'
 

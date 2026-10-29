@@ -136,7 +136,8 @@ def main() -> int:
 
     key = os.environ.get("EVOSIM_LEONARDO_KEY", "").strip() or load_dotenv(ROOT / ".env").get("EVOSIM_LEONARDO_KEY", "").strip()
     if not key and not args.dry_run:
-        print("EVOSIM_LEONARDO_KEY is not set in the environment or in .env at the repo root; nothing sent", file=sys.stderr)
+        print("Image generation needs a Leonardo.ai key: add EVOSIM_LEONARDO_KEY to .env at the repo root "
+              "(the keys are listed in .env.example), or set it in the environment; nothing sent", file=sys.stderr)
         return 2
 
     OUT.mkdir(parents=True, exist_ok=True)
