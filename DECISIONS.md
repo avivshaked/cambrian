@@ -9888,3 +9888,16 @@ in any condition set for the world.
 **Why.** The i9-13900K throttles itself at 100 °C and is rated to run up to it. The single seconds at 90 to 96 °C behind every stop since 2026-10-12 were one boosting fast core, not the package (`logbook/specs/machine-and-tools.md`). A stop loses nothing, since a run resumes from its checkpoint and replays bit for bit. But avoiding stops kept most of the machine idle beside every card run, which cost far more time than any stop. A minute held at 95 °C, or one reading at 98 °C, is what a cooling fault looks like, and it still stops the run. The limits are judgement, not measurement, and are to be checked against a few days of runs.
 
 **Rejected.** Keeping 90 °C on two readings, which stops on harmless spikes and keeps the machine idle. Capping the CPU's boost in Windows, which ends the spikes but slows all work all the time and is a system change. No stop at all, which would leave a cooling fault unwatched.
+
+### D259
+**The film's world is `r63c`'s arm B: the slow bloom, the far smell off** · 2026-10-29
+
+**Status:** ruled by the owner on 2026-10-29, on the coordinator's recommendation, after no arm of `r63c` passed every gate (`logbook/specs/r63c-read/`). It settles G2 of the grazer film's plan (`logbook/specs/grazer-film-plan.md`, D254).
+
+**Decision.**
+- The film's world is the bloom at periods of 5,000 to 10,000 s, with the far smell off and D249's energy sense on (`rounds/env-r63c-b.ps1`). G5's shape screen and G7's round build on it.
+- B's two worlds are run on to 48,000 s (`r63d`, `logbook/specs/r63d-prereg/`). This judges G2's gates over twice the bloom cycles before G7, at the owner's suggestion.
+
+**Why.** B's leaves followed the bloom on 4 and 5 of 8 islands, where C's did on 2. Survival passed in both B worlds, and evolution on seed 6203. The far smell added only one or two crossings. At 24,000 s each island sees 2.4 to 4.8 cycles, too few for a firm correlation, so gate 2 is judged again at 48,000 s.
+
+**Rejected.** C, the far smell on, which is one more mechanism for little more migration and a weaker bloom signal. A screen at still slower periods, which 24,000 s cannot judge.
