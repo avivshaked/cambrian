@@ -108,6 +108,33 @@ namespace Evosim.Dynamics.Tests
         public void TheGraftedNoseFeelsTheLeafAsTheWholeBodyDidAtRest()
         {
             RunConfig plain = Config("ecbba999e231021c"), nosed = Config("65b1104575c3a888");
+            Check(plain, nosed, genome => NoseGraft.Graft(
+                genome, nosed.CellTypes, genome.RootIndex, Anchor, Axis, Area, nosed.Development, nosed.Shapes, Slenderness));
+        }
+
+        /// <summary>
+        /// A mirrored pair whose links are split in halves between the two noses: the twin's frame is reflected, so each half
+        /// is reframed in the frame of the nose it goes to, and the two halves still give each target the input it had. Both
+        /// bodies grow with reflected anchors, as a pair needs, and the pair stands either side of the middle, mirrored in x.
+        /// </summary>
+        [Fact]
+        public void ASplitPairFeelsTheLeafAsTheWholeBodyDidAtRest()
+        {
+            RunConfig plain = Config("ecbba999e231021c"), nosed = Config("65b1104575c3a888");
+            plain.Development.ReflectMirroredAnchors = true;
+            nosed.Development.ReflectMirroredAnchors = true;
+            var side = new Float3(0.5f, 0.6f, -1f);
+            Check(plain, nosed, genome =>
+            {
+                NoseGraftResult pair = NoseGraft.Graft(genome, nosed.CellTypes, genome.RootIndex, side, Axis, Area, nosed.Development,
+                    nosed.Shapes, Slenderness, mirror: 0, pairLinks: NosePairLinks.Split);
+                Assert.NotEqual(0UL, pair.TwinPath);
+                return pair;
+            });
+        }
+
+        private void Check(RunConfig plain, RunConfig nosed, Func<Genome, NoseGraftResult> graftOf)
+        {
             Assert.False(plain.CellTypes.Contains(CellTypeIds.Nose));
             Assert.True(nosed.CellTypes.Contains(CellTypeIds.Nose));
 
@@ -122,8 +149,7 @@ namespace Evosim.Dynamics.Tests
             foreach ((string body, Genome genome) in pool)
             {
                 line++;
-                NoseGraftResult graft = NoseGraft.Graft(
-                    genome, nosed.CellTypes, genome.RootIndex, Anchor, Axis, Area, nosed.Development, nosed.Shapes, Slenderness);
+                NoseGraftResult graft = graftOf(genome);
                 reframed += graft.DirectionLinksReframed;
 
                 double worst = 0.0;

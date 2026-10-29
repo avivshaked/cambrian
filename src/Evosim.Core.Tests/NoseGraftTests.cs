@@ -220,27 +220,39 @@ namespace Evosim.Core.Tests
                 Assert.Equal(one.LinksMade, first.LinksMade);
                 Assert.Equal(2 * one.LinksMade, split.LinksMade);
 
-                Dictionary<(SensorChannel, int, ulong), double> Weights(NoseGraftResult r, Phenotype body)
+                // Keyed by (on the twin, channel, index, target).
+                Dictionary<(bool, SensorChannel, int, ulong), double> Weights(NoseGraftResult r, Phenotype body)
                 {
                     Dictionary<ulong, BrainPort> ports = CentralWiring.AllPorts(body);
-                    var w = new Dictionary<(SensorChannel, int, ulong), double>();
+                    var w = new Dictionary<(bool, SensorChannel, int, ulong), double>();
                     int count = r.TwinPath == 0 ? 1 : 2;
                     foreach (BrainLink l in r.Genome.Brain.Links)
                     {
                         if (!ports.TryGetValue(l.From, out BrainPort port) || !port.Channel.IsSmell()) continue;
                         Assert.True(port.Part >= body.Parts.Count - count, $"{name}: a smell link reads part {port.Part}, not a nose");
-                        var key = (port.Channel, port.Index, l.To);
+                        var key = (r.TwinPath != 0 && body.Parts[port.Part].PathId == r.TwinPath, port.Channel, port.Index, l.To);
                         w[key] = (w.TryGetValue(key, out double v) ? v : 0) + l.Weight;
                     }
 
                     return w;
                 }
 
+                double At(Dictionary<(bool, SensorChannel, int, ulong), double> w, (bool, SensorChannel, int, ulong) key) =>
+                    w.TryGetValue(key, out double v) ? v : 0.0;
+
+                // A scalar smell reads the same at either nose, so its two halves sum to the one nose's weight. A direction
+                // component is reframed onto each nose (the twin's frame is reflected), so only the first nose, whose frame is
+                // the one nose's, carries exactly half of it; NoseGraftReframeTests checks the twin's half by what it reads.
                 var single = Weights(one, Developer.Develop(one.Genome, Reflecting, cellTypes: Table));
                 Phenotype splitBody = Developer.Develop(split.Genome, Reflecting, cellTypes: Table);
                 var halves = Weights(split, splitBody);
-                Assert.Equal(single.Count, halves.Count);
-                foreach (var kv in single) Assert.Equal(kv.Value, halves[kv.Key], 5);
+                foreach (var kv in single)
+                {
+                    (bool _, SensorChannel channel, int index, ulong to) = kv.Key;
+                    double onFirst = At(halves, (false, channel, index, to)), onTwin = At(halves, (true, channel, index, to));
+                    if (channel == SensorChannel.LeafScentDirection) Assert.Equal(kv.Value / 2, onFirst, 5);
+                    else Assert.Equal(kv.Value, onFirst + onTwin, 5);
+                }
 
                 // Under First the twin's ports are read by nothing.
                 Phenotype firstBody = Developer.Develop(first.Genome, Reflecting, cellTypes: Table);
