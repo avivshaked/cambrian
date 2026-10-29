@@ -16,6 +16,12 @@ $R = 'D:\Projects\experiments\evolution-simulator'
 $repo = if ($To -eq 'local') { 'C:\Backups\evolution-simulator\restic' } else { 'rclone:gdrive:evosim-backup' }
 # The program path as Windows holds it, since a terminal opened before restic and rclone were installed lacks it.
 $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
+# The password: with EVOSIM_BACKUP_OP_LOCAL or EVOSIM_BACKUP_OP_GDRIVE in .env (a 1Password reference such as
+# op://Private/evosim-backup-gdrive/password, never the password itself), restic asks the 1Password CLI for it, and
+# 1Password asks the owner to approve. Without one, restic asks at the prompt.
+$key = if ($To -eq 'local') { 'EVOSIM_BACKUP_OP_LOCAL' } else { 'EVOSIM_BACKUP_OP_GDRIVE' }
+$line = Get-Content "$R\.env" -ErrorAction SilentlyContinue | Where-Object { $_ -match "^$key=" } | Select-Object -First 1
+if ($line) { $env:RESTIC_PASSWORD_COMMAND = "op read `"$(($line -split '=', 2)[1].Trim())`"" }
 $me = [System.Diagnostics.Process]::GetCurrentProcess()
 $me.PriorityClass = 'BelowNormal'
 
