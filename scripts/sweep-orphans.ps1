@@ -62,6 +62,21 @@ $free = [Math]::Round($d.Free / 1GB)
 if ($free -lt 300) { "DISK: D: has $free GB free, under 300 GB: scratch's cleanup is due" }
 else { "disk: D: has $free GB free" }
 
+# The project's own budget (logbook/specs/data-retention-and-backup.md, item 7): scratch/ at 75 GB, and a review of
+# runs/ above 300 GB. Robocopy's listing sums a tree in seconds where Get-ChildItem takes minutes; /XJ keeps it out of
+# junctions, so a linked tree is not counted twice.
+function Get-TreeGB([string]$dir) {
+    $line = robocopy $dir NUL /L /S /NJH /BYTES /NFL /NDL /NC /R:0 /W:0 /XJ | Select-String '^\s+Bytes :' | Select-Object -First 1
+    if (-not $line) { return $null }
+    [Math]::Round([double](($line.Line -split '\s+')[3]) / 1GB)
+}
+foreach ($b in @(@{ Dir = 'scratch'; Limit = 75; Act = 'cleanup is due' }, @{ Dir = 'runs'; Limit = 300; Act = 'review is due' })) {
+    $gb = Get-TreeGB (Join-Path $PSScriptRoot "..\$($b.Dir)")
+    if ($null -eq $gb) { "size: $($b.Dir)/ could not be read" }
+    elseif ($gb -gt $b.Limit) { "SIZE: $($b.Dir)/ holds $gb GB, over its $($b.Limit) GB budget: its $($b.Act)" }
+    else { "size: $($b.Dir)/ holds $gb GB of its $($b.Limit) GB budget" }
+}
+
 $found = @(Get-Orphans)
 if ($found.Count -eq 0) { Write-Output 'no orphaned loops'; exit 0 }
 $found | Group-Object Name | ForEach-Object { '{0,-28} {1}' -f $_.Name, $_.Count }
