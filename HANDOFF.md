@@ -30,13 +30,13 @@ The owner has delegated the grazer screens to the coordinator. The tactic is to 
 - One kill in six of a grazer by a grazer is close kin.
 - Grazers barely steer toward food.
 
-A grazer screen from here gates on the share of bite income from living plants, at about 0.8 or more. `r63h` (wt-r63b `3f2310b4`, arms d, e and f, control `r63c-b-6202`) runs on the card and is read like `r63g`, with that split.
+A grazer screen from here gates on the share of bite income from living plants, at about 0.8 or more. `r63h` (`logbook/specs/r63h-read/README.md`) took mouths to a hundredth of their price. Grazers rose six to fourteen times, and two arms pushed the leaves to a third of the control's. But the leaves still grow, and grazers take only 0.36-0.52 of their income from leaves. The cost dials are spent: one mouth at one yield makes a cheap predator as much as a cheap grazer.
 
 **One unified proposal comes next.** It is built from two inputs:
 - `proposals/propose-matter-kinds.md`: matter kinds by tissue and a diet gene, with the coordinator's review at its end.
 - The recognition proposal being drafted in `scratch/recognition-proposal/`: kin and foe recognition, an animal smell carrying a heritable signature, and an alarm scent.
 
-The owner agreed on 2026-10-30 that once both are in, and `r63h` is read, a Fable agent writes one proposal and its pre-registered screen for the next world run. Its brief uses all of this context:
+The owner agreed on 2026-10-30 that a Fable agent writes one proposal and its pre-registered screen for the next world run. It is writing now, into `scratch/unified-proposal/draft.md`. The coordinator reviews it, moves it to `proposals/` and sets out its questions to the owner in full. Its brief uses all of this context:
 - the owner's rulings: plants cheap to kill and animals hard, because animals hold concentrated matter; a world rule never reads the world's state; a new feature starts overpowered;
 - a word cap and bounded reading.
 
