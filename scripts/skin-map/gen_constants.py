@@ -1,6 +1,6 @@
 """Writes unity/Assets/Theatre/TheatreSkinMapConstants.cs from the skin map's two fixed-number files.
 
-    python -I gen_constants.py [<projection.json> <weights.json> <out.cs> [<hybrid.json> [<value.json> [<chroma.json> [<sheen.json>]]]]]
+    python -I gen_constants.py [<projection.json> <weights.json> <out.cs> [<hybrid.json> [<value.json> [<chroma.json> [<sheen.json> [<zone.json>]]]]]]
 
 With no arguments it reads scratch/skin-map/pooled-24000/ in the main checkout and writes into the skin-map worktree. The
 hybrid hue's constants (HybridFeatures, HybridWeights, HybridFittingScores, HybridRule) come from hue-screen/hybrid.json.
@@ -10,7 +10,8 @@ An optional fifth argument, value.json (scratch/skin-map/full-colour/fit_value.p
 ValueFittingScores for mode 3's value axis; its features, zclip and brain_shrink_links must equal hybrid.json's. Without it
 the output is unchanged. Optional sixth and seventh arguments, chroma.json and sheen.json (scratch/skin-map/full-colour/v6/
 fit_axes.py), append ChromaRule, ChromaWeights and ChromaFittingScores, and the same three for Sheen, with the same asserts;
-the sixth and seventh need the fifth, and without them the output is unchanged.
+an optional eighth, zone.json (scratch/skin-map/full-colour/v7/fit_zone.py), appends the same three for Zone, the fifth lineage
+axis; the sixth to eighth need the fifth, and without them the output is unchanged.
 """
 import json
 import sys
@@ -41,7 +42,8 @@ def main():
     value_path = sys.argv[5] if len(sys.argv) > 5 else None
     chroma_path = sys.argv[6] if len(sys.argv) > 6 else None
     sheen_path = sys.argv[7] if len(sys.argv) > 7 else None
-    assert not (chroma_path or sheen_path) or value_path, 'chroma.json and sheen.json need value.json before them'
+    zone_path = sys.argv[8] if len(sys.argv) > 8 else None
+    assert not (chroma_path or sheen_path or zone_path) or value_path, 'chroma.json, sheen.json and zone.json need value.json before them'
 
     p = json.load(open(projection, 'r', encoding='utf-8'))
     w = json.load(open(weights, 'r', encoding='utf-8'))
@@ -203,7 +205,7 @@ def main():
             add('            %s,' % lit(v))
         add('        };')
 
-    for axis, path, label in (('Chroma', chroma_path, 'chroma'), ('Sheen', sheen_path, 'sheen')):
+    for axis, path, label in (('Chroma', chroma_path, 'chroma'), ('Sheen', sheen_path, 'sheen'), ('Zone', zone_path, 'zone')):
         if not path:
             continue
         ax = json.load(open(path, 'r', encoding='utf-8'))
