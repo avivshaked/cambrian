@@ -62,13 +62,15 @@ all four runs, and the code read beside it is of `src/Evosim.Dynamics/Fluid.cs` 
 - **Nothing in buoyancy or drag treats the superellipsoid apart.** Buoyancy is one signed term per link, scaled by the
   link's mass and the whole body's volume. The waterline is a point test on the link's origin height, with no
   part-submerged fraction for any shape, and remains take no lift. A family part differs only in its volume, its mass
-  and the drag panels its measured geometry gives it. Above the surface, only `SurfaceRestoringFraction` of gravity pulls
-  a body back down, so one that leaves the water at a few metres a second coasts tens of metres up.
+  and the drag panels its measured geometry gives it. Above the surface these worlds pull a body down by its full weight
+  (`surfaceRestoringFraction` is 1), so nothing in the water's laws can carry one 25 m into the air.
 - **What lifts the twins is the pair contact.** Each body sums its own contact force against every neighbour it
   overlaps. Where two centres lie closer than 1e-9 m, the normal falls back to straight up, `Vec3.UnitY`, at
-  `Contacts.cs` lines 987-989 for the body's sphere and 1212-1214 for a link's. Each twin finds the other at its own
-  centre, so both are pushed up by the full overlap and neither apart. They stay coincident with equal velocities, so the
-  push repeats every step until they leave the world. That this is the whole of the launch is inference: it fits the
+  `Contacts.cs` lines 987-989 for the body's sphere and 1212-1214 for a link's (these worlds use the second). Each twin
+  finds the other at its own centre, so both are pushed up and neither apart. `ContactLaw.PairPush` caps a step's push at
+  the reduced mass times `MaxSeparationSpeed` (1 m/s) over the step (0.01 s). Twins never separate, so their approach
+  speed stays 0 and every step grants the whole allowance: about 50 m/s² each, five times gravity, in the water and in
+  the air, against which only drag holds. The push repeats until they leave the world. That this is the whole of the launch is inference: it fits the
   twins' identical states and the steady rise, and no twin was traced step by step.
 - **Why family bodies make more twins is not known.** A body cut into pieces gives coincident twins when two of its
   parts sit at one place. One of the launched genomes, a two-part superellipsoid leaf, grows from a self-recursive,
