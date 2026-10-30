@@ -144,6 +144,11 @@ The root file's rules still apply. The entries below were moved word for word, s
     caused every stop under the old limit of 90 °C. That limit stopped round 58's group on 2026-10-12 at 91 °C for
     one sample, with a subagent's Python read on every core beside it (logbook/0139). The group resumed from a
     checkpoint and nothing was lost. Held 90 °C for ten minutes is read as a cooling fault and told to the owner.
+  - **A group's first minute can burst past the stop unseen.** The launchers read the heat every 15 s, so a burst
+    of a few seconds falls between two readings. On 2026-10-30, `r63d`'s three-world group resumed from its
+    24,000 s checkpoints beside N0 (16-23). Afterburner's log then held 23 seconds at 95 °C or more, up to 100 °C,
+    all between 00:38:29 and 00:39:24, and the heat stop did not fire. The CPU then settled at 78-81 °C. The
+    one-second heat watch is what sees these bursts. A finer read in a launch's first minutes is the open fix.
   - **Nor beside a theatre render step.** `scratch/theatre-realism/batch-heat.ps1` stops a render batch at
     89 °C. On 2026-10-25 at 13:51 it read 90 °C and stopped batch b43. A Farm build at one MSBuild node and
     two threads on logical 2-15, given its slot by the coordinator, ran beside a Unity step, with small test
