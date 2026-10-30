@@ -285,6 +285,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D260](#d260) | Data is kept only for work in progress, and what cannot be recreated is backed up, compressed and encrypted | 2026-10-29 | ruled by the owner on 2026-10-29, after the project had grown to 552 GB with nothing outside git backed up |
 | [D261](#d261) | The world holds a fixed total of matter, 25,000 units to start | 2026-10-30 | ruled by the owner on 2026-10-30, after all three `r63d` worlds ended at the population ceiling (`logbook/specs/r63d-read/end/`) |
 | [D262](#d262) | The world comes first and the film second; a new feature starts overpowered | 2026-10-30 | ruled by the owner on 2026-10-30 |
+| [D264](#d264) | Grazers overpowered in three phases: phase 1 makes animals hard to kill, provisions newborns and spreads the young, each set to overshoot | 2026-10-30 | ruled by the owner on 2026-10-30, who agreed to plan all three changes, asked that the values aim to overshoot, and asked that the good parts of the unified proposal… |
 
 ---
 
@@ -10083,3 +10084,23 @@ in any condition set for the world.
 **Why.** The nose (D235) entered G3 with its running cost and drag set for realism, and lost to whole-body smell, which is not realistic (`logbook/specs/nose-test-read/` on `nose-arms`). The test showed a cost, not whether evolution wants a nose.
 
 **Rejected.** Tuning a new feature for balance from the start.
+
+### D264
+**Grazers overpowered in three phases: phase 1 makes animals hard to kill, provisions newborns and spreads the young, each set to overshoot** · 2026-10-30
+
+**Status:** ruled by the owner on 2026-10-30, who agreed to plan all three changes, asked that the values aim to overshoot, and asked that the good parts of the unified proposal (`proposals/propose-food-foes-kin.md`) be kept. D263 is left to the coincident-contact fix, which lands from its own lane. Phase 1's pre-registration names its values before it launches.
+
+**Decision.**
+- The work goes in three phases, each pre-registered and read before the next is built:
+  - **Phase 1** overpowers grazers.
+  - **Phase 2** gives bodies the senses for food, foes and kin: the family signature, the kin taste and restraint at the mouth, a taste for kind, a plain animal smell, the alarm from wounds and the diet cue from a gut, and remains closing as marine snow.
+  - **Phase 3** brings the realistic trade-offs: plant digestion as an investment with meat easy for every gut, the animal toughness dialled back, and D261's fixed matter total.
+- Phase 1 has three levers, each behind a switch or tunable that leaves every recorded world unchanged at its default:
+  - **Animal tissue is much harder to kill than leaf.** A new world tunable multiplies the health of every part that is not photosynthetic, and phase 1 sets it to overshoot.
+  - **Newborns are provisioned.** `NewbornReserveFraction` goes above the 0.5 of D239's screens.
+  - **The young are spread.** `OffspringDispersalMetres` (D088) goes well above the 5 m of the `r63` worlds.
+- The unified proposal's diet gene is turned round for phase 3. Meat is easy to digest for every gut, and plant digestion is what a body invests in. The animal smell carries strength only, not an averaged likeness. Its other parts move to phase 2 as written.
+
+**Why.** `r63g` and `r63h` made grazers plentiful, and then most of them died in other grazers' mouths. Close kin were 13-19 % of those kills, and grazers took 0.36-0.52 of their bite income from leaves (`logbook/specs/r63h-read/`). A mouth bites whatever it touches, and one contact can kill. A bite takes a share of the victim's concentrated reserve, and the young start within 5 m of their family. So the world pays more for a sibling than for a leaf. The owner's view is that plants should be cheap to kill and animals hard. Asked how the unified proposal differs from reality, the coordinator found that it put the cost of meat in digestion, where in the sea it lies in the catching.
+
+**Rejected.** Building the unified proposal as written: its diet gene makes meat useless to a plant-eater, which is not how guts work. More cheapening of mouths: `r63h` showed that a cheaper mouth makes a cheaper predator as much as a cheaper grazer.
