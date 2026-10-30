@@ -38,16 +38,7 @@ A grazer screen from here gates on the share of bite income from living plants, 
 
 That proposal is `proposals/propose-food-foes-kin.md`. Asked how it differs from reality, the coordinator found that it put the cost of meat in digestion, where in the sea it lies in the catching. The owner then ruled D264: three phases, with the values set to overshoot.
 
-**Phase 1, `r64`, runs on the card.** It started at 20:23 UTC on 2026-10-30 from `scratch/wt-phase1` (branch `phase1-overpower`, `c3c6040f`), with its pre-registration in `logbook/specs/r64-prereg/` on that branch:
-- A: animals 10 times as hard to kill, plants at 0.2 of their health, by body.
-- B: newborn reserve 0.8.
-- C: young spread over 30 m.
-- D: all three.
-- E: all three, with mouths at `r63g-b`'s prices.
-
-The control is the recorded `r63h-d-6202`, and the identity check matched it row for row. It is read with `r63h-read.ps1`'s steps plus the death rows' income by lineage. Before the branch merges to main, the 34 nursery configs need bringing forward (`scripts/nursery-config-forward.py`, with r42 at `067cb724c6ec17f6` as the template). Its brief uses all of this context:
-- the owner's rulings: plants cheap to kill and animals hard, because animals hold concentrated matter; a world rule never reads the world's state; a new feature starts overpowered;
-- a word cap and bounded reading.
+**Phase 1, `r64`, is read, and its arm D runs on.** Five arms on seed 6202 ran to 24,000 s from `scratch/wt-phase1` (branch `phase1-overpower`) against the recorded `r63h-d-6202`. The read is `logbook/specs/r64-read/` on main, and no arm passed marks 1 to 5. Animals ten times as hard to kill ended the killing: being eaten fell from 55 % of grazer deaths to 1-7 %. Then the grazers starved young, at median ages of 2 to 6 minutes. In D (all three levers) the grazers double every 3,000 s while the leaves fall, so D is carried on with A beside it: `r64s2-d-6202` and `r64s2-a-6202`, resumed at 24,000 s to 48,000 s on the card from 23:34 UTC on 2026-10-30 (`rounds/launch-r64s2.ps1`, pre-registered in `logbook/specs/r64-prereg/step2.md` at `632af648`; log `scratch/wt-phase1/scratch/logs/card-run-r64s2.log`). Before the branch merges to main, the 34 nursery configs need bringing forward (`scripts/nursery-config-forward.py`, with r42 at `067cb724c6ec17f6` as the template). The plan for everything after it is `logbook/specs/build-plan-2026-10-30.md`.
 
 The owner raised a claim to test rather than assume: that asexual breeding gives no reason to spare kin. Hamilton's rule with relatedness near 1, and a bite yield below 1, point the other way. The exception is a sibling that would starve anyway.
 
