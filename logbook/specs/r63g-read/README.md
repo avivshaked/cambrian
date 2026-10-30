@@ -30,7 +30,13 @@ is cost, not speed.
   window to the last, so gate 2 fails in every arm.
 - **Grazers eat grazers.** In B, 57 % of grazer deaths are kills by other grazers, and in C 49 %, against 21 % in A and
   the control. Starvation falls to 32 % and 39 %, and its median age rises from about 70 s to about 300 s. The more
-  grazers there are, the more of them die in each other's mouths.
+  grazers there are, the more of them die in each other's mouths. In B, 16 % of grazer-on-grazer kills are close
+  kin: a parent eats its child in 7.8 %, a sibling eats a sibling in 6.2 %, and a child eats its parent in 2.1 %
+  (`cannibal-r63g-b-6202.txt`). Cousins count as unrelated here. A mouth reads only the tissue's type, joules and
+  whether it is alive (`TissueContact`), so nothing in the world tells kin from stranger.
+- **Where income comes from at 24,000 s**, as shares of bite income from leaves, from other living bodies and from
+  remains: control 0.68, 0.22, 0.09; A 0.70, 0.21, 0.09; B 0.45, 0.49, 0.06; C 0.51, 0.43, 0.06. So cheap mouths
+  made B's and C's grazers half predators. A grazer screen from here gates on the share from living plants.
 - **Gate 6 fails in B and C on a fixed measure.** D222's test 2 asks whether a grazer keeps 0.9 of 0.908 W, the
   control's standing cost. In B and C a grazer's standing cost is about 0.091 W (the ledger, in the pre-registration).
   Read with `--upkeep-w 0.091`, which is not the pre-registered measure and cannot change the verdict, test 2 keeps 2.2 to
