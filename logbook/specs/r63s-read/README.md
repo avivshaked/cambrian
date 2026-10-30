@@ -44,6 +44,27 @@ round (D254).
   joint that is not Fixed. That is the pre-registration's definition, and it is wider than `stats.jsonl`'s `jointed`
   column (238 and 156 at the end).
 
+## Seen in the theatre
+
+I drew both worlds at 12,000 and 24,000 s from their own snapshots and recorded poses on 2026-10-30, from the side,
+the top and a corner. The theatre was main's at `9235a0fc`, on a fresh worker 6 in `scratch/wt-shape-land`
+(`scratch/shape-build/g5/theatre/snap-r63s.ps1`). Three of the frames are in `logbook/images/r63s/`. Every frame says
+it is reconstructed, at the recorded size and pose. The markers are coloured by guild: green photosynthetic, orange
+absorptive, grey structural or a corpse.
+
+- **Six crowds over the islands, and near-empty water between them, in both seeds.** That is `r63c-b`'s world as its
+  read describes it. From 12,000 to 24,000 s each crowd grows and spreads, from 3,031 bodies drawn to 8,254 on 6202
+  and from 1,880 to 6,256 on 6203. A seventh crowd fills in at the north-west corner of each world.
+- **Every crowd sits in the upper half of the water.** The side views show a slab from the surface down to about
+  12 m, and nothing near the bed.
+- **The seeds differ in their absorbers.** On 6203 the central island carries a dense orange crowd, which grows from
+  12,000 to 24,000 s and reaches lower in the water than the leaves around it. On 6202 there are only a few orange
+  markers anywhere.
+- **The family cannot be seen.** At this scale every body is a marker a few pixels across, and the theatre draws a
+  superellipsoid part with a box's mesh. Picking out family limbs waits for the skin port.
+- Each frame has pose rows with no genome to draw: 468 and 1,341 on 6202, 342 and 988 on 6203. That they are remains,
+  which have no genome row, is inference.
+
 ## The floaters
 
 The runs' `diverged/` folders hold more records in "on" than in `r63c-b`: 36 and 50 against 12 and 26. The coordinator
