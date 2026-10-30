@@ -370,6 +370,9 @@ actually verifying it.
 - **A world rule does not read the world's state and change itself** (the owner, 2026-10-30, on being offered leaf
   growth that slows as a grove fills). The real world reacts to its rules and never changes a rule because of its
   state. A limit is a fixed quantity of the world, such as its total matter, and the world finds its own balance under it.
+- **Before writing a decision, read DECISIONS.md's index for its topic and name what the new entry supersedes or
+  reverses.** D261 was written without finding D074, which had ruled the opposite. The index is the table at the top of
+  DECISIONS.md, kept by `python -I scripts/decisions-index.py --write`; the pre-commit hook refuses an entry without a row.
 - **A new feature starts overpowered, then is dialled back** (D262; the owner has had to say it more than once). An organ,
   a sense or a mechanism enters cheap and strong, plainly worth having to evolution; the screens overshoot, then dial
   back to an equilibrium. A first build tuned for balance undershoots, as the nose's did. The world comes first and the
