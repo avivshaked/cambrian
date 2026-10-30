@@ -984,9 +984,11 @@ namespace Evosim.Dynamics
 
                     if (instrument) body.NoteOverlap(other.Id);
 
+                    // Where the centres coincide there is no line to push along. SpheresApart orders the pair by
+                    // organism id along X; every other form keeps UnitY, so a world on Spheres steps as it did.
                     Vec3 normal = distance > 1e-9
                         ? between * (1.0 / distance)
-                        : Vec3.UnitY;
+                        : config.ContactShape.CoincidentNormal(body.Id, other.Id);
 
                     double reduced =
                         body.TotalMass * other.TotalMass / (body.TotalMass + other.TotalMass);
@@ -1209,9 +1211,10 @@ namespace Evosim.Dynamics
 
                         if (instrument) body.NoteOverlapPart(other.Id, i, j);
 
+                        // As the body's one sphere above: SpheresApart parts a coincident pair along X by id.
                         Vec3 normal = distance > 1e-9
                             ? between * (1.0 / distance)
-                            : Vec3.UnitY;
+                            : config.ContactShape.CoincidentNormal(body.Id, other.Id);
 
                         double otherMass = other.Mass[j];
                         double reduced = mass * otherMass / (mass + otherMass);

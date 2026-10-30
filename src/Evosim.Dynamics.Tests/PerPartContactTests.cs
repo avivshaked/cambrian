@@ -634,6 +634,258 @@ namespace Evosim.Dynamics.Tests
 
         // --------------------------------------------------------------- helpers
 
+        // --------------------------------------------------------------- SpheresApart: the coincident pair
+
+        private static SolverConfig CoincidentConfig(bool perPart, ContactShapeForm form)
+        {
+            SolverConfig config = TestBodies.Water(0.01);
+            config.CreatureContact = true;
+            config.ContactPerPart = perPart;
+            config.ContactShape = form;
+            return config;
+        }
+
+        private static readonly Float3 TwinHalf = new Float3(0.13f, 0.11f, 0.17f);
+
+        private static readonly QuatD TwinTurn = QuatD.FromAxisAngle(new Vec3(0.3, 1.0, -0.2).Normalized, 0.7);
+
+        /// <summary>Two identical one-link bodies on one place, with one velocity, ids as given.</summary>
+        /// <param name="still">
+        /// Axis-aligned and at rest. A tilted box moving along X has a drag with a vertical part whose sign follows the
+        /// direction of travel, so two tilted twins parting along X would be lifted and sunk by the water and not by the
+        /// contact. The stepped cases use the still pair so that any rise is the contact's.
+        /// </param>
+        private static (Creature First, Creature Second) Twins(SolverConfig config, int firstId, int secondId, Vec3 at, bool still = false)
+        {
+            Creature first = TestBodies.Build(TestBodies.Box(TwinHalf), config, firstId);
+            Creature second = TestBodies.Build(TestBodies.Box(TwinHalf), config, secondId);
+
+            QuatD turn = still ? QuatD.Identity : TwinTurn;
+            first.PlaceAt(at, turn);
+            second.PlaceAt(at, turn);
+
+            Vec3 velocity = still ? Vec3.Zero : new Vec3(0.2, -0.1, 0.3);
+            SetVelocity(first, velocity);
+            SetVelocity(second, velocity);
+            return (first, second);
+        }
+
+        /// <summary>
+        /// Two identical bodies on one place, on each sphere path, after one contact pass. Under
+        /// <c>SpheresApart</c> the pushes are equal and opposite along X, the lower id toward -X, whatever order the
+        /// pass lists them in, with Y and Z exactly zero. Under <c>Spheres</c> both are pushed +Y, which is the old law.
+        /// </summary>
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ACoincidentPairIsPushedApartAlongXByIdUnderSpheresApartAndBothUpUnderSpheres(bool perPart)
+        {
+            var at = new Vec3(0.0, -20.0, 0.0);
+
+            // The higher id is listed first, so it is the id that decides and not the position in the list.
+            SolverConfig apart = CoincidentConfig(perPart, ContactShapeForm.SpheresApart);
+            (Creature high, Creature low) = Twins(apart, firstId: 8, secondId: 3, at);
+            Assert.Equal(0.0, (high.ContactCentre - low.ContactCentre).Magnitude);
+            ContactPass(apart, high, low);
+
+            double[] lowRow = Row(low, 0), highRow = Row(high, 0);
+            Report(perPart ? "apart, per part" : "apart, body sphere", lowRow, highRow);
+
+            Assert.True(lowRow[3] < 0, "the lower id was not pushed toward -X");
+            Assert.True(highRow[3] > 0, "the higher id was not pushed toward +X");
+            Assert.Equal(-lowRow[3], highRow[3]);
+            Assert.Equal(0.0, lowRow[4]);
+            Assert.Equal(0.0, lowRow[5]);
+            Assert.Equal(0.0, highRow[4]);
+            Assert.Equal(0.0, highRow[5]);
+
+            // The same pair on the recorded law: both up, nothing along X or Z.
+            SolverConfig spheres = CoincidentConfig(perPart, ContactShapeForm.Spheres);
+            (Creature a, Creature b) = Twins(spheres, firstId: 3, secondId: 8, at);
+            ContactPass(spheres, a, b);
+
+            double[] rowA = Row(a, 0), rowB = Row(b, 0);
+            Report(perPart ? "spheres, per part" : "spheres, body sphere", rowA, rowB);
+
+            Assert.True(rowA[4] > 0 && rowB[4] > 0, "the recorded law no longer pushes a coincident pair up");
+            Assert.Equal(rowA[4], rowB[4]);
+            Assert.Equal(0.0, rowA[3]);
+            Assert.Equal(0.0, rowA[5]);
+            Assert.Equal(0.0, rowB[3]);
+            Assert.Equal(0.0, rowB[5]);
+        }
+
+        private static (Vec3 Low, Vec3 High, double LowRise, double HighRise) SteppedTwins(
+            bool perPart, ContactShapeForm form, int steps)
+        {
+            SolverConfig config = CoincidentConfig(perPart, form);
+            config.WorldDepthMetres = 15;
+            config.TissueExcessDensity = 0.02;
+            config.NeutralBodyVolume = 0.25;
+            config.SurfaceRestoringFraction = 1;
+
+            var at = new Vec3(0.0, -9.0, 0.0);
+            var world = new DynamicsWorld(config);
+            (Creature low, Creature high) = Twins(config, firstId: 3, secondId: 8, at, still: true);
+            world.Add(low);
+            world.Add(high);
+
+            double lowTop = at.Y, highTop = at.Y;
+            for (int step = 0; step < steps; step++)
+            {
+                world.Step();
+                lowTop = Math.Max(lowTop, low.Position[1]);
+                highTop = Math.Max(highTop, high.Position[1]);
+            }
+
+            return (Vec3.Read(low.Position, 0), Vec3.Read(high.Position, 0), lowTop - at.Y, highTop - at.Y);
+        }
+
+        private static double LoneRise(bool perPart, ContactShapeForm form, int steps)
+        {
+            SolverConfig config = CoincidentConfig(perPart, form);
+            config.WorldDepthMetres = 15;
+            config.TissueExcessDensity = 0.02;
+            config.NeutralBodyVolume = 0.25;
+            config.SurfaceRestoringFraction = 1;
+
+            var at = new Vec3(0.0, -9.0, 0.0);
+            var world = new DynamicsWorld(config);
+            (Creature lone, _) = Twins(config, firstId: 3, secondId: 8, at, still: true);
+            world.Add(lone);
+
+            double top = at.Y;
+            for (int step = 0; step < steps; step++)
+            {
+                world.Step();
+                top = Math.Max(top, lone.Position[1]);
+            }
+
+            return top - at.Y;
+        }
+
+        /// <summary>
+        /// A few hundred steps of a coincident pair under <c>SpheresApart</c>: they part along X, the lower id on the
+        /// -X side, and neither rises above its start by more than a lone copy stepped alike. Under <c>Spheres</c> the
+        /// pair rises together and stays on one place, so the test would fail if the law were never reached.
+        /// </summary>
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ACoincidentPairSteppedUnderSpheresApartPartsAlongXAndNeitherRisesMoreThanALoneCopy(bool perPart)
+        {
+            const int steps = 300;
+
+            double lone = LoneRise(perPart, ContactShapeForm.SpheresApart, steps);
+            (Vec3 low, Vec3 high, double lowRise, double highRise) = SteppedTwins(perPart, ContactShapeForm.SpheresApart, steps);
+
+            _out.WriteLine(Invariant($"apart: low x {low.X:R}, high x {high.X:R}; rise low {lowRise:R}, high {highRise:R}, lone {lone:R}"));
+
+            Assert.True(low.X < high.X - 0.05, "the pair did not part along X, the lower id toward -X");
+            Assert.True(lowRise <= lone + 1e-9, Invariant($"the lower id rose {lowRise:R} m, a lone copy {lone:R} m"));
+            Assert.True(highRise <= lone + 1e-9, Invariant($"the higher id rose {highRise:R} m, a lone copy {lone:R} m"));
+
+            // The recorded law: both rise together, from one place.
+            (Vec3 a, Vec3 b, double aRise, _) = SteppedTwins(perPart, ContactShapeForm.Spheres, steps);
+            _out.WriteLine(Invariant($"spheres: x {a.X:R} and {b.X:R}; rise {aRise:R}, lone {lone:R}"));
+            Assert.Equal(a.X, b.X);
+            Assert.True(aRise > lone + 0.1, Invariant($"the pair on the recorded law rose only {aRise:R} m"));
+        }
+
+        /// <summary>
+        /// A crowd in contact with no coincident pair steps bit for bit as it does under <c>Spheres</c>: every
+        /// position and velocity of every body, at every twenty-fifth step. The overlaps are counted and the nearest
+        /// pair of centres is kept clear of the 1e-9 m the new branch tests, so the case is a crowd and the branch is
+        /// never entered.
+        /// </summary>
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ACrowdWithNoCoincidentPairStepsBitForBitUnderSpheresApartAsUnderSpheres(bool perPart)
+        {
+            (List<long> spheres, long overlapsA, double nearestA) = CrowdState(perPart, ContactShapeForm.Spheres);
+            (List<long> apart, long overlapsB, double nearestB) = CrowdState(perPart, ContactShapeForm.SpheresApart);
+
+            _out.WriteLine(Invariant($"{(perPart ? "per part" : "body sphere")}: {spheres.Count} words compared; ") +
+                Invariant($"overlap pairs {overlapsA} and {overlapsB}; nearest centres {nearestA:R} and {nearestB:R} m"));
+
+            Assert.True(overlapsA > 0, "no pair of bodies touched, so the identity says nothing about the contact");
+            Assert.True(nearestA > 1e-6 && nearestB > 1e-6, "two centres came within 1e-6 m: the crowd is not free of coincidence");
+            Assert.Equal(spheres.Count, apart.Count);
+            for (int k = 0; k < spheres.Count; k++)
+            {
+                if (spheres[k] != apart[k])
+                {
+                    Assert.Fail(Invariant($"state word {k}: Spheres {BitConverter.Int64BitsToDouble(spheres[k]):R}, SpheresApart {BitConverter.Int64BitsToDouble(apart[k]):R}"));
+                }
+            }
+        }
+
+        private static (List<long> State, long OverlapPairs, double Nearest) CrowdState(bool perPart, ContactShapeForm form)
+        {
+            SolverConfig config = CoincidentConfig(perPart, form);
+            config.WorldDepthMetres = 15;
+            config.TissueExcessDensity = 0.02;
+            config.NeutralBodyVolume = 0.25;
+            config.SurfaceRestoringFraction = 1;
+            config.ContactInstrument = true;
+
+            var world = new DynamicsWorld(config);
+            var rng = new Rng(20261030);
+
+            for (int i = 0; i < 12; i++)
+            {
+                Creature body = TestBodies.Build(TestBodies.Chain(2, JointType.Hinge, power: 8f), config, i);
+                var at = new Vec3(
+                    0.35 * (i % 3) + (rng.NextFloat() - 0.5) * 0.1,
+                    -9.0 - 0.35 * ((i / 3) % 2) + (rng.NextFloat() - 0.5) * 0.1,
+                    0.35 * (i / 6) + (rng.NextFloat() - 0.5) * 0.1);
+                body.PlaceAt(at, QuatD.Identity);
+                world.Add(body);
+            }
+
+            var state = new List<long>();
+            double nearest = double.MaxValue;
+
+            for (int step = 0; step < 300; step++)
+            {
+                world.Step();
+
+                IReadOnlyList<Creature> bodies = world.Creatures;
+                for (int i = 0; i < bodies.Count; i++)
+                {
+                    for (int j = i + 1; j < bodies.Count; j++)
+                    {
+                        if (perPart)
+                        {
+                            for (int p = 0; p < bodies[i].Links; p++)
+                            {
+                                for (int q = 0; q < bodies[j].Links; q++)
+                                {
+                                    double d = (Vec3.Read(bodies[i].LinkContactCentre, 3 * p) - Vec3.Read(bodies[j].LinkContactCentre, 3 * q)).Magnitude;
+                                    nearest = Math.Min(nearest, d);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            nearest = Math.Min(nearest, (bodies[i].ContactCentre - bodies[j].ContactCentre).Magnitude);
+                        }
+                    }
+                }
+
+                if (step % 25 != 0 && step != 299) continue;
+
+                foreach (Creature body in bodies)
+                {
+                    foreach (double v in body.Position) state.Add(BitConverter.DoubleToInt64Bits(v));
+                    foreach (double v in body.Velocity) state.Add(BitConverter.DoubleToInt64Bits(v));
+                }
+            }
+
+            return (state, world.OverlapPairs, nearest);
+        }
+
         /// <summary>One contact pass over the given bodies, the grid built as the step builds it.</summary>
         private static void ContactPass(SolverConfig config, params Creature[] bodies)
         {

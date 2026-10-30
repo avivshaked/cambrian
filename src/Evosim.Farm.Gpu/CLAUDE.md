@@ -151,3 +151,8 @@ The root file's rules still apply. The entries below were moved word for word, s
   `Pack`: one value a link for the parts, one a degree of freedom for the other three, indexed like `DofStart`. A resize
   re-packs the body whole, so the card never holds the constants of an old size. Each table is one row wide when the
   switch is off. The swing push has no assembly branch, and the host refuses the switch with it.
+- **A coincident sphere pair's rule has a second copy on the card** (`ContactShapeForm.SpheresApart`,
+  `EVOSIM_CONTACT_SHAPE=spheresapart`). Where two contact centres lie within 1e-9 m, `ContactShapeForms.CoincidentNormal`
+  pushes the lower organism id along `-X` and the higher along `+X`. The kernel's two sphere loops (`ContactsBody`,
+  `ContactLinks`) repeat it behind `cfg.CoincidentApart`, by comparing `gl.Id` of the two slots, so a change to either
+  is made in the other in the same change. Under `Spheres` both keep the old `+Y`.

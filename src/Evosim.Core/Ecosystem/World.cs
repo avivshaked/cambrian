@@ -3007,7 +3007,9 @@ namespace Evosim.Core
             }
 
             // D228: the true shape is the per-part contact's narrowphase; the body sphere has no parts to test.
-            if (config.ContactShape != ContactShapeForm.Spheres && !config.ContactPerPart)
+            // SpheresApart is sphere contact and takes the body sphere too, so only the two true shapes are refused.
+            if ((config.ContactShape == ContactShapeForm.TrueShape || config.ContactShape == ContactShapeForm.TrueShapeAtPoint) &&
+                !config.ContactPerPart)
             {
                 throw new ArgumentException(
                     "ContactShape is " + config.ContactShape + " and ContactPerPart is off. The true shape is " +

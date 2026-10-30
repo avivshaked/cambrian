@@ -52,6 +52,34 @@ namespace Evosim.Core.Tests
             Assert.NotNull(new World(point, seed: 1));
         }
 
+        /// <summary>
+        /// The fourth value, <c>SpheresApart</c>: its own hash and name, appended after the third, and unlike the true
+        /// shapes it is sphere contact and builds a world with per-part contact off.
+        /// </summary>
+        [Fact]
+        public void TheFourthValueSpheresApartHashesApartRoundTripsByNameAndBuildsWithoutPerPartContact()
+        {
+            Assert.Equal(3, (int)ContactShapeForm.SpheresApart);
+
+            foreach (bool perPart in new[] { false, true })
+            {
+                var spheres = new RunConfig { ContactPerPart = perPart, ContactShape = ContactShapeForm.Spheres };
+                var apart = new RunConfig { ContactPerPart = perPart, ContactShape = ContactShapeForm.SpheresApart };
+                Assert.NotEqual(spheres.Hash(), apart.Hash());
+
+                string text = RunConfigJson.Write(apart);
+                Assert.Contains("\"contactShape\": \"SpheresApart\"", text);
+
+                RunConfig back = RunConfigJson.Read(text, out string mismatch);
+                Assert.True(mismatch == null, mismatch);
+                Assert.Equal(ContactShapeForm.SpheresApart, back.ContactShape);
+                Assert.Equal(apart.Hash(), back.Hash());
+
+                // Sphere contact: the body sphere and the part spheres both take it, so per-part contact is not needed.
+                Assert.NotNull(new World(apart, seed: 1));
+            }
+        }
+
         [Fact]
         public void AWorldRefusesTheTrueShapeWithoutPerPartContactAndNamesBoth()
         {

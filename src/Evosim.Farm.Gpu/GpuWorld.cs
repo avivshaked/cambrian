@@ -59,6 +59,9 @@ namespace Evosim.Farm.Gpu
         /// <summary>D228 level (b): with <see cref="TrueShape"/>, the force acts at the contact point (<c>ContactShapeForm.TrueShapeAtPoint</c>), and each link's spin is carried with its sphere.</summary>
         public bool AtPoint;
 
+        /// <summary>ContactShapeForm.SpheresApart: two sphere centres that coincide are pushed apart along X by organism id (<c>ContactShapeForms.CoincidentNormal</c>), not both along +Y.</summary>
+        public bool CoincidentApart;
+
         // ---- D161's drag on turning (Fluid.Apply): 0 none, 1 skin, 2 spin, and each form's
         // negated factor as the CPU hoists it
         public int TurningDrag;
@@ -205,6 +208,7 @@ namespace Evosim.Farm.Gpu
             Nose = s.Nose != null;
             TrueShape = s.ContactShape.IsTrueShape();
             AtPoint = s.ContactShape.AtPoint();
+            CoincidentApart = s.ContactShape == ContactShapeForm.SpheresApart;
 
             TurningDrag = s.TurningDrag == TurningDragForm.Skin ? 1 : s.TurningDrag == TurningDragForm.Spin ? 2 : 0;
             NegSkin = -(0.5 * s.Density * s.SkinFrictionCoefficient);

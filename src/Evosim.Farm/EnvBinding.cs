@@ -1436,10 +1436,11 @@ namespace Evosim.Farm
                 case "spheres": return ContactShapeForm.Spheres;
                 case "trueshape": return ContactShapeForm.TrueShape;
                 case "trueshapeatpoint": return ContactShapeForm.TrueShapeAtPoint;
+                case "spheresapart": return ContactShapeForm.SpheresApart;
             }
 
             throw new ArgumentException(
-                name + " is '" + raw + "', which is none of 'spheres', 'trueshape' or 'trueshapeatpoint'.");
+                name + " is '" + raw + "', which is none of 'spheres', 'spheresapart', 'trueshape' or 'trueshapeatpoint'.");
         }
 
         private static BrainModel BrainModelOf(Lookup env, string name)
