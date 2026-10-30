@@ -370,6 +370,10 @@ actually verifying it.
 - **A world rule does not read the world's state and change itself** (the owner, 2026-10-30, on being offered leaf
   growth that slows as a grove fills). The real world reacts to its rules and never changes a rule because of its
   state. A limit is a fixed quantity of the world, such as its total matter, and the world finds its own balance under it.
+- **A new feature starts overpowered, then is dialled back** (D262; the owner has had to say it more than once). An organ,
+  a sense or a mechanism enters cheap and strong, plainly worth having to evolution; the screens overshoot, then dial
+  back to an equilibrium. A first build tuned for balance undershoots, as the nose's did. The world comes first and the
+  film second: the film builds its story from an interesting world, and no gate decides the story in advance.
 - **Owner-reserved decisions:** world rules (what the ecology *is*), the goal rule and its
   amendments, scope and round design forks, pushes of anything that is not code/prose, and
   anything irreversible or outward-facing. Instruments, diagnostics, replays of scored

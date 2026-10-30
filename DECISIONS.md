@@ -9925,3 +9925,30 @@ in any condition set for the world.
 **Why.** Everything outside git lived on one drive, so a drive failure would have lost it all. And a cleanup's deletion has no backup to restore from. Most of the bulk was replay data and renders that regenerate. The owner's plan has 5 TB, of which 33 GB was used, but the project grew to 552 GB in about two months, so the backup holds only what cannot be recreated, compressed before it leaves.
 
 **Rejected.** Google Drive for desktop, whose sync would carry a deletion or corruption into the copy. A whole-machine backup, which would ship terabytes of data that regenerates. Keeping replay data for every round.
+
+### D261
+**The world holds a fixed total of matter, 25,000 units to start** · 2026-10-30
+
+**Status:** ruled by the owner on 2026-10-30, after all three `r63d` worlds ended at the population ceiling (`logbook/specs/r63d-read/end/`). It supersedes nothing; the build and its screen come before G7.
+
+**Decision.**
+- The world's matter is a fixed quantity, 25,000 units to start, in the units of `matterStanding`. How the influx and the burial close on that total is the build's to specify, and goes to the owner before it lands.
+- No rule reads the world's state to slow growth. Under a fixed total, how many bodies the world holds, and how large, is evolution's to find. Smaller bodies under the same total are an outcome, not a fault.
+- The number is a starting point, to be read and changed after the first screen.
+
+**Why.** In `r63d-b-6202` the matter standing in the world rose from 16,100 units at 24,000 s to 29,600 at 67,240 s, because more flowed in than was buried, and bodies grew from 9,100 to 25,000 until the ceiling ended the run. The owner ruled that a world reacts to its rules and never changes a rule because of its state (CLAUDE.md), so a limit is a fixed quantity of the world.
+
+**Rejected.** Leaf growth that slows as a grove fills, offered by the coordinator: a rule that reads the world's state. Raising the population ceiling, which moves the end and slows the pace.
+
+### D262
+**The world comes first and the film second; a new feature starts overpowered** · 2026-10-30
+
+**Status:** ruled by the owner on 2026-10-30. The second half restates guidance the owner has given before and had to give again.
+
+**Decision.**
+- The film takes an interesting world and builds its story from it. A round's gates judge whether the world is interesting and evolving; they do not decide a story in advance. D259's question of what the bloom is for in the film is withdrawn.
+- A new feature (an organ, a sense, a mechanism) is introduced overpowered: cheap, strong, plainly worth having to evolution. The screens overshoot, then dial it back toward an equilibrium. A first build tuned for balance undershoots and teaches nothing about whether the feature can matter.
+
+**Why.** The nose (D235) entered G3 with its running cost and drag set for realism, and lost to whole-body smell, which is not realistic (`logbook/specs/nose-test-read/` on `nose-arms`). The test showed a cost, not whether evolution wants a nose.
+
+**Rejected.** Tuning a new feature for balance from the start.
