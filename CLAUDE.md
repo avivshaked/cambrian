@@ -367,6 +367,9 @@ actually verifying it.
   ocean, and what would push its creatures to evolve. The aim is separate oases with near-empty water between
   them, and swimmers that migrate between oases to graze or hunt. A change that makes a round easier to read
   but the world less like an ocean needs a reason that says so. World rules stay the owner's to rule.
+- **A world rule does not read the world's state and change itself** (the owner, 2026-10-30, on being offered leaf
+  growth that slows as a grove fills). The real world reacts to its rules and never changes a rule because of its
+  state. A limit is a fixed quantity of the world, such as its total matter, and the world finds its own balance under it.
 - **Owner-reserved decisions:** world rules (what the ecology *is*), the goal rule and its
   amendments, scope and round design forks, pushes of anything that is not code/prose, and
   anything irreversible or outward-facing. Instruments, diagnostics, replays of scored
