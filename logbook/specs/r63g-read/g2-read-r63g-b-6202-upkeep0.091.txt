@@ -1,0 +1,95 @@
+== G2's read: floor measure mean, crossing gap 10 m; windows of 3000 s from 6000 to 24000 s; floor 30 (D244), sensitivity at 40; spec logbook/specs/bloom-build/g2-read-spec.md
+
+######## r63g-b-6202  arm r63g-b  seed 6202  read to 24000 s  (runs\r63g-b-6202\2026-10-30-132006-afda1387)
+   configHash afda13876cdf6549  gitCommit 86df5ad8ffdd  coreHash 81993ec9  dynamicsHash ddb068fd  farmHash d53ec6ee
+   chain 2026-10-30-132006-afda1387; 16598 grazers born (atk 1 and ink 1); judged windows 6000-9000, 9000-12000, 12000-15000, 15000-18000, 18000-21000, 21000-24000; stats cadence 10 s
+   islands from runs\r63g-b-6202.md: 11 islands
+   cell 5 m; joined edges, side 300 m; groves r_eff + 10 m: 0: 12c r_eff 9.8; 1: 10c r_eff 8.9; 2: 7c r_eff 7.5; 3: 7c r_eff 7.5; 4: 18c r_eff 12.0; 5: 1c r_eff 2.8; 6: 25c r_eff 14.1; 7: 1c r_eff 2.8; 8: 4c r_eff 5.6; 9: 20c r_eff 12.6; 10: 13c r_eff 10.2
+
+== gate 1. grazers survive: the floor in every judged window, and D222 over the whole run (D244's reading)
+   floor measure: mean (a window's mean grazer count is at least the floor), floor 30. Under every measure a window whose fewest is 0 fails: extinction is not survival however brief.
+   window       g fewest g mean  not 0 floor || information, not part of the gate: born share chain best repl living share
+   the floor is judged from 12000 s (--survive-from, the coordinator's ruling of 2026-10-28); earlier windows are printed and marked 'before'
+    6000-9000        180  308.8        before||                                          0.973    18      1.09        0.940
+    9000-12000       153  309.7        before||                                          0.933    23      1.09        0.925
+   12000-15000       142  457.9     ok    ok ||                                          0.984    28      1.10        0.947
+   15000-18000       402  514.0     ok    ok ||                                          0.989    28      1.10        0.928
+   18000-21000       442  725.4     ok    ok ||                                          0.994    34      1.10        0.948
+   21000-24000       400  588.6     ok    ok ||                                          0.977    38      1.10        0.920
+   the floor in every judged window (mean): PASS
+   the floor at 40, a sensitivity (mean): PASS
+
+   D222 over the whole run, as the r62cf read recorded it (its README, 'D222, by D244's reading first'); bars: born share 0.8, best cohort 1, chain 10, test 2 share 0.9, test 3 share 0.5
+   grazers at most born share best cohort chain  test 3  test-2 rows judged at 30 (window start: share)
+               886      0.977        1.10    38   0.920  5500: 2.23, 11500: 4.11, 17500: 5.77, 23500: 6.84
+   summer-start rows (500 s, r62g-windows): 5500 g mean 226.9 share 2.23, 11500 g mean 167.9 share 4.11, 17500 g mean 444.1 share 5.77, 23500 g mean 442.6 share 6.84
+   chain: 38 in r62g-read, 38 computed here: AGREE
+   verdict at the floor of 30 (the gate): PASS
+   verdict at 40, a sensitivity: PASS
+   strict verdict, every summer-start row judged and no first check: PASS
+   gate 1: PASS (the floor in every judged window, and D222 at 30)
+   gate 1 at 40, a sensitivity: PASS (floor PASS, D222 PASS)
+
+== gate 2. the bloom reaches the food
+   island columns mean leaf m2 judged best lag s       r
+        0      12        79.21    yes          0   0.433   below 0.5
+        1      10        24.32    yes        710   0.579
+        2       7         1.14    yes       3000   0.281   below 0.5
+        3       7        34.63    yes        470   0.628
+        4      18       111.01    yes        190   0.530
+        5       1         1.58     no          -       -   left out: 1 columns, under 5
+        6      25       115.82    yes       1810   0.471   below 0.5
+        7       1         7.12     no          -       -   left out: 1 columns, under 5
+        8       4        27.66     no          -       -   left out: 4 columns, under 5
+        9      20        90.41    yes        670   0.122   below 0.5
+       10      13       159.81    yes       1460   0.443   below 0.5
+   FAIL: 3 of 8 judged islands reach 0.5 at their best lag
+
+== gate 3. grazers evolve
+   NOT JUDGED: no trait table (none given); run Evosim.Farm --grazer-traits <run dir> <out tsv>
+
+== 4. the world is rich (reported)
+   window       most clades at 10% at last sample
+    6000-9000                    5              3
+    9000-12000                   4              2
+   12000-15000                   4              3
+   15000-18000                   5              3
+   18000-21000                   3              3
+   21000-24000                   5              4
+   three clades each hold 10% of the living grazers in some window: YES (the most at once: 5)
+   kill rows with a grazer as victim, whole run: by a grazer 11917, by another body 0, attacker not named 0; in the judged span: by a grazer 11282, by another 0
+   remains founded from grazers' bodies: 2107; of them closed (burnt out): 2079. The record does not say who bit a remains (no row by victim), so bites on grazers' remains are not counted; the total kept from all remains is stats biteKeptRemains, 356487 J to 24000 s
+
+== 5. story material (reported)
+
+   busts and recoveries in the world's grazer count, over [6000, 24000] s (a fall to half or less of the highest count in the 1500 s before it; a recovery is a return to it)
+   bust at 11060 s from 464 to a low of 142 at 12060 s (depth 0.31 of the earlier highest); recovered at 13140 s, 2080 s later
+
+   moves between groves: a move is a fix over grove B whose last fix over a grove was over grove A, B not A. A crossing is a move whose banded edge gap (centroid distance less (r_A + 10) less (r_B + 10)) is at least --crossing-gap, 10 m; every other move is a stroll. Counts are also given at a gap of 0 m (groves that do not touch).
+   window       strolls crossings strolls@0 cross@0 grazers fixed strolls/g  cross/g cross fix-to-fix m cross centroids m cross s (median)
+    6000-9000       444         8       412      40          1839     0.241    0.004               52.7              79.9              190
+    9000-12000      265         6       243      28          1397     0.190    0.004               53.0              86.1              375
+   12000-15000      129        13        88      54          3219     0.040    0.004               45.9              66.1              280
+   15000-18000      551        22       515      58          2802     0.197    0.008               56.0              87.9              355
+   18000-21000      460        22       409      73          5539     0.083    0.004               39.5              70.2              200
+   21000-24000      511        23       469      65          3408     0.150    0.007               37.3              66.1              260
+   judged span at a gap of 10 m: 2360 strolls and 94 crossings by 15634 grazers fixed in it: per grazer life 0.151 strolls and 0.006 crossings; crossings' median distance 45.2 m fix to fix (72.2 m between the groves' centroids), median duration 260 s
+   judged span at a gap of 0 m: 2136 strolls and 318 crossings
+
+   crowds at blooms: grazers inside each grove at each stats sample, correlated with bloomFactor at the best lag from 0 to 3000 s (the crowd lags the bloom)
+   island columns mean crowd best lag s       r
+        0      12      43.53        400   0.538   >= 0.3
+        1      10       5.39       1380   0.625   >= 0.3
+        2       7       0.32        120   0.369   >= 0.3
+        3       7      15.93        280   0.075
+        4      18      90.92        980   0.730   >= 0.3
+        5       1       0.47          0   0.275
+        6      25     112.06       2090   0.594   >= 0.3
+        7       1       3.93       1950   0.591   >= 0.3
+        8       4       1.78       3000   0.153
+        9      20      78.67       1650   0.509   >= 0.3
+       10      13      76.08       2370   0.618   >= 0.3
+   islands whose crowd correlation reaches 0.3: 8 of 11
+
+######## summary
+   r63g-b-6202: gate 1 PASS (at 40 PASS: floor PASS, D222 PASS; D222 strict PASS), gate 2 FAIL, gate 3 NOT JUDGED; story: crossings 94, crowd islands 8, recoveries 1, largest shift 0.00
