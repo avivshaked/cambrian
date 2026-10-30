@@ -1,0 +1,38 @@
+runrec: 2026-10-30-132006-afda1387: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+== B  runs/r63g-b-6202/2026-10-30-132006-afda1387
+   positions rows read 1802 (6000-24000 s, every row, 10 s apart); side 300 m
+   grazers born to 24000 s: 16598; grazer fixes jointed 496016, rigid 375265; non-grazer jointed fixes 55151
+
+ Q1/Q2 per move (10 s). speeds in cm/s.
+      class    moves |  vh med  vh p90 |  v3 med  v3 p90 |   rel n rel med rel p90 |     eff  null95   pos% |  <2m % dnear med
+     grazer   855444 |    5.82   23.57 |    6.56   25.02 |  838887    5.74   24.37 |  -0.009   0.002   48.7 |   61.1      1.78
+ grazer_new   107182 |    9.14   26.48 |    9.93   27.66 |  106786    9.80   27.24 |   0.001   0.005   51.0 |   71.9      1.63
+ grazer_old   748262 |    5.12   23.18 |    5.67   24.65 |  732101    4.52   23.94 |  -0.010   0.002   48.4 |   59.6      1.80
+    drifter   572943 |    2.10    4.34 |    2.11    4.38 |  572663    1.05    2.72 |  -0.008   0.002   48.9 |   65.6      1.67
+
+ grazers by 6,000 s window
+  6000-12000  moves  182861 vh med   3.89 p90  29.17 rel med   2.68 eff -0.005 (null 0.004)
+ 12000-18000  moves  286293 vh med   5.20 p90  23.51 rel med   4.87 eff -0.008 (null 0.003)
+ 18000-24000  moves  386290 vh med   7.52 p90  21.15 rel med   7.85 eff -0.011 (null 0.003)
+
+ leafscent (181 rows, every 100 s): speed through the water, cm/s, and cos to the leaf-smell gradient (bodies under 1 mm/s or with no gradient are not in the file)
+   grazer all n   82535 v med   6.00 p90  25.40 mean   9.88 | cos mean -0.056 share>0  45.8%
+   grazer jnt n   46529 v med  15.10 p90  31.60 mean  16.59 | cos mean +0.030 share>0  52.5%
+ grazer rigid n   36006 v med   0.70 p90   2.70 mean   1.22 | cos mean -0.168 share>0  37.1%
+    other jnt n    3811 v med   0.40 p90   2.30 mean   1.07 | cos mean -0.064 share>0  45.2%
+      drifter n  458131 v med   0.30 p90   1.40 mean   0.65 | cos mean -0.101 share>0  41.9%
+
+ Q3 stats (1801 rows): raw joint work per jointed body 2.5008 W; billed at x0.03125 0.07815 W; mean jointed root ground speed (speedJointed) 15.90 cm/s; mean jointed through-water speed (leafscent) 15.41 cm/s; billed J per metre through water 0.5070; raw J per metre 16.224; jointed bodies mean 306
+    rows joined to positions 1801; jointed grazers mean 275.4 of grazers 483.7; all the world joint work laid on the jointed grazers (an upper bound): raw 2.651 W, billed 0.0829 W a jointed grazer; mean through-water speed of jointed grazers 16.59 cm/s; billed J/m 0.4995, raw J/m 15.983
+
+ toward-food efficiency by distance to the nearest food body (sum a / sum |step|; null95 = random headings)
+     grazer  <2: n 495597 eff -0.008 (null 0.002); 2-5: n 277048 eff +0.017 (null 0.003); 5-20: n 41957 eff -0.074 (null 0.007); >=20: n 8243 eff -0.131 (null 0.013)
+ grazer_new  <2: n 72615 eff -0.005 (null 0.005); 2-5: n 28575 eff +0.019 (null 0.009); 5-20: n 759 eff -0.060 (null 0.044); >=20: n 95 eff -0.014 (null 0.117)
+ grazer_old  <2: n 422982 eff -0.009 (null 0.003); 2-5: n 248473 eff +0.017 (null 0.003); 5-20: n 41198 eff -0.075 (null 0.007); >=20: n 8148 eff -0.133 (null 0.013)
+    drifter  <2: n 371789 eff -0.006 (null 0.003); 2-5: n 191466 eff -0.011 (null 0.004); 5-20: n 4243 eff -0.032 (null 0.024); >=20: n 6 eff -0.367 (null 0.489)
+
+ Q4: grazers born 6000-23800 s with a fix: 15271
+       all: n 15271; nearest food at first fix med 1.70 m, q1 1.38, p90 2.54, within 2 m 70.2%; ever within 2 m 92.6%
+            life med 256 s; made a kill row 58.2% (first at age med 80 s, from first fix med 4.56 m); net travel first-last fix med 8.00 m p90 23.11; path (10 s fixes) med 23.32 m p90 159.20
+   starved: n 4639; nearest food at first fix med 1.83 m, q1 1.47, p90 2.88, within 2 m 59.8%; ever within 2 m 91.7%
+            life med 304 s; made a kill row 49.6% (first at age med 86 s, from first fix med 4.81 m); net travel first-last fix med 10.19 m p90 31.13; path (10 s fixes) med 25.36 m p90 164.37

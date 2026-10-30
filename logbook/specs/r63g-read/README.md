@@ -41,6 +41,26 @@ is cost, not speed.
 - **The books.** The audit residual stays under 0.003 J. The matter residual peaks at 1.3e-5 and 1.1e-5 units in A and
   C, at the scale `r63d` read as rounding.
 
+## Why speed did not help: grazers do not seek food
+
+The owner asked on 2026-10-30 whether grazers swim to plants or drift. A follow-up read of the control, A and B over
+6,000 to 24,000 s, every 10 s positions row, answers it (`scripts/reads/bloom/r63g-motion/`, outputs in `motion/`).
+
+- **They swim, but not toward food.** Grazers move through the water at a median 36 cm/s in the control and 57 in A,
+  against 2 cm/s for drifting leaves. The share of each 10 s move toward the nearest leaf is −0.01 in every world, as
+  for the drifting leaves themselves. Only within 2 to 5 m of a leaf do grazers lean toward it, by about 5 % of the
+  step. Their heading follows the leaf smell's gradient barely (a mean cosine of +0.02 to +0.05).
+- **They do not need to.** A newborn grazer starts a median 1.5 m from a leaf, and 94 % of A's starvers came within 2 m
+  of one; 69 to 83 % of grazer fixes are within 2 m of a leaf. The world is a leaf carpet, not oases.
+- **A's faster stroke went into motion, not travel.** A's grazers move 1.6 times faster through the water but cover
+  no more ground in 10 s than the control's (inference: the push goes into turning). Swimming costs a quarter to a
+  third of standing upkeep at most, and A's is cheaper per metre through the water, about equal per metre of ground.
+- **So what kills a newborn is upkeep, not distance.** 55 % of A's starvers bite before dying, at a median 30 s, and
+  still die at 72 s. Cheap mouths stretch the runway tenfold, which is why B worked (inference).
+
+The record cannot show each body's first meal or its own ledger: the code holds them per body but writes them only
+into checkpoints. A death row carrying them would answer this directly.
+
 ## The predictions against the result
 
 | Prediction | Result |

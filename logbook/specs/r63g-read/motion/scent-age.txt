@@ -1,0 +1,12 @@
+control age    0-40   s: grazer-rows alive   1564, in file   1524, speed through water med  24.4 p90  38.0 cm/s
+control age   40-80   s: grazer-rows alive   1042, in file   1024, speed through water med  30.4 p90  41.6 cm/s
+control age   80-300  s: grazer-rows alive   3253, in file   3127, speed through water med  34.5 p90  44.3 cm/s
+control age  300-     s: grazer-rows alive   6617, in file   6369, speed through water med  33.4 p90  42.6 cm/s
+A age    0-40   s: grazer-rows alive   1404, in file   1355, speed through water med  44.9 p90  68.2 cm/s
+A age   40-80   s: grazer-rows alive    959, in file    928, speed through water med  48.9 p90  73.8 cm/s
+A age   80-300  s: grazer-rows alive   3056, in file   2809, speed through water med  55.3 p90  78.9 cm/s
+A age  300-     s: grazer-rows alive   5363, in file   4702, speed through water med  46.6 p90  75.4 cm/s
+B age    0-40   s: grazer-rows alive   5778, in file   5658, speed through water med   9.2 p90  27.3 cm/s
+B age   40-80   s: grazer-rows alive   5250, in file   5214, speed through water med  10.7 p90  30.5 cm/s
+B age   80-300  s: grazer-rows alive  20368, in file  20000, speed through water med  10.8 p90  29.9 cm/s
+B age  300-     s: grazer-rows alive  56014, in file  51663, speed through water med   1.7 p90  23.1 cm/s
