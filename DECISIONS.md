@@ -288,6 +288,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D264](#d264) | Grazers overpowered in three phases: phase 1 makes animals hard to kill, provisions newborns and spreads the young, each set to overshoot | 2026-10-30 | ruled by the owner on 2026-10-30, who agreed to plan all three changes, asked that the values aim to overshoot, and asked that the good parts of the unified proposal… |
 | [D265](#d265) | The nose replaces whole-body smell, and a nose smells farther than the leaves' cone, 15 m to start | 2026-10-30 | ruled by the owner late on 2026-10-30, on the two questions the nose lane's cost probe raised (`scratch/curriculum/nose-test/stronger-reading-draft.md`, option A), accepting the coordinator's… |
 | [D266](#d266) | No fixed total of matter for now: the world's balance is to come from its creatures | 2026-10-30 | ruled by the owner late on 2026-10-30 |
+| [D267](#d267) | D265's long smell is the world's own leaf field in a nose world, so no second field is built | 2026-10-30 | decided by the coordinator late on 2026-10-30, on the nose lane's reading of `nose-arms`, as the form of the owner's ruling in D265 |
 
 ---
 
@@ -10133,3 +10134,17 @@ in any condition set for the world.
 **Why.** D261 answered `r63d`'s worlds running into the population ceiling with nothing eating the plants. D264 now attacks that cause directly. D074's reason still holds: in September a conserved stock locked the world and stopped selection.
 
 **Rejected.** Building D261's total now, before the grazer phases have been read.
+
+### D267
+**D265's long smell is the world's own leaf field in a nose world, so no second field is built** · 2026-10-30
+
+**Status:** decided by the coordinator late on 2026-10-30, on the nose lane's reading of `nose-arms`, as the form of the owner's ruling in D265. It amends D265's second and third clauses; what D265 ruled stands.
+
+**Decision.**
+- In a world that turns the nose on, the nose's range is the world's leaf range, `LeafScentRangeMetres`, set to 15 m. No second leaf field is built.
+- The field's cell may be 4 m (`LeafScentCellMetres`) in a world screen, once a card sitting has shown the card equal to the host at 15 m and 4 m cells, and 4 m against 2 m on the host.
+- The nursery's first test, N1r, changes only the range from N1p: 15 m on 2 m cells.
+
+**Why.** Under D235 a nose world already gives every part except a nose no leaf, carrion or chemical smell, on the host and on the card. So nothing but the noses reads the leaf field there, apart from the recorder and the report. A second field would hold exactly what the first holds. A 15 m cone on 2 m cells touches about 1,770 cells a leaf against 113 at 6 m, and 221 on 4 m cells; at 9,000 leaves that is about 16 million cell-adds a fill on 2 m cells and 2 million on 4 m (the nose lane's count, timings unmeasured).
+
+**Rejected.** The draft's second field with card support, about 2 h of build and a HOLD window, which buys nothing while D265 keeps whole-body smell out of nose worlds.
