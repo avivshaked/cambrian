@@ -25,6 +25,23 @@ Every screen fails D222. Tests 1 and 2 fail in every world and test 3 holds. Not
 
 The owner has delegated the grazer screens to the coordinator. The tactic is to push the dials until grazers are overpowered, then roll back between the last two settings, and to record each step as a DECISIONS entry. A new world rule stays the owner's (D224's status). The owner set the method on 2026-10-25: derive the dial values from the breeding target, rather than guessing them.
 
+**The owner's direction of 2026-10-30 is to keep working until grazers are overpowered, and grazers must earn from grazing, not from scavenging or predation.** `r63g` (`logbook/specs/r63g-read/README.md`) found:
+- Cheap mouths raise grazers five times, but half their bite income then comes from other animals.
+- One kill in six of a grazer by a grazer is close kin.
+- Grazers barely steer toward food.
+
+A grazer screen from here gates on the share of bite income from living plants, at about 0.8 or more. `r63h` (wt-r63b `3f2310b4`, arms d, e and f, control `r63c-b-6202`) runs on the card and is read like `r63g`, with that split.
+
+**One unified proposal comes next.** It is built from two inputs:
+- `proposals/propose-matter-kinds.md`: matter kinds by tissue and a diet gene, with the coordinator's review at its end.
+- The recognition proposal being drafted in `scratch/recognition-proposal/`: kin and foe recognition, an animal smell carrying a heritable signature, and an alarm scent.
+
+The owner agreed on 2026-10-30 that once both are in, and `r63h` is read, a Fable agent writes one proposal and its pre-registered screen for the next world run. Its brief uses all of this context:
+- the owner's rulings: plants cheap to kill and animals hard, because animals hold concentrated matter; a world rule never reads the world's state; a new feature starts overpowered;
+- a word cap and bounded reading.
+
+The owner raised a claim to test rather than assume: that asexual breeding gives no reason to spare kin. Hamilton's rule with relatedness near 1, and a bite yield below 1, point the other way. The exception is a sibling that would starve anyway.
+
 ### Main carries round 62's line and four physics rules behind switches
 
 Main holds the whole round 62 line: the open square, the coral, plants keeping their matter, the blades' rules (D196, D199, D200), spoilage, contact eating and its dials, and the mouth point. They arrived as two squash commits, `3036a257` (mouth-point) and `b7e69a95` (fin-shape). Every new rule is off by default.
@@ -101,7 +118,7 @@ The owner launches every agent by hand. Ping the owner's phone when the next age
 Each is set out in full, with the options and what each implies, in every message that asks for it.
 
 - **Whether the nose replaces whole-body smell, and how far a nose smells** (D235, D262; the nose lane's `scratch/curriculum/nose-test/stronger-reading-draft.md`). The cost probe of 2026-10-30 showed the snout's upkeep and drag are small and its reading is what loses. At zero noise the nose reads exactly what one body part reads under whole-body smell, which sums every part, so no form of the reading can beat whole-body smell while both exist; N1p (noise 0, upkeep 0, running on `nose-arms`) can at best match one part. The owner called whole-body smell unrealistic. Both senses end at the leaves' 6 m cone, while patches sit about 25 m apart, so most of the tank smells of nothing. Two questions go to the owner with N1p's read: whether the nose replaces whole-body smell in the world (a world rule), and whether a nose may smell farther than the world's leaf cone, say 15 m, which needs a second leaf field read by noses only (about an hour's build and one HOLD window). The nose lane recommends the range as a nose value; the coordinator recommends asking the replacement first, since with whole-body smell gone the nose need not beat it.
-- **The world's matter after the grazer screen** (D261, held). The owner ruled a fixed total of 25,000 units, then, on hearing D074's reasons (a conserved stock locked selection in September) and that bodies held only 10,100 units at r63d's end, ruled overpowered grazers first (2026-10-30): the ideal is grazers that overgraze and so control the plants. The screen `r63g` (draft in `scratch/r63g-draft/`) runs first; the matter question goes back to the owner with its read. A fixed total needs no build: `EVOSIM_MATTER_BUDGET` seeds the total, and influx and burial at 0 close it.
+- **The world's matter after the grazer screen** (D261, held). The owner ruled a fixed total of 25,000 units, then, on hearing D074's reasons (a conserved stock locked selection in September) and that bodies held only 10,100 units at r63d's end, ruled overpowered grazers first (2026-10-30): the ideal is grazers that overgraze and so control the plants. `r63g` and `r63h` run first, and the matter question goes back to the owner inside the unified proposal above. A fixed total needs no build: `EVOSIM_MATTER_BUDGET` seeds the total, and influx and burial at 0 close it.
 
 - **The mirrored twins' motion (D234).** Under the mirrored-joint switch, should a mirrored pair's joint drive be reflected with its geometry, so that one brain signal beats the pair as mirror images rather than in a seesaw? The coordinator recommends yes, as in every bilateral animal, so that paired fins can row together. The owner accepted the recommendation but rules only after seeing a film of one mirrored body with the switch off and on. The twin drive is on main (D248), so the film needs only main merged into a theatre branch. The other options are to leave the seesaw (switch off) or to give the motion a switch of its own. Each option changes only worlds that turn the switch on.
 - **Plants anchored or drifting.** Biology has both, and the world's blades drift free, which is honest (Sargassum, phytoplankton). The theatre draws them as drifting fronds. The coordinator recommends offering the anchoring cell to plants as an evolvable option after grazers pass D222, not as a requirement.
