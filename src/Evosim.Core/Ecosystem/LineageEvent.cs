@@ -379,6 +379,25 @@ namespace Evosim.Core
         public double IntakeCarrionJoules { get; }
 
         /// <summary>
+        /// Death only (D264) - whether this row carries the body's lifetime bite income by source, which is true
+        /// only in a world with <see cref="RunConfig.DeathRowIncome"/> on. False on every other row, and then the four
+        /// readings below are 0 and none of <c>kl</c>, <c>ko</c>, <c>kr</c> and <c>kg</c> is written.
+        /// </summary>
+        public bool HasBiteIncome { get; }
+
+        /// <summary>Death only (D264) - the joules kept from living bodies with photosynthetic tissue, the row's <c>kl</c>.</summary>
+        public double BiteKeptLeavesJoules { get; }
+
+        /// <summary>Death only (D264) - the joules kept from living bodies with none, the row's <c>ko</c>.</summary>
+        public double BiteKeptOthersJoules { get; }
+
+        /// <summary>Death only (D264) - the joules kept from remains, the row's <c>kr</c>.</summary>
+        public double BiteKeptRemainsJoules { get; }
+
+        /// <summary>Death only (D264) - the joules the body's kills put in its gut, the row's <c>kg</c>.</summary>
+        public double GutSwallowedJoules { get; }
+
+        /// <summary>
         /// Remains closed only (D220) — the joules the remains held when their window closed and were burnt, the
         /// row's <c>j</c>. 0 on every other row.
         /// </summary>
@@ -495,8 +514,15 @@ namespace Evosim.Core
             int immigrantFromWorld = -1, long immigrantFromId = -1,
             double intakeOwnKill = 0d, double intakeOtherKill = 0d, double intakeCarrion = 0d,
             double biteKept = 0d, double remainsJoules = 0d, float growthReserve = float.NaN,
-            bool hasFat = false)
+            bool hasFat = false,
+            bool hasBiteIncome = false, double biteKeptLeaves = 0d, double biteKeptOthers = 0d,
+            double biteKeptRemains = 0d, double gutSwallowed = 0d)
         {
+            HasBiteIncome = hasBiteIncome;
+            BiteKeptLeavesJoules = hasBiteIncome ? biteKeptLeaves : 0d;
+            BiteKeptOthersJoules = hasBiteIncome ? biteKeptOthers : 0d;
+            BiteKeptRemainsJoules = hasBiteIncome ? biteKeptRemains : 0d;
+            GutSwallowedJoules = hasBiteIncome ? gutSwallowed : 0d;
             HasFat = hasFat;
             GrowthReserveSeconds = growthReserve;
             RemainsJoules = remainsJoules;
@@ -597,7 +623,9 @@ namespace Evosim.Core
             double elapsedSeconds, long id, DeathCause cause,
             double gestationJoules = 0d, double reserveJoules = 0d,
             double intakeOwnKill = 0d, double intakeOtherKill = 0d, double intakeCarrion = 0d,
-            double biteKept = 0d) =>
+            double biteKept = 0d,
+            bool hasBiteIncome = false, double biteKeptLeaves = 0d, double biteKeptOthers = 0d,
+            double biteKeptRemains = 0d, double gutSwallowed = 0d) =>
             new LineageEvent(
                 LineageEventKind.Death, elapsedSeconds, id, parentId: -1, birthKind: default,
                 generationDepth: 0, speciesId: 0, hasAbsorptive: false, hasJoint: false,
@@ -608,7 +636,9 @@ namespace Evosim.Core
                 tissueJoulesLost: 0d, reserveJoulesLost: 0d,
                 gestationJoulesAtDeath: gestationJoules, reserveJoulesAtDeath: reserveJoules,
                 intakeOwnKill: intakeOwnKill, intakeOtherKill: intakeOtherKill, intakeCarrion: intakeCarrion,
-                biteKept: biteKept);
+                biteKept: biteKept,
+                hasBiteIncome: hasBiteIncome, biteKeptLeaves: biteKeptLeaves, biteKeptOthers: biteKeptOthers,
+                biteKeptRemains: biteKeptRemains, gutSwallowed: gutSwallowed);
 
         /// <summary>
         /// New remains cut off a body (D220): the remains' id, the body (living or remains) they were cut from, and
@@ -909,6 +939,17 @@ namespace Evosim.Core
                 // D219, contact eating: what the body's biting parts kept from the bodies they wounded. Written
                 // only when above 0, and only a dial-on world keeps any.
                 if (BiteKeptJoules > 0d) w.Field("bk", BiteKeptJoules);
+
+                // D264, only in a world with the death-row income on, and then all four, zeros included, so a
+                // reader tells a body that kept nothing from a world that did not count: the joules kept from
+                // leaves, from other living bodies and from remains, and the joules its kills put in its gut.
+                if (HasBiteIncome)
+                {
+                    w.Field("kl", BiteKeptLeavesJoules)
+                        .Field("ko", BiteKeptOthersJoules)
+                        .Field("kr", BiteKeptRemainsJoules)
+                        .Field("kg", GutSwallowedJoules);
+                }
             }
 
             w.EndObject();

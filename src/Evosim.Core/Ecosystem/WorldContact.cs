@@ -863,13 +863,22 @@ namespace Evosim.Core
                     o.Biter.Energy += toReserve;
                     o.Biter.BiteKeptJoules += toReserve;
 
-                    if (o.Bitten.IsRemains) BiteKeptFromRemainsJoules += toReserve;
+                    if (o.Bitten.IsRemains)
+                    {
+                        BiteKeptFromRemainsJoules += toReserve;
+                        o.Biter.BiteKeptFromRemainsJoules += toReserve;
+                    }
                     else if (o.Bitten.HasPhotosyntheticTissue)
                     {
                         BiteKeptFromLeavesJoules += toReserve;
                         o.Biter.FoodFromLeavesJoules += toReserve;
+                        o.Biter.BiteKeptFromLeavesJoules += toReserve;
                     }
-                    else BiteKeptFromOthersJoules += toReserve;
+                    else
+                    {
+                        BiteKeptFromOthersJoules += toReserve;
+                        o.Biter.BiteKeptFromOthersJoules += toReserve;
+                    }
                 }
             }
 
@@ -933,6 +942,7 @@ namespace Evosim.Core
             if (!(joules > 0d)) return;
 
             killer.GutJoules += joules;
+            killer.GutSwallowedLifetimeJoules += joules;
             KillsSwallowed++;
             SwallowedJoules += joules;
         }
