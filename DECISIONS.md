@@ -184,7 +184,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D159](#d159) | Round 58 is three connected worlds that trade genomes and three isolated ones; the anchoring cell is built and tried in the nursery for round 59 | 2026-10-09 | the owner ruled in conversation on the evening of 2026-10-09, accepting the coordinator's recommendation |
 | [D160](#d160) | The speed work that gates round 58 ends with the arena; the rest goes on beside the rounds | 2026-10-10 | the owner ruled in the early hours of 2026-10-10, accepting the coordinator's recommendation |
 | [D161](#d161) | The water gets a drag on turning, built with round 59's anchoring cell | 2026-10-10 | the owner ruled on the afternoon of 2026-10-10, accepting the coordinator's recommendation |
-| [D162](#d162) | The anchoring cell is priced as attachment is in real organisms, and grips on its own at first | 2026-10-11 | the owner ruled on 2026-10-11, accepting the coordinator's recommendations on the design's four questions and the four pricing changes from the literature round |
+| [D162](#d162) | The anchoring cell is priced as attachment is in real organisms, and grips on its own at first | 2026-10-11 | the owner ruled on 2026-10-11, accepting the coordinator's recommendations on the design's four questions and the four pricing changes from the literature round · partly superseded by D268 |
 | [D163](#d163) | Narration is read by Google's TTS from now on | 2026-10-11 | the owner ruled on 2026-10-11, extending the choice of 2026-10-09 for the round 57 film to every film after it |
 | [D164](#d164) | Grazers wait for the anchoring cell, and the nursery follows in round 59's water | 2026-10-12 | the owner ruled on the evening of 2026-10-12, choosing the third of the coordinator's three options |
 | [D165](#d165) | The anchoring cell enters by budding at a configurable weight, and a broken grip may re-form at once | 2026-10-12 | the owner ruled on the night of 2026-10-12 on the two world rules the build plan left open (`logbook/specs/r59-anchor-build-plan.md` on `r59-anchor`, items 1 and 2) |
@@ -289,6 +289,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D265](#d265) | The nose replaces whole-body smell, and a nose smells farther than the leaves' cone, 15 m to start | 2026-10-30 | ruled by the owner late on 2026-10-30, on the two questions the nose lane's cost probe raised (`scratch/curriculum/nose-test/stronger-reading-draft.md`, option A), accepting the coordinator's… · partly superseded by D267 |
 | [D266](#d266) | No fixed total of matter for now: the world's balance is to come from its creatures | 2026-10-30 | ruled by the owner late on 2026-10-30 |
 | [D267](#d267) | D265's long smell is the world's own leaf field in a nose world, so no second field is built | 2026-10-30 | decided by the coordinator late on 2026-10-30, on the nose lane's reading of `nose-arms`, as the form of the owner's ruling in D265 |
+| [D268](#d268) | Any body may grow the anchoring cell; the brain may let a grip go; holding is free, and making or breaking a grip costs a little, by its size | 2026-10-30 | ruled by the owner late on 2026-10-30 in part, and decided by the coordinator at the owner's delegation in the rest |
+| [D269](#d269) | The nursery runs only under the world's current rules, and old nursery runs are not re-stepped | 2026-10-30 | ruled by the owner late on 2026-10-30, on the room's question of how to re-step old nursery runs (`logbook/specs/nursery-room-unloadable-recipes.md` on `nursery-room`) |
 
 ---
 
@@ -10148,3 +10150,34 @@ in any condition set for the world.
 **Why.** Under D235 a nose world already gives every part except a nose no leaf, carrion or chemical smell, on the host and on the card. So nothing but the noses reads the leaf field there, apart from the recorder and the report. A second field would hold exactly what the first holds. A 15 m cone on 2 m cells touches about 1,770 cells a leaf against 113 at 6 m, and 221 on 4 m cells; at 9,000 leaves that is about 16 million cell-adds a fill on 2 m cells and 2 million on 4 m (the nose lane's count, timings unmeasured).
 
 **Rejected.** The draft's second field with card support, about 2 h of build and a HOLD window, which buys nothing while D265 keeps whole-body smell out of nose worlds.
+
+### D268
+**Any body may grow the anchoring cell; the brain may let a grip go; holding is free, and making or breaking a grip costs a little, by its size** · 2026-10-30
+
+**Status:** ruled by the owner late on 2026-10-30 in part, and decided by the coordinator at the owner's delegation in the rest. The owner ruled the anchoring cell back into the world, saying it was always wanted and that being near the matter fountains will probably pay. They proposed that holding a grip cost nothing and that gripping and letting go cost a little. Asked whether the brain should control the grip and whether the costs should scale with the grip's size, the owner left both to the coordinator, who chose yes to both. It amends D162's price and D162's automatic grip, and it closes the unpaid-grip question on D228's list. The rest of D162 and D165 stands.
+
+**Decision.**
+- The anchoring cell (D162, D165, built for round 59 and off in every world since) comes back to the world. Any body may grow it, plants included, as an option evolution may take, not a requirement.
+- Each anchoring part brings one output to the creature's brain (D146), its hold, which it adds and removes with the part as a joint does its outputs. A founder wires every sense to it (D147).
+- A grip forms when the part touches the bed or a reef and holds unless the hold output falls below a release threshold. Then it lets go and does not form again until the output rises back above it. A brain that never uses the output holds, as the grip does today.
+- Each anchoring part brings two senses: whether it is holding, and how hard it is pulled, as a share of its breaking force. Its touch of the bed or a reef is already a sense (`SenseBedTouch`).
+- Holding costs nothing. Forming a grip and letting go each cost a small price that scales with the grip's breaking force, so a large holdfast costs more than a bud. The first screen sets both near zero, overpowered (D262), and dials them back after.
+- A grip still breaks under a pull stronger than its breaking force, still weakens as the body's reserve runs out, and still lets go at zero.
+
+**Why.** Biology has both drifting and anchored plants. The matter arrives at fixed islands, so a plant that holds its place beside one may live better than one the current carries off (the owner's expectation, an inference to test). Anchored plants also make fixed patches that grazers could learn, which serves D264. Holding by default suits a plant, as a kelp holdfast never lets go, while a brain's release lets an animal shift along a rock and come back, as anemones and limpets do. The release reuses what the central brain already does for joints. The price scales with size because a real holdfast costs in proportion to its attachment (D162's literature), and a flat price would let the largest part grip as cheaply as a bud. D162's build price meant that a body unable to pay died paying.
+
+**Rejected.** Requiring plants to anchor. A cost for each second held, which D162 already rejected. A grip that forms only on the brain's signal, which would leave every plant unanchored until its brain learned to ask. One flat price for every grip.
+
+### D269
+**The nursery runs only under the world's current rules, and old nursery runs are not re-stepped** · 2026-10-30
+
+**Status:** ruled by the owner late on 2026-10-30, on the room's question of how to re-step old nursery runs (`logbook/specs/nursery-room-unloadable-recipes.md` on `nursery-room`). The owner held that a nursery run has to match the world's rules and that no good inoculation candidate has been found yet. The record bears that out: round 61's planted grazers starved (logbook/0145). Whether to merge `room-cap` is still open.
+
+**Decision.**
+- A nursery run is worth something only under the rules of the world its products will be planted in. Old runs on old world rules are not re-stepped, either on their own commits or by a graft.
+- A recipe the current build cannot load is refused cleanly, with a message that names why.
+- The nursery's next runs start from the world as it stands, after main is merged into their branch and their configs are saved again.
+
+**Why.** An inoculum bred under rules the world no longer has would be tested against a world that has moved on, and no product of the nursery has yet earned a place in one.
+
+**Rejected.** Re-stepping each old run on its own commit, or a graft for the five oldest: both spend machine time on bodies bred for worlds that no longer exist.
