@@ -257,7 +257,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D232](#d232) | A kill swallows the whole body into the killer's gut, and leaves no remains | 2026-10-25 | ruled by the owner on 2026-10-25, on the speed agent's proposal (`proposals/propose-kill-meal.md` on `mouth-point`, option A, to be absorbed here and deleted) and the coordinator's recommendation |
 | [D233](#d233) | The shape family is built as a fourth shape, on the coordinator's recommendations | 2026-10-25 | ruled by the owner on 2026-10-25 on `proposals/propose-shape-family.md`, which is absorbed here and deleted |
 | [D234](#d234) | Mirrored twins move as mirror images, shown to the owner before it is ruled final | 2026-10-25 | the owner accepted the coordinator's recommendation on 2026-10-25, but will decide only after seeing it in action |
-| [D235](#d235) | Smell moves into a nose, whose size, placement and price decide how well a body smells | 2026-10-25 | ruled by the owner on 2026-10-25, all eleven decisions of `proposals/propose-nose.md` as recommended, which is absorbed here and deleted · partly superseded by D242 |
+| [D235](#d235) | Smell moves into a nose, whose size, placement and price decide how well a body smells | 2026-10-25 | ruled by the owner on 2026-10-25, all eleven decisions of `proposals/propose-nose.md` as recommended, which is absorbed here and deleted · partly superseded by D242, D265 |
 | [D236](#d236) | The swimmer curriculum: two leaf patches that take turns being fed, so travel pays | 2026-10-25 | ruled by the owner on 2026-10-25, accepting all eleven recommendations of `proposals/propose-swimmer-curriculum.md`, which is absorbed here and deleted |
 | [D237](#d237) | A mouth must touch to graze, and the grazers' dials are derived from a breeding target at the pace of metabolism | 2026-10-25 | ruled by the owner on the night of 2026-10-25, in the coordinator's session, after the `r62kg` check (`logbook/specs/r62kg-prereg/predictions.md`) |
 | [D238](#d238) | The kill rule stays as it is: a body dies when its root is eaten, the gut stays on, and the 420 J bar is retired | 2026-10-26 | ruled by the owner on 2026-10-26, accepting the coordinator's recommendation after the design read in `logbook/specs/kill-rule-read.md` |
@@ -283,9 +283,11 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D258](#d258) | The heat stop is for sustained heat, and light work may run beside a card run | 2026-10-29 | ruled by the owner on 2026-10-29, on the coordinator's recommendation, to move faster at no real cost to the machine's health |
 | [D259](#d259) | The film's world is `r63c`'s arm B: the slow bloom, the far smell off | 2026-10-29 | ruled by the owner on 2026-10-29, on the coordinator's recommendation, after no arm of `r63c` passed every gate (`logbook/specs/r63c-read/`) |
 | [D260](#d260) | Data is kept only for work in progress, and what cannot be recreated is backed up, compressed and encrypted | 2026-10-29 | ruled by the owner on 2026-10-29, after the project had grown to 552 GB with nothing outside git backed up |
-| [D261](#d261) | The world holds a fixed total of matter, 25,000 units to start | 2026-10-30 | ruled by the owner on 2026-10-30, after all three `r63d` worlds ended at the population ceiling (`logbook/specs/r63d-read/end/`) |
+| [D261](#d261) | The world holds a fixed total of matter, 25,000 units to start | 2026-10-30 | ruled by the owner on 2026-10-30, after all three `r63d` worlds ended at the population ceiling (`logbook/specs/r63d-read/end/`) · superseded by D266 |
 | [D262](#d262) | The world comes first and the film second; a new feature starts overpowered | 2026-10-30 | ruled by the owner on 2026-10-30 |
 | [D264](#d264) | Grazers overpowered in three phases: phase 1 makes animals hard to kill, provisions newborns and spreads the young, each set to overshoot | 2026-10-30 | ruled by the owner on 2026-10-30, who agreed to plan all three changes, asked that the values aim to overshoot, and asked that the good parts of the unified proposal… |
+| [D265](#d265) | The nose replaces whole-body smell, and a nose smells farther than the leaves' cone, 15 m to start | 2026-10-30 | ruled by the owner late on 2026-10-30, on the two questions the nose lane's cost probe raised (`scratch/curriculum/nose-test/stronger-reading-draft.md`, option A), accepting the coordinator's… |
+| [D266](#d266) | No fixed total of matter for now: the world's balance is to come from its creatures | 2026-10-30 | ruled by the owner late on 2026-10-30 |
 
 ---
 
@@ -10104,3 +10106,30 @@ in any condition set for the world.
 **Why.** `r63g` and `r63h` made grazers plentiful, and then most of them died in other grazers' mouths. Close kin were 13-19 % of those kills, and grazers took 0.36-0.52 of their bite income from leaves (`logbook/specs/r63h-read/`). A mouth bites whatever it touches, and one contact can kill. A bite takes a share of the victim's concentrated reserve, and the young start within 5 m of their family. So the world pays more for a sibling than for a leaf. The owner's view is that plants should be cheap to kill and animals hard. Asked how the unified proposal differs from reality, the coordinator found that it put the cost of meat in digestion, where in the sea it lies in the catching.
 
 **Rejected.** Building the unified proposal as written: its diet gene makes meat useless to a plant-eater, which is not how guts work. More cheapening of mouths: `r63h` showed that a cheaper mouth makes a cheaper predator as much as a cheaper grazer.
+
+### D265
+**The nose replaces whole-body smell, and a nose smells farther than the leaves' cone, 15 m to start** · 2026-10-30
+
+**Status:** ruled by the owner late on 2026-10-30, on the two questions the nose lane's cost probe raised (`scratch/curriculum/nose-test/stronger-reading-draft.md`, option A), accepting the coordinator's recommendations. It supersedes D235's clauses that both smell forms are kept and that the nursery must show a nose beating whole-body smell before worlds carry it; the rest of D235 stands. In the same message the owner asked whether the organ is a nose or a nostril, whether one is enough for direction, and how heavy the longer range is to compute. Those go back to the owner and are not settled here.
+
+**Decision.**
+- In a world that turns the nose on, whole-body smell ends there. A body smells only through its nose cells.
+- A nose reads a second leaf field, filled from the same leaves with a cone of the nose's own range, 15 m to start. The world's 6 m cone is unchanged for everything else that reads it. The range starts overpowered and is dialled back once noses have shown they pay (D262).
+- The second field is built only when a nose's range differs from the world's, so every recorded world is unchanged. It fills at the metabolic cadence on the card, as D235 asked of any new field.
+
+**Why.** The cost probe of 2026-10-30 showed that a snout's upkeep and drag are small and that its reading is what loses. At zero noise a nose reads what one body part reads under whole-body smell, which sums every part, so no nose can beat whole-body smell while both exist. The owner called whole-body smell unrealistic. Leaf patches sit about 25 m apart and both senses end at 6 m, so most of the tank smells of nothing. A nose that reaches 15 m tells a body about the water between oases, which is where the migration of the owner's guidance of 2026-10-15 has to start.
+
+**Rejected.** Lengthening the world's leaf range for every body, which lifts whole-body smell with it and leaves the nose unable to win. Keeping both senses, for the reason above.
+
+### D266
+**No fixed total of matter for now: the world's balance is to come from its creatures** · 2026-10-30
+
+**Status:** ruled by the owner late on 2026-10-30. It supersedes D261, which nothing was built for, and removes D261's fixed total from D264's phase 3. D074's open matter budget stands.
+
+**Decision.**
+- The world keeps D074's open matter budget: matter flows in and is buried, and the world's size is a flow.
+- The balance the owner wants is grazers and plants holding each other in check (D264), not a cap on matter. The question comes back only if the grazer phases fail to find that balance.
+
+**Why.** D261 answered `r63d`'s worlds running into the population ceiling with nothing eating the plants. D264 now attacks that cause directly. D074's reason still holds: in September a conserved stock locked the world and stopped selection.
+
+**Rejected.** Building D261's total now, before the grazer phases have been read.
