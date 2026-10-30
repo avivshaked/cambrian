@@ -9929,7 +9929,7 @@ in any condition set for the world.
 ### D261
 **The world holds a fixed total of matter, 25,000 units to start** · 2026-10-30
 
-**Status:** ruled by the owner on 2026-10-30, after all three `r63d` worlds ended at the population ceiling (`logbook/specs/r63d-read/end/`). It supersedes nothing; the build and its screen come before G7.
+**Status:** ruled by the owner on 2026-10-30, after all three `r63d` worlds ended at the population ceiling (`logbook/specs/r63d-read/end/`). It would reverse D074's open matter budget, which the coordinator did not find before writing this entry; D074's reasons went back to the owner the same day, and nothing is built until they confirm.
 
 **Decision.**
 - The world's matter is a fixed quantity, 25,000 units to start, in the units of `matterStanding`. How the influx and the burial close on that total is the build's to specify, and goes to the owner before it lands.
