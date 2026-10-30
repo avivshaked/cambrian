@@ -1,0 +1,45 @@
+G5 read: shape screen, one seed
+ON  run: runs/r63s-on-6203/2026-10-29-220442-f73b299d
+OFF run: runs/r63c-b-6203/2026-10-29-123625-716cd9ee
+snapshot at 24000 s; moving pairs from 12000 to 24000 s; still bar 0.005 m/s; gap 10 s; every 1
+
+== Gate 2: evolution uses the shapes (ON, snapshot nearest 24000 s)
+ON  snapshot at 24000 s
+ON  living bodies: 6257 (genomes read: 6257)
+ON  jointed bodies: 605
+ON  family-jointed bodies: 109
+ON  family share, family-jointed over jointed: 0.1802
+OFF snapshot at 24000 s (sanity)
+OFF living bodies: 6630 (genomes read: 6630)
+OFF jointed bodies: 894
+OFF family-jointed bodies: 0 (should be 0)
+
+== Reported (ON): the family among nodes, and the form walk
+ON  jointed non-root nodes: 712, of them family limbs: 114
+ON  family share of jointed non-root nodes: 0.1601
+ON  form walk, family limbs: n 114, median 0.000, p90 0.120 (distance from the nearest entry member, in range log widths)
+ON  form walk, every grown family node: n 2749, median 0.144, p90 0.206 (distance from the nearest entry member, in range log widths)
+
+== Gate 3: swimming does not suffer (grazer pose pairs)
+ON  grazers born by 24000 s: 4115; pose pairs up to 24000 s: 106477, in the window: 76694
+ON  moving pairs: 75693, median speed 0.2617 m/s
+ON  median speed over all pairs in the window, moving or not: 0.2577 m/s (n 76694)
+ON  median speed over all pairs up to 24000 s, any t: 0.2659 m/s (n 106477)
+OFF grazers born by 24000 s: 4083; pose pairs up to 24000 s: 111086, in the window: 86074
+OFF moving pairs: 85077, median speed 0.2658 m/s
+OFF median speed over all pairs in the window, moving or not: 0.2637 m/s (n 86074)
+OFF median speed over all pairs up to 24000 s, any t: 0.2667 m/s (n 111086)
+moving-pair median speed ratio ON/OFF: 0.984
+
+== Reported (ON): grazers carrying a family limb against the rest (moving pairs)
+ON  moving pairs of carriers: 915, median speed 0.2643 m/s (40 grazers)
+ON  moving pairs of the rest: 74778, median speed 0.2617 m/s (2890 grazers)
+
+== Reported: pace, world seconds per wall second (different sittings: read with caution)
+ON  pace up to 24000 s: 2.681; in 12000 to 24000 s: 2.228 (2400 stats rows)
+OFF pace up to 24000 s: 2.027; in 12000 to 24000 s: 1.682 (2400 stats rows)
+pace ratio ON/OFF, whole span: 1.322; window: 1.325
+
+== Gates
+Gate 2 (family share of jointed bodies >= 0.10): PASS (share 0.1802)
+Gate 3 (moving-grazer median speed ON/OFF >= 0.80): PASS (ratio 0.984)
