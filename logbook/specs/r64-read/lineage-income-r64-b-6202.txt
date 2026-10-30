@@ -1,0 +1,14 @@
+grazer deaths with income fields to 24000 s: 20041
+       all  deaths  20041  leaves 0.37  others 0.56  remains 0.07  bite kept 5.713 MJ  swallowed 0.756 MJ
+      5008  deaths   7153  leaves 0.33  others 0.60  remains 0.07  bite kept 2.082 MJ  swallowed 0.233 MJ
+      5833  deaths   4410  leaves 0.39  others 0.54  remains 0.06  bite kept 1.243 MJ  swallowed 0.201 MJ
+      6534  deaths   2896  leaves 0.34  others 0.58  remains 0.07  bite kept 1.105 MJ  swallowed 0.205 MJ
+      5209  deaths   2020  leaves 0.44  others 0.50  remains 0.06  bite kept 0.653 MJ  swallowed 0.059 MJ
+     29201  deaths   1283  leaves 0.41  others 0.54  remains 0.05  bite kept 0.243 MJ  swallowed 0.022 MJ
+     30677  deaths   1171  leaves 0.42  others 0.53  remains 0.05  bite kept 0.218 MJ  swallowed 0.022 MJ
+      8413  deaths    232  leaves 0.54  others 0.39  remains 0.07  bite kept 0.045 MJ  swallowed 0.003 MJ
+     60407  deaths    162  leaves 0.56  others 0.36  remains 0.07  bite kept 0.034 MJ  swallowed 0.003 MJ
+     34481  deaths     70  leaves 0.48  others 0.47  remains 0.05  bite kept 0.014 MJ  swallowed 0.001 MJ
+     23548  deaths     39  leaves 0.61  others 0.37  remains 0.02  bite kept 0.008 MJ  swallowed 0.000 MJ
+     33823  deaths     38  leaves 0.47  others 0.52  remains 0.01  bite kept 0.009 MJ  swallowed 0.001 MJ
+     76763  deaths     32  leaves 0.57  others 0.33  remains 0.10  bite kept 0.006 MJ  swallowed 0.001 MJ

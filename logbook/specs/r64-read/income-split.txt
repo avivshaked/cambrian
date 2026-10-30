@@ -1,0 +1,21 @@
+r63c-b-6202  t=24000
+  whole run     leaves 0.68  others 0.22  remains 0.09  (bite kept 2.41 MJ, swallowed 0.22 MJ)
+  21000-24000  leaves 0.65  others 0.26  remains 0.09  (bite kept 0.65 MJ, swallowed 0.07 MJ)
+r63h-d-6202  t=24000
+  whole run     leaves 0.43  others 0.50  remains 0.07  (bite kept 4.87 MJ, swallowed 0.54 MJ)
+  21000-24000  leaves 0.38  others 0.54  remains 0.07  (bite kept 0.92 MJ, swallowed 0.10 MJ)
+r64-a-6202  t=24000
+  whole run     leaves 0.70  others 0.23  remains 0.07  (bite kept 2.25 MJ, swallowed 0.09 MJ)
+  21000-24000  leaves 0.63  others 0.29  remains 0.08  (bite kept 0.25 MJ, swallowed 0.01 MJ)
+r64-b-6202  t=24000
+  whole run     leaves 0.38  others 0.56  remains 0.07  (bite kept 5.94 MJ, swallowed 0.78 MJ)
+  21000-24000  leaves 0.33  others 0.59  remains 0.08  (bite kept 1.14 MJ, swallowed 0.15 MJ)
+r64-c-6202  t=24000
+  whole run     leaves 0.60  others 0.32  remains 0.09  (bite kept 1.44 MJ, swallowed 0.11 MJ)
+  21000-24000  leaves 0.46  others 0.44  remains 0.10  (bite kept 0.31 MJ, swallowed 0.03 MJ)
+r64-d-6202  t=24000
+  whole run     leaves 0.71  others 0.19  remains 0.11  (bite kept 1.06 MJ, swallowed 0.03 MJ)
+  21000-24000  leaves 0.59  others 0.32  remains 0.09  (bite kept 0.21 MJ, swallowed 0.01 MJ)
+r64-e-6202  t=24000
+  whole run     leaves 0.84  others 0.07  remains 0.09  (bite kept 0.99 MJ, swallowed 0.09 MJ)
+  21000-24000  leaves 0.84  others 0.08  remains 0.08  (bite kept 0.19 MJ, swallowed 0.02 MJ)

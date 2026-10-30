@@ -1,0 +1,21 @@
+grazer deaths with income fields to 24000 s: 10931
+       all  deaths  10931  leaves 0.70  others 0.23  remains 0.07  bite kept 2.166 MJ  swallowed 0.086 MJ
+      4941  deaths   1964  leaves 0.72  others 0.18  remains 0.09  bite kept 0.357 MJ  swallowed 0.031 MJ
+      8192  deaths   1466  leaves 0.71  others 0.24  remains 0.05  bite kept 0.289 MJ  swallowed 0.005 MJ
+     18221  deaths   1270  leaves 0.63  others 0.30  remains 0.07  bite kept 0.365 MJ  swallowed 0.003 MJ
+     19499  deaths   1118  leaves 0.71  others 0.26  remains 0.04  bite kept 0.224 MJ  swallowed 0.003 MJ
+     23543  deaths    912  leaves 0.71  others 0.22  remains 0.07  bite kept 0.181 MJ  swallowed 0.012 MJ
+     24800  deaths    909  leaves 0.60  others 0.33  remains 0.07  bite kept 0.188 MJ  swallowed 0.015 MJ
+     11892  deaths    413  leaves 0.75  others 0.19  remains 0.06  bite kept 0.076 MJ  swallowed 0.000 MJ
+      6036  deaths    395  leaves 0.76  others 0.11  remains 0.13  bite kept 0.064 MJ  swallowed 0.000 MJ
+      6179  deaths    350  leaves 0.73  others 0.14  remains 0.13  bite kept 0.053 MJ  swallowed 0.001 MJ
+     11258  deaths    339  leaves 0.81  others 0.14  remains 0.06  bite kept 0.073 MJ  swallowed 0.002 MJ
+     34345  deaths    230  leaves 0.76  others 0.21  remains 0.03  bite kept 0.040 MJ  swallowed 0.000 MJ
+     18447  deaths    224  leaves 0.69  others 0.26  remains 0.06  bite kept 0.053 MJ  swallowed 0.007 MJ
+     16207  deaths    207  leaves 0.86  others 0.05  remains 0.09  bite kept 0.028 MJ  swallowed 0.000 MJ
+     10501  deaths    134  leaves 0.81  others 0.14  remains 0.06  bite kept 0.028 MJ  swallowed 0.000 MJ
+     12020  deaths     71  leaves 0.84  others 0.14  remains 0.02  bite kept 0.014 MJ  swallowed 0.000 MJ
+     36699  deaths     71  leaves 0.53  others 0.39  remains 0.07  bite kept 0.014 MJ  swallowed 0.001 MJ
+     31084  deaths     58  leaves 0.69  others 0.25  remains 0.05  bite kept 0.009 MJ  swallowed 0.002 MJ
+     28542  deaths     57  leaves 0.62  others 0.35  remains 0.03  bite kept 0.011 MJ  swallowed 0.000 MJ
+     31850  deaths     37  leaves 0.65  others 0.23  remains 0.11  bite kept 0.008 MJ  swallowed 0.000 MJ
