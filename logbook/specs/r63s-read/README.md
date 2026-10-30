@@ -44,6 +44,41 @@ round (D254).
   joint that is not Fixed. That is the pre-registration's definition, and it is wider than `stats.jsonl`'s `jointed`
   column (238 and 156 at the end).
 
+## The floaters
+
+The runs' `diverged/` folders hold more records in "on" than in `r63c-b`: 36 and 50 against 12 and 26. The coordinator
+asked for them to be measured before G7 takes the family in. `floaters.txt` is `scripts/reads/shape/r63s-floaters.py` over
+all four runs, and the code read beside it is of `src/Evosim.Dynamics/Fluid.cs` and `Contacts.cs` at `9235a0fc`.
+
+- **No living body diverged.** Every record in all four runs is a remains piece. Every one left through the top of the
+  world, its root more than 25 m above the surface and rising at 0.4 to 4.9 m/s when the guard caught it.
+- **The records are twins.** Half of each run's records share their second with the one before. I checked one pair in
+  each arm: `11518` and `11519` in "on", `27463` and `27464` in `r63c-b`. Each is two pieces cut from one body at one
+  second, with the same volume, position and velocity to the last digit. "On" lost 18 and 25 pairs, and `r63c-b` 6 and 13.
+- **The pieces come mostly from family bodies in "on".** A piece has no genome row, so the proxy is its source body's
+  root shape. Of the remains cut from superellipsoid-rooted bodies, 32 of 788 and 50 of 912 diverged (0.041 and 0.055). From box
+  roots the share is 0.002 and 0 in "on", and 0.005 and 0.006 in `r63c-b`. Sphere roots give 0.017 and 0 in "on", and 0
+  and 0.041 in `r63c-b`. So the share is not peculiar to the family: one sphere lineage in `r63c-b` reached it too.
+- **Nothing in buoyancy or drag treats the superellipsoid apart.** Buoyancy is one signed term per link, scaled by the
+  link's mass and the whole body's volume. The waterline is a point test on the link's origin height, with no
+  part-submerged fraction for any shape, and remains take no lift. A family part differs only in its volume, its mass
+  and the drag panels its measured geometry gives it. Above the surface, only `SurfaceRestoringFraction` of gravity pulls
+  a body back down, so one that leaves the water at a few metres a second coasts tens of metres up.
+- **What lifts the twins is the pair contact.** Each body sums its own contact force against every neighbour it
+  overlaps. Where two centres lie closer than 1e-9 m, the normal falls back to straight up, `Vec3.UnitY`, at
+  `Contacts.cs` lines 987-989 for the body's sphere and 1212-1214 for a link's. Each twin finds the other at its own
+  centre, so both are pushed up by the full overlap and neither apart. They stay coincident with equal velocities, so the
+  push repeats every step until they leave the world. That this is the whole of the launch is inference: it fits the
+  twins' identical states and the steady rise, and no twin was traced step by step.
+- **Why family bodies make more twins is not known.** A body cut into pieces gives coincident twins when two of its
+  parts sit at one place. One of the launched genomes, a two-part superellipsoid leaf, grows from a self-recursive,
+  reflected edge. That such lineages favour coincident parts, rather than the shape doing it, is a guess.
+
+The count is small: 1.9 % and 2.2 % of the remains founded in "on", against 0.4 % and 1.3 % in `r63c-b`, and no living
+body, and it moves no gate. The contact fallback is a
+defect older than the family, and it is the solver's, so a fix is a world rule's change for the owner. Pushing coincident
+pairs apart along a fixed horizontal axis by id order would be one such fix.
+
 ## The predictions
 
 - **Gate 1 holds on both seeds:** right.

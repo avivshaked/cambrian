@@ -16,4 +16,8 @@ foreach ($s in '6202', '6203') {
 "== g2-read, $(Get-Date -Format HH:mm:ss)"
 & python -I scripts/reads/bloom/g2-read.py @on --survive-from 12000 *> "$o\g2-survive.txt"
 "exit $LASTEXITCODE"
+"== floaters, $(Get-Date -Format HH:mm:ss)"
+$off = @('runs/r63c-b-6202/2026-10-29-123625-716cd9ee', 'runs/r63c-b-6203/2026-10-29-123625-716cd9ee')
+& python -I scripts/reads/shape/r63s-floaters.py @on @off *> "$o\floaters.txt"
+"exit $LASTEXITCODE"
 "== done at $(Get-Date -Format HH:mm:ss)"
