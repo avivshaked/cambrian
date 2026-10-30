@@ -36,7 +36,16 @@ A grazer screen from here gates on the share of bite income from living plants, 
 - `proposals/propose-matter-kinds.md`: matter kinds by tissue and a diet gene, with the coordinator's review at its end.
 - The recognition proposal being drafted in `scratch/recognition-proposal/`: kin and foe recognition, an animal smell carrying a heritable signature, and an alarm scent.
 
-The owner agreed on 2026-10-30 that a Fable agent writes one proposal and its pre-registered screen for the next world run. It is writing now, into `scratch/unified-proposal/draft.md`. The coordinator reviews it, moves it to `proposals/` and sets out its questions to the owner in full. Its brief uses all of this context:
+That proposal is `proposals/propose-food-foes-kin.md`. Asked how it differs from reality, the coordinator found that it put the cost of meat in digestion, where in the sea it lies in the catching. The owner then ruled D264: three phases, with the values set to overshoot.
+
+**Phase 1, `r64`, runs on the card.** It started at 20:23 UTC on 2026-10-30 from `scratch/wt-phase1` (branch `phase1-overpower`, `c3c6040f`), with its pre-registration in `logbook/specs/r64-prereg/` on that branch:
+- A: animals 10 times as hard to kill, plants at 0.2 of their health, by body.
+- B: newborn reserve 0.8.
+- C: young spread over 30 m.
+- D: all three.
+- E: all three, with mouths at `r63g-b`'s prices.
+
+The control is the recorded `r63h-d-6202`, and the identity check matched it row for row. It is read with `r63h-read.ps1`'s steps plus the death rows' income by lineage. Before the branch merges to main, the 34 nursery configs need bringing forward (`scripts/nursery-config-forward.py`, with r42 at `067cb724c6ec17f6` as the template). Its brief uses all of this context:
 - the owner's rulings: plants cheap to kill and animals hard, because animals hold concentrated matter; a world rule never reads the world's state; a new feature starts overpowered;
 - a word cap and bounded reading.
 
