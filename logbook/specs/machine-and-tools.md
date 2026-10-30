@@ -149,6 +149,11 @@ The root file's rules still apply. The entries below were moved word for word, s
     24,000 s checkpoints beside N0 (16-23). Afterburner's log then held 23 seconds at 95 °C or more, up to 100 °C,
     all between 00:38:29 and 00:39:24, and the heat stop did not fire. The CPU then settled at 78-81 °C. The
     one-second heat watch is what sees these bursts. A finer read in a launch's first minutes is the open fix.
+  - **A farm film window starts as a burst too, so it never starts beside a Unity step.** On 2026-10-30 at
+    19:04 a four-thread film window started on 12-15, beside a Unity smoke on 16-19 and a read on 8-11. It started
+    on one reading of 78 °C. Seven seconds later the CPU read 100 °C, and the render guard stopped the Unity
+    processes. No hardware event followed. Theatre work since then runs one heavy job at a time, each started
+    on a minute of readings under 80 °C, not on one reading.
   - **Nor beside a theatre render step.** `scratch/theatre-realism/batch-heat.ps1` stops a render batch at
     89 °C. On 2026-10-25 at 13:51 it read 90 °C and stopped batch b43. A Farm build at one MSBuild node and
     two threads on logical 2-15, given its slot by the coordinator, ran beside a Unity step, with small test
