@@ -45,8 +45,12 @@ bite, and does D's grazer world still hold its grazers, at what pace?
 ## Checked before launch
 
 On the merged build, after the smell landing's own sittings pass:
-1. **The CPU accelerator, founded.** `r64t-t` on 6202 and 6203, `-Device cpu -Seconds 30 -MigrateEvery 10
-   -CheckpointEvery 15`, then its resume `-At 15` for 15 s, compared by `group-resume-compare.py`.
+1. **The CPU accelerator, founded.** Replaced before launch by a check that already ran on this build:
+   `GpuEngineTests.TheDriveAndThePushesOnTheCpuAcceleratorAreTheSolver` with `trueshape` and `trueshape-crowd` steps founded
+   true-shape worlds on the CPU accelerator and matches the solver to the bit after every block, a death and a birth
+   included, after showing each world parts from its sphere control. It passed among the 122 Gpu tests run on the smell
+   build on 2026-10-31 (`scratch/smell-builder/land/gpu-nomean2.log`). A resume is not part of the screen, which founds
+   every world.
 2. **The switch-on sitting, as a mixed group.** One group of `r64t-t-6202` and a spheres D on 6202, for 600 s at group 32
    and again at 64: `gpu-accept.py` t at 32 against t at 64 exits 0; `compare-run-rows.py` the spheres world at 32 against
    `r64-d-6202`'s prefix, row for row (the reuse, and that a true-shape world in the group leaves a spheres world unchanged);
