@@ -21,20 +21,19 @@ param(
 $R = 'D:\Projects\experiments\evolution-simulator'
 $b = "$R\scratch\wt-smell"
 $root = "$R\scratch\d270-hold\$Part"
-$exe = "$brtifacts\Evosim.Farmin\Release
-et8.0\Evosim.Farm.exe"
+$exe = "$b\artifacts\Evosim.Farm\bin\Release\net8.0\Evosim.Farm.exe"
 New-Item -ItemType Directory -Force $root | Out-Null
 
 if ($Part -eq 'off') {
     if ($Group -ne 32) { throw 'The switches-off sitting runs at group 32 only.' }
     & pwsh -NoProfile -File "$b\scripts\card\card-group.ps1" -Name d270id-off -Arms 'd270id-d-6202,d270id-e-6202' `
-        -Launcher "$bounds\env-r64-d.ps1,$bounds\env-r64-e.ps1" -Seeds '6202,6202' -Seconds 600 -Group 32 -Transport -CheckpointEvery 1500 -Threads 8 -Mask 65280 `
+        -Launcher "$b\rounds\env-r64-d.ps1,$b\rounds\env-r64-e.ps1" -Seeds '6202,6202' -Seconds 600 -Group 32 -Transport -CheckpointEvery 1500 -Threads 8 -Mask 65280 `
         -HeatStop -WallMinutes 45 -WaitForManifestSeconds 600 `
         -RunsRoot $root -Exe $exe -AllowBeside 'Assay\.Run\.dll|nose-test-n1p'
 }
 else {
     & pwsh -NoProfile -File "$b\scripts\card\card-group.ps1" -Name "d270id-on$Group" -Arms "d270on-r-g$Group,d270on-o-g$Group" `
-        -Launcher "$bounds\env-d270-r.ps1,$bounds\env-d270-o.ps1" -Seeds '6202,6202' -Seconds 600 -Group $Group -Transport -CheckpointEvery 1500 -Threads 8 -Mask 65280 `
+        -Launcher "$b\rounds\env-d270-r.ps1,$b\rounds\env-d270-o.ps1" -Seeds '6202,6202' -Seconds 600 -Group $Group -Transport -CheckpointEvery 1500 -Threads 8 -Mask 65280 `
         -HeatStop -WallMinutes 45 -WaitForManifestSeconds 600 `
         -RunsRoot $root -Exe $exe -AllowBeside 'Assay\.Run\.dll|nose-test-n1p'
 }
