@@ -428,6 +428,11 @@ namespace Evosim.Farm
             // where the body's Sample would have read the same poses. Nothing in a world without the nose.
             if (Solver.Nose != null && Steps % StepsPerMetabolicStep == 0) SniffNoses();
 
+            // D270: the carried smell and the current sense are held the same way, at the same point, once a
+            // metabolic step. They draw no noise and read poses, the water and the plume, which nothing writes
+            // between the metabolic step and the block. Nothing in a world with both off.
+            if (Solver.HoldsFarSenses && Steps % StepsPerMetabolicStep == 0) HoldFarSenses();
+
             // The profile's denominator, taken where the work it measures is about to happen.
             _bodyStepSum += _order.Count;
             _linkStepSum += Dynamics.TotalLinks();
@@ -503,6 +508,17 @@ namespace Evosim.Farm
             long index = Steps / StepsPerMetabolicStep;
             IReadOnlyList<Creature> bodies = Dynamics.Creatures;
             for (int i = 0; i < bodies.Count; i++) bodies[i].Senses.Sniff(index);
+        }
+
+        /// <summary>
+        /// D270: every body reads the carried leaf smell and the water's velocity over the ground, and holds them
+        /// through the block (<see cref="CreatureSenses.HoldFar"/>). Serial, in the solver's list order, and with no
+        /// noise: each body writes only its own readings.
+        /// </summary>
+        private void HoldFarSenses()
+        {
+            IReadOnlyList<Creature> bodies = Dynamics.Creatures;
+            for (int i = 0; i < bodies.Count; i++) bodies[i].Senses.HoldFar();
         }
 
         /// <summary>

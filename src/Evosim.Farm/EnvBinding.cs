@@ -608,6 +608,14 @@ namespace Evosim.Farm
             Num("EVOSIM_LEAF_SCENT_RANGE", 10f, (s, v) => s.LeafScentRange = v),
             Num("EVOSIM_LEAF_SCENT_CELL", 2f, (s, v) => s.LeafScentCell = v),
             Num("EVOSIM_LEAF_SCENT_HALF", 1f, (s, v) => s.LeafScentHalf = v),
+            // D270: the carried leaf smell (a far plume on a 5 m grid that the current carries) and the current sense.
+            // Both off is every recorded world. The plume's cone is LEAF_SCENT_RANGE; its mixing is the matter's.
+            Custom("EVOSIM_LEAF_PLUME", (s, env) => s.LeafPlume = LeafPlumeOf(env, "EVOSIM_LEAF_PLUME")),
+            Num("EVOSIM_LEAF_PLUME_CELL", 5f, (s, v) => s.LeafPlumeCell = v),
+            Num("EVOSIM_LEAF_PLUME_LIFE", 3000f, (s, v) => s.LeafPlumeLife = v),
+            Num("EVOSIM_LEAF_PLUME_HALF", 1f, (s, v) => s.LeafPlumeHalf = v),
+            Flag("EVOSIM_CURRENT_SENSE", (s, v) => s.CurrentSense = v),
+            Num("EVOSIM_CURRENT_SENSE_HALF", 0.01f, (s, v) => s.CurrentSenseHalf = v),
             Flag("EVOSIM_UNBITTEN_NO_CORPSE", (s, v) => s.UnbittenNoCorpse = v),
 
             // D162, D165: the anchoring cell, appended to the world's cell-type table when on, and its
@@ -1077,6 +1085,12 @@ namespace Evosim.Farm
             config.LeafScentRangeMetres = s.LeafScentRange;
             config.LeafScentCellMetres = s.LeafScentCell;
             config.LeafScentHalfScaleSquareMetres = s.LeafScentHalf;
+            config.LeafPlume = s.LeafPlume;
+            config.LeafPlumeCellMetres = s.LeafPlumeCell;
+            config.LeafPlumeLifetimeSeconds = s.LeafPlumeLife;
+            config.LeafPlumeHalfScale = s.LeafPlumeHalf;
+            config.CurrentSense = s.CurrentSense;
+            config.CurrentSenseHalfSpeedMetresPerSecond = s.CurrentSenseHalf;
             config.UnbittenDeathsLeaveNoCorpse = s.UnbittenNoCorpse;
             config.Brain.BrainModel = s.BrainModel;
             config.ScentRangeMetres = s.ScentRange;
@@ -1416,6 +1430,22 @@ namespace Evosim.Farm
 
             throw new ArgumentException(
                 name + " is '" + raw + "', which is none of 'none', 'strength' or 'direction'.");
+        }
+
+        private static LeafPlumeForm LeafPlumeOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrEmpty(raw)) return LeafPlumeForm.None;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "none": return LeafPlumeForm.None;
+                case "strength": return LeafPlumeForm.Strength;
+                case "gradient": return LeafPlumeForm.Gradient;
+            }
+
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is none of 'none', 'strength' or 'gradient'.");
         }
 
         private static TurningDragForm TurningDragOf(Lookup env, string name)
@@ -2229,6 +2259,24 @@ namespace Evosim.Farm
         public float LeafScentRange;
         public float LeafScentCell;
         public float LeafScentHalf;
+
+        /// <summary>D270: the carried leaf smell's form (<c>EVOSIM_LEAF_PLUME</c>).</summary>
+        public LeafPlumeForm LeafPlume;
+
+        /// <summary>D270: the plume's cell, metres (<c>EVOSIM_LEAF_PLUME_CELL</c>).</summary>
+        public float LeafPlumeCell;
+
+        /// <summary>D270: the plume's lifetime, seconds (<c>EVOSIM_LEAF_PLUME_LIFE</c>).</summary>
+        public float LeafPlumeLife;
+
+        /// <summary>D270: the plume's half-scale (<c>EVOSIM_LEAF_PLUME_HALF</c>).</summary>
+        public float LeafPlumeHalf;
+
+        /// <summary>D270: every part reads the water's velocity over the ground (<c>EVOSIM_CURRENT_SENSE</c>).</summary>
+        public bool CurrentSense;
+
+        /// <summary>D270: the current sense's half-speed, m/s (<c>EVOSIM_CURRENT_SENSE_HALF</c>).</summary>
+        public float CurrentSenseHalf;
         public bool UnbittenNoCorpse;
         public bool Anchoring;
 

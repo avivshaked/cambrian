@@ -141,6 +141,11 @@ namespace Evosim.Farm.Gpu.Dbl
         // (6 * link + k) * N + slot, filled on the host from CreatureSenses at every block. A one-cell stub, never
         // filled or read, in a world without the nose (cfg.Nose is 0).
         public ArrayView<float> NoseHeld;
+        // D270: each link's held far senses, filled on the host from CreatureSenses.HeldFar at every block. PlumeHeld is four
+        // floats a link (the carried leaf smell's strength, then its gradient's x, y, z) and CurrentHeld three (the water's
+        // velocity over the ground in the part's frame), rows (4 * link + k) * N + slot and (3 * link + k) * N + slot. Each
+        // is a one-cell stub, never filled or read, with its switch off (cfg.FarPlume, cfg.FarCurrent are 0).
+        public ArrayView<float> PlumeHeld, CurrentHeld;
         public ArrayView<int> Parity, Contact, Gates;
         public ArrayView<double> Clock;
     }
@@ -276,6 +281,8 @@ namespace Evosim.Farm.Gpu.Dbl
         public float ReleaseBelow;   // D268: a hold output below this lets the grip go (AnchoringCell.ReleaseBelow)
         public int ShapedMass;   // D229: the limb pushes take the part's shaped added mass (Fluid.AddedMassOf)
         public int MirrorDrive;  // D234: a mirrored twin's drive and senses are read through its link's mirror mask
+        public int FarPlume;     // D270: the carried leaf smell is on; a part reads its held strength and gradient (SBrain.PlumeHeld)
+        public int FarCurrent;   // D270: the current sense is on; a part reads its held ground current (SBrain.CurrentHeld)
         public int Nose;         // D235: only nose links smell, and they read the held sniff the host left (SBrain.NoseHeld); no field is read for a smell
         public int AnyRemains;   // D220: 1 for a block in which some body is remains; 0 reads no remains flag at all
         public int TrueShape;    // D228: a part touches as its convex core with a margin (SolverConfig.ContactShape)
@@ -632,7 +639,8 @@ namespace Evosim.Farm.Gpu.Dbl
         private const int SDepth = 9, SUp = 3, SJointAngle = 0, SJointRate = 1, SChemical = 6, SEnergy = 7,
             SFlow = 8, SContact = 2, SDamage = 5, SScent = 10,
             SStroke = 11, SHold = 12, SRamp = 13, SRock = 14, SLeaf = 15, SLeafDir = 16,
-            SGripping = 17, SGripPull = 18;
+            SGripping = 17, SGripPull = 18,
+            SLeafPlume = 19, SLeafPlumeGrad = 20, SCurrent = 21;
 
         // ============================================================== the grid
 
@@ -9031,7 +9039,8 @@ namespace Evosim.Farm.Gpu.Dbl
             // D235: in a nose world a part that is not a nose reads zero on the four smell channels, under either
             // brain (SensorChannels.IsSmell): the nose links are the word's bits 16 and up.
             if (cfg.Nose != 0 && ((rock >> (16 + part)) & 1) == 0 &&
-                (channel == SChemical || channel == SScent || channel == SLeaf || channel == SLeafDir))
+                (channel == SChemical || channel == SScent || channel == SLeaf || channel == SLeafDir ||
+                 channel == SLeafPlume || channel == SLeafPlumeGrad))
             {
                 return 0f;
             }
@@ -9054,6 +9063,14 @@ namespace Evosim.Farm.Gpu.Dbl
                 case SRock: return ((rock >> part) & 1) != 0 ? 1f : 0f;
                 case SLeaf: return sLeaf[4 * part];
                 case SLeafDir: return index >= 0 && index < 3 ? sLeaf[4 * part + 1 + index] : 0f;
+
+                // D270: what the host's last HoldFar left in the part's own frame (CreatureSenses.Read), copied as it
+                // stands. Nothing is computed here, and a world with the switch off reads zero as the host does.
+                case SLeafPlume: return cfg.FarPlume != 0 ? br.PlumeHeld[(4 * part) * N + i] : 0f;
+                case SLeafPlumeGrad:
+                    return cfg.FarPlume != 0 && index >= 0 && index < 3 ? br.PlumeHeld[(4 * part + 1 + index) * N + i] : 0f;
+                case SCurrent:
+                    return cfg.FarCurrent != 0 && index >= 0 && index < 3 ? br.CurrentHeld[(3 * part + index) * N + i] : 0f;
                 default: return 0f;
             }
         }
@@ -13146,6 +13163,14 @@ namespace Evosim.Farm.Gpu.Dbl
         public readonly Col<float> NoseHeld;
         public readonly bool Nose;
         public long HeldBytesUp;
+        // D270's held far senses, filled from each live slot's CreatureSenses.HeldFar at every block and uploaded with the
+        // block's columns: PlumeHeld four floats a link (the carried leaf smell's strength and its gradient's three axes),
+        // CurrentHeld three (the water's velocity over the ground in the part's frame). Each is a column of its own with its
+        // switch on, and a one-cell stub that belongs to no copy list without it, so a world with both off moves no byte of
+        // either (FarHeldBytesUp counts them).
+        public readonly Col<float> PlumeHeld, CurrentHeld;
+        public readonly bool FarPlume, FarCurrent;
+        public long FarHeldBytesUp;
         public readonly Seg<float> Bend;
         public readonly Seg<double> EPower, EBend, EPowerTarget, EBendTarget, EPowerRate, EBendRate, EHoldLeft;
 
@@ -13171,7 +13196,7 @@ namespace Evosim.Farm.Gpu.Dbl
         public readonly Seg<double> TTime;
         public readonly Seg<int> Enabled, Held, TCursor, FirstBadLink, Resized, Poison, Pending;
 
-        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower, bool shapedMass, bool strokeAssembly, bool mirroredDrive, bool nose)
+        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower, bool shapedMass, bool strokeAssembly, bool mirroredDrive, bool nose, bool farPlume, bool farCurrent)
         {
             _acc = acc;
             _stream = stream;
@@ -13234,6 +13259,30 @@ namespace Evosim.Farm.Gpu.Dbl
             else
             {
                 NoseHeld = new Col<float>(acc, stream, 1, 1);
+            }
+
+            FarPlume = farPlume;
+            if (farPlume)
+            {
+                PlumeHeld = new Col<float>(acc, stream, 4 * L, Cap);
+                _all.Add(PlumeHeld);
+                _block.Add(PlumeHeld);
+            }
+            else
+            {
+                PlumeHeld = new Col<float>(acc, stream, 1, 1);
+            }
+
+            FarCurrent = farCurrent;
+            if (farCurrent)
+            {
+                CurrentHeld = new Col<float>(acc, stream, 3 * L, Cap);
+                _all.Add(CurrentHeld);
+                _block.Add(CurrentHeld);
+            }
+            else
+            {
+                CurrentHeld = new Col<float>(acc, stream, 1, 1);
             }
 
             BasePos = C<Real>(3, Down); BaseCarry = C<Real>(3, Down); BaseRot = C<Real>(4, Down);
@@ -13400,6 +13449,8 @@ namespace Evosim.Farm.Gpu.Dbl
             }
 
             if (Nose) HeldBytesUp += NoseHeld.BytesFor(used);
+            if (FarPlume) FarHeldBytesUp += PlumeHeld.BytesFor(used);
+            if (FarCurrent) FarHeldBytesUp += CurrentHeld.BytesFor(used);
 
             Dirty = false;
             _packCount = 0;
@@ -13503,6 +13554,7 @@ namespace Evosim.Farm.Gpu.Dbl
         public SBrain BrainSet => new SBrain
         {
             S = S.View, Mem = Mem.View, Reserve = Reserve.View, Damage = Damage.View, NoseHeld = NoseHeld.View,
+            PlumeHeld = PlumeHeld.View, CurrentHeld = CurrentHeld.View,
             Parity = Parity.View, Contact = Contact.View, Gates = Gates.View, Clock = Clock.View,
         };
 
@@ -13517,6 +13569,8 @@ namespace Evosim.Farm.Gpu.Dbl
         {
             foreach (IColumn c in _all) c.Dispose();
             if (!Nose) NoseHeld.Dispose();
+            if (!FarPlume) PlumeHeld.Dispose();
+            if (!FarCurrent) CurrentHeld.Dispose();
             _packSlots.Dispose();
         }
     }
@@ -13598,6 +13652,16 @@ namespace Evosim.Farm.Gpu.Dbl
         public long HeldBytesUp
         {
             get { long n = 0; foreach (ClassSet set in _classes) n += set.HeldBytesUp; return n; }
+        }
+
+        public long FarHeldCells
+        {
+            get { long n = 0; foreach (ClassSet set in _classes) n += set.PlumeHeld.Host.LongLength + set.CurrentHeld.Host.LongLength; return n; }
+        }
+
+        public long FarHeldBytesUp
+        {
+            get { long n = 0; foreach (ClassSet set in _classes) n += set.FarHeldBytesUp; return n; }
         }
 
         public long NoseFlagRows
@@ -13804,7 +13868,7 @@ namespace Evosim.Farm.Gpu.Dbl
             _classes = new ClassSet[options.ClassLinks.Length];
             for (int k = 0; k < _classes.Length; k++)
             {
-                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower, world.ShapedMass, world.StrokeAssembly, world.MirroredDrive, world.Nose);
+                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower, world.ShapedMass, world.StrokeAssembly, world.MirroredDrive, world.Nose, world.LeafPlume, world.CurrentSense);
             }
 
             int oc = options.OverlapCap;
@@ -14153,6 +14217,7 @@ namespace Evosim.Farm.Gpu.Dbl
                 CreatureContact = w.CreatureContact ? 1 : 0, OffsetTorque = w.OffsetTorque ? 1 : 0,
                 ShapedMass = w.ShapedMass ? 1 : 0,
                 MirrorDrive = w.MirroredDrive ? 1 : 0, Nose = w.Nose ? 1 : 0,
+                FarPlume = w.LeafPlume ? 1 : 0, FarCurrent = w.CurrentSense ? 1 : 0,
                 TrueShape = w.TrueShape ? 1 : 0, AtPoint = w.AtPoint ? 1 : 0, CoincidentApart = w.CoincidentApart ? 1 : 0,
                 StrokeAssembly = w.StrokeAssembly ? 1 : 0,
                 BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
@@ -15745,6 +15810,16 @@ namespace Evosim.Farm.Gpu.Dbl
                 }
             }
 
+            // D270: the card copies what HoldFar held at the metabolic step (CreatureSenses.HeldFar). A bench's body, with
+            // HeldSniff off, holds its far readings afresh on every step instead, which the card does not, and would part from
+            // the solver. The farm sets HeldSniff on every body.
+            if ((_w.LeafPlume || _w.CurrentSense) && !c.Senses.HeldSniff)
+            {
+                throw new InvalidOperationException(
+                    "Body " + c.Id + " reads the carried leaf smell or the ground current afresh on every step (HeldSniff is off); " +
+                    "the gpu engine reads only what HoldFar held. Set HeldSniff and call HoldFar, as the farm does.");
+            }
+
             if (c.Drive.BendAndPower)
             {
                 for (int l = 0; l < links; l++)
@@ -16196,6 +16271,35 @@ namespace Evosim.Farm.Gpu.Dbl
                     s.NoseHeld.Host[(held + 3) * N + i] = directionX;
                     s.NoseHeld.Host[(held + 4) * N + i] = directionY;
                     s.NoseHeld.Host[(held + 5) * N + i] = directionZ;
+                }
+            }
+
+            // D270: every link's held far senses, as Simulation's HoldFar left them in the body's CreatureSenses before this
+            // block (a block never crosses a metabolic step). The seven floats are copied as they stand, a link's own: in a
+            // nose world HoldFar has left every part but a nose at zero for the plume, as the host's Read reads it, so no link
+            // is skipped and a slot's earlier body leaves nothing behind. A switch that is off sizes no column.
+            if (_w.LeafPlume || _w.CurrentSense)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    senses.HeldFar(l, out float plume, out float plumeX, out float plumeY, out float plumeZ,
+                                   out float currentX, out float currentY, out float currentZ);
+                    if (_w.LeafPlume)
+                    {
+                        int held = 4 * l;
+                        s.PlumeHeld.Host[held * N + i] = plume;
+                        s.PlumeHeld.Host[(held + 1) * N + i] = plumeX;
+                        s.PlumeHeld.Host[(held + 2) * N + i] = plumeY;
+                        s.PlumeHeld.Host[(held + 3) * N + i] = plumeZ;
+                    }
+
+                    if (_w.CurrentSense)
+                    {
+                        int held = 3 * l;
+                        s.CurrentHeld.Host[held * N + i] = currentX;
+                        s.CurrentHeld.Host[(held + 1) * N + i] = currentY;
+                        s.CurrentHeld.Host[(held + 2) * N + i] = currentZ;
+                    }
                 }
             }
 

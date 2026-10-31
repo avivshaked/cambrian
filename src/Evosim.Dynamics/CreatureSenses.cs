@@ -82,6 +82,17 @@ namespace Evosim.Dynamics
         private readonly float[] _leafDirection;
         private readonly float _leafHalfScale;
 
+        // D270: the carried leaf smell (strength, and its gradient's three axes) and the water's velocity over the
+        // ground (three axes), held once a metabolic step by HoldFar.
+        private readonly bool _readsPlume;
+        private readonly bool _readsPlumeGradient;
+        private readonly bool _readsCurrent;
+        private readonly float[] _plume;
+        private readonly float[] _plumeGradient;
+        private readonly float[] _current;
+        private readonly float _plumeHalfScale;
+        private readonly float _currentHalfSpeed;
+
         private readonly float[] _depth;
         private readonly float[] _up;
         private readonly float[] _angle;
@@ -128,6 +139,12 @@ namespace Evosim.Dynamics
         /// Null reads 0, the smell of no living leaf.
         /// </summary>
         public ScentField LeafScent { get; set; }
+
+        /// <summary>
+        /// The field <see cref="SensorChannel.LeafPlume"/> and <see cref="SensorChannel.LeafPlumeGradient"/> read
+        /// — <c>World.LeafPlume</c> (D270). Null reads 0, the smell of no carried leaf.
+        /// </summary>
+        public LeafPlumeField LeafPlume { get; set; }
 
         /// <summary>
         /// The creature's own account, for <see cref="SensorChannel.Energy"/> — the farm's
@@ -205,6 +222,15 @@ namespace Evosim.Dynamics
             _leafDirection = new float[3 * body.Links];
             _leafHalfScale = (float)System.Math.Max(1e-6, config.LeafScentHalfScaleSquareMetres);
 
+            _readsPlume = Brain.MaskReads(_mask, SensorChannel.LeafPlume);
+            _readsPlumeGradient = Brain.MaskReads(_mask, SensorChannel.LeafPlumeGradient);
+            _readsCurrent = Brain.MaskReads(_mask, SensorChannel.GroundCurrent);
+            _plume = new float[body.Links];
+            _plumeGradient = new float[3 * body.Links];
+            _current = new float[3 * body.Links];
+            _plumeHalfScale = (float)System.Math.Max(1e-6, config.LeafPlumeHalfScale);
+            _currentHalfSpeed = (float)System.Math.Max(1e-6, config.CurrentSenseHalfSpeedMetresPerSecond);
+
             _worldDepthMetres = (float)System.Math.Max(0.001, config.WorldDepthMetres);
             _chemicalHalfScale =
                 (float)System.Math.Max(1e-6, config.ChemicalHalfScaleJoulesPerCubicMetre);
@@ -269,9 +295,162 @@ namespace Evosim.Dynamics
             directionZ = _leafDirection[3 * link + 2];
         }
 
+        /// <summary>
+        /// One link's held far readings exactly as the last <see cref="HoldFar"/> left them: the carried leaf
+        /// smell's strength and its gradient's three axes, then the ground current's three. The card's port copies
+        /// these into its kernel, so it reads the floats the solver's brain would. A link out of range reads zeros.
+        /// </summary>
+        public void HeldFar(int link, out float plume, out float plumeX, out float plumeY, out float plumeZ,
+                            out float currentX, out float currentY, out float currentZ)
+        {
+            if (link < 0 || link >= _plume.Length)
+            {
+                plume = plumeX = plumeY = plumeZ = currentX = currentY = currentZ = 0f;
+                return;
+            }
+
+            plume = _plume[link];
+            plumeX = _plumeGradient[3 * link];
+            plumeY = _plumeGradient[3 * link + 1];
+            plumeZ = _plumeGradient[3 * link + 2];
+            currentX = _current[3 * link];
+            currentY = _current[3 * link + 1];
+            currentZ = _current[3 * link + 2];
+        }
+
+        /// <summary>
+        /// D270's far readings: the carried leaf smell and the water's velocity over the ground, held until the
+        /// next call. The farm calls it for every body once per metabolic step, serially in list order, at the
+        /// point it sniffs; without <see cref="HeldSniff"/> (a bench) <see cref="Sample"/> calls it every step.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Draws no noise.</b> It reads the poses, <see cref="Creature.Water"/> and the plume, and nothing
+        /// writes those between the metabolic step and the physics block, so a resumed world holds what the
+        /// unbroken one did (<c>Water</c> and the poses are in the body's state).
+        /// </para>
+        /// <para>
+        /// <b>Where.</b> The current is read on every part. The plume is read at a part's centre, and in a world
+        /// whose table lists the nose by noses alone, at the tip <see cref="ReadNoses"/> finds, without noise
+        /// (D235, D270): every other part reads zero. The strength is the density interpolated between cell centres
+        /// through <c>s / (s + k)</c>; the gradient is the plume's, turned into the part's frame as the leaf
+        /// smell's is (D234), made unit length and scaled by the strength; the current is the part's local velocity
+        /// <c>v / (|v| + h)</c>, whose length is speed over speed plus h. A part that is not finite reads zeros.
+        /// </para>
+        /// </remarks>
+        public void HoldFar()
+        {
+            bool plume = (_readsPlume || _readsPlumeGradient) && LeafPlume != null;
+            bool current = _readsCurrent;
+            if (!plume && !current) return;
+
+            bool nosed = _nose != null;
+            Phenotype phenotype = _body.Phenotype;
+
+            for (int b = 0; b < _body.Links; b++)
+            {
+                Vec3 centre = Vec3.Read(_body.Position, 3 * b);
+                double finite = centre.X + centre.Y + centre.Z;
+                if (double.IsNaN(finite) || double.IsInfinity(finite))
+                {
+                    ZeroFar(b);
+                    continue;
+                }
+
+                Mat3 rotation = Mat3.Read(_body.RotationMatrix, 9 * b);
+
+                if (current)
+                {
+                    Vec3 water = Vec3.Read(_body.Water, 3 * b);
+                    double wet = water.X + water.Y + water.Z;
+                    if (double.IsNaN(wet) || double.IsInfinity(wet))
+                    {
+                        SetCurrent(b, 0.0, 0.0, 0.0);
+                    }
+                    else
+                    {
+                        // D234: a reflected part reads the water in the frame its geometry stands in, as the flow is.
+                        Vec3 local = _body.ReflectFrameVector(b, rotation.TransposedTimes(water));
+                        double scale = 1.0 / (local.Magnitude + _currentHalfSpeed);
+                        SetCurrent(b, local.X * scale, local.Y * scale, local.Z * scale);
+                    }
+                }
+
+                if (!plume) continue;
+
+                if (nosed && !_isNose[b])
+                {
+                    SetPlume(b, 0f, 0.0, 0.0, 0.0);
+                    continue;
+                }
+
+                // A nose at its tip, as a mouth's is found and as ReadNoses poses it; any other part at its centre.
+                Vec3 at = centre;
+                if (nosed)
+                {
+                    Float3 t = MouthPoint.Local(phenotype, b);
+                    at = centre + rotation * new Vec3(t.X, t.Y, t.Z);
+                }
+
+                LeafPlume.Sample(
+                    new Float3((float)at.X, (float)at.Y, (float)at.Z),
+                    out double density, out double gx, out double gy, out double gz);
+
+                float strength = density > 0.0 ? (float)(density / (density + _plumeHalfScale)) : 0f;
+                if (!(strength > 0f))
+                {
+                    SetPlume(b, 0f, 0.0, 0.0, 0.0);
+                    continue;
+                }
+
+                if (!_readsPlumeGradient)
+                {
+                    SetPlume(b, strength, 0.0, 0.0, 0.0);
+                    continue;
+                }
+
+                // D234: reflected as SampleLeaf reflects it.
+                Vec3 g = _body.ReflectFrameVector(b, rotation.TransposedTimes(new Vec3(gx, gy, gz)));
+                double length = g.Magnitude;
+                if (length > 0.0)
+                {
+                    double scale = strength / length;
+                    SetPlume(b, strength, g.X * scale, g.Y * scale, g.Z * scale);
+                }
+                else
+                {
+                    SetPlume(b, strength, 0.0, 0.0, 0.0);
+                }
+            }
+        }
+
+        private void SetPlume(int b, float strength, double x, double y, double z)
+        {
+            _plume[b] = strength;
+            _plumeGradient[3 * b] = (float)x;
+            _plumeGradient[3 * b + 1] = (float)y;
+            _plumeGradient[3 * b + 2] = (float)z;
+        }
+
+        private void SetCurrent(int b, double x, double y, double z)
+        {
+            _current[3 * b] = (float)x;
+            _current[3 * b + 1] = (float)y;
+            _current[3 * b + 2] = (float)z;
+        }
+
+        private void ZeroFar(int b)
+        {
+            SetPlume(b, 0f, 0.0, 0.0, 0.0);
+            SetCurrent(b, 0.0, 0.0, 0.0);
+        }
+
         /// <summary>Reads the body. Call once per step, before <c>Brain.Step</c>.</summary>
         public void Sample()
         {
+            // D270: a bench holds nothing between steps, so it reads the far senses on every one.
+            if (!HeldSniff) HoldFar();
+
             // Once per creature rather than per part, as the farm takes it: SecondsOfReserve is a
             // division over two fields the metabolic step writes, so it changes fifty times more
             // slowly than it is read here.
@@ -685,6 +864,17 @@ namespace Evosim.Dynamics
                     return index >= 0 && index < 3 && partIndex < _leaf.Length
                         ? _leafDirection[partIndex * 3 + index]
                         : 0f;
+
+                // D270: the carried leaf smell, its gradient in the part's own frame, and the water's velocity over
+                // the ground in the part's own frame, as the last HoldFar left them.
+                case SensorChannel.LeafPlume:
+                    return _plume[partIndex];
+
+                case SensorChannel.LeafPlumeGradient:
+                    return index >= 0 && index < 3 ? _plumeGradient[partIndex * 3 + index] : 0f;
+
+                case SensorChannel.GroundCurrent:
+                    return index >= 0 && index < 3 ? _current[partIndex * 3 + index] : 0f;
 
                 // Already a share of the part's own pool, so it needs no scale of its own: 0 is
                 // untouched, 1 is a part taken from full to nothing in one step, and it is clamped

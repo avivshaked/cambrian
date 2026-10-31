@@ -1071,6 +1071,48 @@ namespace Evosim.Core
         private int _leafSourceCount;
 
         /// <summary>
+        /// D270's carried leaf smell; null unless <see cref="RunConfig.LeafPlume"/>. A grid of the lit leaf area
+        /// living leaves have deposited, stirred and carried by the water and slowly lost, stepped once a
+        /// metabolic step after the matter is advected (<see cref="StepLeafPlume"/>).
+        /// </summary>
+        /// <remarks>
+        /// <b>Its stock is state</b>, written to the checkpoint beside the water only when the plume is on; the
+        /// gradient table is derived from it and rebuilt at a restore. The sources it deposits are gathered afresh
+        /// every step, so no source needs to be carried for it.
+        /// </remarks>
+        public LeafPlumeField LeafPlume { get; }
+
+        /// <summary>What the leaves have deposited into the plume so far, m2 s.</summary>
+        public double LeafPlumeEmittedTotal { get; private set; }
+
+        /// <summary>What the plume's lifetime has taken back so far, m2 s. Emitted less this is what it holds.</summary>
+        public double LeafPlumeDecayedTotal { get; private set; }
+
+        /// <summary>
+        /// D270: every living leaf feeds the plume its lit area times the step, the water stirs and carries it,
+        /// and a lifetime takes a share. Where no leaf smell gathered this step's sources, they are gathered here.
+        /// </summary>
+        private void StepLeafPlume(float seconds)
+        {
+            if (LeafPlume == null) return;
+
+            // Without the leaf smell nothing else gathers the sources, and a count left in hand would be written
+            // to the checkpoint, which a world with no leaf smell refuses to read. So they are gathered, used and
+            // dropped.
+            bool gathered = LeafScent == null;
+            if (gathered) GatherLeafSources();
+
+            (double emitted, double decayed) = LeafPlume.Step(
+                _leafSources, _leafSourceCount, seconds, Config.MatterMixingDiffusivity, Config.Current,
+                ElapsedSeconds, Config.LeafPlumeLifetimeSeconds);
+
+            if (gathered) _leafSourceCount = 0;
+
+            LeafPlumeEmittedTotal += emitted;
+            LeafPlumeDecayedTotal += decayed;
+        }
+
+        /// <summary>
         /// Takes every living body with photosynthetic tissue as a source: its point, and the lit
         /// area of that tissue as the light pass charges it (the silhouette cap and, where light
         /// goes by exposure, each part's exposure included). A body with none adds nothing.
@@ -1981,6 +2023,7 @@ namespace Evosim.Core
             ValidateMatterInflux(config, patchCount);
             ValidateIslandBloom(config);
             ValidateIslandFarSmell(config);
+            ValidateLeafPlume(config);
 
             Field = new LightField(
                 Light, config.WorldAreaSquareMetres, config.LightLayerMetres,
@@ -2070,6 +2113,16 @@ namespace Evosim.Core
                     config.WorldAreaSquareMetres, config.MatterSinkMetresPerSecond,
                     config.WorldDepthMetres, 0f, 0f, patchCount, config.FieldMatterCellMetres,
                     patchesAcross, config.WorldShape, TankRadiusMetres, Bed, Reefs, Coral);
+
+                // D270: its own, much coarser cell, no sink and no refuge, masked against the same BedShape. The
+                // grid refuses a cell that does not divide the box.
+                if (config.LeafPlume != LeafPlumeForm.None)
+                {
+                    LeafPlume = new LeafPlumeField(new GridField(
+                        config.WorldAreaSquareMetres, 0f, config.WorldDepthMetres, 0f, 0f, patchCount,
+                        config.LeafPlumeCellMetres, patchesAcross, config.WorldShape, TankRadiusMetres, Bed, Reefs,
+                        Coral));
+                }
             }
             else
             {
@@ -3301,6 +3354,42 @@ namespace Evosim.Core
             }
         }
 
+        /// <summary>
+        /// D270's carried leaf smell lives on a grid in the shared volume, so it needs the grid field and shared
+        /// space; it is refused in a tank (the nursery's tank comes later, if the screen asks for it); and it
+        /// replaces D251's far smell, so the two are refused together. Nothing is checked while it is off. A cell
+        /// that does not divide the box is the grid's own refusal, at the build.
+        /// </summary>
+        private static void ValidateLeafPlume(RunConfig config)
+        {
+            if (config.LeafPlume == LeafPlumeForm.None) return;
+
+            if (config.FieldModel != MatterField.Grid || !config.SharedSpace)
+            {
+                throw new ArgumentException(
+                    $"LeafPlume is {config.LeafPlume} (D270), but the plume is a grid in the shared volume and this " +
+                    $"world's FieldModel is {config.FieldModel} with SharedSpace {config.SharedSpace} " +
+                    "(it needs FieldModel Grid and SharedSpace).",
+                    nameof(config));
+            }
+
+            if (config.WorldShape == WorldShape.Tank)
+            {
+                throw new ArgumentException(
+                    $"LeafPlume is {config.LeafPlume} (D270), but WorldShape is Tank. The plume is built for the box " +
+                    "and is refused in a tank for now.",
+                    nameof(config));
+            }
+
+            if (config.IslandFarSmell == IslandFarSmell.Leaves)
+            {
+                throw new ArgumentException(
+                    $"LeafPlume is {config.LeafPlume}, but IslandFarSmell is Leaves. D270's carried smell replaces " +
+                    "D251's far smell, and the two are not run together.",
+                    nameof(config));
+            }
+        }
+
         private static void ValidateMatterInflux(RunConfig config, int patchCount)
         {
             if (!(config.MatterInfluxPerSecond > 0f)) return;
@@ -3782,6 +3871,10 @@ namespace Evosim.Core
             WorldPhaseProbe.Mark(WorldPhaseProbe.AdvectSnow);
             Matter.Advect(Config.Current, ElapsedSeconds, seconds, Matter.PatchWidthMetres);
             WorldPhaseProbe.Mark(WorldPhaseProbe.AdvectMatter);
+
+            // D270. The carried leaf smell, after the matter is carried and on the same clock. Returns at once
+            // with the plume off, which is every recorded world.
+            StepLeafPlume(seconds);
 
             // D074. After everything that moves matter within the world, so what the floor holds
             // when burial is charged is what settling, mixing and advection actually left there —

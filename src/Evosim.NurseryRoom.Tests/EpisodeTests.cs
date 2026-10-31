@@ -92,12 +92,12 @@ namespace Evosim.NurseryRoom.Tests
         public static void WriteUnloadableWorld(string root)
         {
             string nursery = Path.Combine(root, "rounds", "nursery");
-            string config = File.ReadAllText(Path.Combine(nursery, "configs", "783c998afb255a10.json")).Replace("\r\n", "\n");
+            string config = File.ReadAllText(Path.Combine(nursery, "configs", "6d780d73f559b449.json")).Replace("\r\n", "\n");
             string line = "    \"" + MissingKey + "\": 0,\n";
             Assert.Contains(line, config);
             File.WriteAllText(Path.Combine(nursery, "configs", "old-world.json"), config.Replace(line, ""));
             string recipe = File.ReadAllText(Path.Combine(nursery, "brain2-w11.json")).Replace("\r\n", "\n");
-            string from = "\"config\": \"rounds/nursery/configs/783c998afb255a10.json\"";
+            string from = "\"config\": \"rounds/nursery/configs/6d780d73f559b449.json\"";
             Assert.Contains(from, recipe);
             File.WriteAllText(Path.Combine(nursery, "old-world-recipe.json"),
                 recipe.Replace(from, "\"config\": \"rounds/nursery/configs/old-world.json\"").Replace("\"name\": \"brain2-w11\"", "\"name\": \"old-world\""));

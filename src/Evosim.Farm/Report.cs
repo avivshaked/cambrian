@@ -664,6 +664,19 @@ namespace Evosim.Farm
                          " m half " + F(config.LeafScentHalfScaleSquareMetres) + " m2";
             }
 
+            // D270: the carried leaf smell and the current sense, only when on, so every recorded header reads as it did.
+            if (config.LeafPlume != LeafPlumeForm.None)
+            {
+                token += " · plume " + config.LeafPlume.ToString().ToLowerInvariant() +
+                         " cell " + F(config.LeafPlumeCellMetres) + " m life " + F(config.LeafPlumeLifetimeSeconds) +
+                         " s half " + F(config.LeafPlumeHalfScale) + " m2 s/m3";
+            }
+
+            if (config.CurrentSense)
+            {
+                token += " · current-sense half " + F(config.CurrentSenseHalfSpeedMetresPerSecond) + " m/s";
+            }
+
             if (config.UnbittenDeathsLeaveNoCorpse) token += " · unbitten burnt";
 
             if (config.CellTypes.Contains(CellTypeIds.Consumer))
@@ -883,6 +896,11 @@ namespace Evosim.Farm
                     case SensorChannel.BedTouch: names[i] = "bedtouch"; break;
                     case SensorChannel.LeafScent: names[i] = "leafscent"; break;
                     case SensorChannel.LeafScentDirection: names[i] = "leafdir"; break;
+
+                    // D270: the carried leaf smell's two and the current sense's one.
+                    case SensorChannel.LeafPlume: names[i] = "plume"; break;
+                    case SensorChannel.LeafPlumeGradient: names[i] = "plumegrad"; break;
+                    case SensorChannel.GroundCurrent: names[i] = "current"; break;
                     default: names[i] = pool[i].ToString().ToLowerInvariant(); break;
                 }
             }

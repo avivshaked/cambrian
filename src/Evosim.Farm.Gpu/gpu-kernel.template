@@ -141,6 +141,11 @@ namespace __NS__
         // (6 * link + k) * N + slot, filled on the host from CreatureSenses at every block. A one-cell stub, never
         // filled or read, in a world without the nose (cfg.Nose is 0).
         public ArrayView<float> NoseHeld;
+        // D270: each link's held far senses, filled on the host from CreatureSenses.HeldFar at every block. PlumeHeld is four
+        // floats a link (the carried leaf smell's strength, then its gradient's x, y, z) and CurrentHeld three (the water's
+        // velocity over the ground in the part's frame), rows (4 * link + k) * N + slot and (3 * link + k) * N + slot. Each
+        // is a one-cell stub, never filled or read, with its switch off (cfg.FarPlume, cfg.FarCurrent are 0).
+        public ArrayView<float> PlumeHeld, CurrentHeld;
         public ArrayView<int> Parity, Contact, Gates;
         public ArrayView<double> Clock;
     }
@@ -276,6 +281,8 @@ namespace __NS__
         public float ReleaseBelow;   // D268: a hold output below this lets the grip go (AnchoringCell.ReleaseBelow)
         public int ShapedMass;   // D229: the limb pushes take the part's shaped added mass (Fluid.AddedMassOf)
         public int MirrorDrive;  // D234: a mirrored twin's drive and senses are read through its link's mirror mask
+        public int FarPlume;     // D270: the carried leaf smell is on; a part reads its held strength and gradient (SBrain.PlumeHeld)
+        public int FarCurrent;   // D270: the current sense is on; a part reads its held ground current (SBrain.CurrentHeld)
         public int Nose;         // D235: only nose links smell, and they read the held sniff the host left (SBrain.NoseHeld); no field is read for a smell
         public int AnyRemains;   // D220: 1 for a block in which some body is remains; 0 reads no remains flag at all
         public int TrueShape;    // D228: a part touches as its convex core with a margin (SolverConfig.ContactShape)
@@ -632,7 +639,8 @@ namespace __NS__
         private const int SDepth = 9, SUp = 3, SJointAngle = 0, SJointRate = 1, SChemical = 6, SEnergy = 7,
             SFlow = 8, SContact = 2, SDamage = 5, SScent = 10,
             SStroke = 11, SHold = 12, SRamp = 13, SRock = 14, SLeaf = 15, SLeafDir = 16,
-            SGripping = 17, SGripPull = 18;
+            SGripping = 17, SGripPull = 18,
+            SLeafPlume = 19, SLeafPlumeGrad = 20, SCurrent = 21;
 
         // ============================================================== the grid
 
@@ -5565,7 +5573,8 @@ namespace __NS__
             // D235: in a nose world a part that is not a nose reads zero on the four smell channels, under either
             // brain (SensorChannels.IsSmell): the nose links are the word's bits 16 and up.
             if (cfg.Nose != 0 && ((rock >> (16 + part)) & 1) == 0 &&
-                (channel == SChemical || channel == SScent || channel == SLeaf || channel == SLeafDir))
+                (channel == SChemical || channel == SScent || channel == SLeaf || channel == SLeafDir ||
+                 channel == SLeafPlume || channel == SLeafPlumeGrad))
             {
                 return 0f;
             }
@@ -5588,6 +5597,14 @@ namespace __NS__
                 case SRock: return ((rock >> part) & 1) != 0 ? 1f : 0f;
                 case SLeaf: return sLeaf[4 * part];
                 case SLeafDir: return index >= 0 && index < 3 ? sLeaf[4 * part + 1 + index] : 0f;
+
+                // D270: what the host's last HoldFar left in the part's own frame (CreatureSenses.Read), copied as it
+                // stands. Nothing is computed here, and a world with the switch off reads zero as the host does.
+                case SLeafPlume: return cfg.FarPlume != 0 ? br.PlumeHeld[(4 * part) * N + i] : 0f;
+                case SLeafPlumeGrad:
+                    return cfg.FarPlume != 0 && index >= 0 && index < 3 ? br.PlumeHeld[(4 * part + 1 + index) * N + i] : 0f;
+                case SCurrent:
+                    return cfg.FarCurrent != 0 && index >= 0 && index < 3 ? br.CurrentHeld[(3 * part + index) * N + i] : 0f;
                 default: return 0f;
             }
         }

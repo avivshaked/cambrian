@@ -57,6 +57,15 @@ namespace Evosim.Farm.Gpu
         /// <summary>D235, for the tests: the rows of the nose-flag columns across the classes (one a class in a world without the nose, else the class's links).</summary>
         long NoseFlagRows { get; }
 
+        /// <summary>
+        /// D270, for the tests: the cells of the far-sense held columns (the plume's four floats a link and the current's three) across
+        /// the classes: two a class, a cell each, when both switches are off.
+        /// </summary>
+        long FarHeldCells { get; }
+
+        /// <summary>D270, for the tests: the bytes of the far-sense held columns the blocks have uploaded so far (none with both switches off).</summary>
+        long FarHeldBytesUp { get; }
+
         /// <summary>The scent's fill on the card from the world's corpses (GpuScent), under <see cref="GpuOptions.Scent"/>.</summary>
         void FillScentOnCard(World world);
     }
@@ -263,11 +272,12 @@ namespace Evosim.Farm.Gpu
                 stepped.ContactShape != built.ContactShape ||
                 stepped.MirroredDrive != built.MirroredDrive ||
                 (stepped.Nose != null) != (built.Nose != null) ||
+                stepped.LeafPlume != built.LeafPlume || stepped.CurrentSense != built.CurrentSense ||
                 stepped.SeamLengthMetres != built.SeamLengthMetres || stepped.SeamWidthMetres != built.SeamWidthMetres)
             {
                 throw new InvalidOperationException(
                     "The gpu engine was built for one world and handed another to step: its current, " +
-                    "bed, reefs, step, pace factor, contact model, contact shape, added-mass law, stroke assembly, mirrored-joint drive or nose differ from the ones its kernels read.");
+                    "bed, reefs, step, pace factor, contact model, contact shape, added-mass law, stroke assembly, mirrored-joint drive, nose, carried leaf smell or current sense differ from the ones its kernels read.");
             }
         }
 
@@ -331,6 +341,10 @@ namespace Evosim.Farm.Gpu
         internal long HeldBytesUp => _runner.HeldBytesUp;
 
         internal long NoseFlagRows => _runner.NoseFlagRows;
+
+        internal long FarHeldCells => _runner.FarHeldCells;
+
+        internal long FarHeldBytesUp => _runner.FarHeldBytesUp;
 
         /// <summary>The header's words after <c>engine</c>: <c>gpu single cpu-accelerator g4 classes 2/4/8/16</c>.</summary>
         public string HeaderToken() =>

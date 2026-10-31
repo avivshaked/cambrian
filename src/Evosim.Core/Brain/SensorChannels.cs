@@ -111,6 +111,8 @@ namespace Evosim.Core
                 case SensorChannel.Hold:
                 case SensorChannel.Ramp:
                 case SensorChannel.LeafScentDirection:
+                case SensorChannel.LeafPlumeGradient:
+                case SensorChannel.GroundCurrent:
                     return 3;
                 default:
                     return 1;
@@ -119,11 +121,20 @@ namespace Evosim.Core
 
         /// <summary>
         /// True for the chemical senses a nose carries in a world whose table lists it (D235): the
-        /// leaf smell in both forms, the carrion smell and the chemical sense.
+        /// leaf smell in both forms, the carrion smell, the chemical sense and the carried leaf smell (D270)
+        /// in both of its channels. The ground current is no smell: every part carries it.
         /// </summary>
         public static bool IsSmell(this SensorChannel channel) =>
             channel == SensorChannel.LeafScent || channel == SensorChannel.LeafScentDirection ||
-            channel == SensorChannel.Scent || channel == SensorChannel.Chemical;
+            channel == SensorChannel.Scent || channel == SensorChannel.Chemical ||
+            channel == SensorChannel.LeafPlume || channel == SensorChannel.LeafPlumeGradient;
+
+        /// <summary>
+        /// True for the smells that carry a direction, three axes read in the part's own frame: the leaf smell's
+        /// direction form and the carried smell's gradient (D270). A nose graft reframes their links.
+        /// </summary>
+        public static bool IsDirectionalSmell(this SensorChannel channel) =>
+            channel == SensorChannel.LeafScentDirection || channel == SensorChannel.LeafPlumeGradient;
 
         /// <summary>Draws a channel and a valid index for it, from the run's own pool.</summary>
         /// <param name="rng">The stream the draw comes from.</param>

@@ -276,6 +276,31 @@ namespace Evosim.Core
         /// only, as <see cref="Gripping"/> is.
         /// </summary>
         GripPull = 18,
+
+        /// <summary>
+        /// The carried smell of living leaves at this part (D270): the plume's density at the part's cell,
+        /// squashed as <c>s / (s + k)</c> with <c>RunConfig.LeafPlumeHalfScale</c> as <c>k</c>. Kept apart from
+        /// <see cref="LeafScent"/>, which is the leaves' own cones. <see cref="NeuronInput.Index"/> is ignored.
+        /// A smell: in a nose world only noses carry it (D235).
+        /// </summary>
+        /// <remarks>A port id hashes this integer, so the number is fixed once a genome is recorded with it.</remarks>
+        LeafPlume = 19,
+
+        /// <summary>
+        /// The plume's gradient at this part (D270), in the part's own frame as <see cref="Flow"/> is read, made
+        /// unit length and scaled by what <see cref="LeafPlume"/> would read. Zero where either is.
+        /// <see cref="NeuronInput.Index"/> is the axis, 0 to 2. A smell, as <see cref="LeafPlume"/> is.
+        /// </summary>
+        LeafPlumeGradient = 20,
+
+        /// <summary>
+        /// The water's velocity over the ground in this part's own frame (D270), read as
+        /// <c>v / (|v| + h)</c> with <c>RunConfig.CurrentSenseHalfSpeedMetresPerSecond</c> as <c>h</c>. Unlike
+        /// <see cref="Flow"/> it is the water's velocity and not its velocity relative to the part, so a body
+        /// drifting with the current reads it. <see cref="NeuronInput.Index"/> is the axis, 0 to 2. No smell:
+        /// every part carries it.
+        /// </summary>
+        GroundCurrent = 21,
     }
 
     /// <summary>

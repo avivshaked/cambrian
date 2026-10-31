@@ -320,6 +320,13 @@ namespace Evosim.Core
                     " cannot record them.");
             }
 
+            // Nor has any older layout a place for D270's plume.
+            if (layout < StateVersion && LeafPlume != null)
+            {
+                throw new InvalidOperationException(
+                    "This world has the carried leaf smell (D270), and version " + layout + " cannot record it.");
+            }
+
             StateIo.Tag(w, "WRLD");
             w.Write(layout);
             w.Write(Seed);
@@ -640,6 +647,15 @@ namespace Evosim.Core
 
             WriteField(w, Nutrients);
             WriteField(w, Matter);
+
+            // D270's plume, only with it on, so a world without it writes the bytes it wrote.
+            if (LeafPlume != null)
+            {
+                StateIo.Tag(w, "PLUM");
+                LeafPlume.WriteState(w);
+                w.Write(LeafPlumeEmittedTotal);
+                w.Write(LeafPlumeDecayedTotal);
+            }
 
             StateIo.Tag(w, "WEND");
         }
@@ -1059,6 +1075,23 @@ namespace Evosim.Core
 
             ReadField(r, Nutrients);
             ReadField(r, Matter);
+
+            // D270's plume: the same config asks the same question the writer did, then the table of slopes
+            // is rebuilt from the stock.
+            if (LeafPlume != null)
+            {
+                if (version != StateVersion)
+                {
+                    throw new InvalidDataException(
+                        "This world has the carried leaf smell (D270), and a layout " + version +
+                        " checkpoint cannot hold its stock.");
+                }
+
+                StateIo.Tag(r, "PLUM");
+                LeafPlume.ReadState(r);
+                LeafPlumeEmittedTotal = r.ReadDouble();
+                LeafPlumeDecayedTotal = r.ReadDouble();
+            }
 
             StateIo.Tag(r, "WEND");
 

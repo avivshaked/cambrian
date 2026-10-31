@@ -4585,6 +4585,117 @@ namespace Evosim.Core
         public float LeafScentHalfScaleSquareMetres { get; set; } = 1f;
 
         /// <summary>
+        /// D270's carried leaf smell, and which of its two forms a genome may draw:
+        /// <see cref="SensorChannel.LeafPlume"/> under <see cref="LeafPlumeForm.Strength"/>, and that with
+        /// <see cref="SensorChannel.LeafPlumeGradient"/> under <see cref="LeafPlumeForm.Gradient"/>.
+        /// <see cref="LeafPlumeForm.None"/> is every recorded world: no grid is built, no port is added and no
+        /// checkpoint byte changes.
+        /// </summary>
+        /// <remarks>
+        /// Every living leaf deposits its lit area into a grid of <see cref="LeafPlumeCellMetres"/> cells, which
+        /// the current carries, the water stirs at <see cref="MatterMixingDiffusivity"/> and a lifetime of
+        /// <see cref="LeafPlumeLifetimeSeconds"/> slowly loses. Appended after the anchoring pair in
+        /// <see cref="SensorPool"/> for the replay reason <see cref="SenseContact"/> gives. Needs the grid field in
+        /// the shared volume, and is refused in a tank and beside <see cref="IslandFarSmell"/> (D270).
+        /// <c>EVOSIM_LEAF_PLUME</c>.
+        /// </remarks>
+        [Tunable("sense")]
+        public LeafPlumeForm LeafPlume
+        {
+            get => _leafPlume;
+            set { _leafPlume = value; _sensorPool = null; }
+        }
+
+        private LeafPlumeForm _leafPlume = LeafPlumeForm.None;
+
+        /// <summary>The plume grid's cell, metres. <c>EVOSIM_LEAF_PLUME_CELL</c>.</summary>
+        /// <remarks>⚠ A design choice (D270). The grid refuses a cell that does not divide the box.</remarks>
+        [Tunable("sense", Unit = "m")]
+        public float LeafPlumeCellMetres
+        {
+            get => _leafPlumeCellMetres;
+            set => _leafPlumeCellMetres = value > 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(LeafPlumeCellMetres), value,
+                    "A plume's cell in metres is finite and above 0 (D270).");
+        }
+
+        private float _leafPlumeCellMetres = 5f;
+
+        /// <summary>
+        /// The time in which the plume loses a factor of e of its stock, seconds. Finite and above 0.
+        /// <c>EVOSIM_LEAF_PLUME_LIFE</c>.
+        /// </summary>
+        /// <remarks>⚠ A design choice (D270).</remarks>
+        [Tunable("sense", Unit = "s")]
+        public float LeafPlumeLifetimeSeconds
+        {
+            get => _leafPlumeLifetimeSeconds;
+            set => _leafPlumeLifetimeSeconds = value > 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(LeafPlumeLifetimeSeconds), value,
+                    "A plume's lifetime in seconds is finite and above 0 (D270).");
+        }
+
+        private float _leafPlumeLifetimeSeconds = 3000f;
+
+        /// <summary>
+        /// The plume density that reads half scale, in square-metre seconds per cubic metre of lit leaf area
+        /// deposited: the squash is <c>s / (s + k)</c>. Finite and above 0. <c>EVOSIM_LEAF_PLUME_HALF</c>.
+        /// </summary>
+        /// <remarks>⚠ A design choice (D270); the founding bench sets it from the dump.</remarks>
+        [Tunable("sense", Unit = "m2 s/m3")]
+        public float LeafPlumeHalfScale
+        {
+            get => _leafPlumeHalfScale;
+            set => _leafPlumeHalfScale = value > 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(LeafPlumeHalfScale), value,
+                    "A plume's half-scale is finite and above 0 (D270).");
+        }
+
+        private float _leafPlumeHalfScale = 1f;
+
+        /// <summary>
+        /// D270's current sense: whether every part reads the water's velocity over the ground in its own frame,
+        /// <see cref="SensorChannel.GroundCurrent"/>. Off is every recorded world. <c>EVOSIM_CURRENT_SENSE</c>.
+        /// </summary>
+        /// <remarks>
+        /// Appended after the plume's channels in <see cref="SensorPool"/> for the replay reason
+        /// <see cref="SenseContact"/> gives. Unlike <see cref="SensorChannel.Flow"/>, which is the water's speed
+        /// relative to the part, this is the water over the ground, so a body drifting with the current reads it.
+        /// </remarks>
+        [Tunable("sense")]
+        public bool CurrentSense
+        {
+            get => _currentSense;
+            set { _currentSense = value; _sensorPool = null; }
+        }
+
+        private bool _currentSense;
+
+        /// <summary>
+        /// The ground current that reads half scale on <see cref="SensorChannel.GroundCurrent"/>, m/s: the reading
+        /// is <c>v / (|v| + h)</c>. Finite and above 0. <c>EVOSIM_CURRENT_SENSE_HALF</c>.
+        /// </summary>
+        /// <remarks>⚠ A design choice (D270).</remarks>
+        [Tunable("sense", Unit = "m/s")]
+        public float CurrentSenseHalfSpeedMetresPerSecond
+        {
+            get => _currentSenseHalfSpeedMetresPerSecond;
+            set => _currentSenseHalfSpeedMetresPerSecond = value > 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(CurrentSenseHalfSpeedMetresPerSecond), value,
+                    "A current sense's half-speed is finite and above 0 (D270).");
+        }
+
+        private float _currentSenseHalfSpeedMetresPerSecond = 0.01f;
+
+        /// <summary>
         /// Whether a body that dies of anything but a bite, and any remains not bitten off, return
         /// to the water at once as spent units rather than as a corpse or as snow (D167's leaf
         /// tank). Off is every recorded world.
@@ -4705,7 +4816,8 @@ namespace Evosim.Core
             bool grips = HoldsTheGrip();
 
             if (!_senseChemical && !_senseEnergy && !_senseFlow && !_senseContact && !_senseDamage && !_senseScent && !_senseDrive &&
-                !_senseBedTouch && _leafScent == LeafScentForm.None && !grips)
+                !_senseBedTouch && _leafScent == LeafScentForm.None && !grips &&
+                _leafPlume == LeafPlumeForm.None && !_currentSense)
             {
                 _sensorPool = SensorChannels.DefaultPool;
                 return _sensorPool;
@@ -4714,7 +4826,9 @@ namespace Evosim.Core
             int extra = (_senseChemical ? 1 : 0) + (_senseEnergy ? 1 : 0) + (_senseFlow ? 1 : 0) +
                         (_senseContact ? 1 : 0) + (_senseDamage ? 1 : 0) + (_senseScent ? 1 : 0) +
                         (_senseDrive ? 3 : 0) + (_senseBedTouch ? 1 : 0) +
-                        (_leafScent != LeafScentForm.None ? 1 : 0) + (grips ? 2 : 0);
+                        (_leafScent != LeafScentForm.None ? 1 : 0) + (grips ? 2 : 0) +
+                        (_leafPlume != LeafPlumeForm.None ? 1 : 0) + (_leafPlume == LeafPlumeForm.Gradient ? 1 : 0) +
+                        (_currentSense ? 1 : 0);
             var pool = new SensorChannel[SensorChannels.DefaultPool.Length + extra];
 
             Array.Copy(SensorChannels.DefaultPool, pool, SensorChannels.DefaultPool.Length);
@@ -4753,6 +4867,12 @@ namespace Evosim.Core
                 pool[at++] = SensorChannel.Gripping;
                 pool[at++] = SensorChannel.GripPull;
             }
+
+            // D270's carried smell and current sense, after the anchoring pair for the same reason: the plume's
+            // strength under either form, its gradient under the second, then the ground current.
+            if (_leafPlume != LeafPlumeForm.None) pool[at++] = SensorChannel.LeafPlume;
+            if (_leafPlume == LeafPlumeForm.Gradient) pool[at++] = SensorChannel.LeafPlumeGradient;
+            if (_currentSense) pool[at++] = SensorChannel.GroundCurrent;
 
             _sensorPool = pool;
             return _sensorPool;
@@ -4944,6 +5064,22 @@ namespace Evosim.Core
 
         /// <summary>D251: each fed island adds a flat top and a falling skirt, by its leaves' lit area, to the leaf smell.</summary>
         Leaves = 1,
+    }
+
+    /// <summary>
+    /// D270: whether the leaves feed a smell the current carries, and which form a genome may draw. See
+    /// <see cref="RunConfig.LeafPlume"/>.
+    /// </summary>
+    public enum LeafPlumeForm
+    {
+        /// <summary>No plume: every recorded world.</summary>
+        None = 0,
+
+        /// <summary>One number per part, <see cref="SensorChannel.LeafPlume"/>.</summary>
+        Strength = 1,
+
+        /// <summary>The strength and three more per part, <see cref="SensorChannel.LeafPlumeGradient"/>.</summary>
+        Gradient = 2,
     }
 
     /// <summary>

@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "067cb724c6ec17f6",
+  "configHash": "9df3f847ce6eebd1",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -334,10 +334,16 @@
   },
   "sense": {
     "chemicalHalfScaleJoulesPerCubicMetre": 10,
+    "currentSense": false,
+    "currentSenseHalfSpeedMetresPerSecond": 0.01,
     "energyFullScaleSeconds": 3000,
     "energyHalfScaleSeconds": 30,
     "energySenseSquash": "Tanh",
     "flowFullScaleMetresPerSecond": 0.3,
+    "leafPlume": "None",
+    "leafPlumeCellMetres": 5,
+    "leafPlumeHalfScale": 1,
+    "leafPlumeLifetimeSeconds": 3000,
     "leafScent": "None",
     "leafScentCellMetres": 2,
     "leafScentHalfScaleSquareMetres": 1,

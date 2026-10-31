@@ -5817,6 +5817,49 @@ namespace Evosim.Core
             return (rest / _nz, iy, rest % _nz);
         }
 
+        /// <summary>
+        /// The flat index of the cell a position falls in: <c>(iy * nx + ix) * nz + iz</c>, wrapped on x and z,
+        /// clamped on y, and for a point in a cell with no water the nearest cell that has some, so a deposit
+        /// never lands in rock (D270's plume reads and deposits through this).
+        /// </summary>
+        internal int CellIndexAt(Float3 position) => CellAt(position);
+
+        /// <summary>The flat index of the cell at three indices, by the layout <see cref="CellIndexAt"/> gives.</summary>
+        internal int CellIndexOf(int ix, int iy, int iz) => Index(ix, iy, iz);
+
+        /// <summary>What the cell at a flat index holds, in the field's unit.</summary>
+        internal double StockOfCell(int cell) => _stock[cell];
+
+        /// <summary>
+        /// Keeps <paramref name="factor"/> of every cell's stock and returns what it removed, summed in cell order
+        /// (D270's decay). The running total loses the same sum, so <see cref="TotalJoules"/> stays what
+        /// <see cref="Recount"/> would give. A factor of 1 or more removes nothing.
+        /// </summary>
+        /// <remarks>
+        /// Each cell becomes <c>stock * factor</c> exactly, one multiplication, so one step is the same number in
+        /// every cell whatever the cell's neighbours hold. The removed amount of a cell is <c>stock - stock *
+        /// factor</c>, and the sum of those is the figure a book can close against.
+        /// </remarks>
+        internal double Decay(double factor)
+        {
+            if (!(factor < 1d)) return 0d;
+            if (factor < 0d) factor = 0d;
+
+            double removed = 0d;
+            for (int i = 0; i < _stock.Length; i++)
+            {
+                double s = _stock[i];
+                if (s == 0d) continue;
+
+                double kept = s * factor;
+                _stock[i] = kept;
+                removed += s - kept;
+            }
+
+            _total -= removed;
+            return removed;
+        }
+
         public override string ToString() =>
             FormattableString.Invariant(
                 $"{TotalJoules:0} J on {_nx}x{_ny}x{_nz} cells of {CellMetres:0.##} m, sinking {SinkMetresPerSecond:0.###} m/s");
