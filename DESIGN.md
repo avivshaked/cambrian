@@ -370,6 +370,19 @@ harder one. The papers were read at the passages cited and none in full, so unde
 cited here. The review's Q14 row carries the citations, and the round's readings went to the
 coordinator as input.
 
+## 0z3. Changelog: review round 10, a second-generation brain (2026-10-31)
+
+This round changes no mechanism. Round 10 of the literature review (research §0, Q15) is the
+round D146 left open on growing networks and on central controllers. It also checks the sources
+D147 named for its founders. When body and brain co-evolve, controllers shared across modules
+beat one central network, which converged early [KGV22 HTML, Results; Discussion; MEC23 abstract].
+D146 copies a parent joint's wiring once, at birth, which this review reads as the per-module rule,
+the one that did not beat central control. A body's own curvature feedback can make a swimming gait near resonance without a
+central oscillator [GAM15 HTML], so D146's fourth ruling has precedent. Evolved klinotaxis circuits
+take the change in concentration from their sensory cells, not from network memory [IL10 HTML], and
+the brain reads scent as a level. NEAT [SM02] and FS-NEAT [WSSMK05] were read at the abstract only,
+and LeCun's initialisation was not read at source.
+
 ## 0w. Changelog — the aquarium, the streams, and water that stays uniform (2026-09-11 and 12, D089, D090, the Astra review)
 
 The container is a setting (`RunConfig.WorldShape`, `EVOSIM_SHAPE`, default `Box`). A `Tank`

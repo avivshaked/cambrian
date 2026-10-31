@@ -977,3 +977,121 @@ A Claude Sonnet session with a browser fetched these on 2026-09-30, from the bri
 
 ### Round 9: sought, NOT obtained
 - Soros & Stanley 2014 (193), as above. Twenty of the twenty-one papers on the round's list were obtained.
+
+## Round 10 (2026-10-31) asked Q15: what a second-generation brain should be
+
+No PDF was kept. So no entry has a package number, a directory under `papers/` or a SHA-256, and
+the counts at the top of this file are unchanged. Entries are headed by their bibliography key.
+Full texts were read as HTML through the fetch tool, which returns a small model's answer about the
+page and not its raw text. Two arXiv PDFs, 2206.13366 and 2306.09358v1, were fetched first; the
+tool stored them outside the repository and could not read them, and neither was opened. Gates were
+recorded and not bypassed.
+
+| service | endpoint | used for |
+|---|---|---|
+| OpenAlex | `https://api.openalex.org/works/doi:<doi>` and `/works?search=` | metadata, OA status, the abstract index |
+| Semantic Scholar graph API | `https://api.semanticscholar.org/graph/v1/paper/DOI:<doi>` | one abstract (elided) |
+| CrossRef | `https://api.crossref.org/works?filter=doi:…` and `/works/<doi>` | metadata and update relations |
+
+### [KGV22] Centralized and Decentralized Control in Modular Robots and Their Effect on Morphology (Kvalsund, Glette & Veenstra 2022)
+- Status: READ AS HTML THROUGH A SUMMARISER, NO COPY KEPT
+- Source used: https://ar5iv.labs.arxiv.org/html/2206.13366
+- Route: open-access (arXiv, rendered by ar5iv). The arXiv PDF was fetched first and stored by the tool, unread
+- DOI: `10.1162/isal_a_00533`
+
+### [MEC23] Modular Controllers Facilitate the Co-Optimization of Morphology and Control in Soft Robots (Mertan & Cheney 2023)
+- Status: ABSTRACT ONLY
+- Source used: https://arxiv.org/abs/2306.09358v1
+- Route: open-access PDF at arXiv (fetched, stored by the tool, unread); ar5iv holds no HTML and redirected to the abstract
+- DOI: `10.1145/3583131.3590416`
+
+### [SM02] Evolving Neural Networks through Augmenting Topologies (Stanley & Miikkulainen 2002)
+- Status: ABSTRACT ONLY
+- Source used: https://api.openalex.org/works/doi:10.1162/106365602320169811 (abstract index)
+- Route: the MIT Press page returned HTTP 403; OpenAlex reports it closed. An author PDF listed by the NNRG was not fetched
+- DOI: `10.1162/106365602320169811`
+
+### [WSSMK05] Automatic feature selection in neuroevolution (Whiteson, Stone, Stanley, Miikkulainen & Kohl 2005)
+- Status: ABSTRACT ONLY
+- Source used: https://www.cs.utexas.edu/users/pstone/Papers/bib2html/b2hd-GECCO05-fsneat.html
+- Route: author publication page; the open PDF at gpbib.cs.ucl.ac.uk was not fetched
+- DOI: `10.1145/1068009.1068210`
+
+### [HFMT23] Proprioceptive feedback amplification restores effective locomotion in a neuromechanical model of lampreys with spinal injuries (Hamlet, Fauci, Morgan & Tytell 2023)
+- Status: READ AS HTML THROUGH A SUMMARISER, NO COPY KEPT
+- Source used: https://pmc.ncbi.nlm.nih.gov/articles/PMC10089168/
+- Route: open-access (PMC article page)
+- DOI: `10.1073/pnas.2213302120`
+
+### [GAM15] Gait and speed selection in slender inertial swimmers (Gazzola, Argentina & Mahadevan 2015)
+- Status: READ AS HTML THROUGH A SUMMARISER, NO COPY KEPT
+- Source used: https://pmc.ncbi.nlm.nih.gov/articles/PMC4386394/
+- Route: open-access (PMC article page)
+- DOI: `10.1073/pnas.1419335112`
+
+### [IL10] Evolution and Analysis of Minimal Neural Circuits for Klinotaxis in Caenorhabditis elegans (Izquierdo & Lockery 2010)
+- Status: READ AS HTML THROUGH A SUMMARISER, NO COPY KEPT
+- Source used: https://pmc.ncbi.nlm.nih.gov/articles/PMC3422662/
+- Route: open-access (PMC article page)
+- DOI: `10.1523/JNEUROSCI.2606-10.2010`
+
+### [IB13] Connecting a Connectome to Behavior: An Ensemble of Neuroanatomical Models of C. elegans Klinotaxis (Izquierdo & Beer 2013)
+- Status: READ AS HTML THROUGH A SUMMARISER, NO COPY KEPT (first 100,000 of 172,183 characters)
+- Source used: https://pmc.ncbi.nlm.nih.gov/articles/PMC3567170/
+- Route: open-access (PMC article page)
+- DOI: `10.1371/journal.pcbi.1002890`
+
+### [HMP20] One Policy to Control Them All: Shared Modular Policies for Agent-Agnostic Control (Huang, Mordatch & Pathak 2020)
+- Status: READ AS HTML THROUGH A SUMMARISER, NO COPY KEPT
+- Source used: https://ar5iv.labs.arxiv.org/html/2007.04976
+- Route: open-access (arXiv via ar5iv)
+- Id: arXiv 2007.04976 (no DOI checked)
+
+### [DRC18] Signatures of proprioceptive control in Caenorhabditis elegans locomotion (Denham, Ranner & Cohen 2018)
+- Status: READ AS HTML THROUGH A SUMMARISER, NO COPY KEPT
+- Source used: https://pmc.ncbi.nlm.nih.gov/articles/PMC6158217/
+- Route: open-access (PMC article page)
+- DOI: `10.1098/rstb.2018.0208`
+
+### [SBRB23] Emergent behaviour and neural dynamics in artificial agents tracking odour plumes (Singh, van Breugel, Rao & Brunton 2023)
+- Status: READ AS HTML THROUGH A SUMMARISER, NO COPY KEPT (first 100,000 of 131,533 characters)
+- Source used: https://pmc.ncbi.nlm.nih.gov/articles/PMC10601839/
+- Route: open-access (PMC article page)
+- DOI: `10.1038/s42256-022-00599-w`
+
+### [VSG23] Decentralized Control and Morphological Evolution of 2D Virtual Creatures (Veenstra, Szorkovszky & Glette 2023)
+- Status: ABSTRACT ONLY
+- Source used: https://www.mn.uio.no/ifi/english/people/aca/kyrrehg/pubs/veenstra-alife2023-abstract.html
+- Route: author group's abstract page
+- DOI: `10.1162/isal_a_00656`
+
+### [IHW99] Evolving Swimming Controllers for a Simulated Lamprey with Inspiration from Neurobiology (Ijspeert, Hallam & Willshaw 1999)
+- Status: ABSTRACT ONLY
+- Source used: https://api.openalex.org/works/doi:10.1177/105971239900700202 (abstract index)
+- Route: green copy at Infoscience (record 58486), which returned HTTP 429, not retried
+- DOI: `10.1177/105971239900700202`
+
+### [SAO22] Recombination and Novelty in Neuroevolution: A Visual Analysis (Sarti, Adair & Ochoa 2022)
+- Status: ABSTRACT ONLY
+- Source used: https://api.openalex.org/works/doi:10.1007/s42979-022-01064-6 (abstract index)
+- Route: hybrid OA (CC BY); the Springer article page redirected to a login, not followed
+- DOI: `10.1007/s42979-022-01064-6`
+
+### [SUCH17] Deep Neuroevolution: Genetic Algorithms Are a Competitive Alternative for Training Deep Neural Networks for Reinforcement Learning (Such et al. 2017)
+- Status: READ AS HTML THROUGH A SUMMARISER, NO COPY KEPT
+- Source used: https://ar5iv.labs.arxiv.org/html/1712.06567
+- Route: open-access (arXiv via ar5iv)
+- Id: arXiv 1712.06567 (no DOI checked)
+
+### [MM15] All you need is a good init (Mishkin & Matas 2015)
+- Status: READ AS HTML THROUGH A SUMMARISER, NO COPY KEPT
+- Source used: https://ar5iv.labs.arxiv.org/html/1511.06422
+- Route: open-access (arXiv via ar5iv)
+- Id: arXiv 1511.06422 (no DOI checked)
+
+### Round 10: sought, NOT read (manual-fetch queue)
+- Stanley & Miikkulainen 2002 [SM02]: https://direct.mit.edu/evco/article/10/2/99/1123/Evolving-Neural-Networks-through-Augmenting returned HTTP 403; author PDF not fetched.
+- Stanley's NEAT users page, https://www.cs.ucf.edu/~kstanley/neat.html: HTTP 403.
+- Ijspeert 2008: http://infoscience.epfl.ch/record/125126 returned HTTP 429; Semantic Scholar elides its abstract.
+- Stanley & Miikkulainen 2004: the ar5iv conversion of arXiv 1107.0037 had failed.
+- Sims 1994, Whiteson et al. 2005, Mertan & Cheney 2023, LeCun et al. 1998: open copies are PDFs, not read.
