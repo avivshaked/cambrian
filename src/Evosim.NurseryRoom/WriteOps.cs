@@ -401,18 +401,18 @@ namespace Evosim.NurseryRoom
 
         // ------------------------------------------------------------------ run.launch, run.rerun, run.stop
 
-        private const string ThreadsSchema = @"""threads"":{""type"":""integer"",""description"":""Worker threads the run takes (the nursery's --threads). Counted against the machine's cap with the load read now.""}";
+        private const string ThreadsSchema = @"""threads"":{""type"":""integer"",""description"":""Worker threads the run takes (the nursery's --threads). Counted, with the threads the room has already granted, against the free cores of the room's slot in the machine's queue, read now.""}";
 
         private void AddRunOperations()
         {
             Add(new Operation
             {
                 Family = "run", Action = "launch", Mutates = true,
-                Summary = "Start the nursery on a recipe as a process of its own, in a new folder of that name under the room's runs folder. Refused if the recipe is refused, the folder exists, the threads pass the processors the affinity mask allows, or the threads plus the machine's load would pass the cap. The run is pinned, before its first instruction, to the logical processors room.json's affinity names, and the result says which the launcher applied. A recipe directly under rounds/nursery/ is registered by the nursery when its run ends; a recipe anywhere else in the repository runs as an unregistered trial, which the result, the activity row and the registry mark (trial: true). The run shows in the registry at once.",
+                Summary = "Start the nursery on a recipe as a process of its own, in a new folder of that name under the room's runs folder. Refused if the recipe is refused, the folder exists, the threads pass the processors room.json's affinity allows, the machine's queue (scratch/machine/queue.md) cannot be read or gives the room no slot (no Running line tagged room), the heat check reads HOT or cannot read, or the threads plus those the room has already granted are more than the free cores: the room's slot inside room.json's affinity, less logical 4 and 5, less every core another Running line claims. The run is pinned, before its first instruction, to those free cores, and the result says which mask the launcher applied; a WARN from the heat check does not refuse, and the result says it. A recipe directly under rounds/nursery/ is registered by the nursery when its run ends; a recipe anywhere else in the repository runs as an unregistered trial, which the result, the activity row and the registry mark (trial: true). The run shows in the registry at once.",
                 Schema = @"{""type"":""object"",""properties"":{""recipe"":{""type"":""string"",""description"":""The recipe file, relative to the repository root: directly under rounds/nursery/, or anywhere else in the repository for an unregistered trial.""},""name"":{""type"":""string"",""description"":""The run's folder name: a-z, 0-9 and '-', up to 64, not all digits (a number names a registry entry).""}," + ThreadsSchema + @"},""required"":[""recipe"",""name"",""threads""],""additionalProperties"":false}",
                 PathArgs = new[] { "recipe" },
                 Handler = a => Launch(a, rerun: false),
-                Record = r => Pick(r, "id", "folder", "recipe", "trial", "tree", "threads", "affinity", "pid", "detached", "launcherNote", "droppedEnvironment"),
+                Record = r => Pick(r, "id", "folder", "recipe", "trial", "tree", "threads", "affinity", "heat", "pid", "detached", "launcherNote", "droppedEnvironment"),
             });
 
             Add(new Operation
@@ -421,7 +421,7 @@ namespace Evosim.NurseryRoom
                 Summary = "Run a registry entry's recipe again, on this build, into a new folder, and compare it with the entry (the nursery's --rerun). The entry is its number or 8 or more hex digits of its recipe's hash. Refused if the entry cannot be rerun on this build, or as for launch.",
                 Schema = @"{""type"":""object"",""properties"":{""entry"":{""type"":""string"",""description"":""A registry entry's number, or 8 or more hex digits of its recipe's hash.""},""name"":{""type"":""string"",""description"":""The new run's folder name, as for launch.""}," + ThreadsSchema + @"},""required"":[""entry"",""name"",""threads""],""additionalProperties"":false}",
                 Handler = a => Launch(a, rerun: true),
-                Record = r => Pick(r, "id", "folder", "recipe", "trial", "tree", "threads", "affinity", "pid", "detached", "launcherNote", "droppedEnvironment", "entry"),
+                Record = r => Pick(r, "id", "folder", "recipe", "trial", "tree", "threads", "affinity", "heat", "pid", "detached", "launcherNote", "droppedEnvironment", "entry"),
             });
 
             Add(new Operation
@@ -449,9 +449,9 @@ namespace Evosim.NurseryRoom
             string problem = FolderNameProblem(name);
             if (problem != null) throw new ArgumentException(problem);
             if (threads < 1) throw new ArgumentException($"threads is 1 or more, not {threads}");
-            // The mask and the threads are checked first, before anything reads git (a rerun's checks do): a refusal that costs nothing comes first.
-            // The mask names only processors this machine has (room.json's affinity is never 0: RoomSettings), or nothing is started. The machine is
-            // the system's mask the room read once, the very value the launcher checks against. And a run asks for no more threads than the processors it is pinned to.
+            // The bound and the threads are checked first, before anything reads git (a rerun's checks do): a refusal that costs nothing comes first.
+            // room.json's affinity names only processors this machine has (it is never 0: RoomSettings), or nothing is started. The machine is the
+            // system's mask the room read once, the very value the launcher checks against. And a run asks for no more threads than the bound allows.
             string noSuchCore = CoreMask.Problem(_room.Settings.Affinity, _room.SystemMask);
             if (noSuchCore != null) throw new ArgumentException(noSuchCore);
             string tooMany = CoreMask.ThreadsProblem(threads, _room.Settings.Affinity);
@@ -516,17 +516,20 @@ namespace Evosim.NurseryRoom
                 WorkingDirectory = _room.Root,
                 Folder = folder,
                 LogFile = log,
-                Affinity = _room.Settings.Affinity,
             };
             // Every part of the command line is checked, the dotnet and dll paths from room.json included, and refused rather than cleaned.
             string badLine = CommandLine.Problem(spec);
             if (badLine != null) throw new ArgumentException(badLine);
 
+            // The cap: the room's slot in the machine's queue, the heat, and the free cores against the threads asked and those already granted.
+            // The run is pinned to the free cores, not to room.json's affinity, which is only their bound.
             DateTime now = DateTime.UtcNow;
-            LoadReading load = _room.Load.Read();
+            Slot slot = _room.ReadSlot();
+            HeatReading heat = _room.Heat.Read();
             int granted = _room.GrantedThreads(now);
-            string over = Cap.Refusal(threads, _room.Settings.CapLogical, _room.Logical, load, granted);
-            if (over != null) throw new ArgumentException(over);
+            string over = Cap.Refusal(threads, slot, heat, granted);
+            if (over != null) throw new ArgumentException(over + ". Nothing was started.");
+            spec.Affinity = slot.Free;
 
             // The name is claimed by creating its launch log, beside the folder and not in it (the nursery refuses a folder that holds anything), with
             // CreateNew: of two rooms asking for one name at once, one creates the file and the other is refused. Then the folder is made empty.
@@ -559,9 +562,7 @@ namespace Evosim.NurseryRoom
             // What the launcher applied is what is recorded, not what was asked: a launcher that pinned otherwise says so.
             string note = outcome.Note;
             if (outcome.Affinity != spec.Affinity)
-                note = (note == null ? "" : note + "; ") + $"the launcher applied {(outcome.Affinity == 0 ? "no affinity mask" : "the affinity mask " + CoreMask.Format(outcome.Affinity))}, not the {CoreMask.Format(spec.Affinity)} room.json names";
-            // The run now takes the threads it was granted: a reading kept from before it started would let the next launch pass the cap.
-            _room.Load.Invalidate();
+                note = (note == null ? "" : note + "; ") + $"the launcher applied {(outcome.Affinity == 0 ? "no affinity mask" : "the affinity mask " + CoreMask.Format(outcome.Affinity))}, not the {CoreMask.Format(spec.Affinity)} of the room's free cores";
             return new
             {
                 id = name, kind = rerun ? "rerun" : "launch", entry = entryArg, recipe = recipeUsed, trial, folder = folderMain, tree = _room.TreeRelative, threads, pid = outcome.Pid,
@@ -570,7 +571,8 @@ namespace Evosim.NurseryRoom
                 droppedEnvironment = (outcome.DroppedEnvironment ?? new string[0]).ToList(),
                 launchLog = folderMain + ".launch.log",
                 command = "dotnet " + string.Join(" ", new[] { _room.Display(dll) }.Concat(args)),
-                load = new { percent = load.Percent, read = Cap.InUse(load.Percent ?? 0, _room.Logical), granted, inUse = Cap.InUse(load.Percent ?? 0, _room.Logical, granted), logical = _room.Logical, cap = _room.Settings.CapLogical },
+                machine = EpisodeSteps.Machine(slot, granted),
+                heat = EpisodeSteps.Heat(heat),
             };
         }
 

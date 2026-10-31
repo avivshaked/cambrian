@@ -122,7 +122,7 @@ namespace Evosim.NurseryRoom.Tests
                 FarmHash = "x", NurseryHash = "x", Out = RunFolder, Status = "completed", StartedAtUtc = "x", EndedAtUtc = "x", NotRerunnableBecause = "x",
             };
             File.WriteAllText(Fx.Registry, entry.ToJson() + "\n", new UTF8Encoding(false));
-            Room = new RoomContext(Fx.Root, Fx.Room.Settings, Fx.Main, Fx.Registry, Path.Combine(Fx.Dir, "activity.jsonl"), Launcher, Fx.Load, 32,
+            Room = new RoomContext(Fx.Root, Fx.Room.Settings, Fx.Main, Fx.Registry, Path.Combine(Fx.Dir, "activity.jsonl"), Launcher, Fx.Queue, Fx.Heat, 32,
                 _ => Fx.Build, null, Procs, Copier);
             Ops = new OperationList(Room);
         }
@@ -579,10 +579,9 @@ namespace Evosim.NurseryRoom.Tests
         }
 
         [Fact]
-        public void AStepThatWouldPassTheCapIsRefusedLikeALaunchAndFitsOnceAStepEnds()
+        public void AStepThatWouldPassTheFreeCoresIsRefusedLikeALaunchAndFitsOnceAStepEnds()
         {
-            _f.Fx.Load.Value = LoadReading.Of(0);   // the counter reads nothing, so what the room itself granted is what counts
-            OperationResult held = Launch("holder", 14);   // 14 granted for three minutes
+            OperationResult held = Launch("holder", 14);   // 14 of the slot's 16 free cores granted for three minutes
             Assert.True(held.Ok, held.Error);
             _f.Ok(_f.Step(0, 0));   // 1 + 14 = 15 of 16
             _f.Ok(_f.Step(0, 1));   // 1 + 15 = 16 of 16
@@ -591,9 +590,8 @@ namespace Evosim.NurseryRoom.Tests
             OperationResult over = _f.Step(0, 2);
             Assert.False(over.Ok);
             Assert.Equal(400, over.Status);
-            Assert.Contains("1 thread asked", over.Error);
-            Assert.Contains("past the cap of 16 of 32", over.Error);
-            Assert.Contains("episode re-steps", over.Error);
+            Assert.StartsWith("1 thread asked, plus 16 threads granted to runs this room started that are still running or began in the last 3 minutes and to episode re-steps whose process lives, is 17, more than the 16 free cores (logical 16-31): the room's slot is logical 16-31", over.Error);
+            Assert.EndsWith(". Nothing was started.", over.Error);
             Assert.Equal(2, _f.Launcher.Started.Count - 1);   // the launch and two steps, and not the refused one
             Assert.False(File.Exists(Path.Combine(_f.Cache(0, 2, 0), "step.json")));
             Assert.Equal("refused", _f.ActivityRows().Last().GetProperty("outcome").GetString());
@@ -606,22 +604,28 @@ namespace Evosim.NurseryRoom.Tests
         }
 
         [Fact]
-        public void TheCapIsCheckedWithTheLoadNowAndAnUnreadableLoadRefuses()
+        public void AStepIsPinnedToTheFreeCoresAndRefusedWithoutASlotOrOnAHotMachine()
         {
-            _f.Fx.Load.Value = LoadReading.Of(100);
-            OperationResult r = _f.Step(0, 0);
-            Assert.False(r.Ok);
-            Assert.Contains("past the cap", r.Error);
-            _f.Fx.Load.Value = LoadReading.Failed("no counter");
-            Assert.Contains("cannot be read", _f.Step(0, 0).Error);
-            Assert.Empty(_f.Launcher.Started);
+            _f.Fx.Queue.Text = FixedQueue.With("speed (a test) · cores: 16-27");
+            _f.Ok(_f.Step(0, 0));
+            Assert.Equal(0xF0000000UL, _f.Launcher.Started.Last().Affinity);   // 28-31, not room.json's 0xFFFF0000
+
+            _f.Fx.Queue.Text = "## Running\n\n- speed (a test) · cores: 16-27\n";
+            OperationResult noSlot = _f.Step(0, 1);
+            Assert.Equal("no Running line of the machine's queue scratch/machine/queue.md carries the room tag, so the room has no slot, and it starts nothing until the coordinator gives it one; refusing 1 thread. Nothing was started.", noSlot.Error);
+            _f.Fx.Queue.Text = FixedQueue.With();
+            _f.Fx.Heat.Value = HeatReading.Of(HeatReading.Hot, "HOT  gpu 86C");
+            Assert.Equal("the heat check reads HOT (HOT  gpu 86C), and the room starts nothing on a hot machine; refusing 1 thread. Nothing was started.", _f.Step(0, 1).Error);
+            _f.Fx.Heat.Value = HeatReading.FromExit(1, "Get-Counter : the counter could not be read");   // a script that failed, which is not a WARN
+            Assert.StartsWith("the heat check cannot say whether the machine is too hot (the heat check exited 1, which is WARN, but printed no WARN line", _f.Step(0, 1).Error);
+            Assert.Single(_f.Launcher.Started);
         }
 
         [Fact]
         public void AStepAsksForAMaskTheMachineHasOrIsRefused()
         {
             // a machine of eight processors cannot be asked to pin to the efficiency cores of a 32-processor one
-            var room = new RoomContext(_f.Fx.Root, _f.Fx.Room.Settings, _f.Fx.Main, _f.Fx.Registry, Path.Combine(_f.Fx.Dir, "a2.jsonl"), _f.Launcher, _f.Fx.Load, 8, _ => _f.Fx.Build, null, _f.Procs, _f.Copier);
+            var room = new RoomContext(_f.Fx.Root, _f.Fx.Room.Settings, _f.Fx.Main, _f.Fx.Registry, Path.Combine(_f.Fx.Dir, "a2.jsonl"), _f.Launcher, _f.Fx.Queue, _f.Fx.Heat, 8, _ => _f.Fx.Build, null, _f.Procs, _f.Copier);
             var ops = new OperationList(room);
             OperationResult r = ops.Invoke("episode.step", Js.Parse("{\"run\":\"1\",\"brain\":0,\"draw\":0,\"tank\":0,\"reason\":\"a test\"}"));
             Assert.False(r.Ok);
@@ -641,7 +645,7 @@ namespace Evosim.NurseryRoom.Tests
 
         private static DateTimeOffset Later => DateTimeOffset.UtcNow.AddHours(1);
 
-        private JsonElement Status() => Js.Parse(Js.Serialize(Program.RoomStatus(_f.Room, LoadReading.Of(10), DateTime.UtcNow)));
+        private JsonElement Status() => Js.Parse(Js.Serialize(Program.RoomStatus(_f.Room, DateTime.UtcNow)));
 
         [Fact]
         public void WhileTheFileIsLiveAStepIsRefusedQuotingWhoAndWhy()
@@ -1174,7 +1178,7 @@ namespace Evosim.NurseryRoom.Tests
             var procs = new FakeProcesses();
             var launcher = new StepLauncher(procs);
             // the real registry and the real run folder of the main checkout; the tree is the synthetic one, so the cache lands in a folder this test deletes
-            var room = new RoomContext(fx.Root, fx.Room.Settings, main, null, Path.Combine(fx.Dir, "activity.jsonl"), launcher, fx.Load, 32, _ => fx.Build, null, procs, new DamagingCopier());
+            var room = new RoomContext(fx.Root, fx.Room.Settings, main, null, Path.Combine(fx.Dir, "activity.jsonl"), launcher, fx.Queue, fx.Heat, 32, _ => fx.Build, null, procs, new DamagingCopier());
             var ops = new OperationList(room);
             OperationResult r = ops.Invoke("episode.step", Js.Parse("{\"run\":\"1\",\"brain\":0,\"draw\":0,\"tank\":0,\"reason\":\"the pilot's draw 0\"}"));
             Assert.True(r.Ok, r.Error);

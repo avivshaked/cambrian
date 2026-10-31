@@ -25,7 +25,7 @@ namespace Evosim.NurseryRoom.Tests
             // a second worktree of the same main checkout: its own root, bin and recipes; the registry and the activity log are the main checkout's
             string wt2 = Path.Combine(_fx.Main, "scratch", "wt2");
             CopyDir(_fx.Root, wt2);
-            _other = new RoomContext(wt2, _fx.Room.Settings, _fx.Main, _fx.Registry, _fx.Room.Activity.Path, _otherLauncher, _fx.Load, 32, _ => _fx.Build);
+            _other = new RoomContext(wt2, _fx.Room.Settings, _fx.Main, _fx.Registry, _fx.Room.Activity.Path, _otherLauncher, _fx.Queue, _fx.Heat, 32, _ => _fx.Build);
             _otherOps = new OperationList(_other);
         }
 
@@ -74,7 +74,7 @@ namespace Evosim.NurseryRoom.Tests
         [Fact]
         public void TheRunsANewlyStartedRoomHasNotYetLoggedAreKeyedByFolderToo()
         {
-            var fresh = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, Path.Combine(_fx.Dir, "no-log.jsonl"), new FakeLauncher(), _fx.Load, 32, _ => _fx.Build);
+            var fresh = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, Path.Combine(_fx.Dir, "no-log.jsonl"), new FakeLauncher(), _fx.Queue, _fx.Heat, 32, _ => _fx.Build);
             DateTime now = DateTime.UtcNow;
             fresh.NoteLaunched("same", "scratch/wt/runs/same", 3, now);
             fresh.NoteLaunched("same", "scratch/wt2/runs/same", 4, now);
@@ -144,7 +144,7 @@ namespace Evosim.NurseryRoom.Tests
 
             // the launch row carries the recipe, so a room started later knows it too
             Assert.Equal(path, _fx.Rows().First(row => row.GetProperty("operation").GetString() == "run.launch").GetProperty("result").GetProperty("recipe").GetString());
-            var later = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, _fx.Room.Activity.Path, new FakeLauncher(), _fx.Load, 32, _ => _fx.Build);
+            var later = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, _fx.Room.Activity.Path, new FakeLauncher(), _fx.Queue, _fx.Heat, 32, _ => _fx.Build);
             Assert.Equal(path, later.LaunchedRuns().Single().Recipe);
             Assert.False(new OperationList(later).Invoke("recipe.write", Js.Parse(_fx.Json(path, text: Variant("zz-later"), expect: RunRecord.FileSha256(_fx.Full(path)))), "screen").Ok);
 
@@ -446,32 +446,46 @@ namespace Evosim.NurseryRoom.Tests
             Assert.Equal("refused", _fx.LastRow().GetProperty("outcome").GetString());
         }
 
-        [Theory]
-        [InlineData(3200.5)]
-        [InlineData(-1.0)]
-        [InlineData(double.NaN)]
-        public void TheRoomStatusShowsAReadingTheCapWouldRefuseAsUnreadable(double percent)
+        [Fact]
+        public void TheRoomStatusShowsTheSlotItsFreeCoresTheLinesThatClaimCoresInItAndTheHeat()
         {
-            JsonElement load = Js.Parse(Js.Serialize(Program.RoomStatus(_fx.Room, LoadReading.Of(percent), DateTime.UtcNow))).GetProperty("load");
-            Assert.Equal(JsonValueKind.Null, load.GetProperty("percent").ValueKind);
-            Assert.Equal(JsonValueKind.Null, load.GetProperty("inUse").ValueKind);
-            Assert.Equal(JsonValueKind.Null, load.GetProperty("read").ValueKind);
-            Assert.Contains("not a possible reading", load.GetProperty("problem").GetString());
-            Assert.Contains("not a possible reading", Cap.Refusal(1, 16, 32, LoadReading.Of(percent)));   // the launch is refused for the same reading
+            // speed claims 16-19 inside the slot; video and Neighbour hold cores outside it, and video's card tag is shown
+            _fx.Queue.Text = FixedQueue.With("speed (a test) · cores: 16-19", "video (a test) · a refilm · cores: 0-15 · card", "neighbour (a test) · cores: 0-3");
+            JsonElement s = Js.Parse(Js.Serialize(Program.RoomStatus(_fx.Room, DateTime.UtcNow)));
+            JsonElement m = s.GetProperty("machine");
+            Assert.Equal("scratch/machine/queue.md", m.GetProperty("queue").GetString());
+            Assert.Equal(JsonValueKind.Null, m.GetProperty("problem").ValueKind);
+            Assert.Equal("16-31", m.GetProperty("slot").GetString());
+            Assert.Equal(16, m.GetProperty("slotCount").GetInt32());
+            Assert.Equal("20-31", m.GetProperty("free").GetString());
+            Assert.Equal(12, m.GetProperty("freeCount").GetInt32());
+            Assert.Equal(0, m.GetProperty("granted").GetInt32());
+            JsonElement claim = Assert.Single(m.GetProperty("claims").EnumerateArray());
+            Assert.Equal("speed (a test)", claim.GetProperty("line").GetString());
+            Assert.Equal("16-19", claim.GetProperty("cores").GetString());
+            Assert.False(claim.GetProperty("card").GetBoolean());
+            Assert.Equal(new[] { "video (a test)" }, m.GetProperty("card").EnumerateArray().Select(c => c.GetString()).ToArray());
+            Assert.Equal("the room's slot is logical 16-31, less 16-19 claimed by \"speed (a test)\"", m.GetProperty("explain").GetString());
+            Assert.Equal("OK", s.GetProperty("heat").GetProperty("verdict").GetString());
+            Assert.Contains("OK  gpu 50C", s.GetProperty("heat").GetProperty("line").GetString());
+            Assert.Equal("0xFFFF0000", s.GetProperty("affinity").GetString());
+            // the load and the old cap are gone from the answer
+            Assert.False(s.TryGetProperty("load", out _));
+            Assert.False(s.TryGetProperty("capLogical", out _));
         }
 
         [Fact]
-        public void TheRoomStatusShowsAUsableReadingAndAFailedOne()
+        public void TheRoomStatusShowsASlotItCannotKnowWithItsReasonAndNoCores()
         {
-            JsonElement ok = Js.Parse(Js.Serialize(Program.RoomStatus(_fx.Room, LoadReading.Of(50), DateTime.UtcNow))).GetProperty("load");
-            Assert.Equal(50, ok.GetProperty("percent").GetDouble());
-            Assert.Equal(16, ok.GetProperty("inUse").GetInt32());
-            Assert.Equal(JsonValueKind.Null, ok.GetProperty("problem").ValueKind);
-            JsonElement over = Js.Parse(Js.Serialize(Program.RoomStatus(_fx.Room, LoadReading.Of(105), DateTime.UtcNow))).GetProperty("load");
-            Assert.Equal(105, over.GetProperty("percent").GetDouble());                    // above 100 is a reading in turbo, as the cap takes it
-            JsonElement failed = Js.Parse(Js.Serialize(Program.RoomStatus(_fx.Room, LoadReading.Failed("typeperf could not be run"), DateTime.UtcNow))).GetProperty("load");
-            Assert.Equal(JsonValueKind.Null, failed.GetProperty("percent").ValueKind);
-            Assert.Equal("typeperf could not be run", failed.GetProperty("problem").GetString());
+            _fx.Queue.Text = "## Running\n\n- the room (a test) · cores: 16-x · room\n";
+            JsonElement s = Js.Parse(Js.Serialize(Program.RoomStatus(_fx.Room, DateTime.UtcNow)));
+            JsonElement m = s.GetProperty("machine");
+            string problem = "the room's line \"the room (a test)\" in the machine's queue scratch/machine/queue.md has a cores tag the room cannot read (\"cores: 16-x\"; it is cores: a-b or a, joined by commas, each from 0 to 63), so the room's slot is not known";
+            Assert.Equal(problem, m.GetProperty("problem").GetString());
+            Assert.Equal(JsonValueKind.Null, m.GetProperty("slot").ValueKind);
+            Assert.Equal(JsonValueKind.Null, m.GetProperty("free").ValueKind);
+            Assert.Equal(JsonValueKind.Null, m.GetProperty("freeCount").ValueKind);
+            Assert.Equal(problem + "; refusing 1 thread", s.GetProperty("stepRefusal").GetProperty("reason").GetString());
         }
 
         [Fact]
@@ -516,7 +530,7 @@ namespace Evosim.NurseryRoom.Tests
             {
                 string name = "race-" + i;
                 var launcherB = new FakeLauncher();
-                var roomB = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, Path.Combine(_fx.Dir, "activity-b.jsonl"), launcherB, _fx.Load, 32, _ => _fx.Build);
+                var roomB = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, Path.Combine(_fx.Dir, "activity-b.jsonl"), launcherB, _fx.Queue, _fx.Heat, 32, _ => _fx.Build);
                 var opsB = new OperationList(roomB);
                 var results = new OperationResult[2];
                 Parallel.Invoke(

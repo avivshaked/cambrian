@@ -25,8 +25,11 @@ namespace Evosim.NurseryRoom
         /// <summary>Starts runs. The room's tests give it a fake, so that nothing swims.</summary>
         public IRunLauncher Launcher { get; }
 
-        /// <summary>Reads the machine's load. The room's tests give it a value.</summary>
-        public ILoadReader Load { get; }
+        /// <summary>Reads the machine's queue (room.json's queueFile, in the main checkout), for the room's slot. The room's tests give it a value.</summary>
+        public IQueueReader Queue { get; }
+
+        /// <summary>Reads the heat check (room.json's heatScript). The room's tests give it a value and never run the script.</summary>
+        public IHeatReader Heat { get; }
 
         /// <summary>
         /// The processors the machine has, as the system's mask (<see cref="SystemProcessors"/>, read once when the room starts): the one source of
@@ -34,7 +37,7 @@ namespace Evosim.NurseryRoom
         /// </summary>
         public ulong SystemMask { get; }
 
-        /// <summary>The logical processors the machine has, as the cap is a share of them: the processors <see cref="SystemMask"/> names.</summary>
+        /// <summary>The logical processors the machine has: the processors <see cref="SystemMask"/> names.</summary>
         public int Logical { get; }
 
         /// <summary>The build as a rerun compares it with an entry's: the commit, the dirty flag and the four tree hashes of the tree at the root. The tests give it a fixed record.</summary>
@@ -47,7 +50,7 @@ namespace Evosim.NurseryRoom
         public IEpisodeFileCopier Copier { get; }
 
         /// <summary>
-        /// Held while a re-step starts or is stopped, and while the live ones are counted, so that the cap's count and a stop never see a step half made.
+        /// Held while a re-step starts or is stopped, and while the live ones are counted, so that the count of granted threads and a stop never see a step half made.
         /// Taken after the operations' own lock and never before it.
         /// </summary>
         public object StepGate { get; } = new object();
@@ -77,7 +80,7 @@ namespace Evosim.NurseryRoom
         private List<LaunchedRun> _logLaunches = new List<LaunchedRun>();
 
         public RoomContext(string root, RoomSettings settings, string mainCheckout = null, string registryFile = null,
-            string activityFile = null, IRunLauncher launcher = null, ILoadReader load = null, int? logical = null, Func<string, RunRecord> readBuild = null,
+            string activityFile = null, IRunLauncher launcher = null, IQueueReader queue = null, IHeatReader heat = null, int? logical = null, Func<string, RunRecord> readBuild = null,
             ulong? systemMask = null, IProcessControl processes = null, IEpisodeFileCopier copier = null)
         {
             Processes = processes ?? new SystemProcessControl();
@@ -94,7 +97,8 @@ namespace Evosim.NurseryRoom
             if (logical.HasValue && logical.Value != Logical)
                 throw new ArgumentException($"the logical processor count {logical.Value} is not the {Logical} processors the system mask {CoreMask.Format(SystemMask)} names");
             Launcher = launcher ?? new ProcessRunLauncher(() => SystemMask);
-            Load = load ?? new TypeperfLoadReader();
+            Queue = queue ?? new QueueFileReader(Path.GetFullPath(Path.Combine(MainCheckout, settings.QueueFile.Replace('/', Path.DirectorySeparatorChar))), settings.QueueFile);
+            Heat = heat ?? new ScriptHeatReader(ResolveFile(settings.HeatScript, out _) ?? Path.Combine(Root, settings.HeatScript), settings.HeatScript);
             ReadBuild = readBuild ?? (r => { var rec = new RunRecord(); rec.ReadBuild(r); return rec; });
             Runs = new RunStore();
         }
@@ -195,8 +199,8 @@ namespace Evosim.NurseryRoom
         }
 
         /// <summary>
-        /// The threads the room itself has granted that count against the cap now: those of the runs it started that are still running
-        /// (their record says running and the process lives) or began in the last <see cref="Cap.RecentLaunch"/>, whatever the counter has seen,
+        /// The threads the room itself has granted that count against its free cores now: those of the runs it started that are still running
+        /// (their record says running and the process lives) or began in the last <see cref="Cap.RecentLaunch"/>,
         /// and one thread for each episode re-step whose process lives, for exactly as long as it lives (<see cref="EpisodeSteps.LiveThreads"/>).
         /// </summary>
         public int GrantedThreads(DateTime nowUtc)
@@ -214,6 +218,9 @@ namespace Evosim.NurseryRoom
             }
             return sum;
         }
+
+        /// <summary>The room's slot as the queue gives it now, inside room.json's affinity (<see cref="Cap.SlotOf"/>).</summary>
+        public Slot ReadSlot() => Cap.SlotOf(Queue.Read(), Settings.Affinity);
 
         /// <summary>The first folder at or above <paramref name="from"/> that holds src/Evosim.Core, or null.</summary>
         public static string FindRoot(string from) => Recipe.RepoRootAbove(from);
