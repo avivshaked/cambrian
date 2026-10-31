@@ -4611,7 +4611,17 @@ namespace Evosim.Core
         /// <summary>The plume grid's cell, metres. <c>EVOSIM_LEAF_PLUME_CELL</c>.</summary>
         /// <remarks>⚠ A design choice (D270). The grid refuses a cell that does not divide the box.</remarks>
         [Tunable("sense", Unit = "m")]
-        public float LeafPlumeCellMetres { get; set; } = 5f;
+        public float LeafPlumeCellMetres
+        {
+            get => _leafPlumeCellMetres;
+            set => _leafPlumeCellMetres = value > 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(LeafPlumeCellMetres), value,
+                    "A plume's cell in metres is finite and above 0 (D270).");
+        }
+
+        private float _leafPlumeCellMetres = 5f;
 
         /// <summary>
         /// The time in which the plume loses a factor of e of its stock, seconds. Finite and above 0.

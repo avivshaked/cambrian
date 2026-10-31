@@ -25,6 +25,7 @@ namespace Evosim.Core.Tests
             var config = new RunConfig();
             Assert.Equal(LeafPlumeForm.None, config.LeafPlume);
             Assert.Equal(5f, config.LeafPlumeCellMetres);
+            Assert.Equal(5f, config.LeafPlumeCellMetres);
             Assert.Equal(3000f, config.LeafPlumeLifetimeSeconds);
             Assert.Equal(1f, config.LeafPlumeHalfScale);
             Assert.False(config.CurrentSense);
@@ -208,8 +209,9 @@ namespace Evosim.Core.Tests
         [InlineData(-1f)]
         [InlineData(float.NaN)]
         [InlineData(float.PositiveInfinity)]
-        public void TheLifetimeTheHalfScaleAndTheHalfSpeedRefuseWhatIsNotFiniteAndAboveZero(float bad)
+        public void TheCellTheLifetimeTheHalfScaleAndTheHalfSpeedRefuseWhatIsNotFiniteAndAboveZero(float bad)
         {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new RunConfig { LeafPlumeCellMetres = bad });
             Assert.Throws<ArgumentOutOfRangeException>(() => new RunConfig { LeafPlumeLifetimeSeconds = bad });
             Assert.Throws<ArgumentOutOfRangeException>(() => new RunConfig { LeafPlumeHalfScale = bad });
             Assert.Throws<ArgumentOutOfRangeException>(() => new RunConfig { CurrentSenseHalfSpeedMetresPerSecond = bad });
