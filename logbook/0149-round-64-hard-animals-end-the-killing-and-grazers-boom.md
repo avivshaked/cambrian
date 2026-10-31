@@ -65,6 +65,17 @@ D was the arm the owner had asked to see. Its grazers' mean over each 3,000 s wi
 late window. Grazers had been the leaves' largest killer in three of the last four bins. It failed marks 1 and 2 at
 24,000 s only because it had not finished rising.
 
+![Arm A from the side at 24,000 s](images/r64/r64-a-6202-t24000-recon-side.png)
+
+![Arm D from the side at 24,000 s](images/r64/r64-d-6202-t24000-recon-side.png)
+
+The theatre lane drew A and D from the side at 24,000 s, from the runs' saved poses at their recorded sizes. Green
+squares are leaves, and the pale branching shapes are the reef's fixed rock. A holds three sparse crowds under the
+surface, with gaps between them, and its orange bodies gather in the right-hand crowd. D is one thin sheet across the
+whole square, with no gap between the thirds and almost no orange. D spread every newborn over 30 m and A did not, and
+an even sheet is what that spreading would make (inference). Each frame leaves out about a sixth of its world's
+bodies, which the drawing could not match.
+
 ## D carried on
 
 So D was carried on toward 48,000 s, with A beside it, since a card group needs two worlds
@@ -77,6 +88,14 @@ world's year, and each peak was higher than the last: 6,373, then 7,322, then 8,
 wobbled in time with the leaves', with no lag. A grazer-and-plant cycle would show the grazers lagging the leaves, so
 the swing is the seasons and not a chase (inference, at a resolution of 3,000 s). D passed marks 1, 3 and 4 of the
 step, and failed mark 2 at 0.58 of bite income from leaves.
+
+![Arm D from above at 46,500 s](images/r64/r64s2-d-6202-t46500-recon-top.png)
+
+The picture shows D from above at 46,500 s, its last checkpoint of the step, drawn the same way. The leaves cover most
+of the square loosely. They make one mass and a separate crowd at top right, the shape the film world had reached by
+48,000 s (logbook/0148), but much thinner. Pale squares lie mixed all through the green, and a few lie out in the open
+water. The theatre lane reads them as mostly grazers, from their colour and the run's counts, and did not check them
+body by body. The frame draws 6,475 bodies and leaves out 1,280.
 
 The step had a second story. At 02:44:59 UTC on 2026-10-31 the graphics driver logged an error. Thirteen seconds later
 the card group's watch stopped the run, as it is built to. D's last checkpoint was at 46,500 s. The owner ruled that

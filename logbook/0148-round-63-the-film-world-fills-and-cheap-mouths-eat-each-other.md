@@ -29,7 +29,7 @@ further than a single leaf.
 
 ## The bloom screen failed, and its rerun gave the film its world
 
-The bloom screen, `r63b`, ran eight worlds on 2026-10-28: four arms on two seeds, 24,000 s each
+The bloom screen, r63b, ran eight worlds on 2026-10-28: four arms on two seeds, 24,000 s each
 (`logbook/specs/r63b-prereg/predictions.md`, read in `logbook/specs/r63b-read/README.md`). Arm A had no bloom. B had
 the blooms alone, C the blooms and the far smell, and D added fat, tissue that lets a body store more reserve (D247).
 Islands drew periods of 2,500 to 6,000 s.
@@ -42,10 +42,10 @@ how full its body's reserve is (D245). It cut births there by about a third.
 
 The owner ruled the next day that the rerun would judge survival from 12,000 s, drop fat, and keep the energy sense
 (D256). The rerun, `r63c`, slowed the blooms to periods of 5,000 to 10,000 s and ran B and C again on 2026-10-29
-(`logbook/specs/r63c-read/README.md`). Survival passed everywhere. Half the islands now followed their bloom in B,
-four and five of eight. Evolution passed on one seed. The far smell bought little: C crossed between islands only one
-or two more times than B, and its leaves followed the bloom on fewer islands. I read that as the scent drawing grazers
-off their islands and away from the leaves the bloom feeds, which is a guess.
+(`logbook/specs/r63c-read/README.md`). Survival passed in every world, and half the islands now followed their bloom
+in B, four and five of eight. Evolution passed on one seed. The far smell bought little: C crossed between islands
+only one or two more times than B, and its leaves followed the bloom on fewer islands. I read that as the scent
+drawing grazers off their islands and away from the leaves the bloom feeds, which is a guess.
 
 No arm passed every gate, so the choice went to the owner, who took arm B as the film's world (D259): the slow bloom,
 with the far smell off. It is the simpler world, and its leaves followed the bloom best.
@@ -75,11 +75,11 @@ to 24,000 s each crowd grows and spreads.
 ## The film's world ran on, and filled until it stopped
 
 The film needs a longer world than 24,000 s, so the coordinator ran B on (D259; the pre-registration is
-`logbook/specs/r63d-prereg/predictions.md` on the `scratch/wt-r63b` worktree). The screen, `r63d`, first founded a
-third seed to 24,000 s. Then it resumed all three B worlds from 24,000 s toward 72,000 s, as one card group from 00:38
-UTC on 2026-10-30.
+`logbook/specs/r63d-prereg/predictions.md` on the `scratch/wt-r63b` worktree). The screen, r63d, first founded a third
+seed to 24,000 s. Then it resumed all three B worlds from 24,000 s toward 72,000 s, as one card group from 00:38 UTC
+on 2026-10-30.
 
-None got there. At 48,000 s the leaves followed the bloom on 0, 1 and 0 islands of eight, fewer than at 24,000 s
+None got there, and at 48,000 s the leaves followed the bloom on 0, 1 and 0 islands of eight, fewer than at 24,000 s
 (`logbook/specs/r63d-read/48000/README.md`). The pre-registration had guessed more. By the end, which came at 54,440
 s, 55,260 s and 67,240 s, no island followed its bloom at all (`logbook/specs/r63d-read/end/README.md`). Each world
 ended as a runaway at the ceiling of 25,000 bodies, most of them leaves.
@@ -89,7 +89,19 @@ whole run has a trend the bloom does not have, and a plain correlation reads tha
 ripple on a flood. In seed 6202 the matter standing in the world rose from 16,100 units at 24,000 s to 29,600 by the
 end. More flowed in at the islands than was buried.
 
-The other gates passed. Grazers survived in all three worlds, and they evolved. By the end, grazers' body mass in two
+![Seed 6202's film world from above at 24,000 s](images/r63/r63c-b-6202-t24000-recon-top.png)
+
+![The same world from above at 48,000 s](images/r63/r63d-b-6202-t48000-recon-top.png)
+
+The two pictures show seed 6202's world from above, at 24,000 s and at 48,000 s. The theatre lane drew both from the
+run's saved poses at their recorded sizes, and stepped nothing. The yellow lines are the world's edges and the 3 x 3
+tiling of its square. Green squares are leaves, and the pale branching shapes are the reef's fixed rock. At 24,000 s
+six crowds of leaves stand apart, with open water between them. By 48,000 s five of them have grown into one mass
+across the middle and lower left, and only the crowd at top right stands alone. That is the flood the read describes,
+seen from above. Each frame leaves out about a seventh of the world's bodies, 1,533 and 3,317, which the drawing could
+not match to a genome or a position.
+
+The other gates passed: grazers survived in all three worlds, and they evolved. By the end, grazers' body mass in two
 worlds had roughly doubled from the founders' mean, and in all three their number of parts had shifted by more than
 one. Grazer crowds followed their island's bloom even where the leaf totals did not, on 6 or 7 of 11 islands, lagging
 it by about 550 to 2,300 s. Crossings between islands came to 250 to 551 a world, rising in the later windows. In seed
@@ -115,15 +127,15 @@ B cut every price of a mouth to a tenth. C did both. Six gates asked whether the
 stopped growing, and died mostly by grazing, while grazers rose and both guilds lived.
 
 Speed alone did nothing. A's grazers ended fewer than the control's, 77 against 119, and 71% of them starved. Cost
-moved everything. B's grazers averaged 589 in the last window, five times the control's, and did two-thirds to
-three-quarters of the leaf killing. C held the leaves to 0.37 of the control's by the end. No arm stopped the leaves
-growing, so none passed all six gates.
+moved everything else, and B's grazers averaged 589 in the last window, five times the control's, and did two-thirds
+to three-quarters of the leaf killing. C held the leaves to 0.37 of the control's by the end. No arm stopped the
+leaves growing, so none passed all six gates.
 
 The owner asked whether grazers swim to plants or drift, and a follow-up read of every position row answered. Grazers
 swim at a median 36 cm/s through the water, against 2 cm/s for a drifting leaf. But the share of each 10 s move toward
 the nearest leaf is −0.01, the same as for the drifting leaves themselves. Grazers swim, and they do not swim toward
-food. They hardly need to. A newborn starts a median 1.5 m from a leaf, and most grazer positions are within 2 m of
-one. What killed a newborn was its upkeep, and a cheap mouth stretched its runway about tenfold (inference).
+food, and they hardly need to. A newborn starts a median 1.5 m from a leaf, and most grazer positions are within 2 m
+of one. What killed a newborn was its upkeep, and a cheap mouth stretched its runway about tenfold (inference).
 
 Cheap mouths had a second effect. In B, 57% of grazer deaths were kills by other grazers, against 21% in the control.
 Close kin made up 16% of those kills. A parent ate its child in 7.8% of them, a sibling a sibling in 6.2%, and a child
@@ -144,6 +156,16 @@ The second screen, `r63h`, ran from 16:14 to 19:02 UTC with mouths at a hundredt
 four times as deep. Grazers rose six to fourteen times above the control, and D and E ended with the leaves at a third
 of the control's. The leaves still grew from the middle window to the last in every arm.
 
+![The control, r63c-b-6202, from the side at 24,000 s](images/r63/r63c-b-6202-t24000-recon-side.png)
+
+![r63h-d-6202, with mouths at a hundredth of their price, from the side at 24,000 s](images/r63/r63h-d-6202-t24000-recon-side.png)
+
+The two side views set the control beside D at the same second, drawn the same way as the pictures above. In both
+worlds the life sits in a thin layer under the surface, over the reef's rock. In the control the leaves pack into
+three dense crowds, with clear water between the first and the second. In D the crowds are a sparse canopy in the same
+places. Pale bodies and small fragments fall through D's water and lie on the bed, where the control shows almost
+none. The drawing holds 9,052 bodies in the control and 3,771 in D.
+
 The table shows where grazers' bite income came from over the last 3,000 s. Look at the first column: under 0.5, a
 grazer lives more on animals than on leaves.
 
@@ -160,7 +182,7 @@ share of income and the most grazers, 1,700. Yet its leaves ended at 0.76 of the
 grazers as well as leaves, and the read cannot say which effect wins.
 
 The pre-registration expected the deep bite to hold the leaves down furthest, and it held them least. Reading the
-record a day later, the table above is the line I kept coming back to. A grazer that lives on animals is a grazer in
+reads a day later, the table above is the line I kept coming back to. A grazer that lives on animals is a grazer in
 name only.
 
 ## What it changes

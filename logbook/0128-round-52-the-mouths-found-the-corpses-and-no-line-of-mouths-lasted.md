@@ -1,13 +1,12 @@
 # Round 52's read: the mouths found the corpses and ate them, and no line of mouths lasted
 
 *2026-10-31, written by the writing lane from the committed read, about a month after round 52 ran on 2026-09-29. The
-pre-registration is logbook/0127. The read of all three seeds is `logbook/specs/r52-read/read-30000.txt` on the branch
-`round-52`, and the reads of seeds 1 and 2 are also on main, one file each, in the same folder. Every figure is
+pre-registration is logbook/0127. The read of all three seeds is `logbook/specs/r52-read/read-30000.txt` on the branch `round-52`. The reads of seeds 1 and 2 are also on main, one file each, in the same folder. Every figure is
 measured unless it says otherwise.*
 
 Round 52 changed where a founder lands. A founder is a random genome brought into the world from outside. From this
 round, a founder that carries a mouth was set down over the richest pile of corpses in its column (D129). The rule
-worked. In all three seeds every mouth founder landed over a corpse, and the mouths ate 413 corpses, against three in
+worked: in all three seeds every mouth founder landed over a corpse, and the mouths ate 413 corpses, against three in
 round 51. But the mouth founders lived a median of only 1 to 46 s longer than round 51's. No line rooted in a mouth
 had more than one member alive at the end. The round also made lifespan a heritable gene. It rose in seeds 1 and 3, as
 the pre-registration's screen said it would, and fell in seed 2, which no committed read explains. The matter books
@@ -28,7 +27,7 @@ removed.
 
 Every body carries a lifespan gene that stretches its whole ageing curve. At 1, the median body that dies of age dies
 at 3,000 s; at 2, at 6,000 s. A longer life costs repair. Upkeep, the standing cost of being a body, is multiplied by
-the gene to the power 0.5, so a body at 2 pays 1.41 times what a body at 1 pays.
+the gene to the power 0.5. A body at 2 pays 1.41 times what a body at 1 pays.
 
 The pre-registration was committed at 12:39 on 2026-09-29, by the machine's clock, and seed 1 started nine seconds
 later. Each seed ran 30,000 simulated seconds on sixteen threads, one after another. Seed 1 took 98 minutes and seed 2
@@ -47,17 +46,22 @@ While seeds 2 and 3 ran, a Fable subagent read seed 1 alone and advised on round
 The first question was whether the mouths would land in the larder. Each mouth founder's row records the corpse energy
 in the 1 m column it landed in. Beside it, the row records what a column drawn at random would hold. In seed 1 the
 median landing column held 48 J of corpses, against 7.6 J at random, 6.0 times as much. Seeds 2 and 3 read 5.7 times
-each. Every one of the 628 mouth founders that arrived after 3,000 s landed over a corpse. K1 and K2 hold.
+each. Every one of the 628 mouth founders that arrived after 3,000 s landed over a corpse, so K1 and K2 hold.
 
-They ate. By 30,000 s the mouths had eaten 170, 114 and 129 corpses, against K3's bar of 30 and round 51's one a seed.
+They ate: by 30,000 s the mouths had eaten 170, 114 and 129 corpses, against K3's bar of 30 and round 51's one a seed.
 Divided over the mouth founders, that is 0.58 to 0.76 corpses each. If the founders did all the eating, most ate about
 once. The read does not say who ate, so that is an inference.
 
 The meal hardly touched the larder. At 30,000 s seed 1 still held 17,000 corpses, 15,418 of them settled on the bed or
-a reef. The 170 eaten were 0.44% of its 38,656 deaths. No mouth killed anything. The read counts no body eaten alive
-and no corpse made by a kill, in any seed.
+a reef. The 170 eaten were 0.44% of its 38,656 deaths. No mouth killed anything, and the read counts no body eaten
+alive and no corpse made by a kill, in any seed.
 
-<!-- frame: r52-s1, 12,000 s, a mouth founder over a settled corpse pile on the bed -->
+![A mouth founder alone on the bed of seed 1, a cousin of the run at 12,000 s](images/r52/r52-s1-t12000-cousin-mouth-founder.png)
+
+The theatre lane restored seed 1 from its checkpoint at 12,000 s, on round 52's own build, and stepped it on. The
+picture is therefore a cousin of the run. It shows mouth founder 10451, 1.49 m long, seen from 4 m and looking down at
+a slant. It is a blue, rounded body alone on the bare bed. No corpse is in view, so the picture shows a mouth on the
+bed and not its meal. The look is round 52's own.
 
 ## A meal bought seconds, and no line of mouths lasted
 
@@ -82,8 +86,9 @@ stroke. Seeds 2 and 3 ended with 8 and 16 jointed bodies, against 607 and 38 in 
 share of children born with a joint fell from 0.395 in the first 5,000 s to under 0.001 from 15,000 s on. Seed 1 ended
 with 219 and averaged 354 over the run, against its round 51 baseline's 137.
 
-<!-- frame: r52-s2, 6,000 s, jointed bodies among the crowd while they were still being born --> <!-- frame: r52-s2,
-30,000 s, the same view with the jointed bodies gone and corpses lying on the bed -->
+No picture of seed 2's jointed crowd could be made. On round 52's own build the theatre's orbiting camera came to rest
+inside the reef's rock at both 6,000 s and 30,000 s. A camera placed by hand would be a new shot, and none has been
+made.
 
 ## The lifespan gene rose in two seeds and fell in the third
 
@@ -94,7 +99,7 @@ caught. As that share fell, the gene would rise.
 
 First came the check that the gene does what the rule says. Every birth carried it, and in every seed bodies with a
 longer gene died of age later. In seed 1 the median death by age came at 1,852 s for bodies under 0.8. It came at
-2,262 s from 0.8 to 1.2, and at 2,784 s at 1.2 and over. LS1 holds.
+2,262 s from 0.8 to 1.2, and at 2,784 s at 1.2 and over, so LS1 holds.
 
 Seeds 1 and 3 went as the screen said. Their children born from 3,000 to 8,000 s carried a mean gene of 0.98 and 1.03.
 Upkeep's share of the light the living caught fell from 0.62 to 0.51 in seed 1, and from 0.60 to 0.45 in seed 3. In
@@ -134,7 +139,8 @@ S3 failed in seed 3, the only seed it asked. Its rigid stomach children died at 
 under 1,500 s. S2 counts 374 stomach children in seed 3, 12 of them alive, which matches this line closely. So the 229
 rigid ones S3 read were probably its members (inference). The read does not join the two.
 
-<!-- frame: r52-s3c, 30,000 s, the 12 living pure stomachs of seed 3's stomach line, and where they sit -->
+No picture of the twelve living stomachs could be made either. On the same build the camera's eye met the water's
+surface, and the stomach it was aimed at, body 60228, did not show.
 
 ## The clauses against the pre-registration
 
@@ -178,9 +184,9 @@ G1 to G4, C3, V2, M1 to M4, O1, O2, F3, EK2 to EK4, X1, LC, A1, A3, H1, H2 and H
 
 D132 drew three things from the first two seeds. The mouths had used the settled piles, so D131's plan to make a
 settled corpse decay fast was set aside. It would have added no food and shrunk the piles about tenfold. Movement was
-the wall, since a mouth that cannot swim to its next meal cannot live on corpses, however well it lands. So the
-water's reactive thrust, which pushes a limb along as it swings through the water, was to be built during round 53 and
-tried alone in round 54. And the lifespan values held through rounds 53 and 54.
+the wall, since a mouth that cannot swim to its next meal cannot live on corpses, however well it lands. The water's
+reactive thrust, which pushes a limb along as it swings through the water, was to be built during round 53 and tried
+alone in round 54. And the lifespan values held through rounds 53 and 54.
 
 Round 53 changed one thing, the matter within the crowd's reach (logbook/0129). It made the tank 25 m deep instead of
 45 m. 0129 turned K4, K5 and EK1 into readings, since round 53 changed nothing about a mouth or a founder. Round 53's

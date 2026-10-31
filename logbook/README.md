@@ -103,7 +103,7 @@ A run can end in four ways.
 | **budget** | the simulated seconds it was asked for, and the only ending that counts as the world's own answer |
 | **extinction** | nothing left alive |
 | **wall clock** | a real-time limit on the machine |
-| **ceiling** | the population maximum the instrument can afford to simulate, `MaximumPopulation`; a run the ceiling ends is called a ***runaway*** |
+| **ceiling** | the population maximum a run is set to stop at, `MaximumPopulation`, chosen by the project and not a limit of the machine; a world that reaches it is read as wrongly calibrated, and a run the ceiling ends is called a ***runaway*** |
 
 The last two are limits of the instrument rather than of the world, so a run they end is
 called ***censored***. That is the survival-analysis sense of the word: cut short for a
@@ -180,6 +180,8 @@ onward, in the open square of D204.
 | ***pace factor*** | k, the number of physics seconds in one world second (D239); at k = 3 a body swims three times as far for each joule of upkeep |
 | ***kelp blade*** | a leaf whose genome repeats a part along an edge to itself, each copy about twice as long and no thicker than the 2 cm floor, so the chain becomes a long flat ribbon; found in rounds 60 and 61, and the compounding stopped from round 62 (D196) |
 | ***reach*** | a part's half-diagonal, from its centre to a corner; contact treats the part as a ball of that radius (D196), so a blade 15 m long touches as a ball more than 7 m in radius |
+| ***recon*** | a picture reconstructed from a run's saved poses and genomes at one second, every body at its recorded place and size, nothing stepped; it says RECONSTRUCTED FROM SNAPSHOT at its top, and how many bodies it could not draw |
+| ***cousin*** | a picture made by restoring a run from a checkpoint and stepping it on, in a build or on a machine that does not replay it exactly; it shows the run's bodies, but not the run's own seconds |
 
 These are the report columns the entries quote, with what each number means.
 
