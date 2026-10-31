@@ -522,7 +522,7 @@ namespace Evosim.Core
             bool lifespans = LifespanRecorded;
             bool climb = Config.GrowthAdultSeconds > 0f;
             bool fatTable = Config.CellTypes.Contains(CellTypeIds.Fat);
-            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i], layout, capped, corpseLandings, lifespans, Config.ContactEating, climb, fatTable);
+            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i], layout, capped, corpseLandings, lifespans, Config.ContactEating, climb, fatTable, Config.DeathRowIncome);
 
             StateIo.Tag(w, "ABSD");
             w.Write(_absorptiveDeaths.Count);
@@ -886,7 +886,7 @@ namespace Evosim.Core
             bool lifespans = LifespanRecorded;
             bool climb = Config.GrowthAdultSeconds > 0f;
             bool fatTable = Config.CellTypes.Contains(CellTypeIds.Fat);
-            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r, version, capped, corpseLandings, lifespans, Config.ContactEating, climb, fatTable));
+            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r, version, capped, corpseLandings, lifespans, Config.ContactEating, climb, fatTable, Config.DeathRowIncome));
 
             StateIo.Tag(r, "ABSD");
             int deaths = r.ReadInt32();
@@ -1238,6 +1238,16 @@ namespace Evosim.Core
             // D219: what the body's biting parts have kept, only in a world whose bites feed.
             if (Config.ContactEating) w.Write(creature.BiteKeptJoules);
 
+            // D264: the body's lifetime bite income by source, only in a world with the death-row income on, so
+            // every other world writes the bytes it wrote before.
+            if (Config.DeathRowIncome)
+            {
+                w.Write(creature.BiteKeptFromLeavesJoules);
+                w.Write(creature.BiteKeptFromOthersJoules);
+                w.Write(creature.BiteKeptFromRemainsJoules);
+                w.Write(creature.GutSwallowedLifetimeJoules);
+            }
+
             // D232: what the body holds in its gut, only in a world whose kills are swallowed, so every other world
             // writes the bytes it wrote before. A body of remains writes its 0.
             if (Config.KillSwallowsBody) w.Write(creature.GutJoules);
@@ -1371,6 +1381,15 @@ namespace Evosim.Core
 
             if (Config.ContactEating) creature.BiteKeptJoules = r.ReadDouble();
 
+            // D264, under the config the writer asked (see WriteOrganism).
+            if (Config.DeathRowIncome)
+            {
+                creature.BiteKeptFromLeavesJoules = r.ReadDouble();
+                creature.BiteKeptFromOthersJoules = r.ReadDouble();
+                creature.BiteKeptFromRemainsJoules = r.ReadDouble();
+                creature.GutSwallowedLifetimeJoules = r.ReadDouble();
+            }
+
             // D232, under the config the writer asked (see WriteOrganism).
             if (Config.KillSwallowsBody) creature.GutJoules = r.ReadDouble();
 
@@ -1464,7 +1483,7 @@ namespace Evosim.Core
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(),
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
 
-        private static void WriteLineage(BinaryWriter w, LineageEvent e, int layout, bool capped, bool corpseLandings, bool lifespans, bool contactEating, bool climb, bool fatTable)
+        private static void WriteLineage(BinaryWriter w, LineageEvent e, int layout, bool capped, bool corpseLandings, bool lifespans, bool contactEating, bool climb, bool fatTable, bool deathIncome)
         {
             w.Write((int)e.Kind);
             w.Write(e.ElapsedSeconds);
@@ -1534,6 +1553,15 @@ namespace Evosim.Core
             // D219: a death row's bite-kept joules, only in a world whose bites feed.
             if (contactEating && e.Kind == LineageEventKind.Death) w.Write(e.BiteKeptJoules);
 
+            // D264: a death row's income by source, only in a world with the death-row income on.
+            if (deathIncome && e.Kind == LineageEventKind.Death)
+            {
+                w.Write(e.BiteKeptLeavesJoules);
+                w.Write(e.BiteKeptOthersJoules);
+                w.Write(e.BiteKeptRemainsJoules);
+                w.Write(e.GutSwallowedJoules);
+            }
+
             // D220: the joules a closed remains burnt, on that row only. A founding row's second body id rides in
             // the parent field every row writes.
             if (contactEating && e.Kind == LineageEventKind.RemainsClosed) w.Write(e.RemainsJoules);
@@ -1593,7 +1621,7 @@ namespace Evosim.Core
             // version 10, above.
         }
 
-        private static LineageEvent ReadLineage(BinaryReader r, int version, bool capped, bool corpseLandings, bool lifespans, bool contactEating, bool climb, bool fatTable)
+        private static LineageEvent ReadLineage(BinaryReader r, int version, bool capped, bool corpseLandings, bool lifespans, bool contactEating, bool climb, bool fatTable, bool deathIncome)
         {
             var kind = (LineageEventKind)r.ReadInt32();
             double seconds = r.ReadDouble();
@@ -1651,6 +1679,17 @@ namespace Evosim.Core
             }
 
             double biteKept = contactEating && kind == LineageEventKind.Death ? r.ReadDouble() : 0d;
+
+            double keptLeaves = 0d, keptOthers = 0d, keptRemains = 0d, gutSwallowed = 0d;
+            bool hasIncome = deathIncome && kind == LineageEventKind.Death;
+            if (hasIncome)
+            {
+                keptLeaves = r.ReadDouble();
+                keptOthers = r.ReadDouble();
+                keptRemains = r.ReadDouble();
+                gutSwallowed = r.ReadDouble();
+            }
+
             double remainsJoules = contactEating && kind == LineageEventKind.RemainsClosed ? r.ReadDouble() : 0d;
 
             double capCut = capped ? r.ReadDouble() : 0d;
@@ -1695,7 +1734,8 @@ namespace Evosim.Core
                     capCut, landingCorpse, landingCorpseMean, lifespan,
                     fromWorld, fromId, growthReserve, hasFat)
                 : LineageEvent.Death(
-                    seconds, id, cause, accountAtDeath, reserveAtDeath, intakeOwn, intakeOther, intakeCarrion, biteKept);
+                    seconds, id, cause, accountAtDeath, reserveAtDeath, intakeOwn, intakeOther, intakeCarrion, biteKept,
+                    hasIncome, keptLeaves, keptOthers, keptRemains, gutSwallowed);
         }
 
         private static void WriteAbsorptive(BinaryWriter w, AbsorptiveSample s)

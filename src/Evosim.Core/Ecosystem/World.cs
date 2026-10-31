@@ -3100,6 +3100,15 @@ namespace Evosim.Core
                     nameof(config));
             }
 
+            if (config.DeathRowIncome && !config.ContactEating)
+            {
+                throw new ArgumentException(
+                    "DeathRowIncome is on and ContactEating is off. The death row's income fields count what a body " +
+                    "kept from biting, and bites keep nothing where they do not feed as they wound; a header " +
+                    "naming it would describe a world the run did not have (D264).",
+                    nameof(config));
+            }
+
             // D129 adds the corpses to D116's lottery as a mouth's food, so it has no lottery to
             // join without D116, no corpse to read unless corpses are objects, and no mouth that
             // could eat one without a reach. Each refused rather than ignored, for the same reason.
@@ -5951,7 +5960,10 @@ namespace Evosim.Core
             _lineageEvents.Add(LineageEvent.Death(
                 ElapsedSeconds, creature.Id, cause, accountAtDeath, reserveAtDeath,
                 creature.MouthJoulesOwnKill, creature.MouthJoulesOtherKill, creature.MouthJoulesCarrion,
-                creature.BiteKeptJoules));
+                creature.BiteKeptJoules,
+                Config.DeathRowIncome,
+                creature.BiteKeptFromLeavesJoules, creature.BiteKeptFromOthersJoules,
+                creature.BiteKeptFromRemainsJoules, creature.GutSwallowedLifetimeJoules));
         }
 
         /// <summary>
