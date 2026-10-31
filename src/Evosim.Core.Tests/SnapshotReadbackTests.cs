@@ -61,7 +61,8 @@ namespace Evosim.Core.Tests
                 f => Path.GetFileName(Path.GetDirectoryName(f)) == "snapshots");
             if (snapshots.Length == 0) { _output.WriteLine("no snapshots — skipped"); return; }
 
-            int files = 0, genomes = 0, parts = 0, neurons = 0, stale = 0, empty = 0;
+            int files = 0, genomes = 0, parts = 0, neurons = 0, stale = 0, empty = 0, ownTable = 0, ownTableGenomes = 0;
+            var tables = new Dictionary<string, CellTypeRegistry>();
             var cellTypes = new HashSet<string>();
             var failures = new List<string>();
 
@@ -119,6 +120,25 @@ namespace Evosim.Core.Tests
                     continue;
                 }
 
+                // A run may register cell types the default table lacks (D165's anchoring cell enters a
+                // world through the run's own table). Its genomes are checked against that table, read
+                // from the run's own config.json (its cellTypes entry alone, since the rest of an old config
+                // may be on a format this build refuses); a run whose table cannot be read is checked
+                // against the default table, as before.
+                string runDir = Path.GetDirectoryName(Path.GetDirectoryName(file));
+                if (!tables.TryGetValue(runDir, out CellTypeRegistry table))
+                {
+                    table = null;
+                    try
+                    {
+                        CellTypeRegistry own = CellTypeJson.ReadRegistry(Json.Parse(File.ReadAllText(Path.Combine(runDir, "config.json")))["cellTypes"]);
+                        if (own.HashContribution() != CellTypeRegistry.Standard.HashContribution()) table = own;
+                    }
+                    catch (Exception) { }
+                    tables[runDir] = table;
+                    if (table != null) ownTable++;
+                }
+
                 for (int i = 0; i < rows.Length; i++)
                 {
                     if (string.IsNullOrWhiteSpace(rows[i])) continue;
@@ -138,7 +158,8 @@ namespace Evosim.Core.Tests
 
                         // Readable is not the same as usable. A founder pool feeds these straight
                         // into development, and Validate is what development demands.
-                        IReadOnlyList<string> issues = genome.Validate();
+                        if (table != null) ownTableGenomes++;
+                        IReadOnlyList<string> issues = genome.Validate(table);
                         if (issues.Count > 0)
                         {
                             failures.Add(
@@ -162,6 +183,12 @@ namespace Evosim.Core.Tests
                     $"{GenomeJson.FormatVersion} and correctly unreadable by this build.");
             }
             if (empty > 0) _output.WriteLine($"{empty} snapshot(s) held no rows at all.");
+            if (ownTable > 0)
+            {
+                _output.WriteLine(
+                    $"{ownTableGenomes:N0} genome(s) from {ownTable} run(s) whose config registers cell types the default table lacks " +
+                    "were checked against that run's own cell-type table.");
+            }
 
             Assert.True(
                 failures.Count == 0,
