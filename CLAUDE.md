@@ -263,8 +263,7 @@ actually verifying it.
   subtle, show the owner the wording before committing it. One file is the exception: the nursery
   room's `rounds/nursery/activity.jsonl` is committed whole, the reasons the owner types on the
   room's screen included, and the screen says so beside each reason box (the owner's ruling of
-  2026-10-05, `logbook/specs/nursery-room-tests-plan.md`). Never paraphrase or scrub its rows. Quotes written before this ruling
-  are to be paraphrased in a cleanup that is queued in HANDOFF.
+  2026-10-05, `logbook/specs/nursery-room-tests-plan.md`). Never paraphrase or scrub its rows.
 - **First-person voice is welcome in the record** — the owner invited genuine agent
   reactions, as the agent's own: honest and brief, never performative (logbook/0042's
   personal note is the precedent).
