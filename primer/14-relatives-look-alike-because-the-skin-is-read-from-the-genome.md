@@ -209,6 +209,17 @@ radial stripes inside a lip ring.
 
 ## What the sheets show
 
+![The third sheet: one family and four pairs of unrelated animals, drawn by the plan-hash skin and then by the skin
+map](../logbook/specs/skin-map-build/skin-map-sheet-6e.png)
+
+The sheet above is the third, kept beside the build record. Each pair of rows draws the same bodies twice, first by
+the plan-hash skin and then by the skin map. In the top pair, the family of one clade goes from hot pink to salmon
+with a pale maze. Each child carries its skin distance from its parent, 0.00 to 0.21, and 0.60 for the grandchild
+that grew a tall stalk. In the middle pair, a parent and child from each of four worlds come out salmon, blue with
+cyan, magenta and violet-pink, and each child matches its parent. Under the plan-hash skin the same eight were pink
+and pale yellow. The producers at the bottom are drawn as before. The second sheet,
+[6d](../logbook/specs/skin-map-build/skin-map-sheet-6d.png), is the same but for its producers, which it turned khaki.
+
 I looked at five of the sheets. On the first, the plan-hash look of the time drew the whole family hot pink. The map
 drew it salmon-orange with a pale gold maze, and the unrelated animals below came out the same salmon. The grandchild
 that grew a tall stalk stands apart, at a skin distance of 0.57 from its parent. The green producers are the same in
