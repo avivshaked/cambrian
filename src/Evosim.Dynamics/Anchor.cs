@@ -39,7 +39,7 @@ namespace Evosim.Dynamics
     /// <para>
     /// <b>The brain's hold (D268).</b> Where the cell has <c>BrainHold</c>, a held grip lets go the step its part's
     /// hold output is below the cell's release threshold, and owes the release price for its full breaking force.
-    /// A grip does not form while the output is below the threshold, so one that was let go forms again only once
+    /// A grip does not form while the output is at or below the threshold, so one that was let go forms again only once
     /// the output is back above it and the part touches the rock, with no latch stored. An unwired output reads
     /// <c>tanh(0) = 0</c>, above the default threshold, so a brain that ignores it holds as the grip did before.
     /// Holding owes nothing. A break and a release at an empty reserve owe no release price: the reserve's rule and
@@ -72,11 +72,19 @@ namespace Evosim.Dynamics
             {
                 if (!body.Anchors[i]) continue;
 
-                bool let = hold != null && HoldOf(body, hold, i) < cell.ReleaseBelow;
+                // A held grip lets go below the threshold; one that is not held forms only strictly above it, so a
+                // brain whose output sits exactly on the threshold neither lets go nor grips (D268: "back above").
+                bool let = false, notAbove = false;
+                if (hold != null)
+                {
+                    float signal = HoldOf(body, hold, i);
+                    let = signal < cell.ReleaseBelow;
+                    notAbove = !(signal > cell.ReleaseBelow);
+                }
 
                 if (!body.GripHeld[i])
                 {
-                    if (!body.RockTouched[i] || !(reserve > 0) || let)
+                    if (!body.RockTouched[i] || !(reserve > 0) || notAbove)
                     {
                         if (share != null) share[i] = 0.0;
                         continue;

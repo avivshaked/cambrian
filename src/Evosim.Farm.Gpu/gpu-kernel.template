@@ -8438,17 +8438,18 @@ namespace __NS__
                 // D268: the brain lets go while the part's hold output is below the cell's threshold. The output is
                 // the unit BrainStep left in the step's settled row (br.S after the parity flip), as the CPU's
                 // Creature.HoldSignal is; a part with no output reads 0, the output of a unit nothing feeds.
-                bool let = false;
+                bool let = false, notAbove = false;
                 if (cfg.AnchorBrain != 0)
                 {
                     int unit = gl.GripUnit[row];
                     float signal = unit >= 0 ? br.S[(br.Parity[i] * cfg.MaxN + unit) * cfg.N + i] : 0f;
                     let = signal < cfg.ReleaseBelow;
+                    notAbove = !(signal > cfg.ReleaseBelow);   // a grip forms only strictly above the threshold
                 }
 
                 if (gl.GripHeld[row] == 0)
                 {
-                    if (gl.RockTouched[row] == 0 || !(reserve > 0) || let)
+                    if (gl.RockTouched[row] == 0 || !(reserve > 0) || notAbove)
                     {
                         if (cfg.AnchorBrain != 0) gl.GripPull[row] = 0.0;
                         continue;

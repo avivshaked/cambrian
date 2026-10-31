@@ -865,6 +865,22 @@ namespace Evosim.Farm
 
             // D165: the anchoring cell joins the table at its end, so every other type keeps its
             // place and a world without it is the table it always was.
+            // D268: the threshold and the price mean nothing without the switch, so a launcher that names either one
+            // without it is refused, not left to be silently ignored.
+            if (!s.AnchorBrain)
+            {
+                foreach (string name in new[] { "EVOSIM_ANCHOR_RELEASE_BELOW", "EVOSIM_ANCHOR_RELEASE_PRICE" })
+                {
+                    if (s.Provided.Contains(name))
+                    {
+                        throw new ArgumentException(
+                            name + " is set and EVOSIM_ANCHOR_BRAIN is off. The release threshold and price only mean " +
+                            "something when the brain holds the grip (D268); turn EVOSIM_ANCHOR_BRAIN on, or unset " +
+                            name + ".");
+                    }
+                }
+            }
+
             if (s.AnchorBrain && !s.Anchoring)
             {
                 throw new ArgumentException(

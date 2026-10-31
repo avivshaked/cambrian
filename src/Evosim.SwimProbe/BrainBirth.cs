@@ -681,7 +681,7 @@ namespace Evosim.SwimProbe
             public void Step(double dt)
             {
                 Body.Senses.Sample();
-                Body.Brain.Step((float)dt, Body.DriveSignal, Body.Senses, _bend ? Body.BendSignal : null);
+                Body.Brain.Step((float)dt, Body.DriveSignal, Body.Senses, _bend ? Body.BendSignal : null, Body.HoldSignal);
                 Array.Clear(Body.Fext, 0, Body.Fext.Length);
                 Array.Clear(Body.Tau, 0, Body.Tau.Length);
                 Body.Drive.Drive(Body.DriveSignal, Body.BendSignal);

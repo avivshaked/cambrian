@@ -212,6 +212,11 @@ namespace Evosim.Dynamics.Tests
             Assert.False(body.GripHeld[0]);
             Assert.Equal(1L, body.GripsFormed);
 
+            // Exactly at the threshold on the rock nothing forms either: a grip forms only strictly above it.
+            Apply(body, config, -0.5f, touching: true);
+            Assert.False(body.GripHeld[0]);
+            Assert.Equal(1L, body.GripsFormed);
+
             // At -0.4 on the rock it forms again, with no latch to clear.
             Apply(body, config, -0.4f, touching: true);
             Assert.True(body.GripHeld[0]);

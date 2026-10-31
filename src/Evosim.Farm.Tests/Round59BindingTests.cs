@@ -101,10 +101,21 @@ namespace Evosim.Farm.Tests
                 () => Built(new Dictionary<string, string> { { "EVOSIM_ANCHOR_BRAIN", "1" } }));
             Assert.Contains("EVOSIM_ANCHORING", e.Message);
 
+            // The threshold and the price without the switch are refused, naming the switch and the setting.
+            foreach (string name in new[] { "EVOSIM_ANCHOR_RELEASE_BELOW", "EVOSIM_ANCHOR_RELEASE_PRICE" })
+            {
+                ArgumentException ignored = Assert.Throws<ArgumentException>(() => Built(new Dictionary<string, string>
+                {
+                    { "EVOSIM_ANCHORING", "1" }, { name, "0" },
+                }));
+                Assert.Contains("EVOSIM_ANCHOR_BRAIN", ignored.Message);
+                Assert.Contains(name, ignored.Message);
+            }
+
             // A threshold outside the output's range is the cell's own refusal.
             Assert.Throws<ArgumentOutOfRangeException>(() => Built(new Dictionary<string, string>
             {
-                { "EVOSIM_ANCHORING", "1" }, { "EVOSIM_ANCHOR_RELEASE_BELOW", "1.5" },
+                { "EVOSIM_ANCHORING", "1" }, { "EVOSIM_ANCHOR_BRAIN", "1" }, { "EVOSIM_ANCHOR_RELEASE_BELOW", "1.5" },
             }));
         }
 
