@@ -53,6 +53,12 @@ namespace Evosim.Farm.Gpu
         /// <summary>D235: the world's table lists the nose (<c>SolverConfig.Nose</c>); the card then reads each nose link's held sniff and every other link's smell as zero.</summary>
         public bool Nose;
 
+        /// <summary>D270: the carried leaf smell is on (<c>SolverConfig.LeafPlume</c> is not None); the card then copies each link's held strength and gradient from the host.</summary>
+        public bool LeafPlume;
+
+        /// <summary>D270: the current sense is on (<c>SolverConfig.CurrentSense</c>); the card then copies each link's held ground current from the host.</summary>
+        public bool CurrentSense;
+
         /// <summary>D228: a part touches as its convex core with a margin (<c>SolverConfig.ContactShape</c>), not as the ball of its half-diagonal.</summary>
         public bool TrueShape;
 
@@ -206,6 +212,8 @@ namespace Evosim.Farm.Gpu
             StrokeAssembly = s.StrokePushesAssembly;
             MirroredDrive = s.MirroredDrive;
             Nose = s.Nose != null;
+            LeafPlume = s.LeafPlume != LeafPlumeForm.None;
+            CurrentSense = s.CurrentSense;
             TrueShape = s.ContactShape.IsTrueShape();
             AtPoint = s.ContactShape.AtPoint();
             CoincidentApart = s.ContactShape == ContactShapeForm.SpheresApart;

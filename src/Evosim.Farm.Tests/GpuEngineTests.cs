@@ -199,6 +199,7 @@ namespace Evosim.Farm.Tests
             body.Senses.Nutrients = world.Nutrients;
             body.Senses.Scent = world.Scent;
             body.Senses.LeafScent = world.LeafScent;
+            body.Senses.LeafPlume = world.LeafPlume;
             body.Senses.Reserve = new Reserve { SecondsOfReserve = 40f + id };
 
             var contact = new bool[body.Links];

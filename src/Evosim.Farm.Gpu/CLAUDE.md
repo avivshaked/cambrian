@@ -144,6 +144,12 @@ The root file's rules still apply. The entries below were moved word for word, s
   link already. Its pair is `TrueShapePairAt`, a copy of `TrueShapePair` that hands back the contact point's two levers,
   and its surfaces are `AgainstTheWorldPoint` over the one vertex routine `VerticesPoint`. The card has no friction
   (`FarmGpu.Open` refuses a bed with any), so `Rock`'s friction is the zero vector there.
+- **The carried leaf smell and the current sense reach the card as copies, never as arithmetic** (D270,
+  `EVOSIM_LEAF_PLUME`, `EVOSIM_CURRENT_SENSE`). The plume's grid stays on the host. `Simulation` holds each body's far
+  readings once a metabolic step (`CreatureSenses.HoldFar`), and `PackBlock` copies `HeldFar` into `PlumeHeld` (four floats
+  a link) and `CurrentHeld` (three) beside the nose's `NoseHeld`; `SensorRead` returns them for channels 19 to 21. Each
+  column is a one-cell stub with its switch off. A body with `HeldSniff` off is refused when the card packs it, since the
+  host would hold its readings afresh every step. A change to what `HoldFar` computes needs no kernel change.
 - **A stroke that pushes its assembly has a second copy on the card** (D231, `EVOSIM_STROKE_ASSEMBLY`). The class kernel's
   power push transcribes the host's assembly branch in `Fluid.Apply` line for line, `Fluid.AssemblyLeverOf` included,
   so a change to either is made in the other in the same change. The tables it reads are the host body's own

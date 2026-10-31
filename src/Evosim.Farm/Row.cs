@@ -1126,6 +1126,15 @@ namespace Evosim.Farm
                     w.Field("mouthPointFallbacks", world.MouthPointFallbacks);
                 }
 
+                // D270. Only in a world whose leaves feed the carried smell, so every other stats row is the bytes it was:
+                // what the leaves have emitted into the plume and what its lifetime has taken back, in m2 s, so that the
+                // plume's books (the stock is emitted minus decayed) can be read from a run.
+                if (world.LeafPlume != null)
+                {
+                    w.Field("leafPlumeEmitted", world.LeafPlumeEmittedTotal)
+                        .Field("leafPlumeDecayed", world.LeafPlumeDecayedTotal);
+                }
+
                 long[] harnessPhaseMs = sim.HarnessPhaseMs();
 
                 for (int p = 0; p < harnessPhaseMs.Length; p++)

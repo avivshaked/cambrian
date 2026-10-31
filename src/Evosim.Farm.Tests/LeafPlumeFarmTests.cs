@@ -186,6 +186,85 @@ namespace Evosim.Farm.Tests
             Assert.Empty(off.plumeFiles);
         }
 
+        // ------------------------------------------------------------------ the stats row
+
+        /// <summary>One stats row of <see cref="DumpWorld"/>, after a few metabolic steps, as the sampler writes it.</summary>
+        private static string StatsRow(bool plume, string name, out World world)
+        {
+            string scratch = SimulationTests.Scratch(name);
+            RunConfig config = DumpWorld(plume);
+            world = new World(config, 1UL);
+            RunDirectory dir = RunDirectory.Create(scratch, config, DateTime.UtcNow);
+            string statsPath;
+
+            using (dir)
+            using (var sim = new Simulation(world, 1UL, 0.02f, StepsPerMetabolic, threads: 2, runDirectory: dir.Path))
+            {
+                for (int i = 0; i < 6 * StepsPerMetabolic; i++) sim.Step();
+
+                var report = new Report(Path.Combine(scratch, "report.md"), sim.Config);
+                new Sampler().Write(sim, dir, report.Columns);
+                statsPath = Path.Combine(dir.Path, "stats.jsonl");
+            }
+
+            string[] rows = JsonlWriter.ReadRows(statsPath);
+            return rows[rows.Length - 1];
+        }
+
+        /// <summary>
+        /// The row with every number replaced by <c>n</c>: its field names, its brackets, its commas and its strings, which are
+        /// what a plume-off world must write exactly as it did. Wall-clock numbers and the world's own vary from run to run;
+        /// the shape does not.
+        /// </summary>
+        private static string Shape(string row) =>
+            System.Text.RegularExpressions.Regex.Replace(row, @"-?\d+(\.\d+)?([eE][+-]?\d+)?", "n");
+
+        private static string Sha(string text)
+        {
+            using (var sha = System.Security.Cryptography.SHA256.Create())
+            {
+                byte[] hash = sha.ComputeHash(Encoding.UTF8.GetBytes(text));
+                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant().Substring(0, 16);
+            }
+        }
+
+        /// <summary>
+        /// The shape of a plume-off world's stats row, pinned from the row the sampler wrote before D270 added its two
+        /// fields: the same names in the same order and nothing between them, so a recorded run reads as it did. The
+        /// pin moves only with a column that is not the plume's.
+        /// </summary>
+        private const string PlumeOffRowShape = "807aad22d9a687f0";
+
+        [Fact]
+        public void APlumeOffWorldsStatsRowIsTheRowItWas()
+        {
+            string row = StatsRow(false, "plume-stats-off", out _);
+            string shape = Shape(row);
+            _out.WriteLine(Sha(shape));
+            _out.WriteLine(shape);
+
+            Assert.DoesNotContain("leafPlume", row);
+            Assert.Equal(PlumeOffRowShape, Sha(shape));
+        }
+
+        [Fact]
+        public void APlumeOnWorldsStatsRowCarriesTheEmittedAndTheDecayedTotals()
+        {
+            string row = StatsRow(true, "plume-stats-on", out World world);
+            JsonNode node = Json.Parse(row);
+
+            Assert.True(node.Has("leafPlumeEmitted"), "the plume's emitted total is not on the row");
+            Assert.True(node.Has("leafPlumeDecayed"), "the plume's decayed total is not on the row");
+            Assert.Equal(world.LeafPlumeEmittedTotal, node["leafPlumeEmitted"].AsDouble(), 6);
+            Assert.Equal(world.LeafPlumeDecayedTotal, node["leafPlumeDecayed"].AsDouble(), 6);
+            Assert.True(world.LeafPlumeEmittedTotal > 0d, "nothing was emitted, so the row's total saw nothing");
+
+            // Stock, decay and emission keep their books to the digit the row carries.
+            Assert.Equal(
+                world.LeafPlumeEmittedTotal - world.LeafPlumeDecayedTotal, world.LeafPlume.Recount(),
+                Math.Max(1e-9, 1e-6 * world.LeafPlumeEmittedTotal));
+        }
+
         // ------------------------------------------------------------------ the resume
 
         private static RunConfig PlumeAndCurrentWorld()
