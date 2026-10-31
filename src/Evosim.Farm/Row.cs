@@ -1620,7 +1620,8 @@ namespace Evosim.Farm
         {
             var matter = world.Matter as GridField;
             var snow = world.Nutrients as GridField;
-            if (matter == null && snow == null) return;
+            LeafPlumeField plume = world.LeafPlume;
+            if (matter == null && snow == null && plume == null) return;
 
             System.IO.Directory.CreateDirectory(dir.FieldsPath);
 
@@ -1633,6 +1634,17 @@ namespace Evosim.Farm
                     layout.BeginObject("matter")
                         .Field("cellsX", matter.CellsX).Field("cellsY", matter.CellsY).Field("cellsZ", matter.CellsZ)
                         .Field("cellMetres", matter.CellMetres).Field("order", "(iy * cellsX + ix) * cellsZ + iz")
+                        .EndObject();
+                }
+                // D270: the carried leaf smell, every cell, only where the plume is on. The founding bench sets the
+                // half-scale from these files.
+                if (plume != null)
+                {
+                    layout.BeginObject("plume")
+                        .Field("cellsX", plume.CellsX).Field("cellsY", plume.CellsY).Field("cellsZ", plume.CellsZ)
+                        .Field("cellMetres", plume.CellMetres).Field("order", "(iy * cellsX + ix) * cellsZ + iz")
+                        .Field("file", "NNNNNNNNN.plume.f32")
+                        .Field("value", "stock of the cell, m2 s (0 in a dead cell); the density is the stock over the cell's volume")
                         .EndObject();
                 }
                 if (snow != null)
@@ -1695,6 +1707,14 @@ namespace Evosim.Farm
                 if (_fieldScratch.Length < cells) _fieldScratch = new float[cells];
                 matter.CopyStockTo(_fieldScratch);
                 WriteFloats(dir.FieldPath(world.ElapsedSeconds, "matter"), _fieldScratch, cells);
+            }
+
+            if (plume != null)
+            {
+                int cells = plume.CellCount;
+                if (_fieldScratch.Length < cells) _fieldScratch = new float[cells];
+                plume.Grid.CopyStockTo(_fieldScratch);
+                WriteFloats(dir.FieldPath(world.ElapsedSeconds, "plume"), _fieldScratch, cells);
             }
 
             if (snow != null)

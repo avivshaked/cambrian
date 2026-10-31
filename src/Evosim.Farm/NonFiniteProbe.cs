@@ -27,7 +27,7 @@ namespace Evosim.Farm
     /// </remarks>
     internal sealed class NonFiniteProbe
     {
-        private float[] _snow, _snowBefore, _matter, _matterBefore;
+        private float[] _snow, _snowBefore, _matter, _matterBefore, _plume, _plumeBefore;
         private double _secondsBefore = double.NaN;
 
         /// <summary>Metabolic steps scanned.</summary>
@@ -46,6 +46,10 @@ namespace Evosim.Farm
             GridField matter = world.Matter as GridField;
             Copy(snow, ref _snow);
             Copy(matter, ref _matter);
+
+            // D270: the carried leaf smell's grid, only where the plume is on.
+            GridField plume = world.LeafPlume?.Grid;
+            Copy(plume, ref _plume);
 
             for (int i = 0; i < world.Living.Count; i++)
             {
@@ -85,6 +89,7 @@ namespace Evosim.Farm
 
             ScanGrid("snow", snow, _snow, _snowBefore, found);
             ScanGrid("matter", matter, _matter, _matterBefore, found);
+            ScanGrid("plume", plume, _plume, _plumeBefore, found);
 
             string report = found.Length == 0
                 ? null
@@ -93,6 +98,7 @@ namespace Evosim.Farm
 
             (_snow, _snowBefore) = (_snowBefore, _snow);
             (_matter, _matterBefore) = (_matterBefore, _matter);
+            (_plume, _plumeBefore) = (_plumeBefore, _plume);
             _secondsBefore = seconds;
 
             return report;

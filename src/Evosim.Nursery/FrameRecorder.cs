@@ -584,7 +584,8 @@ namespace Evosim.Nursery
                 foreach (SenseSpec s in m.Senses)
                 {
                     string name = p + "sense." + s.Channel + ".p" + s.Part.ToString(Inv);
-                    if (s.Channel == SensorChannel.Flow || s.Channel == SensorChannel.LeafScentDirection) name += ".axis" + s.Index.ToString(Inv);
+                    if (s.Channel == SensorChannel.Flow || s.Channel == SensorChannel.LeafScentDirection
+                        || s.Channel == SensorChannel.LeafPlumeGradient || s.Channel == SensorChannel.GroundCurrent) name += ".axis" + s.Index.ToString(Inv);
                     else if (s.Channel == SensorChannel.JointAngle || s.Channel == SensorChannel.JointAngularVelocity || s.Channel == SensorChannel.Stroke
                              || s.Channel == SensorChannel.Hold || s.Channel == SensorChannel.Ramp) name += ".dof" + s.Index.ToString(Inv);
                     Add(name, "normalised, about -1 to 1");

@@ -379,6 +379,8 @@ namespace Evosim.Nursery
                         break;
                     case SensorChannel.Flow:
                     case SensorChannel.LeafScentDirection:
+                    case SensorChannel.LeafPlumeGradient:
+                    case SensorChannel.GroundCurrent:
                         for (int part = 0; part < c.Links; part++)
                             for (int axis = 0; axis < 3; axis++) specs.Add(new SenseSpec(channel, part, axis));
                         break;
@@ -390,6 +392,7 @@ namespace Evosim.Nursery
                     case SensorChannel.Damage:
                     case SensorChannel.BedTouch:
                     case SensorChannel.LeafScent:
+                    case SensorChannel.LeafPlume:
                         for (int part = 0; part < c.Links; part++) specs.Add(new SenseSpec(channel, part, 0));
                         break;
                     // Photo and any channel the sampler does not implement read 0 everywhere: nothing to record.
