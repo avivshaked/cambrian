@@ -185,7 +185,7 @@ Two structural principles that are easy to violate:
 - **`FETCH-RESULTS.md`** — exact retrieval URL for every paper. This is the
   reproducibility record; PDFs are not committed.
 - **`research/papers/`** — **gitignored and must stay that way.** Copyrighted publisher
-  PDFs plus their extracted markdown. Two were obtained via institutional access.
+  PDFs plus their extracted markdown. Twelve were obtained via institutional access (FETCH-RESULTS says which).
   Machine-converting a paywalled paper to markdown does not make it redistributable.
 
 ### Citation convention
