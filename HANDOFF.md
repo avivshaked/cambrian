@@ -30,7 +30,7 @@ The owner has delegated the grazer screens to the coordinator. The tactic is to 
 - One kill in six of a grazer by a grazer is close kin.
 - Grazers barely steer toward food.
 
-A grazer screen from here gates on the share of bite income from living plants, at about 0.8 or more. `r63h` (`logbook/specs/r63h-read/README.md`) took mouths to a hundredth of their price. Grazers rose six to fourteen times, and two arms pushed the leaves to a third of the control's. But the leaves still grow, and grazers take only 0.36-0.52 of their income from leaves. The cost dials are spent: one mouth at one yield makes a cheap predator as much as a cheap grazer.
+A grazer screen from here gates on the share of bite income from living plants, at about 0.8 or more. `r63h` (`logbook/specs/r63h-read/README.md`) took mouths to a hundredth of their price. Grazers rose six to fourteen times, and two arms pushed the leaves to a third of the control's. But the leaves still grow, and grazers take only 0.36-0.52 of their income from leaves. The cost dials are spent: one mouth at one yield makes a cheap predator as much as a cheap grazer. The theatre's skin-map read agrees: in ten worlds of rounds 62 and 63, 1,722 eaters carry a mouth's attack and intake both at 1.0 from the tenth percentile up (`scratch/skin-map/full-colour/v7d/mouth_numbers.log`). Neither knob pays a cost that binds, which is the gap D264's phase 3, a diet gene and matter kinds, is meant to close (inference).
 
 **One unified proposal comes next.** It is built from two inputs:
 - `proposals/propose-matter-kinds.md`: matter kinds by tissue and a diet gene, with the coordinator's review at its end.
