@@ -3006,6 +3006,18 @@ namespace Evosim.Core
                     "builds (D162).", nameof(config));
             }
 
+            // D268: the hold output is an output of D146's one brain. The per-node brain has no output list to add it
+            // to, and no world has run it since D146.
+            if (config.CellTypes.Contains(CellTypeIds.Anchoring) &&
+                ((AnchoringCell)config.CellTypes.Resolve(CellTypeIds.Anchoring)).BrainHold &&
+                (config.Brain == null || config.Brain.BrainModel != BrainModel.Central))
+            {
+                throw new ArgumentException(
+                    "The anchoring cell lets the brain hold the grip (BrainHold) and BrainModel is not Central. The hold " +
+                    "output is an output of D146's one brain, and the per-node brain has no output list to add it to (D268).",
+                    nameof(config));
+            }
+
             // D228: the true shape is the per-part contact's narrowphase; the body sphere has no parts to test.
             if (config.ContactShape != ContactShapeForm.Spheres && !config.ContactPerPart)
             {

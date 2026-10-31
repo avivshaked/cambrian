@@ -839,7 +839,7 @@ namespace Evosim.Farm
             "IaA", "IaB", "IaC", "Pa", "Un", "Uf", "Dinv", "Ubar", "Acc", "Fext", "Tau",
             "DragForce", "DragTorque", "DriveTorque", "LimitImplicit",
             "_preVelocity", "_preSpin", "_preRelativeSpin", "_preJointRate", "_passiveTorque",
-            "DriveSignal", "_overlapIds", "_overlapCount", "_heldIds", "AppliedTorque",
+            "DriveSignal", "HoldSignal", "_overlapIds", "_overlapCount", "_heldIds", "AppliedTorque",
 
             // D114's link pair beside each overlap id: the same step's list, filled with it.
             // Organism.PartContact stood here until 2026-09-25 and does not belong: the physics

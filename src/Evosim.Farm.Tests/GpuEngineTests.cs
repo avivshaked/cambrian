@@ -95,10 +95,12 @@ namespace Evosim.Farm.Tests
             {
                 if (attempt > 2000) throw new InvalidOperationException("no viable body in 2,000 draws");
                 Genome genome = GenomeFactory.RandomViable(rng, minParts: 2, sensorPool: sensorPool);
-                if (central && !WireCentral(genome, rng, sensorPool ?? world.Config.SensorPool(), world.Config.Brain, bigLinks)) continue;
 
-                // Every part but the links recast as one cell type, developed against the world's table.
-                if (bodyCell != null)
+                // Every part but the links recast as one cell type, developed against the world's table. Under the
+                // one brain the recast comes first and the wiring is made against that table (D268: the hold outputs
+                // are the anchoring parts', which only the table's cell makes), so the draws of a body with no cell
+                // type are the same as before.
+                void Recast()
                 {
                     foreach (MorphNode node in genome.Nodes)
                     {
@@ -108,6 +110,12 @@ namespace Evosim.Farm.Tests
                         node.Lift = 0f;
                     }
                 }
+
+                bool recastFirst = central && bodyCell != null;
+                if (recastFirst) Recast();
+                if (central && !WireCentral(genome, rng, sensorPool ?? world.Config.SensorPool(), world.Config.Brain, bigLinks,
+                                            recastFirst ? world.Config.CellTypes : null)) continue;
+                if (bodyCell != null && !recastFirst) Recast();
 
                 Phenotype plan = bodyCell == null
                     ? Developer.Develop(genome, limits ?? DevelopmentLimits.Default)
@@ -2114,6 +2122,98 @@ namespace Evosim.Farm.Tests
             Assert.Equal(0L, backend.OverflowTotal);
         }
 
+        /// <summary>
+        /// D268 on the card: the anchoring cell lets the one brain hold the grip. Bodies of anchoring parts under the
+        /// one brain, with a release threshold set where the founders' hold outputs cross it as their senses move, so
+        /// grips form, are let go (priced and counted apart from a break) and form again, and the two grip senses
+        /// move; the state, the pull record and the let-go count are the solver's to the bit after every block, the
+        /// price drained is the same, and a death and a birth between blocks change the slots under it.
+        /// </summary>
+        [Fact]
+        public void TheBrainHoldOnTheCpuAcceleratorIsTheSolver()
+        {
+            var settings = new Dictionary<string, string>
+            {
+                { "EVOSIM_BRAIN_MODEL", "central" }, { "EVOSIM_NEURON_COST", "0" }, { "EVOSIM_CONNECTION_COST", "0" },
+                { "EVOSIM_SENSE_BED_TOUCH", "1" }, { "EVOSIM_ANCHORING", "1" }, { "EVOSIM_ANCHOR_BRAIN", "1" },
+                { "EVOSIM_ANCHOR_RELEASE_BELOW", "0.95" }, { "EVOSIM_ANCHOR_RELEASE_PRICE", "0.001" },
+                { "EVOSIM_ANCHOR_PRICE", "0.002" },
+                { "EVOSIM_EXCESS_DENSITY", "500" }, { "EVOSIM_NEUTRAL_VOLUME", "0" }, { "EVOSIM_ANCHOR_DECAY", "1" },
+                { "EVOSIM_ANCHOR_RESERVE_THRESHOLD", "50" }, { "EVOSIM_ANCHOR_RESERVE_LAG", "0.2" },
+            };
+
+            (DynamicsWorld cpu, World coreA) = Pair(true, true, settings);
+            (DynamicsWorld gpu, World coreB) = Pair(true, true, settings);
+            Assert.True(cpu.Config.Anchoring.BrainHold);
+
+            OnTheBed(cpu, coreA, 6, 11UL, 1, null, CellTypeIds.Anchoring, central: true);
+            OnTheBed(gpu, coreB, 6, 11UL, 1, null, CellTypeIds.Anchoring, central: true);
+            Assert.Contains(cpu.Creatures, c => c.CanGrip && c.GripPull != null);
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            bool sawGripping = false, sawPull = false;
+            double paid = 0;
+            for (int block = 0; block < 8; block++)
+            {
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, "the brain's hold, after block " + block);
+                foreach (Creature body in cpu.Creatures)
+                {
+                    for (int l = 0; l < body.Links; l++)
+                    {
+                        if (body.Anchors[l] && body.GripPull[l] > 0) sawPull = true;
+                    }
+                }
+
+                sawGripping |= Reads(cpu, SensorChannel.Gripping);
+
+                double a = 0, b = 0;
+                foreach (Creature body in cpu.Creatures) a += body.DrainGripOwed();
+                foreach (Creature body in gpu.Creatures) b += body.DrainGripOwed();
+                Assert.Equal(a, b);
+                paid += a;
+
+                foreach (DynamicsWorld w in new[] { cpu, gpu })
+                {
+                    for (int k = 0; k < w.Creatures.Count; k++)
+                    {
+                        float seconds = 40f + w.Creatures[k].Id;
+                        if (block == 3 && k == 1) seconds = 0f;
+                        w.Creatures[k].Senses.Reserve = new GripReserve { SecondsOfReserve = seconds };
+                    }
+                }
+
+                if (block == 1)
+                {
+                    foreach ((DynamicsWorld w, World core) in new[] { (cpu, coreA), (gpu, coreB) })
+                    {
+                        w.Remove(w.Creatures[0].Id);
+                        OnTheBed(w, core, 1, 99UL, 50, null, CellTypeIds.Anchoring, central: true);
+                    }
+                }
+            }
+
+            long formed = 0, letGo = 0, broken = 0;
+            foreach (Creature body in cpu.Creatures)
+            {
+                formed += body.GripsFormed;
+                letGo += body.GripsLetGo;
+                broken += body.GripsBroken;
+            }
+
+            _out.WriteLine($"grips formed {formed}, let go {letGo}, broken {broken}, paid {paid:0.######} J");
+            Assert.True(formed > 0, "no grip formed");
+            Assert.True(letGo > 0, "no grip was let go");
+            Assert.True(paid > 0, "no grip was paid for");
+            Assert.True(sawGripping, "no brain read the Gripping sense as not 0");
+            Assert.True(sawPull, "no grip carried a pull share");
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
+        }
+
         private sealed class GripReserve : IReserveSource
         {
             public float SecondsOfReserve { get; set; }
@@ -2392,7 +2492,7 @@ namespace Evosim.Farm.Tests
         /// axis, so their links meet the rock from the first steps.
         /// </summary>
         private static void OnTheBed(DynamicsWorld world, World core, int count, ulong seed, int firstId, SensorChannel[] pool,
-                                     string bodyCell = null)
+                                     string bodyCell = null, bool central = false)
         {
             var rng = new Rng(seed);
             Vec3 axis = GpuTank.Axis(core);
@@ -2402,7 +2502,7 @@ namespace Evosim.Farm.Tests
                 double x = axis.X + 1.5 * (k % 3) - 1.5;
                 double z = axis.Z + 1.5 * (k / 3) - 0.75;
                 var at = new Vec3(x, core.Bed.FloorY(x, z) + 0.1, z);
-                world.AddInIdOrder(GpuTank.Body(firstId + k, world.Config, core, rng, at, sensorPool: pool, bodyCell: bodyCell));
+                world.AddInIdOrder(GpuTank.Body(firstId + k, world.Config, core, rng, at, sensorPool: pool, central: central, bodyCell: bodyCell));
             }
         }
 

@@ -37,6 +37,16 @@ namespace Evosim.Dynamics
     /// fraction of the threshold, and it is 0, and every grip lets go, when the reserve is.
     /// </para>
     /// <para>
+    /// <b>The brain's hold (D268).</b> Where the cell has <c>BrainHold</c>, a held grip lets go the step its part's
+    /// hold output is below the cell's release threshold, and owes the release price for its full breaking force.
+    /// A grip does not form while the output is at or below the threshold, so one that was let go forms again only once
+    /// the output is back above it and the part touches the rock, with no latch stored. An unwired output reads
+    /// <c>tanh(0) = 0</c>, above the default threshold, so a brain that ignores it holds as the grip did before.
+    /// Holding owes nothing. A break and a release at an empty reserve owe no release price: the reserve's rule and
+    /// the pull's come first, and only the brain's own act is priced. The pull as a share of the breaking force is
+    /// kept per link (<see cref="Creature.GripPull"/>) for the second grip sense.
+    /// </para>
+    /// <para>
     /// <b>A fixed order, and this body's arrays alone</b>, so the pass runs inside the parallel
     /// phase and the thread count stays invisible.
     /// </para>
@@ -54,19 +64,46 @@ namespace Evosim.Dynamics
             double zeta = config.ContactDampingRatio;
             double decay = Math.Exp(-dt / cell.DecaySeconds);
 
+            // D268: null where the cell does not let the brain hold, and then no line below does anything new.
+            float[] hold = cell.BrainHold ? body.HoldSignal : null;
+            double[] share = body.GripPull;
+
             for (int i = 0; i < body.Links; i++)
             {
                 if (!body.Anchors[i]) continue;
 
+                // A held grip lets go below the threshold; one that is not held forms only strictly above it, so a
+                // brain whose output sits exactly on the threshold neither lets go nor grips (D268: "back above").
+                bool let = false, notAbove = false;
+                if (hold != null)
+                {
+                    float signal = HoldOf(body, hold, i);
+                    let = signal < cell.ReleaseBelow;
+                    notAbove = !(signal > cell.ReleaseBelow);
+                }
+
                 if (!body.GripHeld[i])
                 {
-                    if (!body.RockTouched[i] || !(reserve > 0)) continue;
+                    if (!body.RockTouched[i] || !(reserve > 0) || notAbove)
+                    {
+                        if (share != null) share[i] = 0.0;
+                        continue;
+                    }
+
                     Form(body, i, cell);
                 }
 
                 if (!(reserve > 0))
                 {
                     Release(body, i);
+                    if (share != null) share[i] = 0.0;
+                    continue;
+                }
+
+                if (let)
+                {
+                    LetGo(body, i, cell);
+                    if (share != null) share[i] = 0.0;
                     continue;
                 }
 
@@ -80,9 +117,12 @@ namespace Evosim.Dynamics
                 Vec3 pull = (away * stiffness + velocity * damping) * -1.0;
 
                 double breaking = cell.BreakingForce((float)body.Volume[i]) * body.GripStrength[i] * reserve;
-                if (pull.Magnitude > breaking)
+                double demand = pull.Magnitude;
+                if (share != null) share[i] = breaking > 0 ? Math.Min(1.0, demand / breaking) : 0.0;
+                if (demand > breaking)
                 {
                     Release(body, i);
+                    if (share != null) share[i] = 0.0;
                     continue;
                 }
 
@@ -116,6 +156,25 @@ namespace Evosim.Dynamics
 
             body.GripOwedJoules += cell.BuildPrice(cell.BreakingForce((float)body.Volume[i]));
             body.GripsFormed++;
+        }
+
+        /// <summary>A link's hold output; a link with none reads 0, the output of a unit nothing feeds.</summary>
+        private static float HoldOf(Creature body, float[] hold, int i)
+        {
+            int g = body.GripOutputOf[i];
+            return g >= 0 && g < hold.Length ? hold[g] : 0f;
+        }
+
+        /// <summary>
+        /// The brain lets the grip go (D268): cleared as <see cref="Release"/> clears it, counted apart from a break,
+        /// and priced by the cell's release price on the part's full breaking force.
+        /// </summary>
+        private static void LetGo(Creature body, int i, AnchoringCell cell)
+        {
+            body.GripHeld[i] = false;
+            body.GripStrength[i] = 0;
+            body.GripOwedJoules += cell.ReleasePrice(cell.BreakingForce((float)body.Volume[i]));
+            body.GripsLetGo++;
         }
 
         private static void Release(Creature body, int i)

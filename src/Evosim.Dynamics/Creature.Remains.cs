@@ -45,6 +45,10 @@ namespace Evosim.Dynamics
             Array.Clear(BendSignal, 0, BendSignal.Length);
             Array.Clear(DriveTorque, 0, DriveTorque.Length);
 
+            // D268: no hold output is read or sensed once the body is remains.
+            if (HoldSignal != null) Array.Clear(HoldSignal, 0, HoldSignal.Length);
+            if (GripPull != null) Array.Clear(GripPull, 0, GripPull.Length);
+
             if (GripHeld != null)
             {
                 for (int i = 0; i < Links; i++)

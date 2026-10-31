@@ -177,6 +177,15 @@ namespace Evosim.Dynamics
                 w.Write(GripHeldSeconds);
             }
 
+            // D268: the second grip sense's record and the let-go count, there exactly when the cell lets the brain
+            // hold. No checkpoint before the build can have it on, so the layout version does not move.
+            if (GripPull != null)
+            {
+                StateIo.Tag(w, "GRPL");
+                StateIo.WriteDoubles(w, GripPull);
+                w.Write(GripsLetGo);
+            }
+
             // ---- what the card holds in two parts (round 60, World.StateVersion 18). The link
             // centres' float and rest, with the radii and velocities the card left beside them, and
             // the root's float and carry, each written only while it still gives what the host holds
@@ -345,6 +354,13 @@ namespace Evosim.Dynamics
                 GripsFormed = r.ReadInt64();
                 GripsBroken = r.ReadInt64();
                 GripHeldSeconds = r.ReadDouble();
+            }
+
+            if (GripPull != null)
+            {
+                StateIo.Tag(r, "GRPL");
+                StateIo.ReadDoubles(r, GripPull, "grip pulls");
+                GripsLetGo = r.ReadInt64();
             }
 
             CardLinkCentreHi = CardLinkCentreLo = CardBaseHi = CardBaseLo = null;

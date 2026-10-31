@@ -72,6 +72,9 @@ namespace Evosim.Core
         {
             if (!part.Smells && channel.IsSmell()) return 0;
 
+            // D268: the two grip senses belong to a part whose grip the brain holds, and to no other.
+            if (channel == SensorChannel.Gripping || channel == SensorChannel.GripPull) return part.Grips ? 1 : 0;
+
             switch (channel)
             {
                 case SensorChannel.JointAngle:
@@ -171,8 +174,26 @@ namespace Evosim.Core
                 cursor += dofs;
             }
 
+            // D268: one hold output a gripping part, after every joint output and in part order, so the joint outputs
+            // keep the units and the drive indices they have always had. It drives no joint.
+            foreach (PhenotypePart part in body.Parts)
+            {
+                if (!part.Grips) continue;
+                outputs.Add(new BrainOutput(
+                    BrainIds.Output(part.PathId, 0, BrainOutputKind.Grip), part.Index, 0,
+                    BrainOutputKind.Grip, -1));
+            }
+
             return outputs;
         }
+
+        /// <summary>
+        /// The bias a fresh hold output starts with (D268's review): a unit's sum is about one input's size at a
+        /// founder's scale, so with bias 0 a fresh output would fall below the release threshold whenever the senses
+        /// pushed it down, about a third of the time, and a plant would let go at random. At +2 it falls below -0.5
+        /// only when the summed senses fall under about -2.5, which is under one time in a hundred.
+        /// </summary>
+        public const float FreshHoldBias = 2f;
 
         /// <summary>
         /// Turns a genome of the old model into one of the central model: no neurons on any node,
@@ -337,7 +358,10 @@ namespace Evosim.Core
                 else if (fresh != null)
                 {
                     poolPorts = poolPorts ?? Ports(body, pool);
-                    unit.Bias = fresh.Gaussian(0f, options.FounderBiasStdDev);
+                    // A hold output starts held (FreshHoldBias); its links keep D147's draw like any output's.
+                    unit.Bias = o.Kind == BrainOutputKind.Grip
+                        ? FreshHoldBias
+                        : fresh.Gaussian(0f, options.FounderBiasStdDev);
 
                     float scale = poolPorts.Count == 0
                         ? 0f
@@ -372,8 +396,8 @@ namespace Evosim.Core
         private static BrainOutput? Template(
             BrainOutput o, Phenotype body, List<BrainOutput> outputs, Dictionary<ulong, BrainUnit> made)
         {
-            // Another degree of freedom of the same part, the nearest first.
-            for (int step = 1; step < 3; step++)
+            // Another degree of freedom of the same part, the nearest first. A hold output is its part's only one.
+            for (int step = 1; step < 3 && o.Kind != BrainOutputKind.Grip; step++)
             {
                 foreach (int d in new[] { o.Dof - step, o.Dof + step })
                 {
@@ -415,6 +439,9 @@ namespace Evosim.Core
 
             BrainOutput? Nearest(int part)
             {
+                // A hold output copies another part's hold output: the part's one, if it has it.
+                if (o.Kind == BrainOutputKind.Grip) return Find(part, 0);
+
                 int dofs = body.Parts[part].JointType.DofCount();
                 if (dofs == 0) return null;
                 int want = Math.Min(o.Dof, dofs - 1);

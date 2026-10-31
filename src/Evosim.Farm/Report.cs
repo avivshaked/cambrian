@@ -51,6 +51,14 @@ namespace Evosim.Farm
         public static readonly string[] ImmigrantColumns = { "**imm**", "imm refused" };
 
         /// <summary>
+        /// D268's five, after the immigrants and before the patches, present only when the table holds the anchoring cell
+        /// so every other world's report keeps its columns: the links holding a grip now, and the grips formed, let go by
+        /// the brain and broken by the pull over the living bodies' lives (the stats row's fields of the same names), and
+        /// the joules the world has charged for grips.
+        /// </summary>
+        public static readonly string[] GripColumns = { "gripsHeld", "gripsFormed", "gripsLetGo", "gripsBroken", "gripJoules" };
+
+        /// <summary>
         /// Fixes the table's shape for this run — <c>ConfigureColumns</c>.
         /// </summary>
         /// <remarks>
@@ -78,15 +86,18 @@ namespace Evosim.Farm
             // D159's two, after the pool and before the patches, and only in a migrating world, so
             // every other run's table is what it was to the byte.
             int immigrants = migrating ? ImmigrantColumns.Length : 0;
-            var columns = new string[BaseColumns.Length + pool + immigrants + patches];
+            // D268's grip columns, after the immigrants and only where the table holds the anchoring cell.
+            int grips = config.CellTypes.Contains(CellTypeIds.Anchoring) ? GripColumns.Length : 0;
+            var columns = new string[BaseColumns.Length + pool + immigrants + grips + patches];
 
             Array.Copy(BaseColumns, columns, BaseColumns.Length);
             if (pool > 0) columns[BaseColumns.Length] = PoolColumn;
             if (immigrants > 0) Array.Copy(ImmigrantColumns, 0, columns, BaseColumns.Length + pool, immigrants);
+            if (grips > 0) Array.Copy(GripColumns, 0, columns, BaseColumns.Length + pool + immigrants, grips);
 
             for (int p = 0; p < patches; p++)
             {
-                columns[BaseColumns.Length + pool + immigrants + p] = "p" + p.ToString(CultureInfo.InvariantCulture);
+                columns[BaseColumns.Length + pool + immigrants + grips + p] = "p" + p.ToString(CultureInfo.InvariantCulture);
             }
 
             Columns = columns;
@@ -671,6 +682,13 @@ namespace Evosim.Farm
                          " N/m2 price " + F(cell.BuildJoulesPerNewton) + " J/N decay " + F(cell.DecaySeconds) +
                          " s reserve " + F(cell.ReserveThresholdSeconds) + "/" + F(cell.ReserveLagSeconds) +
                          " s upkeep " + F(cell.UpkeepWattsPerCubicMetre) + " W/m3 bud x" + F(cell.BudWeight);
+
+                // D268: only when the brain holds, so a recorded header reads as it did.
+                if (cell.BrainHold)
+                {
+                    token += " brain hold below " + F(cell.ReleaseBelow) + " release price " +
+                             F(cell.ReleaseJoulesPerNewton) + " J/N";
+                }
             }
 
             // D235: only noses smell in this world, and with what numbers.

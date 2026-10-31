@@ -223,7 +223,19 @@ namespace Evosim.Core
         /// interchangeable.
         /// </remarks>
         [TunableRegistry]
-        public CellTypeRegistry CellTypes { get; set; } = CellTypeRegistry.Standard;
+        public CellTypeRegistry CellTypes
+        {
+            get => _cellTypes;
+            set
+            {
+                _cellTypes = value;
+
+                // D268: the sensor pool reads the table (the anchoring cell's brain hold), so a new table drops the cache.
+                _sensorPool = null;
+            }
+        }
+
+        private CellTypeRegistry _cellTypes = CellTypeRegistry.Standard;
 
         /// <summary>
         /// Fixed cost per offspring on top of its endowment, in joules — §5A.6.
@@ -4684,8 +4696,10 @@ namespace Evosim.Core
         {
             if (_sensorPool != null) return _sensorPool;
 
+            bool grips = HoldsTheGrip();
+
             if (!_senseChemical && !_senseEnergy && !_senseFlow && !_senseContact && !_senseDamage && !_senseScent && !_senseDrive &&
-                !_senseBedTouch && _leafScent == LeafScentForm.None)
+                !_senseBedTouch && _leafScent == LeafScentForm.None && !grips)
             {
                 _sensorPool = SensorChannels.DefaultPool;
                 return _sensorPool;
@@ -4694,7 +4708,7 @@ namespace Evosim.Core
             int extra = (_senseChemical ? 1 : 0) + (_senseEnergy ? 1 : 0) + (_senseFlow ? 1 : 0) +
                         (_senseContact ? 1 : 0) + (_senseDamage ? 1 : 0) + (_senseScent ? 1 : 0) +
                         (_senseDrive ? 3 : 0) + (_senseBedTouch ? 1 : 0) +
-                        (_leafScent != LeafScentForm.None ? 1 : 0);
+                        (_leafScent != LeafScentForm.None ? 1 : 0) + (grips ? 2 : 0);
             var pool = new SensorChannel[SensorChannels.DefaultPool.Length + extra];
 
             Array.Copy(SensorChannels.DefaultPool, pool, SensorChannels.DefaultPool.Length);
@@ -4724,12 +4738,24 @@ namespace Evosim.Core
             if (_senseBedTouch) pool[at++] = SensorChannel.BedTouch;
 
             // D167's leaf smell, whichever form the world carries, after the touch.
-            if (_leafScent == LeafScentForm.Strength) pool[at] = SensorChannel.LeafScent;
-            else if (_leafScent == LeafScentForm.Direction) pool[at] = SensorChannel.LeafScentDirection;
+            if (_leafScent == LeafScentForm.Strength) pool[at++] = SensorChannel.LeafScent;
+            else if (_leafScent == LeafScentForm.Direction) pool[at++] = SensorChannel.LeafScentDirection;
+
+            // D268's two grip senses, last, whether the table lets the brain hold the grip.
+            if (grips)
+            {
+                pool[at++] = SensorChannel.Gripping;
+                pool[at++] = SensorChannel.GripPull;
+            }
 
             _sensorPool = pool;
             return _sensorPool;
         }
+
+        /// <summary>True when the table holds the anchoring cell and it lets the brain hold the grip (D268).</summary>
+        private bool HoldsTheGrip() =>
+            _cellTypes != null && _cellTypes.Contains(CellTypeIds.Anchoring) &&
+            ((AnchoringCell)_cellTypes.Resolve(CellTypeIds.Anchoring)).BrainHold;
 
         /// <summary>
         /// The part of <c>Ecosystem.ConfigurePhysicsStep</c>'s rule that does not depend on the

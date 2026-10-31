@@ -193,6 +193,14 @@ namespace Evosim.Farm.Gpu.Sgl
         public ArrayView<Real> GripAnchor, GripAttitude, GripPoint;
         public ArrayView<long> GripsFormed, GripsBroken;
 
+        // D268, the brain's hold of the grip. By link row: the price of letting the grip go (the cell's release price
+        // on the full breaking force), the pull as a share of the breaking force (the second grip sense, written by
+        // Grip and read back by the farm), and the hold output's unit in the body's brain, 2 * TotalDof plus the
+        // part's ordinal among the gripping parts, -1 for a link with none. By global slot: the grips let go.
+        public ArrayView<double> GripLetPrice, GripPull;
+        public ArrayView<int> GripUnit;
+        public ArrayView<long> GripsLetGo;
+
         // The reach guard's records, by global slot, cleared at each block's start: which sphere
         // strayed (StrayCode, 0 for none), at which step, and where (x, y, z, radius).
         public ArrayView<int> StrayCode;
@@ -264,6 +272,8 @@ namespace Evosim.Farm.Gpu.Sgl
         public int ReefCount, LimitDrive, LimitDrag, UseRestore, FloorRestores, CreatureContact;
         public int WeldedDrag;   // D199/D200: under LimitDrag, the torque capped by the welded body (WeldedDrag)
         public int OffsetTorque, SplitColumns, Redo, BendAndPower, TurningDrag, RockTouch, Anchoring;
+        public int AnchorBrain;  // D268: the anchoring cell lets the brain hold the grip (AnchoringCell.BrainHold)
+        public float ReleaseBelow;   // D268: a hold output below this lets the grip go (AnchoringCell.ReleaseBelow)
         public int ShapedMass;   // D229: the limb pushes take the part's shaped added mass (Fluid.AddedMassOf)
         public int MirrorDrive;  // D234: a mirrored twin's drive and senses are read through its link's mirror mask
         public int Nose;         // D235: only nose links smell, and they read the held sniff the host left (SBrain.NoseHeld); no field is read for a smell
@@ -620,7 +630,8 @@ namespace Evosim.Farm.Gpu.Sgl
 
         private const int SDepth = 9, SUp = 3, SJointAngle = 0, SJointRate = 1, SChemical = 6, SEnergy = 7,
             SFlow = 8, SContact = 2, SDamage = 5, SScent = 10,
-            SStroke = 11, SHold = 12, SRamp = 13, SRock = 14, SLeaf = 15, SLeafDir = 16;
+            SStroke = 11, SHold = 12, SRamp = 13, SRock = 14, SLeaf = 15, SLeafDir = 16,
+            SGripping = 17, SGripPull = 18;
 
         // ============================================================== the grid
 
@@ -1675,7 +1686,7 @@ namespace Evosim.Farm.Gpu.Sgl
             if (!remains)
             {
                 BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
-                          sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
+                          sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf, gl, g);
             }
 
 #if GPU_PHASE_PROBE
@@ -2047,7 +2058,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 if (cfg.Anchoring != 0 && !remains)
                 {
                     Grip(g, links, position, velocity, spin, rotationMatrix, mass, smallI, fext,
-                         hasReserve, br.Reserve[i], cs, gl, cfg);
+                         hasReserve, br.Reserve[i], cs, gl, cfg, br, i);
                 }
             }
             else
@@ -2831,7 +2842,7 @@ namespace Evosim.Farm.Gpu.Sgl
             if (!remains)
             {
                 BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
-                          sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
+                          sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf, gl, g);
             }
 
 #if GPU_PHASE_PROBE
@@ -3203,7 +3214,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 if (cfg.Anchoring != 0 && !remains)
                 {
                     Grip(g, links, position, velocity, spin, rotationMatrix, mass, smallI, fext,
-                         hasReserve, br.Reserve[i], cs, gl, cfg);
+                         hasReserve, br.Reserve[i], cs, gl, cfg, br, i);
                 }
             }
             else
@@ -3987,7 +3998,7 @@ namespace Evosim.Farm.Gpu.Sgl
             if (!remains)
             {
                 BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
-                          sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
+                          sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf, gl, g);
             }
 
 #if GPU_PHASE_PROBE
@@ -4359,7 +4370,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 if (cfg.Anchoring != 0 && !remains)
                 {
                     Grip(g, links, position, velocity, spin, rotationMatrix, mass, smallI, fext,
-                         hasReserve, br.Reserve[i], cs, gl, cfg);
+                         hasReserve, br.Reserve[i], cs, gl, cfg, br, i);
                 }
             }
             else
@@ -5143,7 +5154,7 @@ namespace Evosim.Farm.Gpu.Sgl
             if (!remains)
             {
                 BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
-                          sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
+                          sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf, gl, g);
             }
 
 #if GPU_PHASE_PROBE
@@ -5515,7 +5526,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 if (cfg.Anchoring != 0 && !remains)
                 {
                     Grip(g, links, position, velocity, spin, rotationMatrix, mass, smallI, fext,
-                         hasReserve, br.Reserve[i], cs, gl, cfg);
+                         hasReserve, br.Reserve[i], cs, gl, cfg, br, i);
                 }
             }
             else
@@ -8723,7 +8734,8 @@ namespace Evosim.Farm.Gpu.Sgl
         private static void BrainStep(
             int i, int links, int dof, STopo t, SNeur nr, SBrain br, SDrive dr, SCfg cfg,
             int[] dofCount, int[] dofStart,
-            float[] sDepth, float[] sUp, float[] sChem, float[] sScent, float[] sFlow, float[] sAngle, float[] sRate, float[] sDrive, float energy, int rock, float[] sLeaf)
+            float[] sDepth, float[] sUp, float[] sChem, float[] sScent, float[] sFlow, float[] sAngle, float[] sRate, float[] sDrive, float energy, int rock, float[] sLeaf,
+            SGlob gl, int g)
         {
             int N = cfg.N;
 
@@ -8759,9 +8771,26 @@ namespace Evosim.Farm.Gpu.Sgl
                         else
                         {
                             int slot = portAt + ~source;
-                            v = SensorRead(i, nr.CPortPart[slot], nr.CPortChannel[slot], nr.CPortIndex[slot], links, dof,
-                                           br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate,
-                                           sDrive, energy, rock, sLeaf);
+                            int channel = nr.CPortChannel[slot];
+                            if (channel == SGripping || channel == SGripPull)
+                            {
+                                // D268: the grip's two senses, as the last step's Grip left them (CreatureSenses.Read).
+                                // Read here, where the body's link rows are at hand, and zero in a world whose cell
+                                // does not let the brain hold, as on the CPU.
+                                int part = nr.CPortPart[slot];
+                                v = 0f;
+                                if (cfg.AnchorBrain != 0 && part >= 0 && part < links)
+                                {
+                                    int row = g * LinkStride + part;
+                                    v = channel == SGripping ? (gl.GripHeld[row] != 0 ? 1f : 0f) : (float)gl.GripPull[row];
+                                }
+                            }
+                            else
+                            {
+                                v = SensorRead(i, nr.CPortPart[slot], channel, nr.CPortIndex[slot], links, dof,
+                                               br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate,
+                                               sDrive, energy, rock, sLeaf);
+                            }
                             if (v != v || v == float.PositiveInfinity || v == float.NegativeInfinity) v = 0f;
                         }
 
@@ -11852,7 +11881,7 @@ namespace Evosim.Farm.Gpu.Sgl
         private static void Grip(
             int g, int links, Real[] position, Real[] velocity, Real[] spin, Real[] rotationMatrix,
             Real[] mass, Real[] smallI, Real[] fext, bool hasReserve, float secondsOfReserve,
-            SSph cs, SGlob gl, SCfg cfg)
+            SSph cs, SGlob gl, SCfg cfg, SBrain br, int i)
         {
             int first = g * LinkStride;
             bool any = false;
@@ -11889,9 +11918,25 @@ namespace Evosim.Farm.Gpu.Sgl
                 int row = first + l;
                 if (gl.Anchors[row] == 0) continue;
 
+                // D268: the brain lets go while the part's hold output is below the cell's threshold. The output is
+                // the unit BrainStep left in the step's settled row (br.S after the parity flip), as the CPU's
+                // Creature.HoldSignal is; a part with no output reads 0, the output of a unit nothing feeds.
+                bool let = false, notAbove = false;
+                if (cfg.AnchorBrain != 0)
+                {
+                    int unit = gl.GripUnit[row];
+                    float signal = unit >= 0 ? br.S[(br.Parity[i] * cfg.MaxN + unit) * cfg.N + i] : 0f;
+                    let = signal < cfg.ReleaseBelow;
+                    notAbove = !(signal > cfg.ReleaseBelow);   // a grip forms only strictly above the threshold
+                }
+
                 if (gl.GripHeld[row] == 0)
                 {
-                    if (gl.RockTouched[row] == 0 || !(reserve > 0)) continue;
+                    if (gl.RockTouched[row] == 0 || !(reserve > 0) || notAbove)
+                    {
+                        if (cfg.AnchorBrain != 0) gl.GripPull[row] = 0.0;
+                        continue;
+                    }
 
                     gl.GripHeld[row] = 1;
                     gl.GripStrength[row] = 1.0;
@@ -11908,6 +11953,18 @@ namespace Evosim.Farm.Gpu.Sgl
                 if (!(reserve > 0))
                 {
                     GripRelease(g, row, gl);
+                    if (cfg.AnchorBrain != 0) gl.GripPull[row] = 0.0;
+                    continue;
+                }
+
+                if (let)
+                {
+                    // The brain's own act, priced and counted apart from a break; holding is free.
+                    gl.GripHeld[row] = 0;
+                    gl.GripStrength[row] = 0;
+                    gl.GripOwed[g] = gl.GripOwed[g] + gl.GripLetPrice[row];
+                    gl.GripsLetGo[g] = gl.GripsLetGo[g] + 1;
+                    gl.GripPull[row] = 0.0;
                     continue;
                 }
 
@@ -11921,9 +11978,12 @@ namespace Evosim.Farm.Gpu.Sgl
                 V3 pull = (away * stiffness + linkVelocity * damping) * (Real)(-1.0);
 
                 double breaking = gl.GripBreak[row] * gl.GripStrength[row] * reserve;
-                if ((double)pull.Magnitude > breaking)
+                double demand = (double)pull.Magnitude;
+                if (cfg.AnchorBrain != 0) gl.GripPull[row] = breaking > 0 ? MinD(1.0, demand / breaking) : 0.0;
+                if (demand > breaking)
                 {
                     GripRelease(g, row, gl);
+                    if (cfg.AnchorBrain != 0) gl.GripPull[row] = 0.0;
                     continue;
                 }
 
@@ -13547,6 +13607,10 @@ namespace Evosim.Farm.Gpu.Sgl
         private readonly Col<Real>[] _rockP;
         private readonly Scratch<int> _touchNew;
         private readonly bool _grip;
+        private readonly bool _hold;   // D268: the cell lets the brain hold the grip; the columns below are real only then
+        private readonly Col<double> _gripLetPrice, _gripPull;
+        private readonly Col<int> _gripUnit;
+        private readonly Col<long> _gripsLetGo;
         private readonly Col<int> _anchors, _gripHeld;
         private readonly Col<double> _gripBreak, _gripPrice, _gripStrength, _reserveLow, _gripOwed, _gripHeldSeconds;
         private readonly Col<Real> _gripAnchor, _gripAttitude, _gripPoint;
@@ -13755,6 +13819,13 @@ namespace Evosim.Farm.Gpu.Sgl
             _gripHeldSeconds = GripCol<double>(_gBody, 1, true);
             _gripsFormed = GripCol<long>(_gBody, 1, true);
             _gripsBroken = GripCol<long>(_gBody, 1, true);
+            // D268: the brain's hold of the grip. The unit and the price are packed with the body; the pull share and
+            // the let-go count are the card's, brought home with it.
+            _hold = _grip && world.AnchorCell.BrainHold;
+            _gripLetPrice = HoldCol<double>(_gLink, 1, false);
+            _gripUnit = HoldCol<int>(_gLink, 1, false);
+            _gripPull = HoldCol<double>(_gLink, 1, true);
+            _gripsLetGo = HoldCol<long>(_gBody, 1, true);
             _strayAt = G<Real>(_gStray, 4, true);
             _strayCount = new Col<int>(_acc, _stream, 1, 3);
 
@@ -14036,6 +14107,15 @@ namespace Evosim.Farm.Gpu.Sgl
             return stub;
         }
 
+        private Col<T> HoldCol<T>(List<IColumn> list, int width, bool down) where T : unmanaged
+        {
+            if (_hold) return G<T>(list, width, down);
+
+            var stub = new Col<T>(_acc, _stream, width, 1);
+            _gripStubs.Add(stub);
+            return stub;
+        }
+
         private static SCfg BaseConfig(GpuWorld w, GpuOptions o)
         {
             return new SCfg
@@ -14055,6 +14135,8 @@ namespace Evosim.Farm.Gpu.Sgl
                 StrokeAssembly = w.StrokeAssembly ? 1 : 0,
                 BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
                 Anchoring = w.AnchorCell != null ? 1 : 0,
+                AnchorBrain = w.AnchorCell != null && w.AnchorCell.BrainHold ? 1 : 0,
+                ReleaseBelow = w.AnchorCell != null ? w.AnchorCell.ReleaseBelow : 0f,
                 GripDecay = w.GripDecay, GripThreshold = w.GripThreshold, GripLag = w.GripLag,
 
                 Paced = w.Paced ? 1 : 0, Pace = (Real)w.Pace, PaceSquared = (Real)w.PaceSquared,
@@ -15291,6 +15373,8 @@ namespace Evosim.Farm.Gpu.Sgl
             GripOwed = _gripOwed.View, GripHeldSeconds = _gripHeldSeconds.View, GripAnchor = _gripAnchor.View,
             GripAttitude = _gripAttitude.View, GripPoint = _gripPoint.View,
             GripsFormed = _gripsFormed.View, GripsBroken = _gripsBroken.View,
+            GripLetPrice = _gripLetPrice.View, GripPull = _gripPull.View, GripUnit = _gripUnit.View,
+            GripsLetGo = _gripsLetGo.View,
 #if GPU_PHASE_PROBE
             Phase = _phase.View,
             LinkPhase = _linkPhase.View,
@@ -16016,6 +16100,15 @@ namespace Evosim.Farm.Gpu.Sgl
                     _anchors.Host[at] = anchors ? 1 : 0;
                     _gripBreak.Host[at] = breaking;
                     _gripPrice.Host[at] = anchors ? cell.BuildPrice(breaking) : 0f;
+                    if (_hold)
+                    {
+                        // D268: the hold output's unit in the brain (hold units follow every joint output's pair),
+                        // the price of letting go on the same full breaking force, and the pull share as it stood.
+                        int output = anchors && c.GripOutputOf != null ? c.GripOutputOf[l] : -1;
+                        _gripUnit.Host[at] = output >= 0 ? 2 * c.Brain.TotalDof + output : -1;
+                        _gripLetPrice.Host[at] = anchors ? cell.ReleasePrice(breaking) : 0f;
+                        _gripPull.Host[at] = anchors && c.GripPull != null ? c.GripPull[l] : 0.0;
+                    }
                     _gripHeld.Host[at] = anchors && c.GripHeld[l] ? 1 : 0;
                     _gripStrength.Host[at] = anchors ? c.GripStrength[l] : 0.0;
                     for (int k = 0; k < 3; k++)
@@ -16030,6 +16123,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 _gripHeldSeconds.Host[g] = c.GripHeldSeconds;
                 _gripsFormed.Host[g] = c.GripsFormed;
                 _gripsBroken.Host[g] = c.GripsBroken;
+                if (_hold) _gripsLetGo.Host[g] = c.GripsLetGo;
             }
         }
 
@@ -16442,6 +16536,7 @@ namespace Evosim.Farm.Gpu.Sgl
                         int at = row + l;
                         c.GripHeld[l] = _gripHeld.Host[at] != 0;
                         c.GripStrength[l] = _gripStrength.Host[at];
+                        if (_hold && c.GripPull != null) c.GripPull[l] = _gripPull.Host[at];
                         for (int k = 0; k < 3; k++)
                         {
                             c.GripAnchor[3 * l + k] = _gripAnchor.Host[3 * at + k];
@@ -16456,6 +16551,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 c.GripHeldSeconds = _gripHeldSeconds.Host[g];
                 c.GripsFormed = _gripsFormed.Host[g];
                 c.GripsBroken = _gripsBroken.Host[g];
+                if (_hold) c.GripsLetGo = _gripsLetGo.Host[g];
             }
 
             return ceiling;

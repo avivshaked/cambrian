@@ -572,6 +572,10 @@ namespace __NS__
         private readonly Col<Real>[] _rockP;
         private readonly Scratch<int> _touchNew;
         private readonly bool _grip;
+        private readonly bool _hold;   // D268: the cell lets the brain hold the grip; the columns below are real only then
+        private readonly Col<double> _gripLetPrice, _gripPull;
+        private readonly Col<int> _gripUnit;
+        private readonly Col<long> _gripsLetGo;
         private readonly Col<int> _anchors, _gripHeld;
         private readonly Col<double> _gripBreak, _gripPrice, _gripStrength, _reserveLow, _gripOwed, _gripHeldSeconds;
         private readonly Col<Real> _gripAnchor, _gripAttitude, _gripPoint;
@@ -780,6 +784,13 @@ namespace __NS__
             _gripHeldSeconds = GripCol<double>(_gBody, 1, true);
             _gripsFormed = GripCol<long>(_gBody, 1, true);
             _gripsBroken = GripCol<long>(_gBody, 1, true);
+            // D268: the brain's hold of the grip. The unit and the price are packed with the body; the pull share and
+            // the let-go count are the card's, brought home with it.
+            _hold = _grip && world.AnchorCell.BrainHold;
+            _gripLetPrice = HoldCol<double>(_gLink, 1, false);
+            _gripUnit = HoldCol<int>(_gLink, 1, false);
+            _gripPull = HoldCol<double>(_gLink, 1, true);
+            _gripsLetGo = HoldCol<long>(_gBody, 1, true);
             _strayAt = G<Real>(_gStray, 4, true);
             _strayCount = new Col<int>(_acc, _stream, 1, 3);
 
@@ -1021,6 +1032,15 @@ namespace __NS__
             return stub;
         }
 
+        private Col<T> HoldCol<T>(List<IColumn> list, int width, bool down) where T : unmanaged
+        {
+            if (_hold) return G<T>(list, width, down);
+
+            var stub = new Col<T>(_acc, _stream, width, 1);
+            _gripStubs.Add(stub);
+            return stub;
+        }
+
         private static SCfg BaseConfig(GpuWorld w, GpuOptions o)
         {
             return new SCfg
@@ -1040,6 +1060,8 @@ namespace __NS__
                 StrokeAssembly = w.StrokeAssembly ? 1 : 0,
                 BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
                 Anchoring = w.AnchorCell != null ? 1 : 0,
+                AnchorBrain = w.AnchorCell != null && w.AnchorCell.BrainHold ? 1 : 0,
+                ReleaseBelow = w.AnchorCell != null ? w.AnchorCell.ReleaseBelow : 0f,
                 GripDecay = w.GripDecay, GripThreshold = w.GripThreshold, GripLag = w.GripLag,
 
                 Paced = w.Paced ? 1 : 0, Pace = (Real)w.Pace, PaceSquared = (Real)w.PaceSquared,
@@ -2276,6 +2298,8 @@ namespace __NS__
             GripOwed = _gripOwed.View, GripHeldSeconds = _gripHeldSeconds.View, GripAnchor = _gripAnchor.View,
             GripAttitude = _gripAttitude.View, GripPoint = _gripPoint.View,
             GripsFormed = _gripsFormed.View, GripsBroken = _gripsBroken.View,
+            GripLetPrice = _gripLetPrice.View, GripPull = _gripPull.View, GripUnit = _gripUnit.View,
+            GripsLetGo = _gripsLetGo.View,
 #if GPU_PHASE_PROBE
             Phase = _phase.View,
             LinkPhase = _linkPhase.View,
@@ -3001,6 +3025,15 @@ namespace __NS__
                     _anchors.Host[at] = anchors ? 1 : 0;
                     _gripBreak.Host[at] = breaking;
                     _gripPrice.Host[at] = anchors ? cell.BuildPrice(breaking) : 0f;
+                    if (_hold)
+                    {
+                        // D268: the hold output's unit in the brain (hold units follow every joint output's pair),
+                        // the price of letting go on the same full breaking force, and the pull share as it stood.
+                        int output = anchors && c.GripOutputOf != null ? c.GripOutputOf[l] : -1;
+                        _gripUnit.Host[at] = output >= 0 ? 2 * c.Brain.TotalDof + output : -1;
+                        _gripLetPrice.Host[at] = anchors ? cell.ReleasePrice(breaking) : 0f;
+                        _gripPull.Host[at] = anchors && c.GripPull != null ? c.GripPull[l] : 0.0;
+                    }
                     _gripHeld.Host[at] = anchors && c.GripHeld[l] ? 1 : 0;
                     _gripStrength.Host[at] = anchors ? c.GripStrength[l] : 0.0;
                     for (int k = 0; k < 3; k++)
@@ -3015,6 +3048,7 @@ namespace __NS__
                 _gripHeldSeconds.Host[g] = c.GripHeldSeconds;
                 _gripsFormed.Host[g] = c.GripsFormed;
                 _gripsBroken.Host[g] = c.GripsBroken;
+                if (_hold) _gripsLetGo.Host[g] = c.GripsLetGo;
             }
         }
 
@@ -3427,6 +3461,7 @@ namespace __NS__
                         int at = row + l;
                         c.GripHeld[l] = _gripHeld.Host[at] != 0;
                         c.GripStrength[l] = _gripStrength.Host[at];
+                        if (_hold && c.GripPull != null) c.GripPull[l] = _gripPull.Host[at];
                         for (int k = 0; k < 3; k++)
                         {
                             c.GripAnchor[3 * l + k] = _gripAnchor.Host[3 * at + k];
@@ -3441,6 +3476,7 @@ namespace __NS__
                 c.GripHeldSeconds = _gripHeldSeconds.Host[g];
                 c.GripsFormed = _gripsFormed.Host[g];
                 c.GripsBroken = _gripsBroken.Host[g];
+                if (_hold) c.GripsLetGo = _gripsLetGo.Host[g];
             }
 
             return ceiling;

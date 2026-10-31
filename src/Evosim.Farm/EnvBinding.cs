@@ -621,6 +621,11 @@ namespace Evosim.Farm
             Num("EVOSIM_ANCHOR_RESERVE_LAG", 60f, (s, v) => s.AnchorReserveLag = v),
             Num("EVOSIM_ANCHOR_UPKEEP", 2.5f, (s, v) => s.AnchorUpkeep = v),
             Num("EVOSIM_ANCHOR_BUD_WEIGHT", 1f, (s, v) => s.AnchorBudWeight = v),
+            // D268: the brain's hold on the grip. The switch is refused without the cell (BuildConfig) and without the central
+            // brain (World's config check). Off, the cell grips as round 59 built it.
+            Flag("EVOSIM_ANCHOR_BRAIN", (s, v) => s.AnchorBrain = v),
+            Num("EVOSIM_ANCHOR_RELEASE_BELOW", -0.5f, (s, v) => s.AnchorReleaseBelow = v),
+            Num("EVOSIM_ANCHOR_RELEASE_PRICE", 5e-5f, (s, v) => s.AnchorReleasePrice = v),
             // D235's nose: the cell type appended to the table, its noise per smell and its share of buds. Its upkeep, reference
             // area, backgrounds and facing intake stay at NoseCell's defaults.
             Flag("EVOSIM_NOSE", (s, v) => s.Nose = v),
@@ -860,12 +865,36 @@ namespace Evosim.Farm
 
             // D165: the anchoring cell joins the table at its end, so every other type keeps its
             // place and a world without it is the table it always was.
+            // D268: the threshold and the price mean nothing without the switch, so a launcher that names either one
+            // without it is refused, not left to be silently ignored.
+            if (!s.AnchorBrain)
+            {
+                foreach (string name in new[] { "EVOSIM_ANCHOR_RELEASE_BELOW", "EVOSIM_ANCHOR_RELEASE_PRICE" })
+                {
+                    if (s.Provided.Contains(name))
+                    {
+                        throw new ArgumentException(
+                            name + " is set and EVOSIM_ANCHOR_BRAIN is off. The release threshold and price only mean " +
+                            "something when the brain holds the grip (D268); turn EVOSIM_ANCHOR_BRAIN on, or unset " +
+                            name + ".");
+                    }
+                }
+            }
+
+            if (s.AnchorBrain && !s.Anchoring)
+            {
+                throw new ArgumentException(
+                    "EVOSIM_ANCHOR_BRAIN is on and EVOSIM_ANCHORING is off. The brain's hold is on the anchoring cell " +
+                    "(D268), so there is nothing for it to hold; turn the cell on too, or leave the switch off.");
+            }
+
             if (s.Anchoring)
             {
                 config.CellTypes = config.CellTypes.Appending(
                     new AnchoringCell(
                         s.AnchorTenacity, s.AnchorPrice, s.AnchorDecay,
-                        s.AnchorReserveThreshold, s.AnchorReserveLag, s.AnchorUpkeep)
+                        s.AnchorReserveThreshold, s.AnchorReserveLag, s.AnchorUpkeep,
+                        s.AnchorBrain, s.AnchorReleaseBelow, s.AnchorReleasePrice)
                     {
                         BudWeight = s.AnchorBudWeight,
                     });
@@ -2223,6 +2252,15 @@ namespace Evosim.Farm
         public float AnchorReserveLag;
         public float AnchorUpkeep;
         public float AnchorBudWeight;
+
+        /// <summary>D268: the brain holds the grip (<c>EVOSIM_ANCHOR_BRAIN</c>), refused without <c>EVOSIM_ANCHORING</c>.</summary>
+        public bool AnchorBrain;
+
+        /// <summary>D268: a held grip lets go below this hold output (<c>EVOSIM_ANCHOR_RELEASE_BELOW</c>).</summary>
+        public float AnchorReleaseBelow;
+
+        /// <summary>D268: the price of letting go, J per N of breaking force (<c>EVOSIM_ANCHOR_RELEASE_PRICE</c>).</summary>
+        public float AnchorReleasePrice;
         public bool Nose;
         public float NoseLeafNoise;
         public float NoseCarrionNoise;
