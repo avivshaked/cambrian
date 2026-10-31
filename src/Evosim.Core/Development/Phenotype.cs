@@ -525,6 +525,7 @@ namespace Evosim.Core
                     Neurons = part.Neurons,
                     PathId = part.PathId,
                     Smells = part.Smells,
+                    Grips = part.Grips,
                 });
             }
 
@@ -655,6 +656,7 @@ namespace Evosim.Core
                     Neurons = part.Neurons,
                     PathId = part.PathId,
                     Smells = part.Smells,
+                    Grips = part.Grips,
                 });
             }
 
@@ -815,6 +817,7 @@ namespace Evosim.Core
                     Neurons = part.Neurons,
                     PathId = part.PathId,
                     Smells = part.Smells,
+                    Grips = part.Grips,
                 });
             }
 

@@ -261,6 +261,21 @@ namespace Evosim.Core
         /// <see cref="NeuronInput.Index"/> is the axis, 0 to 2.
         /// </summary>
         LeafScentDirection = 16,
+
+        /// <summary>
+        /// Whether this part's grip is holding, 1 or 0 (D268). One step stale, as <see cref="BedTouch"/> is.
+        /// <see cref="NeuronInput.Index"/> is ignored. A port of an anchoring part only, in a world whose
+        /// anchoring cell lets the brain hold (<c>AnchoringCell.BrainHold</c>); it reads 0 anywhere else.
+        /// </summary>
+        /// <remarks>Numbers 19 to 21 are another build's (the carried smell), so this build takes 17 and 18.</remarks>
+        Gripping = 17,
+
+        /// <summary>
+        /// How hard this part's grip is pulled: the pull over the grip's breaking force, 0 to 1, and 0 when not
+        /// holding (D268). One step stale. <see cref="NeuronInput.Index"/> is ignored. A port of an anchoring part
+        /// only, as <see cref="Gripping"/> is.
+        /// </summary>
+        GripPull = 18,
     }
 
     /// <summary>
