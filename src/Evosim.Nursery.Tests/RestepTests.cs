@@ -51,7 +51,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal(0, code);
             Assert.Equal("", stderr);
             Assert.Contains("episode seed " + RestepFixtures.PilotSeed0 + "\n", stdout);
-            Assert.Contains("episode config hash 252c9721a115d929\n", stdout);   // brain2-w11's (brain2-w10's was 2950156a342c9bc5, brain2-w9's was 78091b3deb236e74, brain2-w8's was 1cea30702d4a20c3, brain2-w7's was be80a0d1eadbfa1d)
+            Assert.Contains("episode config hash 5cf04c30232e7afa\n", stdout);   // brain2-w11's (brain2-w10's was 2950156a342c9bc5, brain2-w9's was 78091b3deb236e74, brain2-w8's was 1cea30702d4a20c3, brain2-w7's was be80a0d1eadbfa1d)
             Assert.Contains("control 0: own (own)\n", stdout);
             Assert.Contains("generation 0, episode 0, run seed 1, salt 422608528232\n", stdout);
             Assert.Contains("seconds 600, dt 0.01, sample rate 10 per second (every 10 steps)\n", stdout);

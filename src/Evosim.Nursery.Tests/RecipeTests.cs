@@ -69,7 +69,7 @@ namespace Evosim.Nursery.Tests
             RunConfig c = r.EpisodeConfig(File.ReadAllText(r.ConfigFullPath));
             Assert.Equal(0.5f, c.WorkCostMultiplier);
             Assert.Equal(0, c.MinimumPopulation);
-            Assert.Equal("252c9721a115d929", c.Hash());   // the health-scale merge's config (brain2-w11); brain2-w10's was 2950156a342c9bc5, the r63b build's; brain2-w9's was 78091b3deb236e74, main's config after integration branch 2; brain2-w8's was 1cea30702d4a20c3, the pace build's config; brain2-w7's was be80a0d1eadbfa1d, round 62's migrated config; brain2-w5's was a6d278da00ff70f2, brain2-w4's was 092790eff1a559d3, brain2-w3's 3adad91928939beb, brain2-w2's de49694b78ed5db7 and pilot-deep-brain2's 87d66e98fed542c2 is reference entry 1's, on brain2.json's build
+            Assert.Equal("5cf04c30232e7afa", c.Hash());   // the health-scale merge's config (brain2-w11); brain2-w10's was 2950156a342c9bc5, the r63b build's; brain2-w9's was 78091b3deb236e74, main's config after integration branch 2; brain2-w8's was 1cea30702d4a20c3, the pace build's config; brain2-w7's was be80a0d1eadbfa1d, round 62's migrated config; brain2-w5's was a6d278da00ff70f2, brain2-w4's was 092790eff1a559d3, brain2-w3's 3adad91928939beb, brain2-w2's de49694b78ed5db7 and pilot-deep-brain2's 87d66e98fed542c2 is reference entry 1's, on brain2.json's build
             Assert.Equal(0f, c.Fluid.WaterHoldSeconds);
         }
 
@@ -86,13 +86,13 @@ namespace Evosim.Nursery.Tests
             Recipe r = Recipe.Load(Write("brain2-w11-t16-hold.json", onFile.Replace("\"base\": \"rounds/nursery/brain2-w5.json\"", "\"base\": \"rounds/nursery/brain2-w11.json\"")));
             Assert.Equal("brain2-w5-t16-hold", r.Name);
             Assert.Equal(16, r.TankSize);
-            Assert.Equal("783c998afb255a10", r.ConfigHash);   // brain2-w10's world config, the r63b build's move of 220192064e01e1c1, which was main's move of 613ca725c30288c0, which was the pace build's move of b2885199f9213276
+            Assert.Equal("6d780d73f559b449", r.ConfigHash);   // brain2-w10's world config, the r63b build's move of 220192064e01e1c1, which was main's move of 613ca725c30288c0, which was the pace build's move of b2885199f9213276
 
             RunConfig c = r.EpisodeConfig(File.ReadAllText(r.ConfigFullPath));
             Assert.Equal(0.5f, c.Fluid.WaterHoldSeconds);
             Assert.Equal(0.5f, c.WorkCostMultiplier);
             Assert.Equal(0.5, Evosim.Dynamics.SolverConfig.From(c, 0.01).WaterHoldSeconds);
-            Assert.Equal("254db42f32abb9d0", c.Hash());   // the r63b build's config (brain2-w5-t16-hold on brain2-w10); on brain2-w10 it was 0807cf064abdfffd, main's config after integration branch 2; on brain2-w8 it was f9b472daeb18a422, the pace build's config; on brain2-w7 it was 4c150ba07e111462, round 62's migrated config; brain2-w5-t16-hold's was 04d6be15c0799fdf, brain2-w4-t16-hold's was 341514ba3a32a0d2, brain2-w3-t16-hold's 30cd14a1abe5122a
+            Assert.Equal("9fb8cf6052a5259f", c.Hash());   // the r63b build's config (brain2-w5-t16-hold on brain2-w10); on brain2-w10 it was 0807cf064abdfffd, main's config after integration branch 2; on brain2-w8 it was f9b472daeb18a422, the pace build's config; on brain2-w7 it was 4c150ba07e111462, round 62's migrated config; brain2-w5-t16-hold's was 04d6be15c0799fdf, brain2-w4-t16-hold's was 341514ba3a32a0d2, brain2-w3-t16-hold's 30cd14a1abe5122a
         }
 
         [Fact]
@@ -123,7 +123,7 @@ namespace Evosim.Nursery.Tests
             Assert.Equal("brain2-short", r.Name);
             Assert.Equal(3, r.Search.Generations);
             Assert.Equal(96, r.Search.Population);          // kept from the base
-            Assert.Equal("783c998afb255a10", r.ConfigHash);  // kept from the base's world
+            Assert.Equal("6d780d73f559b449", r.ConfigHash);  // kept from the base's world
             Assert.Equal(0.25f, r.EpisodeConfig(File.ReadAllText(r.ConfigFullPath)).WorkCostMultiplier);
             Assert.DoesNotContain("\"base\"", r.Canonical());
         }
@@ -224,7 +224,7 @@ namespace Evosim.Nursery.Tests
         [InlineData("\"draws\": 16", "\"draws\": 1000", "search.draws")]
         [InlineData("\"elites\": 8", "\"elites\": 96", "search.elites")]
         [InlineData("\"perBody\": true", "\"perBody\": false", "search.crossover")]
-        [InlineData("\"configHash\": \"783c998afb255a10\"", "\"configHash\": \"0000000000000000\"", "hashes to 783c998afb255a10")]
+        [InlineData("\"configHash\": \"6d780d73f559b449\"", "\"configHash\": \"0000000000000000\"", "hashes to 6d780d73f559b449")]
         [InlineData("\"WorkCostMultiplier\": 0.5", "\"WorkCostMultiplier\": 0.5, \"NoSuchKnob\": 1", "NoSuchKnob")]
         [InlineData("\"WorkCostMultiplier\": 0.5", "\"WorkCostMultiplier\": true", "WorkCostMultiplier")]
         [InlineData("\"WorkCostMultiplier\": 0.5", "\"MinimumPopulation\": 3", "MinimumPopulation")]

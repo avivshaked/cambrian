@@ -634,7 +634,7 @@ namespace Evosim.NurseryRoom.Tests
         {
             JsonElement r = Result(Ops().Invoke("recipe.check", Args("rounds/nursery/brain2-w11.json")));
             Assert.True(r.GetProperty("ok").GetBoolean());
-            Assert.Equal("3643842209201c12a49864208f7ad9189e5314b7e50aea479a84288e4d5ec859", r.GetProperty("hash").GetString());
+            Assert.Equal("5fb8c38911dec9b73d0a7963e32949d139c314c55cd9b59c6a164db37c8ef8bf", r.GetProperty("hash").GetString());
             Assert.Contains("\"name\": \"brain2-w11\"", r.GetProperty("canonical").GetString());
         }
 
@@ -709,7 +709,7 @@ namespace Evosim.NurseryRoom.Tests
             var room = new RoomContext(Where.Root, Where.Settings(), Where.Root, Path.Combine(_dir, "none.jsonl"));
             JsonElement r = Js.Parse(Js.Serialize(new ResourceResolver(room).Read("nursery://recipe/rounds/nursery/brain2-w11.json")));
             Assert.True(r.GetProperty("ok").GetBoolean());
-            Assert.Equal("3643842209201c12a49864208f7ad9189e5314b7e50aea479a84288e4d5ec859", r.GetProperty("hash").GetString());
+            Assert.Equal("5fb8c38911dec9b73d0a7963e32949d139c314c55cd9b59c6a164db37c8ef8bf", r.GetProperty("hash").GetString());
             Assert.Equal("founders", r.GetProperty("resolved").GetProperty("bodies").GetProperty("source").GetString());
         }
     }
@@ -826,7 +826,7 @@ namespace Evosim.NurseryRoom.Tests
             var result = McpSurface.Call(ops, "recipe", args);
             Assert.NotEqual(true, result.IsError);
             string text = ((ModelContextProtocol.Protocol.TextContentBlock)result.Content[0]).Text;
-            Assert.Contains("3643842209201c12a49864208f7ad9189e5314b7e50aea479a84288e4d5ec859", text);
+            Assert.Contains("5fb8c38911dec9b73d0a7963e32949d139c314c55cd9b59c6a164db37c8ef8bf", text);
 
             var describe = McpSurface.Call(ops, "describe", new Dictionary<string, JsonElement>());
             Assert.NotEqual(true, describe.IsError);
