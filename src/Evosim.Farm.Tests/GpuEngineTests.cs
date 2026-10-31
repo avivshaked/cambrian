@@ -466,6 +466,46 @@ namespace Evosim.Farm.Tests
             return Equip(new Creature(id, plan, solver, shapes), plan, world, id, at);
         }
 
+        /// <summary>
+        /// A body of one family part (D233) as <see cref="Plate"/> is a body of one box: drawn by hand, developed against the
+        /// world's own shape list, set at a place and an attitude with a velocity and a spin, wired as <see cref="Plate"/>
+        /// wires it, its committed sphere refreshed after the velocity and the spin are written. Under a true-shape
+        /// contact its core is a hull of the form's contact-core points.
+        /// </summary>
+        public static Creature FamilyPlate(int id, SolverConfig solver, World world, PartForm form, Float3 half, Vec3 at,
+                                           QuatD turn, Vec3 velocity = default, Vec3 spin = default)
+        {
+            var genome = new Genome { RootIndex = 0, AdultScale = 1f };
+            genome.Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f, ReserveMargin = 0f };
+            genome.Nodes.Add(new MorphNode
+            {
+                Dimensions = half,
+                CellTypeId = CellTypeIds.Structural,
+                ShapeId = ShapeIds.Superellipsoid,
+                Form = form,
+                JointType = JointType.Fixed,
+                JointLimits = Array.Empty<Float2>(),
+                RecursiveLimit = 1,
+            });
+
+            PartShapeRegistry shapes = world.Config.Shapes;
+            Phenotype plan = Developer.Develop(genome, DevelopmentLimits.Default, shapes: shapes);
+            var body = new Creature(id, plan, solver, shapes);
+            body.PlaceAt(at, turn);
+            Vec3.Write(body.Velocity, 0, velocity);
+            Vec3.Write(body.Spin, 0, spin);
+            body.RefreshContactSphere();
+            body.CommitContactSphere();
+
+            body.Senses.Nutrients = world.Nutrients;
+            body.Senses.Scent = world.Scent;
+            body.Senses.LeafScent = world.LeafScent;
+            body.Senses.Reserve = new Reserve { SecondsOfReserve = 40f + id };
+            body.Senses.Contact = new bool[body.Links];
+            body.Senses.Damage = new float[body.Links];
+            return body;
+        }
+
         /// <summary>The tank's axis, where Core's tank puts it.</summary>
         public static Vec3 Axis(World world) => new Vec3(world.TankRadiusMetres, 0, world.TankRadiusMetres);
 
@@ -1494,6 +1534,217 @@ namespace Evosim.Farm.Tests
             {
                 Assert.True(cpu.OverlapPairs > 0, world + ": no pair of bodies touched");
                 Assert.True(cpu.BedOrGlassBodies > 0, world + ": no body touched the bed or the glass");
+            }
+        }
+
+        // ---- D233's family under D228's true shape (level a): the hull cores the card carries.
+
+        private static readonly string[] FamilyShapeList = { "EVOSIM_SHAPES", "box,sphere,capsule,superellipsoid" };
+
+        /// <summary>The flat discs of the family contact cases: an ellipsoid and a box-like member, 0.5 wide and 0.05 thick (half-extents).</summary>
+        private static readonly Float3 FamilyDisc = new Float3(0.5f, 0.05f, 0.5f);
+
+        /// <summary>
+        /// D233's crowd for <see cref="AFamilyPartUnderTheTrueShapeOnTheCpuAcceleratorIsTheSolver"/>. "pair": two pairs
+        /// of flat family discs in mid-water, ids 201 to 204. The first pair is stacked 6 cm apart (the discs are 10 cm thick, so
+        /// their hulls overlap by 4 cm), the second 30 cm apart (the bounding spheres of both pairs overlap, the hulls of the second
+        /// do not: gap 20 cm). "bed": a box-like disc lying flat 1 cm into the bed (205) and an egg tipped 25 degrees onto it,
+        /// 4 cm in (206). "crowd": both, and nine of <see cref="GpuTank.FamilyGenome"/>'s one-limb bodies close enough that a
+        /// limb meets the next body's root (a hull against a box core).
+        /// </summary>
+        private static void PopulateFamilyContact(DynamicsWorld world, World core, string scenario)
+        {
+            Vec3 axis = GpuTank.Axis(core);
+            bool pairs = scenario == "pair" || scenario == "crowd";
+            bool bed = scenario == "bed" || scenario == "crowd";
+
+            if (pairs)
+            {
+                var form = new PartForm(1f, 1f, 1f);
+                var near = new Vec3(axis.X + 4.0, -9.0, axis.Z - 3.0);
+                world.AddInIdOrder(GpuTank.FamilyPlate(201, world.Config, core, form, FamilyDisc, near, QuatD.Identity));
+                world.AddInIdOrder(GpuTank.FamilyPlate(202, world.Config, core, form, FamilyDisc, near + new Vec3(0.01, 0.06, 0.0), QuatD.Identity));
+
+                var far = new Vec3(axis.X + 4.0, -9.0, axis.Z + 3.0);
+                world.AddInIdOrder(GpuTank.FamilyPlate(203, world.Config, core, form, FamilyDisc, far, QuatD.Identity));
+                world.AddInIdOrder(GpuTank.FamilyPlate(204, world.Config, core, form, FamilyDisc, far + new Vec3(0.01, 0.3, 0.0), QuatD.Identity));
+            }
+
+            if (bed)
+            {
+                OnTheBed(core, axis.X + 3.5, axis.Z + 3.0, 0.05 - 0.01, 0, out Vec3 flatAt, out QuatD flatTurn);
+                world.AddInIdOrder(GpuTank.FamilyPlate(205, world.Config, core, new PartForm(0.1f, 0.1f, 1f), FamilyDisc, flatAt, flatTurn));
+
+                OnTheBed(core, axis.X + 3.5, axis.Z - 3.0, 0.17, 25.0 * Math.PI / 180.0, out Vec3 eggAt, out QuatD eggTurn);
+                world.AddInIdOrder(GpuTank.FamilyPlate(206, world.Config, core, new PartForm(0.6f, 1f, 2f), new Float3(0.3f, 0.2f, 0.2f), eggAt, eggTurn));
+            }
+
+            if (scenario == "crowd")
+            {
+                for (int k = 0; k < 9; k++)
+                {
+                    var at = new Vec3(axis.X + 0.6 * (k % 3) - 0.6, -9.0 - 0.45 * (k / 3), axis.Z - 6.0 + 0.3 * (k % 2));
+                    int id = 1 + k;
+                    world.AddInIdOrder(GpuTank.FamilyHand(id, world.Config, core, GpuTank.FamilyGenome(k, id), at));
+                }
+            }
+        }
+
+        /// <summary>
+        /// D233's family under D228's true shape on the CPU accelerator in double: a family part's core is the hull of its
+        /// 98 contact-core points, which the card packs and reads in its GJK (a pair) and at its surfaces (the bed, the reefs,
+        /// the glass), the solver's to the bit after every block. "pair": two family discs that touch and two that do not
+        /// though their bounding spheres overlap. "bed": a box-like disc and a tipped egg on the bed. "crowd": both, nine
+        /// one-limb family bodies beside them, a body that shrinks and grows between blocks (the card re-packs its hull at
+        /// each size), and a death and a birth (a slot taken again). Each world is first shown to hold hull cores and to
+        /// part on the CPU from the same world under sphere contact, and the pair world to count one touching pair where
+        /// the sphere world counts two, so that a hull that never reached the narrowphase cannot pass as a match. The
+        /// crowd also runs at the options' group sizes of 32 and 64; the CPU accelerator ignores the option and takes its
+        /// device's largest group, so these are one run again, and identity across the card's group sizes is the card
+        /// sitting's (<c>card-group.ps1</c>).
+        /// </summary>
+        [Theory]
+        [InlineData("pair", 0)]
+        [InlineData("bed", 0)]
+        [InlineData("crowd", 0)]
+        [InlineData("crowd", 32)]
+        [InlineData("crowd", 64)]
+        public void AFamilyPartUnderTheTrueShapeOnTheCpuAcceleratorIsTheSolver(string scenario, int group)
+        {
+            var spheres = new Dictionary<string, string> { { FamilyShapeList[0], FamilyShapeList[1] } };
+            var trueShape = new Dictionary<string, string>(spheres) { { "EVOSIM_CONTACT_SHAPE", "trueshape" } };
+
+            (DynamicsWorld plain, World core0) = Pair(true, true, spheres);
+            (DynamicsWorld cpu, World coreA) = Pair(true, true, trueShape);
+            (DynamicsWorld gpu, World coreB) = Pair(true, true, trueShape);
+
+            foreach ((DynamicsWorld w, World core) in new[] { (plain, core0), (cpu, coreA), (gpu, coreB) })
+            {
+                PopulateFamilyContact(w, core, scenario);
+            }
+
+            Assert.Equal(ContactShapeForm.Spheres, plain.Config.ContactShape);
+            Assert.Equal(ContactShapeForm.TrueShape, cpu.Config.ContactShape);
+
+            int hulls = 0;
+            foreach (Creature c in cpu.Creatures)
+            {
+                Assert.NotNull(c.LinkCoreHull);
+                foreach (double[] hull in c.LinkCoreHull) if (hull != null) hulls++;
+            }
+
+            Assert.True(hulls >= (scenario == "pair" ? 4 : scenario == "bed" ? 2 : 15), scenario + ": " + hulls + " hull cores");
+
+            using var backend = new GpuBackend(gpu.Config,
+                group == 0 ? GpuTank.CpuDouble() : new GpuOptions { Device = "cpu", Precision = "double", CpuThreads = 4, GroupSize = group });
+            gpu.UseBackend(backend);
+            AssertSame(cpu, gpu, "before the first block");
+
+            if (scenario == "pair")
+            {
+                // One step: the touching pair is counted on the true shape, and the pair 30 cm apart is not, though
+                // its bounding spheres overlap, as they do for both pairs under sphere contact.
+                plain.StepBlock(1);
+                cpu.StepBlock(1);
+                gpu.StepBlock(1);
+                Assert.Equal(2L, plain.OverlapPairsThisStep);
+                Assert.Equal(1L, cpu.OverlapPairsThisStep);
+                Assert.Equal(cpu.OverlapPairsThisStep, gpu.OverlapPairsThisStep);
+                AssertSame(cpu, gpu, "pair, after one step");
+            }
+
+            bool touched = false, onBed = false;
+            for (int block = 0; block < 4; block++)
+            {
+                plain.StepBlock(25);
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, scenario + ", after block " + block);
+                touched |= cpu.OverlapPairs > 0;
+                onBed |= cpu.BedOrGlassBodies > 0;
+
+                // A body that shrinks after the first block and grows after the second, in all three worlds alike, so that
+                // the card re-packs its hull at each size.
+                if (scenario == "crowd" && block <= 1)
+                {
+                    foreach (DynamicsWorld w in new[] { plain, cpu, gpu })
+                    {
+                        Creature grower = null;
+                        foreach (Creature c in w.Creatures) if (c.Id == 2) grower = c;
+                        Assert.NotNull(grower);
+                        long resizes = grower.Resizes;
+                        grower.Resize(grower.Phenotype.Scaled(block == 0 ? 0.6f : 1.5f));
+                        Assert.Equal(resizes + 1, grower.Resizes);
+                    }
+                }
+
+                // A death and a birth: the lowest id leaves and a family body takes a slot again.
+                if (scenario == "crowd" && block == 1)
+                {
+                    foreach ((DynamicsWorld w, World core) in new[] { (plain, core0), (cpu, coreA), (gpu, coreB) })
+                    {
+                        w.Remove(w.Creatures[0].Id);
+                        Vec3 axis = GpuTank.Axis(core);
+                        w.AddInIdOrder(GpuTank.FamilyHand(50, w.Config, core, GpuTank.FamilyGenome(1, 50), new Vec3(axis.X - 4.0, -8.0, axis.Z)));
+                    }
+                }
+            }
+
+            bool parted = false;
+            for (int i = 0; i < cpu.Creatures.Count && !parted; i++)
+            {
+                double[] a = plain.Creatures[i].Position, b = cpu.Creatures[i].Position;
+                for (int k = 0; k < a.Length && !parted; k++)
+                {
+                    parted = BitConverter.DoubleToInt64Bits(a[k]) != BitConverter.DoubleToInt64Bits(b[k]);
+                }
+            }
+
+            Assert.True(parted, scenario + ": the family world stepped as the one under sphere contact");
+            if (scenario != "bed") Assert.True(touched, scenario + ": no pair of bodies touched");
+            if (scenario != "pair") Assert.True(onBed, scenario + ": no body touched the bed or the glass");
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
+        }
+
+        /// <summary>
+        /// The card carries a hull core where the force acts at the link's centre and not where it acts at the contact point,
+        /// where the host touches the hull at its corner points: a backend for the second refuses a family body at its first
+        /// block, naming D233, before anything steps.
+        /// </summary>
+        [Fact]
+        public void AFamilyBodyUnderTheTrueShapeAtThePointIsRefusedAtTheFirstBlock()
+        {
+            var atPoint = new Dictionary<string, string>
+            {
+                { FamilyShapeList[0], FamilyShapeList[1] }, { "EVOSIM_CONTACT_SHAPE", "trueshapeatpoint" },
+            };
+
+            (DynamicsWorld gpu, World core) = Pair(true, false, atPoint);
+            Vec3 axis = GpuTank.Axis(core);
+            gpu.AddInIdOrder(GpuTank.FamilyPlate(
+                1, gpu.Config, core, new PartForm(1f, 1f, 1f), FamilyDisc, new Vec3(axis.X, -9.0, axis.Z), QuatD.Identity));
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            Exception thrown = Assert.ThrowsAny<Exception>(() => gpu.StepBlock(1));
+            string all = "";
+            for (Exception e = thrown; e != null; e = e.InnerException) all += e.Message + " | ";
+            Assert.Contains("D233", all);
+            Assert.Contains("trueshapeatpoint", all);
+        }
+
+        /// <summary>The kernel reads as many hull points as the host's contact core holds.</summary>
+        [Fact]
+        public void TheKernelsHullCoreHoldsTheContactCoresPoints()
+        {
+            foreach (Type step in new[] { typeof(Evosim.Farm.Gpu.Dbl.WholeStep), typeof(Evosim.Farm.Gpu.Sgl.WholeStep) })
+            {
+                System.Reflection.FieldInfo points = step.GetField("HullPoints");
+                Assert.True(points != null, step.FullName + " has no HullPoints: the kernels are not the templates' output");
+                Assert.Equal(Superellipsoid.ContactCorePoints, (int)points.GetRawConstantValue());
+                Assert.Equal(3 * Superellipsoid.ContactCorePoints, (int)step.GetField("HullStride").GetRawConstantValue());
             }
         }
 

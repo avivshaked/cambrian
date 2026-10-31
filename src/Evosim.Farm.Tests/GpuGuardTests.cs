@@ -118,16 +118,17 @@ namespace Evosim.Farm.Tests
         }
 
         /// <summary>
-        /// D233's family touches on the host through a hull of core points under a true-shape contact (D228), which
-        /// the card does not carry: it packs every core as a box. The farm refuses a world whose shapes hold one that
-        /// takes a form under either true-shape contact, before it opens a device, naming the shape and D233. Under
-        /// sphere contact a family link touches as its sphere of FamilyReach on both engines and the card carries its
-        /// fin law (D255), so the farm opens the world: asked for the card in double, which it refuses for its own
-        /// reason, it gets past the family to that refusal. Nothing here opens a device. The world is otherwise one the
-        /// card takes, so the family is what is refused.
+        /// D233's family touches on the host through a hull of core points under a true-shape contact (D228). The card
+        /// carries that hull where the force acts at the link's centre (<c>trueshape</c>): it packs each family link's
+        /// points and reads them in its GJK and at its surfaces. At the level of the force at the contact point
+        /// (<c>trueshapeatpoint</c>) the host touches the hull at its eight corner points, which the card does not
+        /// carry, so the farm refuses a world whose shapes hold one that takes a form at that level, before it opens a
+        /// device, naming the shape and D233. Under <c>trueshape</c> and under sphere contact the farm opens the world:
+        /// asked for the card in double, which it refuses for its own reason, it gets past the family to that refusal.
+        /// Nothing here opens a device. The world is otherwise one the card takes, so the family is what is refused.
         /// </summary>
         [Fact]
-        public void TheFarmRefusesAFamilyShapeOnTheCardUnderATrueShapeContactAndOpensItUnderSpheres()
+        public void TheFarmRefusesAFamilyShapeOnTheCardOnlyUnderTheTrueShapeAtThePointAndOpensItUnderTheTrueShapeAndSpheres()
         {
             var block = GpuTank.Launcher(perPart: true, reefs: false);
             block["EVOSIM_ENGINE"] = "gpu";
@@ -140,35 +141,38 @@ namespace Evosim.Farm.Tests
             MethodInfo open = typeof(EnvBinding).Assembly.GetType("Evosim.Farm.FarmGpu", throwOnError: true)
                 .GetMethod("Open", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
-            foreach (Evosim.Core.ContactShapeForm form in new[]
-            {
-                Evosim.Core.ContactShapeForm.TrueShape,
-                Evosim.Core.ContactShapeForm.TrueShapeAtPoint,
-            })
-            {
-                (_, SolverConfig solver) = GpuTank.Build(perPart: true, reefs: false);
-                solver.ContactShape = form;
+            // The force at the contact point touches a hull at its corner points, which the card does not carry.
+            (_, SolverConfig atPoint) = GpuTank.Build(perPart: true, reefs: false);
+            atPoint.ContactShape = Evosim.Core.ContactShapeForm.TrueShapeAtPoint;
 
-                var thrown = Assert.Throws<TargetInvocationException>(() => open.Invoke(null, new object[] { s, solver, shapes, null }));
-                Assert.IsType<InvalidOperationException>(thrown.InnerException);
-                Assert.Contains(Evosim.Core.ShapeIds.Superellipsoid, thrown.InnerException.Message);
-                Assert.Contains("D233", thrown.InnerException.Message);
-            }
+            var thrown = Assert.Throws<TargetInvocationException>(() => open.Invoke(null, new object[] { s, atPoint, shapes, null }));
+            Assert.IsType<InvalidOperationException>(thrown.InnerException);
+            Assert.Contains(Evosim.Core.ShapeIds.Superellipsoid, thrown.InnerException.Message);
+            Assert.Contains("D233", thrown.InnerException.Message);
 
-            // Under sphere contact the family is not refused. The same call in double on the card meets the refusal of
-            // the card in double instead (D157), which comes after the family's, so the family was passed.
+            // Under the true shape at the centre and under sphere contact the family is not refused. The same call in
+            // double on the card meets the refusal of the card in double instead (D157), which comes after the family's,
+            // so the family was passed.
             var inDouble = GpuTank.Launcher(perPart: true, reefs: false);
             inDouble["EVOSIM_ENGINE"] = "gpu";
             inDouble["EVOSIM_GPU_DEVICE"] = "cuda";
             inDouble["EVOSIM_GPU_PRECISION"] = "double";
             EnvSettings doubled = EnvBinding.Read(EnvBinding.Of(inDouble));
-            (_, SolverConfig spheres) = GpuTank.Build(perPart: true, reefs: false);
-            Assert.Equal(Evosim.Core.ContactShapeForm.Spheres, spheres.ContactShape);
 
-            var passed = Assert.Throws<TargetInvocationException>(() => open.Invoke(null, new object[] { doubled, spheres, shapes, null }));
-            Assert.IsType<InvalidOperationException>(passed.InnerException);
-            Assert.Contains("single only", passed.InnerException.Message);
-            Assert.DoesNotContain("D233", passed.InnerException.Message);
+            foreach (Evosim.Core.ContactShapeForm form in new[]
+            {
+                Evosim.Core.ContactShapeForm.Spheres,
+                Evosim.Core.ContactShapeForm.TrueShape,
+            })
+            {
+                (_, SolverConfig opened) = GpuTank.Build(perPart: true, reefs: false);
+                opened.ContactShape = form;
+
+                var passed = Assert.Throws<TargetInvocationException>(() => open.Invoke(null, new object[] { doubled, opened, shapes, null }));
+                Assert.IsType<InvalidOperationException>(passed.InnerException);
+                Assert.Contains("single only", passed.InnerException.Message);
+                Assert.DoesNotContain("D233", passed.InnerException.Message);
+            }
         }
 
         private static MethodInfo Helper(Type step, string name)
