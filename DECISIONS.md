@@ -292,6 +292,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D268](#d268) | Any body may grow the anchoring cell; the brain may let a grip go; holding is free, and making or breaking a grip costs a little, by its size | 2026-10-30 | ruled by the owner late on 2026-10-30 in part, and decided by the coordinator at the owner's delegation in the rest |
 | [D269](#d269) | The nursery runs only under the world's current rules, and old nursery runs are not re-stepped | 2026-10-30 | ruled by the owner late on 2026-10-30, on the room's question of how to re-step old nursery runs (`logbook/specs/nursery-room-unloadable-recipes.md` on `nursery-room`) |
 | [D270](#d270) | The leaves' smell drifts with the water on a coarse grid, and every part feels which way the water runs over the ground | 2026-10-31 | ruled by the owner on 2026-10-31, on the six questions of `proposals/propose-smell-field.md` |
+| [D271](#d271) | Coincident bodies are pushed apart along X by id order, behind a contact form of their own | 2026-10-30 | agreed by the owner on 2026-10-30, on `proposals/propose-coincident-contact.md` (absorbed here), and on in G7's round once its smoke passes (below) |
 
 ---
 
@@ -10218,3 +10219,20 @@ in any condition set for the world.
 - today's flow sense as the current sense;
 - a separate nose range in plume worlds;
 - porting the far grid to the card, which would save under 1 ms a step.
+
+### D271
+**Coincident bodies are pushed apart along X by id order, behind a contact form of their own** · 2026-10-30
+
+**Status:** agreed by the owner on 2026-10-30, on `proposals/propose-coincident-contact.md` (absorbed here), and on in G7's round once its smoke passes (below). It changes the sphere contact law where two contact centres coincide, and leaves it everywhere else. It amends the sphere contact of D114 and of the one sphere a body that came before it at that one case, and supersedes nothing. Neither D114 nor D228 says what a coincident pair does. D228's contact on the true shape is unchanged. So are D219-D221's contact eating and remains, whose pieces this keeps in the water at their depth instead of losing them through the top of the world.
+
+**Decision.**
+- Where two sphere contact centres lie within 1e-9 m, on a body's sphere or a part's, the body with the lower organism id is pushed along `-X` and the other along `+X`. The pushes are equal and opposite. Before, both bodies were pushed straight up.
+- It applies to every pair, living or remains. True-shape contact is unchanged, since it already orders each pair.
+- The switch is a fourth contact form, `ContactShapeForm.SpheresApart` (`EVOSIM_CONTACT_SHAPE=spheresapart`): sphere contact with the new rule. `Spheres` stays the default and keeps the old fallback bit for bit. The proposal named a new `RunConfig` bool. The coordinator chose the enum member instead on 2026-10-30, because enums serialize and hash by name: no recorded config, config hash, fixture pin or nursery config moves. A new tunable would have moved every config hash and made every older `config.json` unreadable, as each tunable does. Forwarding the nursery's configs would then have reached two other lanes' work. The switch is still in the config hash.
+- The second cause, a dead body cut into two pieces at one place, is held until a measurement says coincident parts matter for living bodies.
+
+**Why.** The sphere paths fell back to `Vec3.UnitY` for both bodies of a coincident pair, so neither moved away from the other. `ContactLaw.PairPush` granted the pair its whole separation allowance every step, about 50 m/s², until it left through the top of the world. The shape screen lost 18 and 25 such pairs of remains, and `r63c-b` lost 6 and 13. Their matter left with them instead of returning to the water (`logbook/specs/r63s-read/`, "The floaters"). A fixed horizontal axis needs only a comparison and a sign, so the card's double kernel matches the processor with no rounding question, and the pieces stay at their depth.
+
+**Rejected.** Pushing the pair along the vertical by id order, as true-shape contact does, which would kick one piece up at up to 1 m/s. An axis that varies with the pair, which costs one more branch on the card for little gain. Applying the rule to remains only, which would read a flag in the innermost loop and leave the living case on the old law. Applying it unconditionally, which would end the replay of every recorded world at its first twin. A new `RunConfig` bool, for the reason above.
+
+**Built:** branch `coincident-contact`, merged into main at `2d7bd0d1`. Its tests and the card's check are listed in that merge's commit message. With the switch off, the merged farm steps row for row with main's own build. With it on, groups 32 and 64 agree. The card's new branch is exercised only by a test on the processor's stand-in for the card. A 600 s world forms no coincident pair, and a resumed world cannot change its contact form, so no world has yet run the fix's path. Before any round turns it on, a smoke must run where coincident remains really form. It founds a world on r63s's settings with the switch on, runs it past r63s's first launched twins (7,912 s and 10,636 s), and reads it against r63s's own runs. Its launcher is `rounds/coincident-smoke.ps1` and its read `scripts/reads/coincident-smoke-read.ps1`.
