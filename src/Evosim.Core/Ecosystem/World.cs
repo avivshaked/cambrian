@@ -1981,6 +1981,7 @@ namespace Evosim.Core
             ValidateMatterInflux(config, patchCount);
             ValidateIslandBloom(config);
             ValidateIslandFarSmell(config);
+            ValidateLeafPlume(config);
 
             Field = new LightField(
                 Light, config.WorldAreaSquareMetres, config.LightLayerMetres,
@@ -3297,6 +3298,42 @@ namespace Evosim.Core
                 throw new ArgumentException(
                     FormattableString.Invariant($"IslandFarSmell is Leaves and the reach is {reach} m. ") +
                     "It is finite and above 0.",
+                    nameof(config));
+            }
+        }
+
+        /// <summary>
+        /// D270's carried leaf smell lives on a grid in the shared volume, so it needs the grid field and shared
+        /// space; it is refused in a tank (the nursery's tank comes later, if the screen asks for it); and it
+        /// replaces D251's far smell, so the two are refused together. Nothing is checked while it is off. A cell
+        /// that does not divide the box is the grid's own refusal, at the build.
+        /// </summary>
+        private static void ValidateLeafPlume(RunConfig config)
+        {
+            if (config.LeafPlume == LeafPlumeForm.None) return;
+
+            if (config.FieldModel != MatterField.Grid || !config.SharedSpace)
+            {
+                throw new ArgumentException(
+                    $"LeafPlume is {config.LeafPlume} (D270), but the plume is a grid in the shared volume and this " +
+                    $"world's FieldModel is {config.FieldModel} with SharedSpace {config.SharedSpace} " +
+                    "(it needs FieldModel Grid and SharedSpace).",
+                    nameof(config));
+            }
+
+            if (config.WorldShape == WorldShape.Tank)
+            {
+                throw new ArgumentException(
+                    $"LeafPlume is {config.LeafPlume} (D270), but WorldShape is Tank. The plume is built for the box " +
+                    "and is refused in a tank for now.",
+                    nameof(config));
+            }
+
+            if (config.IslandFarSmell == IslandFarSmell.Leaves)
+            {
+                throw new ArgumentException(
+                    $"LeafPlume is {config.LeafPlume}, but IslandFarSmell is Leaves. D270's carried smell replaces " +
+                    "D251's far smell, and the two are not run together.",
                     nameof(config));
             }
         }
