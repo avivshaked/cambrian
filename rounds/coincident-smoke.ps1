@@ -1,4 +1,4 @@
-﻿# The coincident-contact smoke (D270): a world where coincident remains really form, so the fix's own path runs in a
+﻿# The coincident-contact smoke (D271): a world where coincident remains really form, so the fix's own path runs in a
 # world and not only in the CPU accelerator's pair test (GpuEngineTests). It comes before any round turns the switch on.
 # Run only on the coordinator's card go, in a long card slot, with -Build's Release farm built from a clean tree.
 #

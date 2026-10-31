@@ -1,4 +1,4 @@
-﻿# The read of rounds/coincident-smoke.ps1 (D270). For each seed: scripts/reads/gpu-accept.py of the smoke's "on" run
+﻿# The read of rounds/coincident-smoke.ps1 (D271). For each seed: scripts/reads/gpu-accept.py of the smoke's "on" run
 # against r63s's own run (identical until the first coincident pair forms, then apart: the first second they differ is
 # the reading), against the smoke's "off" run where there is one, and "off" against r63s; then
 # scripts/reads/shape/r63s-floaters.py over every run. r63s's floaters later than the smoke's last second are left out
