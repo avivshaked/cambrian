@@ -50,7 +50,7 @@ landed at 4 s, with 9,697 of 9,823. In seed 3 it was line 18, a leaf with a join
 9,914. The crowds at the end were 6,132, 9,824 and 9,917, inside the pre-registered band. All 163,129 deaths were
 starvations.
 
-The books closed. The energy audit stayed under 4e-4 J in every seed, and no body went non-finite or left the tank.
+The books closed: the energy audit stayed under 4e-4 J in every seed, and no body went non-finite or left the tank.
 Seed 1 was restored from its checkpoint at 15,000 s, a saved copy of the whole world, and run on to 16,000 s. It
 matched the original on all 100 shared samples (`logbook/specs/r50-read/v2.log`).
 
@@ -61,11 +61,11 @@ recorded lay below 20 m. By 0123's fade, a leaf at 5 m gets about 43% of the sur
 arithmetic). The floor's leaves, set during the founding, landed under 1 m. The rule traded matter for light. Only 32
 of 434, 38 of 434 and 32 of 460 leaf founders landed at or above their column's mean of dissolved matter.
 
-They lived. The trickle's leaves died at a median of 577, 421 and 321 s, against round 49's 81, 99 and 68 s. The
-floor's leaves still lived far longer, a median of 2,144 to 2,744 s. Seed 3 cleared L2's bar of 300 s by 21 s.
+They lived longer: the trickle's leaves died at a median of 577, 421 and 321 s, against round 49's 81, 99 and 68 s.
+The floor's leaves still lived far longer, a median of 2,144 to 2,744 s. Seed 3 cleared L2's bar of 300 s by 21 s.
 
-They bred. Pooled over the seeds, 66 of 1,248 trickle leaves had a child, 5.3% against a bar of 5%. Round 49's had
-managed 2 in 1,256. The floor's leaves did far better again, with 73 of 80 having a child.
+They bred, just over the bar. Pooled over the seeds, 66 of 1,248 trickle leaves had a child, 5.3% against a bar of 5%.
+Round 49's had managed 2 in 1,256. The floor's leaves did far better again, with 73 of 80 having a child.
 
 No line they started lasted. At 30,000 s, 10, 7 and 8 lines rooted in a trickle founder were alive, and none held ten
 living bodies. The largest in each seed held one, and its founder had landed in the last 1,070 s of the run. A leaf
@@ -73,12 +73,9 @@ from outside could now pay for a child, but its family did not keep a place besi
 and no read asked. My guess is that the founding's crowd holds the lit water, as 0123 imagined for a different
 outcome.
 
-LC held. The report's header carried the rule's token in all three seeds. Of the founders that eat dissolved matter
-and sat over a bed deeper than the centre's (324, 296 and 324), none was held within 1 m above the centre's bed. In
-round 49, 147 to 192 had been.
-
-<!-- frame: r50-s1, 30000, the lit sheet near the surface with line 44440's one living body, a trickle leaf landed at
-28,930.5 s -->
+LC held, and the report's header carried the rule's token in all three seeds. Of the founders that eat dissolved
+matter and sat over a bed deeper than the centre's (324, 296 and 324), none was held within 1 m above the centre's
+bed. In round 49, 147 to 192 had been.
 
 ## A line of stomachs with no link lived on the snow for four hours
 
@@ -104,10 +101,9 @@ D038's rise in upkeep with age. These lived twice as long as the bar on the snow
 ten dead and were not asked.
 
 Reading the reads five weeks on, this is the part of round 50 I would most like to see in the theatre. A body that did
-nothing but eat lived for hours on what fell to it.
-
-<!-- frame: r50-s1, 12000, line 4292's rigid stomachs on rich snow --> <!-- frame: r50-s3, 6000, line 29's stomachs on
-a lit link, for contrast -->
+nothing but eat lived for hours on what fell to it. No picture of it can be made now, nor of anything else in this
+entry. Round 50's snapshots keep only each body's id and genome, and its positions files are gone. A frame would mean
+restoring a checkpoint on round 50's own build, and on 31 October the coordinator chose not to rebuild it.
 
 ## Thirty clauses held, three failed, one went unread and nine are readings
 
@@ -172,9 +168,6 @@ my tally from the reader's summary and the bars.
 | E1 | what the endowment buys (a reading): median endowment | 66 J | 71 J | 73 J | a reading | read |
 | EK7 | what the cap takes (a reading): trickle founders capped | 91 of 820 | 97 of 839 | 75 of 817 | a reading | read |
 | R1 | the reef (a reading): samples with fewer bodies per m³ under the caps than beside them | 41 of 41 | 41 of 41 | 41 of 41 | a reading | read |
-
-<!-- frame: r50-s2, 30000, line 14's members after their joints fell away (0.53 jointed at 16,000 s, 0.06 at the end)
--->
 
 ## The read moved the next round's rules to the dead
 

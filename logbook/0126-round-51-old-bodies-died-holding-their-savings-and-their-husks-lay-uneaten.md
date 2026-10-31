@@ -9,10 +9,10 @@ Round 51 brought two new rules into the tank. A body could now die of old age, a
 saved. Its dead body became a husk, which sank, settled on the bed or a reef, and dissolved over about half an hour.
 Both rules did what they were written to do. Between 37% and 49% of the dead died of age, and every one of them still
 held some savings. By the end the husks held about an eighth of the world's matter, a little more than all the living
-bodies together. Three quarters of it lay still on the bottom. Nothing used it. One husk was eaten in each of the
-three seeds in 30,000 s, and no line of pure eaters lasted, as the pre-registration expected. Joints went out of two
-seeds in three. The matter books missed their bar by a few thousandths of a joule, and a probe traced that to rounding
-in the burn.
+bodies together. Three quarters of it lay still on the bottom, and almost nothing used it. One husk was eaten in each
+of the three seeds in 30,000 s, and no line of pure eaters lasted, as the pre-registration expected. Joints went out
+of two seeds in three. The matter books missed their bar by a few thousandths of a joule, and a probe traced that to
+rounding in the burn.
 
 ## The owner ruled two ways to die, and a picture found a fault before the launch
 
@@ -45,7 +45,7 @@ to -93 m. The husk's drift stopped it at the world's depth before it tested for 
 hung in open water and never landed. The fix, `bebca14`, went in the same evening: a settling husk is now stopped by
 the bed or a reef cap alone. A fixed smoke ran the same seed for 3,000 s. It settled 1,201 of its 2,387 husks, where
 the first smoke had settled 498. They held 0.43 of the husks' joules, against 0.19. 0125 was amended before any seed
-started, and the amended text is commit `ed4a61d` on the branch round-51.
+started, and logbook/0125 holds the amended text.
 
 The two plots show the same second of the same seed, before and after the fix.
 
@@ -114,11 +114,9 @@ founder at a random depth in the top 12 m. Seed 1's 202 mouth founders landed a 
 the husks. Across the seeds they lived a median of 104 to 117 s, and not one bred (logbook/0127). No mouth in round 51
 started anywhere near its food.
 
-<!-- frame: runs/r51-s1/2026-09-27-212333-f9f845bd, 30,000 s, the whole tank from the side: the living crowd under the
-surface, the settled husks on the tilted bed -->
-
-<!-- frame: runs/r51-s1/2026-09-27-212333-f9f845bd, 12,000 s, a reef cap and the bed beside it, close, with the
-nearest living bodies above -->
+I wanted a picture of that gap, the crowd under the surface and the husks on the bed below, and none can be made.
+Round 51's snapshots keep only each body's id and genome, and its positions files are gone. A frame would mean
+restoring a checkpoint on round 51's own build, and on 31 October the coordinator chose not to rebuild it.
 
 ## No line of eaters lived on the larder
 
@@ -128,9 +126,9 @@ seed held one, a founder that had landed in the last 401 s of the run. Seed 3 ha
 from a founder of the population floor at 9.5 s. It had 51 members over the run and held 17 at 3,000 s, and none was
 alive at the end.
 
-0125 expected this failure. The ledger put the husks' dissolved larder under a still eater's break-even, once the cell
-its own mouth empties is counted. The lines that did reach ten living in seeds 2 and 3 were something else. They were
-leaves that had grown a stomach as a bud, and the stomach brought them under 1% of their income.
+0125 expected this failure, because the ledger put the husks' dissolved larder under a still eater's break-even, once
+the cell its own mouth empties is counted. The lines that did reach ten living in seeds 2 and 3 were something else.
+They were leaves that had grown a stomach as a bud, and the stomach brought them under 1% of their income.
 
 ## Joints went out of two seeds, and stayed in the third
 
@@ -143,9 +141,6 @@ born in the last 5,000 s did. Seed 3 fell from 0.35 to 0.007. Seed 2 fell from 0
 0.20 and 0.17. It ended with 607 jointed bodies, against 7 and 38 in the other two, and 514 of them had a jointed
 parent, round 50's level. I don't know what seed 2's joints did for their bodies, and no read has asked.
 
-<!-- frame: runs/r51-s2/2026-09-27-232609-f9f845bd, 30,000 s, the crowd near the surface with its jointed bodies,
-beside runs/r51-s1 at 30,000 s in the same framing -->
-
 ## The matter books failed on a rounding, and a probe found where
 
 B1 asks the world's books to close. The energy audit stayed under 1.1e-4 J in every seed, against a bar of 0.1 J. The
@@ -153,12 +148,12 @@ matter residual is the gap between the matter the world should hold and what it 
 -6.3e-5 and -1.1e-5 units, against a bar of 1e-5. At 100 J a unit, that is one to six thousandths of a joule (my
 arithmetic).
 
-0125 had named the likely place in advance: the fields' float door, where a field of the water takes amounts in single
-precision while the rest of the books keep doubles. On 2026-09-28 a probe branch counted what each float dropped, and
-resumed seed 1 from 11,000 s to 17,000 s (`logbook/specs/r51-read/b1-probe.txt`). The residual climbed 2.78e-5 units
-over those seconds. The burn, which hands the matter a body spends back to the water, accounted for 2.73e-5 of it.
-Remineralisation added about 4e-8, and the husks' last instalments about 3e-8. The probe changed nothing, since its
-residual matched the run at all 600 shared samples.
+0125 had named the likely place in advance. It was the fields' float door, where a field of the water takes amounts in
+single precision while the rest of the books keep doubles. On 2026-09-28 a probe branch counted what each float
+dropped, and resumed seed 1 from 11,000 s to 17,000 s (`logbook/specs/r51-read/b1-probe.txt`). The residual climbed
+2.78e-5 units over those seconds. The burn, which hands the matter a body spends back to the water, accounted for
+2.73e-5 of it. Remineralisation added about 4e-8, and the husks' last instalments about 3e-8. The probe changed
+nothing, since its residual matched the run at all 600 shared samples.
 
 So 98% of the gap was the burn. The first guess had been remineralisation, and it was wrong. Why the burn's rounding
 kept one sign for thousands of seconds in round 51, and not in round 50, is still not known.
@@ -182,7 +177,7 @@ to.
 | O1 | the world holds a crowd: alive at 30,000 s between 2,000 and 16,000, in 3 of 3 | 4,717, 3,918, 5,648 | held, 3 of 3 |
 | S1 | the hazard shortens the life: the mean age of the living at 30,000 s is below round 50's same seed's at the same second, in 3 of 3 | 1,189.98, 1,270.33, 1,330.51 s against 2,222.57, 2,179.12, 2,117.1 s | held, 3 of 3 |
 
-The second table holds the clauses carried from round 50, in 0125's short form. Four of them failed.
+The second table holds the clauses carried from round 50, in 0125's short form, and four of them failed.
 
 | # | prediction, in short | bar | round 51 | verdict |
 |---|---|---|---|---|
