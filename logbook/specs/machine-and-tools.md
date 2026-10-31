@@ -66,6 +66,12 @@ The root file's rules still apply. The entries below were moved word for word, s
   no Kernel-Power and no `nvlddmkm` entry, and `nvidia-smi --query-gpu=display_active` read
   `Disabled`. A broadcast `WM_SYSCOMMAND` `SC_MONITORPOWER` of -1 plus a one-pixel `mouse_event`,
   sent from the session, brought it back to `Enabled` within seconds. Try that before any reset.
+  **A Graphics FECS Exception with the card and Unity both on it** (2026-10-31). At 02:44:59 UTC an `nvlddmkm` id 13
+  came while a card group (r64 step 2) ran and a theatre render drew a new mouth-disc shader for the first time. The
+  CPU was at 80-85 °C and the GPU at 49-57 °C, so heat is not the reading. It was the first driver event in seven
+  days, and no reset followed. The card group's watch ended the farm 13 s later, and the render's guard stopped
+  Unity; both guards worked as built. The cause is not known. The owner ruled that the render runs once alone
+  before card work resumes, so a repeat names the shader and a clean run points back at the pairing.
 - **A farm run started from VS Code gets the fast cores only while VS Code has focus.** The
   machine is an i9-13900K: eight fast cores (logical 0 to 15) and sixteen efficiency cores (16
   to 31). With VS Code in front, round 48's two farm runs sat about 44% on the fast cores and

@@ -1,9 +1,6 @@
-# Proposal: the leaves' smell drifts with the water, and a body can feel which way the water runs
+# Design: the leaves' smell drifts with the water, and a body can feel which way the water runs
 
-*Draft for the owner, 2026-10-30. It is phase 2 of D264 for the leaves: the one smell engine that leaves, animals,
-wounds and kin will later share. It turns the outline the owner agreed on 2026-10-30 into a design. World rules are the
-owner's; dials within a ruled rule are agent work, and each rule says which it is. Absorbed into DECISIONS.md on ruling,
-then deleted.*
+*The design of D270, ruled by the owner on 2026-10-31, who chose to try the recommendation on each of the six questions below. It was the proposal `proposals/propose-smell-field.md`, and it stays here as the build's design. DECISIONS.md's D270 is the ruling; where the two differ, D270 holds. It is phase 2 of D264 for the leaves.*
 
 ## The proposal in one paragraph
 

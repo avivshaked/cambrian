@@ -257,7 +257,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D232](#d232) | A kill swallows the whole body into the killer's gut, and leaves no remains | 2026-10-25 | ruled by the owner on 2026-10-25, on the speed agent's proposal (`proposals/propose-kill-meal.md` on `mouth-point`, option A, to be absorbed here and deleted) and the coordinator's recommendation |
 | [D233](#d233) | The shape family is built as a fourth shape, on the coordinator's recommendations | 2026-10-25 | ruled by the owner on 2026-10-25 on `proposals/propose-shape-family.md`, which is absorbed here and deleted |
 | [D234](#d234) | Mirrored twins move as mirror images, shown to the owner before it is ruled final | 2026-10-25 | the owner accepted the coordinator's recommendation on 2026-10-25, but will decide only after seeing it in action |
-| [D235](#d235) | Smell moves into a nose, whose size, placement and price decide how well a body smells | 2026-10-25 | ruled by the owner on 2026-10-25, all eleven decisions of `proposals/propose-nose.md` as recommended, which is absorbed here and deleted · partly superseded by D242, D265 |
+| [D235](#d235) | Smell moves into a nose, whose size, placement and price decide how well a body smells | 2026-10-25 | ruled by the owner on 2026-10-25, all eleven decisions of `proposals/propose-nose.md` as recommended, which is absorbed here and deleted · partly superseded by D242, D265, D270 |
 | [D236](#d236) | The swimmer curriculum: two leaf patches that take turns being fed, so travel pays | 2026-10-25 | ruled by the owner on 2026-10-25, accepting all eleven recommendations of `proposals/propose-swimmer-curriculum.md`, which is absorbed here and deleted |
 | [D237](#d237) | A mouth must touch to graze, and the grazers' dials are derived from a breeding target at the pace of metabolism | 2026-10-25 | ruled by the owner on the night of 2026-10-25, in the coordinator's session, after the `r62kg` check (`logbook/specs/r62kg-prereg/predictions.md`) |
 | [D238](#d238) | The kill rule stays as it is: a body dies when its root is eaten, the gut stays on, and the 420 J bar is retired | 2026-10-26 | ruled by the owner on 2026-10-26, accepting the coordinator's recommendation after the design read in `logbook/specs/kill-rule-read.md` |
@@ -273,7 +273,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D248](#d248) | Integration branch 2 lands on main after its card identity sitting | 2026-10-27 | approved by the coordinator on 2026-10-27, under D243, which set the order |
 | [D249](#d249) | D245's energy sense ships behind a switch, and fat's screen gains a control with the new sense | 2026-10-27 | decided by the coordinator late on 2026-10-27, scoping fat's build (D247) |
 | [D250](#d250) | Fat's screen adds arms A' and B' at s = 300 s, where D247's cap binds in today's world | 2026-10-27 | decided by the coordinator late on 2026-10-27, after fat's step 0 · partly superseded by D251 |
-| [D251](#d251) | Each fed island blooms on its own clock, a bloom smells from further, and fat is screened inside that world | 2026-10-28 | ruled by the owner on the morning of 2026-10-28, who proposed islands with cadences of their own and then agreed the coordinator's recommendations for them · partly superseded by D254 |
+| [D251](#d251) | Each fed island blooms on its own clock, a bloom smells from further, and fat is screened inside that world | 2026-10-28 | ruled by the owner on the morning of 2026-10-28, who proposed islands with cadences of their own and then agreed the coordinator's recommendations for them · partly superseded by D254, D270 |
 | [D252](#d252) | Limbs take richer shapes through D233's family, and the water's push on them is tabulated ahead of time | 2026-10-28 | ruled by the owner on 2026-10-28 |
 | [D253](#d253) | The theatre's leaves may bend past their box, with a noisy flutter, in the photographs' colours | 2026-10-28 | ruled by the owner on 2026-10-28 from `scratch/owner/leaf-bend-past-the-box/` |
 | [D254](#d254) | The work aims at one film of a grazer world, through gates with numbers | 2026-10-28 | ruled by the owner on 2026-10-28, who asked for a plan with thresholds towards that milestone rather than tangents |
@@ -286,11 +286,12 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D261](#d261) | The world holds a fixed total of matter, 25,000 units to start | 2026-10-30 | ruled by the owner on 2026-10-30, after all three `r63d` worlds ended at the population ceiling (`logbook/specs/r63d-read/end/`) · superseded by D266 |
 | [D262](#d262) | The world comes first and the film second; a new feature starts overpowered | 2026-10-30 | ruled by the owner on 2026-10-30 |
 | [D264](#d264) | Grazers overpowered in three phases: phase 1 makes animals hard to kill, provisions newborns and spreads the young, each set to overshoot | 2026-10-30 | ruled by the owner on 2026-10-30, who agreed to plan all three changes, asked that the values aim to overshoot, and asked that the good parts of the unified proposal… |
-| [D265](#d265) | The nose replaces whole-body smell, and a nose smells farther than the leaves' cone, 15 m to start | 2026-10-30 | ruled by the owner late on 2026-10-30, on the two questions the nose lane's cost probe raised (`scratch/curriculum/nose-test/stronger-reading-draft.md`, option A), accepting the coordinator's… · partly superseded by D267 |
+| [D265](#d265) | The nose replaces whole-body smell, and a nose smells farther than the leaves' cone, 15 m to start | 2026-10-30 | ruled by the owner late on 2026-10-30, on the two questions the nose lane's cost probe raised (`scratch/curriculum/nose-test/stronger-reading-draft.md`, option A), accepting the coordinator's… · partly superseded by D267, D270 |
 | [D266](#d266) | No fixed total of matter for now: the world's balance is to come from its creatures | 2026-10-30 | ruled by the owner late on 2026-10-30 |
-| [D267](#d267) | D265's long smell is the world's own leaf field in a nose world, so no second field is built | 2026-10-30 | decided by the coordinator late on 2026-10-30, on the nose lane's reading of `nose-arms`, as the form of the owner's ruling in D265 |
+| [D267](#d267) | D265's long smell is the world's own leaf field in a nose world, so no second field is built | 2026-10-30 | decided by the coordinator late on 2026-10-30, on the nose lane's reading of `nose-arms`, as the form of the owner's ruling in D265 · partly superseded by D270 |
 | [D268](#d268) | Any body may grow the anchoring cell; the brain may let a grip go; holding is free, and making or breaking a grip costs a little, by its size | 2026-10-30 | ruled by the owner late on 2026-10-30 in part, and decided by the coordinator at the owner's delegation in the rest |
 | [D269](#d269) | The nursery runs only under the world's current rules, and old nursery runs are not re-stepped | 2026-10-30 | ruled by the owner late on 2026-10-30, on the room's question of how to re-step old nursery runs (`logbook/specs/nursery-room-unloadable-recipes.md` on `nursery-room`) |
+| [D270](#d270) | The leaves' smell drifts with the water on a coarse grid, and every part feels which way the water runs over the ground | 2026-10-31 | ruled by the owner on 2026-10-31, on the six questions of `proposals/propose-smell-field.md` |
 
 ---
 
@@ -10181,3 +10182,39 @@ in any condition set for the world.
 **Why.** An inoculum bred under rules the world no longer has would be tested against a world that has moved on, and no product of the nursery has yet earned a place in one.
 
 **Rejected.** Re-stepping each old run on its own commit, or a graft for the five oldest: both spend machine time on bodies bred for worlds that no longer exist.
+
+### D270
+**The leaves' smell drifts with the water on a coarse grid, and every part feels which way the water runs over the ground** · 2026-10-31
+
+**Status:** ruled by the owner on 2026-10-31, on the six questions of `proposals/propose-smell-field.md`. The owner chose to try the coordinator's recommendation on each. That proposal is absorbed here, and its design moves to `logbook/specs/smell-plume-design.md` for the build. It is phase 2 of D264 for the leaves. It takes up the carried plume that D167 left for later. It supersedes D251's island disc in any world with the carried smell. In such a world it amends D265 and D267, so a nose there reads the 6 m cone. It departs from D235's request that a new field fill on the card, as the review accepted. D265 and D267 stand in nose worlds without the carried smell, and so does the nose lane's 15 m nursery test.
+
+**Decision.**
+- **A carried leaf smell** (`LeafPlume`). A new grid, built as the matter grid is, with 5 m cells, holds a far smell.
+  - At each metabolic step every living leaf adds its lit area times the step to the cell that holds it.
+  - The grid mixes at the world's matter mixing, drifts with the current, and loses a fixed share to decay, a lifetime of 3,000 s. It does not sink.
+  - The bed and the coral are dead cells, so a plume flows round them.
+  - The grid is state: a checkpoint carries it whenever the switch is on.
+  - It steps on the host.
+- **The realistic form.** Each smelling part reads the far smell's strength, squashed as s / (s + k). The half-scale k is set by a founding bench before the screen. In a nose world only noses read it.
+- **The overpowered form** (D262), for the screen. It adds the far smell's gradient in the part's frame. It is dialled back after the screen: first noise on the gradient, then a coarser gradient.
+- **A current sense** (`CurrentSense`). Every part reads the water's velocity over the ground in its own frame, mirrored for a mirrored part. Its length is speed / (speed + 0.01 m/s). The first dial-back fades it with height above the bed. A sense that reads only on the bed is the realistic end.
+- **The near smell is unchanged.** It is today's 6 m cone on 2 m cells, with its full 3D direction. In a world with the carried smell, a nose reads this cone. The near and far smells are separate inputs and are never added.
+- **Defaults.** Every switch is off by default, so every recorded world replays. Every new setting refuses older `config.json`s, as any tunable does.
+- **The screen.**
+  - Five worlds, run for 24,000 s in one card group, in the world phase 1 settles on.
+  - On seed 6202: R, the realistic form, and O, the overpowered one. On seed 6203: C, the world unchanged, plus R and O.
+  - Marks: grazers' leaf share of bite income; crossings between groves; the lag to a blooming island, with newborns' time to their first bite reported beside it; and pace.
+  - It is pre-registered and committed before the launch. The build first replays phase 1's world for 600 s, row for row, with every switch off.
+- **Phase 2's later smells ride the same grid**, each as a stock of its own: the animal smell, the alarm and the kin sums. Self-subtraction stays in a near cone. Each is built and ruled with its own smell.
+
+**Why.** Groves lie 20 to 30 m apart, and today's smell ends at 6 m, so a grazer between groves smells nothing and has no reason to travel. A carried plume is the one form whose reach follows the water, as real odour plumes do. The current sense gives a body the direction to swim up it, as crabs and snails do. The far grid costs about 1 ms a step at 5 m, against 2.8 ms for today's near fill, and its cost does not grow with the leaves or the range. A 15 m cone's cost grows with the cube of its reach. Reading the 6 m cone in a plume world keeps a leaf at 113 cells a fill, not 1,770. The overpowered arm is the overshoot D262 asks for.
+
+**Rejected.** These are as the proposal lists them:
+- casting rays from bodies to sources;
+- a longer cone;
+- D251's disc, alongside the plume;
+- puffs carried as particles;
+- molecular diffusion as the mixing;
+- today's flow sense as the current sense;
+- a separate nose range in plume worlds;
+- porting the far grid to the card, which would save under 1 ms a step.
