@@ -45,7 +45,8 @@ Where the shape counts and where it does not, read in the code:
 - Light follows it as well: a part's lit area by exposure is the shape's, and a test checks each shape.
 - Contact does not follow the shape. Each part touches as the ball of its half-diagonal (D114, restated in D196),
   against other bodies, the bed and the coral (`src/Evosim.Dynamics/Contacts.cs`, `ContactBed.cs`). A flat part with
-  half-extents of 0.3, 0.3 and 0.02 m touches as a ball 0.42 m in radius, nearly twenty times its own thickness.
+  half-extents of 0.3, 0.3 and 0.02 m touches as a ball 0.42 m in radius, about ten times its own thickness (corrected on 2026-10-31: this
+  said "nearly twenty times", which is the ball's diameter over the thickness).
 
 Three things follow, and each limits what a new shape could buy.
 

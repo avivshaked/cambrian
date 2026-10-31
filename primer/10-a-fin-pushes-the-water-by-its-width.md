@@ -42,8 +42,9 @@ the "collaborating motion of fluid" that [U07 §5, p.9] finds missing.
 
 Piece 03 described drag summed over small panels of each surface, where a face moving broadside meets far more force
 than one moving edge-on. In principle that lets a limb row. [D135](../DECISIONS.md#d135) records that rounds 52 and 53
-ran on drag alone, that a symmetric stroke cancelled itself, and that nothing could swim. A random brain almost never
-found a stroke that worked.
+ran on drag alone, that a symmetric stroke cancelled itself, and that nothing could swim. A torque drive, the obvious
+alternative, made the stroke a tuning problem, and D135 judged that a random brain would almost never find a stroke
+that worked.
 
 So the project replaced the swing with a rule. Under D135 each joint has a bend and a power. The power is a stroke the
 physics does not simulate. A powered link is pushed along its own length toward its joint, as if it swung at a rate
@@ -99,8 +100,10 @@ With the law on, the paddle went five to seven times as far as the stick and was
 these shapes the plate formula gives the paddle about twenty times the stick's water, so the bill follows the push as
 intended.
 
-Twenty times the push bought only five to seven times the distance. My reading is that drag grows with the square of
-speed, so speed grows about as the square root of push. The square root of twenty is about four and a half.
+Twenty times the push bought only five to seven times the distance. My first reading was that drag grows with the
+square of speed, so speed grows about as the square root of push. The square root of twenty is about four and a half.
+The bench gives 4.9 to 7.1, and the gap widens as the power falls, so the square root under-predicts it. What makes up
+the rest is unread.
 
 The comparison that matters for evolution is per joule. For about 6.3 J the paddle at power 0.295 went 7.19 m, and the
 stick at 0.8 went 4.14 m. The paddle at 0.2 went 4.70 m on 1.97 J, a third of the stick's spend. The law rewards a
@@ -139,7 +142,8 @@ its own speed was set aside, because it would have repriced every lone link. A b
 D231 names its own risk. A large blade on a small link may push far beyond anything else, held back only by the work
 it is billed. D231 called for a still-water bench first, with a small link carrying a blade, a flat link and a stick.
 The bench is written, and I found no recorded result of it. The switch, `StrokePushesAssembly`, reached main after its
-identity check on the graphics card ([D248](../DECISIONS.md#d248)). It has been on in no round or screen.
+identity check on the graphics card ([D248](../DECISIONS.md#d248)). Beyond that 600 s identity check, it has been on
+in no round or screen.
 
 ## The shape family takes the law through its true slices
 
@@ -215,7 +219,8 @@ overshoots will show once a world grows a fin.
   reading.
 - **"About twenty times the water"** is the author's arithmetic from the bench's half-extents and the plate formula. It
   agrees with the twentyfold work the bench billed.
-- **The square-root reading** of why twenty times the push gave five to seven times the distance is the author's.
+- **The square-root reading** of why twenty times the push gave five to seven times the distance is the author's,
+  and it under-predicts the bench.
 - **A body trading its power down** once it grows a paddle is the bench file's own inference.
 - **Both guesses** for why the screen's grazers swam no faster are the author's. No read has tested either.
 - **That the shape screen cannot separate the two switches** follows from its design. The pre-registration says a

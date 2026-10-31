@@ -8,8 +8,8 @@ can now also be spheres and capsules.
 This piece is about a fourth shape, added in late October 2026. It is one formula with three genes of its own, so a
 part's proportions can change a little at a time from parent to child. It comes with its own rule for how the water
 pushes it, and with a way of touching built for its true outline. It passed its screen on the night of 29 October and
-joined the world the project's next film is made from. A screen, here, is a short set of worlds run to settle one
-question before a change joins a round.
+is slated for the world the project's next film is made from. A screen, here, is a short set of worlds run to settle
+one question before a change joins a round.
 
 The screen showed that the new shapes are easy for evolution to reach, and that they last. Nothing yet shows that
 evolution prefers them. The end of this piece says why.
@@ -21,17 +21,19 @@ and nothing lay between the three. A part was a box or a sphere. A child could n
 parent.
 
 The menu was used evenly. A round is a set of worlds launched together to answer one question. In October the project
-counted the shapes named in the 73,022 genomes that one world of round 62 had stored. Boxes were 37% of the nodes,
-spheres 34% and capsules 28% ([the survey](../logbook/specs/part-shapes-survey-2026-10-23.md)). No shape had won.
+counted the shapes named in the 73,022 genomes stored by one of round 62's screen worlds, `r62f-h30-6201`. Boxes were
+37% of the nodes, spheres 34% and capsules 28% ([the survey](../logbook/specs/part-shapes-survey-2026-10-23.md)). No
+shape had won.
 
 The same survey listed where a part's shape counted. It set the part's volume, and so its mass, its upkeep and its
 price. It set the part's inertia, the drag panels the water pushes on ([piece
-03](03-what-it-means-to-push-against-water.md)), and the area it shows to the light. Two things ignored the shape, and
-they were the two that decide a fight or a swim. A limb's stroke pushed by its volume and its distance from the joint,
-so a flat fin pushed no harder than a round limb of the same volume. And contact treated every part as a ball.
+03](03-what-it-means-to-push-against-water.md)), and the area it shows to the light. Two things ignored the shape.
+Contact treated every part as a ball, and a mirrored pair of limbs was joined at one place, so paired fins stacked.
+The survey noted a third apart from those: a limb's stroke pushed by its volume and its distance from the joint. So a
+flat fin pushed no harder than a round limb of the same volume.
 
-My reading is that those two blind spots left the choice among the three shapes close to neutral. That would fit the
-even split. Nobody has measured it.
+My reading is that contact and the stroke, both blind to shape, left the choice among the three shapes close to
+neutral. That would fit the even split. Nobody has measured it.
 
 The owner watched the bodies and found that the limbs read as sticks ([D228](../DECISIONS.md#d228)). In the same
 ruling the owner asked for more variety of form than the three shapes give, added in a way that makes sense.
@@ -89,8 +91,8 @@ and the new shape has to win its place (D233).
 Since [D219](../DECISIONS.md#d219), a biter eats only what it touches, so a touch decides who eats whom ([piece
 09](09-a-mouth-must-touch-what-it-eats.md)). Under the old rule each part touched as the ball of its half-diagonal,
 the line from its centre to a corner. The survey's example is a flat part 0.6 m square and 4 cm thick. It touches as a
-ball 0.42 m in radius, nearly twenty times its own thickness. The shapes that make a good paddle or a good leaf are
-the shapes a ball treats worst.
+ball 0.42 m in radius, about ten times its own thickness. The shapes that make a good paddle or a good leaf are the
+shapes a ball treats worst.
 
 D228 ruled that contact be tested on each part's true shape, behind a switch that is off by default. The build gives
 every part a convex core and a margin, and the part is the core swept by a ball of that margin. A sphere's core is the
@@ -127,8 +129,8 @@ shape.
 
 ## The water pushes a limb by its width
 
-The other half of the family is its fin law, which [piece 10](10-a-fin-pushes-the-water-by-its-width.md) tells in full.
-[D229](../DECISIONS.md#d229) made a stroking limb's push follow its shape across the swing. A flat blade swung
+The other half of the family is its fin law, which [piece 10](10-a-fin-pushes-the-water-by-its-width.md) tells in
+full. [D229](../DECISIONS.md#d229) made a stroking limb's push follow its shape across the swing. A flat blade swung
 broadside moves water in proportion to the square of its width. So a wide fin moves far more water than a stick, and
 it costs more to beat.
 
@@ -168,8 +170,9 @@ The table gives the last two gates on each seed. Look at how close to 1 the spee
 | 6202 | 0.193 (141 of 732) | 0.978 |
 | 6203 | 0.180 (109 of 605) | 0.984 |
 
-Grazers survived on both seeds. Every gate passed, so the family and its fin law went into the film's round under the
-plan's rule ([D254](../DECISIONS.md#d254)). A feature that passes its gate joins without a further ruling. [Logbook
+Grazers survived on both seeds. Every gate passed, so under the plan's rule the family and its fin law are slated for
+the film's round ([D254](../DECISIONS.md#d254)). A feature that passes its gate joins without a further ruling. The
+film's round itself has not run, and the screens since have built on the film's world with both switches off. [Logbook
 0148](../logbook/0148-round-63-the-film-world-fills-and-cheap-mouths-eat-each-other.md) tells the night.
 
 Pace had been read before the screen. On the processor, a crowded world with every jointed node turned into the family
