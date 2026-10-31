@@ -537,6 +537,10 @@ namespace Evosim.Farm
             // and nothing damages it, nothing heals, nothing reaches a corpse and no attribute
             // costs anything.
             Num("EVOSIM_HEALTH", D.HealthPerCubicMetre, (s, v) => s.Health = v),
+            // D264: the health pool of every part that is not photosynthetic, and of every part that is, each
+            // times its scale. 1 is the recorded world.
+            Num("EVOSIM_ANIMAL_HEALTH", 1f, (s, v) => s.AnimalHealth = v),
+            Num("EVOSIM_PLANT_HEALTH", 1f, (s, v) => s.PlantHealth = v),
             Num("EVOSIM_HEAL", D.HealingPerSecond, (s, v) => s.Healing = v),
             Num("EVOSIM_HEAL_COST", D.HealingJoulesPerHealth, (s, v) => s.HealingCost = v),
             Num("EVOSIM_INTAKE_REACH", D.IntakeReachMetres, (s, v) => s.IntakeReach = v),
@@ -557,6 +561,8 @@ namespace Evosim.Farm
             Num("EVOSIM_BITE_DAMAGE_SCALE", 1f, (s, v) => s.BiteDamageScale = v),
             // D232: a kill is swallowed whole into the killer's gut and leaves no remains. Read only with contact eating on.
             Flag("EVOSIM_KILL_GUT", (s, v) => s.KillSwallowsBody = v),
+            // D264: a death row carries the body's lifetime bite income by source. An instrument. Read only with contact eating on.
+            Flag("EVOSIM_DEATH_ROW_INCOME", (s, v) => s.DeathRowIncome = v),
 
             // D177: the consumer cell's upkeep, W/m3. The value already lives in every config's cell
             // table, so the knob adds no field; unset is ConsumerCell's own, the recorded world.
@@ -1142,6 +1148,8 @@ namespace Evosim.Farm
             config.Mutation.GrowthReserveChance = s.GrowthReserveMutation;
 
             config.HealthPerCubicMetre = s.Health;
+            config.AnimalHealthScale = s.AnimalHealth;
+            config.PlantHealthScale = s.PlantHealth;
             config.HealingPerSecond = s.Healing;
             config.HealingJoulesPerHealth = s.HealingCost;
             config.IntakeReachMetres = s.IntakeReach;
@@ -1155,6 +1163,7 @@ namespace Evosim.Farm
             config.BiteTakesStore = s.BiteTakesStore;
             config.BiteDamageScale = s.BiteDamageScale;
             config.KillSwallowsBody = s.KillSwallowsBody;
+            config.DeathRowIncome = s.DeathRowIncome;
             config.ProtectionWattsPerUnit = s.PriceProtection;
             config.ToughnessWattsPerUnit = s.PriceToughness;
             config.Mutation.AttributeMutationChance = s.AttributeMutation;
@@ -2130,6 +2139,12 @@ namespace Evosim.Farm
         /// <summary>The chance a birth steps the gene — <c>EVOSIM_GROWTH_RESERVE_MUT</c>. 0 draws nothing.</summary>
         public float GrowthReserveMutation;
         public float Health;
+
+        /// <summary>D264: the health pool of every part of an animal (a body with no photosynthetic part), times this — <c>EVOSIM_ANIMAL_HEALTH</c>.</summary>
+        public float AnimalHealth;
+
+        /// <summary>D264: the health pool of every part of a plant (a body with any photosynthetic part), times this — <c>EVOSIM_PLANT_HEALTH</c>.</summary>
+        public float PlantHealth;
         public float Healing;
         public float HealingCost;
         public float IntakeReach;
@@ -2155,6 +2170,9 @@ namespace Evosim.Farm
 
         /// <summary>D232: a kill is swallowed whole into the killer's gut (<c>EVOSIM_KILL_GUT</c>), read only with the contact-eating dial on.</summary>
         public bool KillSwallowsBody;
+
+        /// <summary>D264: a death row carries the body's lifetime bite income by source (<c>EVOSIM_DEATH_ROW_INCOME</c>), read only with the contact-eating dial on.</summary>
+        public bool DeathRowIncome;
         public float PriceProtection;
         public float PriceToughness;
         public float AttributeMutation;

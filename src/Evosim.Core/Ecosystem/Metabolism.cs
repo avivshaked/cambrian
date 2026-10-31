@@ -708,7 +708,9 @@ namespace Evosim.Core
 
         /// <summary>
         /// A part's health pool, in health — its volume times its toughness times
-        /// <see cref="RunConfig.HealthPerCubicMetre"/>, D106 item 3's rule 3.
+        /// <see cref="RunConfig.HealthPerCubicMetre"/>, D106 item 3's rule 3, times D264's
+        /// <see cref="RunConfig.PlantHealthScale"/> for a photosynthetic part and
+        /// <see cref="RunConfig.AnimalHealthScale"/> for every other.
         /// </summary>
         /// <remarks>
         /// Derived rather than stored, for <see cref="TissueJoules"/>'s reason: a growing body's
@@ -722,8 +724,39 @@ namespace Evosim.Core
             if (part == null) throw new ArgumentNullException(nameof(part));
             if (config == null) throw new ArgumentNullException(nameof(config));
 
+            return HealthPool(part, config, part.CellTypeId == CellTypeIds.Photosynthetic);
+        }
+
+        /// <summary>
+        /// <see cref="HealthPool(PhenotypePart, RunConfig)"/> for a part of a body whose kind is known: D264's scale
+        /// goes by the body, not the part, so a plant's stalk dies as easily as its blade. <paramref name="plantBody"/>
+        /// is <see cref="IsPlant"/> of the body the part belongs to.
+        /// </summary>
+        public static float HealthPool(PhenotypePart part, RunConfig config, bool plantBody)
+        {
+            if (part == null) throw new ArgumentNullException(nameof(part));
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
             float pool = Math.Max(0f, part.Volume) * part.Toughness * config.HealthPerCubicMetre;
+
+            // D264: a plant and an animal each take their own scale. At 1 neither multiplies, so the
+            // recorded arithmetic is untouched to the bit.
+            float scale = plantBody ? config.PlantHealthScale : config.AnimalHealthScale;
+            if (scale != 1f) pool *= scale;
+
             return pool > 0f ? pool : 0f;
+        }
+
+        /// <summary>
+        /// Whether a body is a plant for D264's health scales: it carries any photosynthetic tissue, as the bite
+        /// columns classify it (<c>biteKeptLeaves</c>).
+        /// </summary>
+        public static bool IsPlant(Phenotype body)
+        {
+            if (body == null) throw new ArgumentNullException(nameof(body));
+            IReadOnlyList<PhenotypePart> parts = body.Parts;
+            for (int i = 0; i < parts.Count; i++) if (parts[i].CellTypeId == CellTypeIds.Photosynthetic) return true;
+            return false;
         }
 
         /// <summary>

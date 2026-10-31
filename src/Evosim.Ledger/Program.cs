@@ -479,7 +479,11 @@ namespace Evosim.Ledger
 
             const float MetabolicStepSeconds = 0.5f;
 
-            float pool = volume * config.HealthPerCubicMetre;
+            // D264: the scale goes by the body's kind (Metabolism.IsPlant); the reference body here is this one part.
+            float healthScale = reference.CellTypeId == CellTypeIds.Photosynthetic
+                ? config.PlantHealthScale
+                : config.AnimalHealthScale;
+            float pool = volume * config.HealthPerCubicMetre * healthScale;
             float blow = attackMax * area;
             float bare = blow * MetabolicStepSeconds;
             float armoured = Math.Max(0f, blow - cuticleMax * area) * MetabolicStepSeconds;

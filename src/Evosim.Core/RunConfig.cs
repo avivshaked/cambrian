@@ -1514,6 +1514,48 @@ namespace Evosim.Core
         public float HealthPerCubicMetre { get; set; } = 1f;
 
         /// <summary>
+        /// D264, phase 1: a multiplier on the health pool of every part of an animal, a body with no photosynthetic
+        /// part, so animal tissue can be made much harder to kill than a plant's. 1, the default, multiplies nothing and the world is the
+        /// recorded one to the bit.
+        /// </summary>
+        /// <remarks>
+        /// Read in one place, <c>Metabolism.HealthPool</c>, after <see cref="HealthPerCubicMetre"/> and the part's own
+        /// <see cref="MorphNode.Toughness"/>. The kind goes by the body, not the part (<c>Metabolism.IsPlant</c>): a
+        /// body with any <see cref="CellTypeIds.Photosynthetic"/> part is a plant, stalk and holdfast included, as the
+        /// bite columns classify it; every other body is an animal. Health is a fraction on the body
+        /// (<see cref="Organism.PartHealth"/>), so this moves what a hit costs and never what a body carries. A new
+        /// realisation of every seed when not 1. Finite and above 0. <c>EVOSIM_ANIMAL_HEALTH</c>.
+        /// </remarks>
+        [Tunable("mouth")]
+        public float AnimalHealthScale
+        {
+            get => _animalHealthScale;
+            set => _animalHealthScale = value > 0f && !float.IsInfinity(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(nameof(AnimalHealthScale), value, "A scale is above 0 and finite.");
+        }
+
+        private float _animalHealthScale = 1f;
+
+        /// <summary>
+        /// D264, phase 1: a multiplier on the health pool of every part of a plant, a body with any photosynthetic
+        /// part, by the owner's ruling of
+        /// 2026-10-30 that plants must die easily. 1, the default, multiplies nothing and the world is the recorded
+        /// one to the bit. The twin of <see cref="AnimalHealthScale"/>, applied to the other kind of body in the same
+        /// place (<c>Metabolism.HealthPool</c>). Finite and above 0. <c>EVOSIM_PLANT_HEALTH</c>.
+        /// </summary>
+        [Tunable("mouth")]
+        public float PlantHealthScale
+        {
+            get => _plantHealthScale;
+            set => _plantHealthScale = value > 0f && !float.IsInfinity(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(nameof(PlantHealthScale), value, "A scale is above 0 and finite.");
+        }
+
+        private float _plantHealthScale = 1f;
+
+        /// <summary>
         /// The share of its own pool a part heals per second, paid from the reserve at
         /// <see cref="HealingJoulesPerHealth"/> — rule 3. <b>0 is off: nothing ever heals.</b>
         /// </summary>
@@ -1709,6 +1751,19 @@ namespace Evosim.Core
         /// </summary>
         [Tunable("mouth")]
         public bool KillSwallowsBody { get; set; }
+
+        /// <summary>
+        /// D264: a death row carries the joules the body kept over its life from biting, by source: <c>kl</c> from
+        /// living bodies with photosynthetic tissue, <c>ko</c> from living bodies with none, <c>kr</c> from remains,
+        /// and <c>kg</c>, the joules its kills put in its gut (with <see cref="KillSwallowsBody"/>). The per-body
+        /// counterparts of the stats row's <c>biteKeptLeaves</c>, <c>biteKeptOthers</c>, <c>biteKeptRemains</c> and
+        /// <c>gutSwallowedJoules</c>. An instrument: it changes nothing the world does. Off, the default, the lineage
+        /// rows are the bytes they were, and the four accumulators and the death rows queued in a checkpoint carry
+        /// the fields only when it is on. Refused on without <see cref="ContactEating"/>.
+        /// <c>EVOSIM_DEATH_ROW_INCOME</c>.
+        /// </summary>
+        [Tunable("mouth")]
+        public bool DeathRowIncome { get; set; }
 
         /// <summary>
         /// Upkeep per unit of <see cref="MorphNode.Protection"/> per square metre, watts — rule 7.
