@@ -258,14 +258,14 @@ namespace Evosim.Core
                 }
 
                 result.LinksMoved++;
-                if (smell.Channel == SensorChannel.LeafScentDirection && smell.Path != hostPath) result.DirectionLinksReframed++;
+                if (smell.Channel.IsDirectionalSmell() && smell.Path != hostPath) result.DirectionLinksReframed++;
                 foreach ((PhenotypePart onto, float share) in targets)
                 {
                     // A scalar smell moves to the nose's port of the same index. A direction component is read in the
                     // part's own frame, so it moves to the nose's components in proportion to M (see Reframe).
                     float shared = link.Weight * share;
                     double[,] map = null;
-                    if (smell.Channel == SensorChannel.LeafScentDirection)
+                    if (smell.Channel.IsDirectionalSmell())
                     {
                         if (!reframeOf.TryGetValue((smell.Path, onto.PathId), out map))
                         {

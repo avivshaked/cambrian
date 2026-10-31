@@ -129,6 +129,13 @@ namespace Evosim.Core
             channel == SensorChannel.Scent || channel == SensorChannel.Chemical ||
             channel == SensorChannel.LeafPlume || channel == SensorChannel.LeafPlumeGradient;
 
+        /// <summary>
+        /// True for the smells that carry a direction, three axes read in the part's own frame: the leaf smell's
+        /// direction form and the carried smell's gradient (D270). A nose graft reframes their links.
+        /// </summary>
+        public static bool IsDirectionalSmell(this SensorChannel channel) =>
+            channel == SensorChannel.LeafScentDirection || channel == SensorChannel.LeafPlumeGradient;
+
         /// <summary>Draws a channel and a valid index for it, from the run's own pool.</summary>
         /// <param name="rng">The stream the draw comes from.</param>
         /// <param name="weight">The connection strength the new input carries.</param>

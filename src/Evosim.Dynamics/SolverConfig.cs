@@ -333,6 +333,21 @@ namespace Evosim.Dynamics
         /// <summary>The leaf smell that reads half scale, m². <c>RunConfig.LeafScentHalfScaleSquareMetres</c>.</summary>
         public double LeafScentHalfScaleSquareMetres = 1.0;
 
+        /// <summary>D270's carried leaf smell: which form the world carries. <c>RunConfig.LeafPlume</c>.</summary>
+        public LeafPlumeForm LeafPlume;
+
+        /// <summary>The plume density that reads half scale, m2 s/m3. <c>RunConfig.LeafPlumeHalfScale</c>.</summary>
+        public double LeafPlumeHalfScale = 1.0;
+
+        /// <summary>D270's current sense: whether a part reads the water's velocity over the ground. <c>RunConfig.CurrentSense</c>.</summary>
+        public bool CurrentSense;
+
+        /// <summary>The ground current that reads half scale, m/s. <c>RunConfig.CurrentSenseHalfSpeedMetresPerSecond</c>.</summary>
+        public double CurrentSenseHalfSpeedMetresPerSecond = 0.01;
+
+        /// <summary>True when either of D270's senses is on, so the farm holds the far readings once a metabolic step.</summary>
+        public bool HoldsFarSenses => LeafPlume != LeafPlumeForm.None || CurrentSense;
+
         /// <summary>
         /// The full scale of the energy sense, seconds of reserve —
         /// <c>RunConfig.EnergyFullScaleSeconds</c>. Read only once a body has been given an
@@ -431,6 +446,10 @@ namespace Evosim.Dynamics
                 ScentHalfScaleJoules = config.ScentHalfScaleJoules,
                 LeafScent = config.LeafScent,
                 LeafScentHalfScaleSquareMetres = config.LeafScentHalfScaleSquareMetres,
+                LeafPlume = config.LeafPlume,
+                LeafPlumeHalfScale = config.LeafPlumeHalfScale,
+                CurrentSense = config.CurrentSense,
+                CurrentSenseHalfSpeedMetresPerSecond = config.CurrentSenseHalfSpeedMetresPerSecond,
                 EnergyFullScaleSeconds = config.EnergyFullScaleSeconds,
                 EnergySenseSquash = config.EnergySenseSquash,
                 EnergyHalfScaleSeconds = config.EnergyHalfScaleSeconds,

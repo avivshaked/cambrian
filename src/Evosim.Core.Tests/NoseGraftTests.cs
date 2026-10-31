@@ -250,7 +250,7 @@ namespace Evosim.Core.Tests
                 {
                     (bool _, SensorChannel channel, int index, ulong to) = kv.Key;
                     double onFirst = At(halves, (false, channel, index, to)), onTwin = At(halves, (true, channel, index, to));
-                    if (channel == SensorChannel.LeafScentDirection) Assert.Equal(kv.Value / 2, onFirst, 5);
+                    if (channel.IsDirectionalSmell()) Assert.Equal(kv.Value / 2, onFirst, 5);
                     else Assert.Equal(kv.Value, onFirst + onTwin, 5);
                 }
 
@@ -312,12 +312,12 @@ namespace Evosim.Core.Tests
                 {
                     (SensorChannel c, int i) = smellPorts[l.From];
                     PhenotypePart nosePart = after.Parts[after.Parts.Count - 1];
-                    for (int k = 0; k < (c == SensorChannel.LeafScentDirection ? 3 : 1); k++)
+                    for (int k = 0; k < (c.IsDirectionalSmell() ? 3 : 1); k++)
                     {
                         // A direction component moves by the rotation between the part's frame and the nose's, at rest.
-                        double scale = c == SensorChannel.LeafScentDirection ? FrameMap(partOfPort[l.From], nosePart, i, k) : 1.0;
+                        double scale = c.IsDirectionalSmell() ? FrameMap(partOfPort[l.From], nosePart, i, k) : 1.0;
                         if (Math.Abs(scale) < 1e-6) continue;
-                        var pair = (BrainIds.Port(graft.NosePath, c, c == SensorChannel.LeafScentDirection ? k : i), l.To);
+                        var pair = (BrainIds.Port(graft.NosePath, c, c.IsDirectionalSmell() ? k : i), l.To);
                         expected[pair] = (expected.TryGetValue(pair, out double w) ? w : 0) + scale * l.Weight;
                     }
                 }
@@ -389,6 +389,48 @@ namespace Evosim.Core.Tests
             var axes = new[] { new Float3(1f, 0f, 0f), new Float3(0f, 1f, 0f), new Float3(0f, 0f, 1f) };
             Float3 axisInNose = nose.Rotation.Conjugate.Rotate(part.Rotation.Rotate(axes[j]));
             return k == 0 ? axisInNose.X : k == 1 ? axisInNose.Y : axisInNose.Z;
+        }
+
+        /// <summary>
+        /// D270: the carried smell's gradient is read in the part's own frame as the leaf direction is, so its links are
+        /// reframed onto the nose the same way, and its strength moves to the nose's port of the same index.
+        /// </summary>
+        [Fact]
+        public void ThePlumesLinksMoveOntoTheNoseAndItsGradientIsReframedAsTheLeafDirectionIs()
+        {
+            var g = new Genome();
+            g.Nodes.Add(Fixtures.Box());
+            g.Nodes.Add(Fixtures.Box(joint: JointType.Hinge));
+            g.Nodes[0].Edges.Add(Fixtures.FaceToFace(1));
+            g.RootIndex = 0;
+            CentralWiring.Convert(g);
+            SensorChannel[] pool = new RunConfig { LeafPlume = LeafPlumeForm.Gradient }.SensorPool();
+            Phenotype host = Developer.Develop(g);
+            g.Brain = CentralWiring.Effective(g.Brain, host, new Rng(31), pool, new CentralBrainOptions { FounderLinkShare = 1f }, founder: true);
+
+            ulong hostPath = host.Parts[0].PathId;
+            var plumePorts = new HashSet<ulong>();
+            for (int i = 0; i < 3; i++) plumePorts.Add(BrainIds.Port(hostPath, SensorChannel.LeafPlumeGradient, i));
+            plumePorts.Add(BrainIds.Port(hostPath, SensorChannel.LeafPlume, 0));
+            var anyPlume = new HashSet<ulong>();
+            foreach (PhenotypePart part in host.Parts)
+            {
+                for (int i = 0; i < 3; i++) anyPlume.Add(BrainIds.Port(part.PathId, SensorChannel.LeafPlumeGradient, i));
+                anyPlume.Add(BrainIds.Port(part.PathId, SensorChannel.LeafPlume, 0));
+            }
+
+            Assert.Contains(g.Brain.Links, l => anyPlume.Contains(l.From));
+
+            NoseGraftResult graft = Graft(g);
+            Phenotype after = Developer.Develop(graft.Genome, cellTypes: Table);
+            Dictionary<ulong, BrainPort> ports = CentralWiring.AllPorts(after);
+
+            Assert.DoesNotContain(graft.Genome.Brain.Links, l => anyPlume.Contains(l.From));
+            var onNose = graft.Genome.Brain.Links.Where(l => ports.TryGetValue(l.From, out BrainPort p) && p.Part == after.Parts.Count - 1 &&
+                (p.Channel == SensorChannel.LeafPlume || p.Channel == SensorChannel.LeafPlumeGradient)).ToList();
+            _out.WriteLine($"{graft.LinksMoved} links moved into {graft.LinksMade}; {onNose.Count} read the nose's plume ports");
+            Assert.NotEmpty(onNose);
+            Assert.Equal(graft.NosePath, after.Parts[after.Parts.Count - 1].PathId);
         }
 
         /// <summary>

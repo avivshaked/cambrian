@@ -282,6 +282,7 @@ namespace Evosim.Farm
             solver.Senses.Nutrients = World.Nutrients;
             solver.Senses.Scent = World.Scent;
             solver.Senses.LeafScent = World.LeafScent;
+            solver.Senses.LeafPlume = World.LeafPlume;
             solver.Senses.Reserve = creature;
 
             // D235: a nose's noise is keyed on the world's seed and this organism, and Step sniffs
@@ -588,6 +589,7 @@ namespace Evosim.Farm
             solver.Senses.Nutrients = World.Nutrients;
             solver.Senses.Scent = World.Scent;
             solver.Senses.LeafScent = World.LeafScent;
+            solver.Senses.LeafPlume = World.LeafPlume;
             solver.Senses.Reserve = creature;
 
             // D235: a nose's noise is keyed on the world's seed and this organism, and Step sniffs
