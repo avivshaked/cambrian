@@ -88,7 +88,7 @@ namespace Evosim.NurseryRoom.Tests
                 Assert.False(string.IsNullOrEmpty(r.GetProperty("name").GetString()));
                 Assert.False(string.IsNullOrEmpty(r.GetProperty("description").GetString()));
             }
-            Assert.Contains(resources, r => r.GetProperty("uri").GetString() == "nursery://recipe/rounds/nursery/brain2-w5.json");
+            Assert.Contains(resources, r => r.GetProperty("uri").GetString() == "nursery://recipe/rounds/nursery/brain2-w11.json");
             foreach (JsonElement t in all.GetProperty("templates").EnumerateArray())
             {
                 Assert.Contains("{", t.GetProperty("uriTemplate").GetString());
@@ -109,12 +109,12 @@ namespace Evosim.NurseryRoom.Tests
         {
             string run = MakeRun("shaped", ("tank-generations.jsonl", "{\"gen\":0,\"seconds\":60,\"netMean\":5,\"top\":{\"score\":9,\"body\":1}}\n{\"gen\":1,\"seconds\":120,\"netMean\":6,\"top\":{\"score\":10,\"body\":1}}\n"),
                 ("recipe.json", "{\"name\":\"n\",\"description\":\"a run\",\"search\":{\"generations\":50},\"reward\":{\"class\":\"Net\"}}"));
-            RegistryEntry.Append(_fx.Registry, new RegistryEntry { Recipe = "first", RecipeHash = "aa", RecipePath = "rounds/nursery/brain2-w5.json", ConfigHash = "c", GitCommit = "g", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Out = run, Status = "completed", StartedAtUtc = "2026-10-01T00:00:00Z", EndedAtUtc = "2026-10-01T01:00:00Z" });
+            RegistryEntry.Append(_fx.Registry, new RegistryEntry { Recipe = "first", RecipeHash = "aa", RecipePath = "rounds/nursery/brain2-w11.json", ConfigHash = "c", GitCommit = "g", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Out = run, Status = "completed", StartedAtUtc = "2026-10-01T00:00:00Z", EndedAtUtc = "2026-10-01T01:00:00Z" });
             var resolver = new ResourceResolver(_fx.Room);
             var found = new HashSet<Type>();
             var responses = new List<object>
             {
-                resolver.List(), resolver.Templates, resolver.Registry(), resolver.Activity(), resolver.Run("1"), resolver.RecipeView("rounds/nursery/brain2-w5.json"),
+                resolver.List(), resolver.Templates, resolver.Registry(), resolver.Activity(), resolver.Run("1"), resolver.RecipeView("rounds/nursery/brain2-w11.json"),
             };
             foreach (string read in new[] { "nursery://genomes/1", "nursery://exam-plan/1" })
             {
@@ -187,7 +187,7 @@ namespace Evosim.NurseryRoom.Tests
                 Assert.Empty(RoomResponseShapeTests.EmptyObjects(body));
 
                 // every JSON answer a screen reads on opening, through the same pipeline: none is an empty object
-                foreach (string path in new[] { "/api/room", "/api/resource?uri=nursery%3A%2F%2Fregistry", "/api/resource?uri=nursery%3A%2F%2Factivity", "/api/resource?uri=" + Uri.EscapeDataString("nursery://recipe/rounds/nursery/brain2-w5.json") })
+                foreach (string path in new[] { "/api/room", "/api/resource?uri=nursery%3A%2F%2Fregistry", "/api/resource?uri=nursery%3A%2F%2Factivity", "/api/resource?uri=" + Uri.EscapeDataString("nursery://recipe/rounds/nursery/brain2-w11.json") })
                 {
                     string answer = await http.GetStringAsync($"http://127.0.0.1:{port}{path}");
                     Assert.NotEqual("{}", answer);
@@ -249,7 +249,7 @@ namespace Evosim.NurseryRoom.Tests
         }
 
         private void Enter(string recipe, string folder, string status = "completed", bool rerunnable = true, string because = null) =>
-            RegistryEntry.Append(_fx.Registry, new RegistryEntry { Recipe = recipe, RecipeHash = "aa", RecipePath = "rounds/nursery/brain2-w5.json", ConfigHash = "c", GitCommit = "g", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Out = folder, Status = status, Rerunnable = rerunnable, NotRerunnableBecause = because, StartedAtUtc = "2026-10-01T00:00:00Z", EndedAtUtc = "2026-10-01T01:00:00Z" });
+            RegistryEntry.Append(_fx.Registry, new RegistryEntry { Recipe = recipe, RecipeHash = "aa", RecipePath = "rounds/nursery/brain2-w11.json", ConfigHash = "c", GitCommit = "g", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Out = folder, Status = status, Rerunnable = rerunnable, NotRerunnableBecause = because, StartedAtUtc = "2026-10-01T00:00:00Z", EndedAtUtc = "2026-10-01T01:00:00Z" });
 
         [Fact]
         public void AnEntryAndARoomJsonRunThatAreTheSameFolderAreOneRowCarryingBoth()
@@ -343,7 +343,7 @@ namespace Evosim.NurseryRoom.Tests
             JsonElement d = Js.Parse(Js.Serialize(new ResourceResolver(_fx.Room).Registry()));
             JsonElement first = d.GetProperty("items").EnumerateArray().Single(i => i.GetProperty("name").GetString() == "first");
             JsonElement second = d.GetProperty("items").EnumerateArray().Single(i => i.GetProperty("name").GetString() == "second");
-            Assert.Equal("rounds/nursery/brain2-w5.json", first.GetProperty("recipePath").GetString());
+            Assert.Equal("rounds/nursery/brain2-w11.json", first.GetProperty("recipePath").GetString());
             Assert.True(first.GetProperty("recipeExists").GetBoolean());
             Assert.Equal("rounds/nursery/missing.json", second.GetProperty("recipePath").GetString());
             Assert.False(second.GetProperty("recipeExists").GetBoolean());

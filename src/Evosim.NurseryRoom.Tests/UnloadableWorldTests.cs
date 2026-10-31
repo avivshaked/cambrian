@@ -74,7 +74,7 @@ namespace Evosim.NurseryRoom.Tests
         [Fact]
         public void ARecipeThatLoadsStillSaysItsWorldLoaded()
         {
-            JsonElement v = View("rounds/nursery/brain2-w5.json");
+            JsonElement v = View("rounds/nursery/brain2-w11.json");
             Assert.True(v.GetProperty("ok").GetBoolean());
             Assert.True(v.GetProperty("check").GetProperty("ok").GetBoolean());
             Assert.True(v.GetProperty("world").GetProperty("loaded").GetBoolean());

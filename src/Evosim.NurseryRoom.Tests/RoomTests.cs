@@ -632,16 +632,16 @@ namespace Evosim.NurseryRoom.Tests
         [Fact]
         public void Brain2ChecksOutWithItsHash()
         {
-            JsonElement r = Result(Ops().Invoke("recipe.check", Args("rounds/nursery/brain2-w5.json")));
+            JsonElement r = Result(Ops().Invoke("recipe.check", Args("rounds/nursery/brain2-w11.json")));
             Assert.True(r.GetProperty("ok").GetBoolean());
-            Assert.Equal("b45716afab91a524d8e42954a71bd491f2ae56dc298421ad93255547253f5001", r.GetProperty("hash").GetString());
-            Assert.Contains("\"name\": \"brain2-w5\"", r.GetProperty("canonical").GetString());
+            Assert.Equal("3643842209201c12a49864208f7ad9189e5314b7e50aea479a84288e4d5ec859", r.GetProperty("hash").GetString());
+            Assert.Contains("\"name\": \"brain2-w11\"", r.GetProperty("canonical").GetString());
         }
 
         [Fact]
         public void AnUnknownFieldIsRefusedWithItsPath()
         {
-            string text = File.ReadAllText(Path.Combine(Where.Root, "rounds", "nursery", "brain2-w5.json"));
+            string text = File.ReadAllText(Path.Combine(Where.Root, "rounds", "nursery", "brain2-w11.json"));
             string variant = text.Replace("\"world\": {", "\"world\": {\n    \"extra\": 1,");
             Assert.NotEqual(text, variant);
             string full = Path.Combine(_dir, "variant.json");
@@ -679,7 +679,7 @@ namespace Evosim.NurseryRoom.Tests
         [Fact]
         public void ARecipeTheNurseryRefusesIsASuccessfulCheckWhoseAnswerIsNo()
         {
-            string text = File.ReadAllText(Path.Combine(Where.Root, "rounds", "nursery", "brain2-w5.json"));
+            string text = File.ReadAllText(Path.Combine(Where.Root, "rounds", "nursery", "brain2-w11.json"));
             string full = Path.Combine(_dir, "bad.json");
             File.WriteAllText(full, text.Replace("\"world\": {", "\"world\": {\n    \"extra\": 1,"));
             OperationResult r = Ops().Invoke("recipe.check", Args(Path.GetRelativePath(Where.Root, full).Replace('\\', '/')));
@@ -707,9 +707,9 @@ namespace Evosim.NurseryRoom.Tests
         public void TheRecipeResourceCarriesTheCheckAndTheHash()
         {
             var room = new RoomContext(Where.Root, Where.Settings(), Where.Root, Path.Combine(_dir, "none.jsonl"));
-            JsonElement r = Js.Parse(Js.Serialize(new ResourceResolver(room).Read("nursery://recipe/rounds/nursery/brain2-w5.json")));
+            JsonElement r = Js.Parse(Js.Serialize(new ResourceResolver(room).Read("nursery://recipe/rounds/nursery/brain2-w11.json")));
             Assert.True(r.GetProperty("ok").GetBoolean());
-            Assert.Equal("b45716afab91a524d8e42954a71bd491f2ae56dc298421ad93255547253f5001", r.GetProperty("hash").GetString());
+            Assert.Equal("3643842209201c12a49864208f7ad9189e5314b7e50aea479a84288e4d5ec859", r.GetProperty("hash").GetString());
             Assert.Equal("founders", r.GetProperty("resolved").GetProperty("bodies").GetProperty("source").GetString());
         }
     }
@@ -822,11 +822,11 @@ namespace Evosim.NurseryRoom.Tests
             JsonElement schema = tools.First(t => t.Name == "recipe").InputSchema;
             Assert.Equal("check", schema.GetProperty("properties").GetProperty("action").GetProperty("enum")[0].GetString());
 
-            var args = new Dictionary<string, JsonElement> { ["action"] = Js.Parse("\"check\""), ["path"] = Js.Parse("\"rounds/nursery/brain2-w5.json\"") };
+            var args = new Dictionary<string, JsonElement> { ["action"] = Js.Parse("\"check\""), ["path"] = Js.Parse("\"rounds/nursery/brain2-w11.json\"") };
             var result = McpSurface.Call(ops, "recipe", args);
             Assert.NotEqual(true, result.IsError);
             string text = ((ModelContextProtocol.Protocol.TextContentBlock)result.Content[0]).Text;
-            Assert.Contains("b45716afab91a524d8e42954a71bd491f2ae56dc298421ad93255547253f5001", text);
+            Assert.Contains("3643842209201c12a49864208f7ad9189e5314b7e50aea479a84288e4d5ec859", text);
 
             var describe = McpSurface.Call(ops, "describe", new Dictionary<string, JsonElement>());
             Assert.NotEqual(true, describe.IsError);
@@ -948,7 +948,7 @@ namespace Evosim.NurseryRoom.Tests
             Assert.Equal(r.Templates.Select(t => t.UriTemplate).ToArray(), McpSurface.Templates(r).Select(t => t.UriTemplate).ToArray());
             Assert.Equal(r.List().Select(x => x.Uri).ToArray(), McpSurface.Resources(r).Select(x => x.Uri).ToArray());
             Assert.Contains(r.List(), x => x.Uri == "nursery://registry");
-            Assert.Contains(r.List(), x => x.Uri == "nursery://recipe/rounds/nursery/brain2-w5.json");
+            Assert.Contains(r.List(), x => x.Uri == "nursery://recipe/rounds/nursery/brain2-w11.json");
         }
     }
 

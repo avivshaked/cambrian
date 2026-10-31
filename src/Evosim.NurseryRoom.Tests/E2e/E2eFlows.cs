@@ -318,7 +318,7 @@ namespace Evosim.NurseryRoom.Tests.E2e
             Assert.Contains("Committed and unchanged", launch);
             Assert.DoesNotContain("This launch goes ahead", launch);
             Assert.Equal("LAUNCH", b.EvalString("document.querySelector('form.ask button[type=submit]').textContent"));
-            Assert.Contains("launch brain2-w5", launch, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("launch brain2-w11", launch, StringComparison.OrdinalIgnoreCase);
             Assert.Matches(@"so at most 16 threads fit\b", launch);   // the default queue: the slot's 16 cores, none claimed
             AssertReasonNote(b, "launch", launch);
             CancelDialog(b);
@@ -390,13 +390,13 @@ namespace Evosim.NurseryRoom.Tests.E2e
             Assert.Equal("recipe.html?path=rounds%2Fnursery%2Fe2e-beta.json", b.EvalString("document.getElementById('tab-recipe').getAttribute('href')"));
             b.Press("ArrowDown");
             b.WaitFor("document.querySelector('#list tr.sel').dataset.key === '2|entry'", "entry 2 selected");
-            Assert.Equal("recipe.html?path=rounds%2Fnursery%2Fbrain2-w3.json", b.EvalString("document.getElementById('tab-recipe').getAttribute('href')"));
+            Assert.Equal("recipe.html?path=rounds%2Fnursery%2Fbrain2-w11.json", b.EvalString("document.getElementById('tab-recipe').getAttribute('href')"));
             b.Click("#tab-recipe");
-            b.WaitFor("location.pathname.endsWith('recipe.html') && document.querySelector('#author h1') && document.querySelector('#author h1').innerText === 'brain2-w5'", "the selected entry's recipe opened by the tab");
+            b.WaitFor("location.pathname.endsWith('recipe.html') && document.querySelector('#author h1') && document.querySelector('#author h1').innerText === 'brain2-w11'", "the selected entry's recipe opened by the tab");
             // off the registry the tab keeps the last recipe viewed, and with none the picker
             b.Navigate(host.Base + "/run.html?id=3");
             b.WaitFor("document.getElementById('name') && document.getElementById('name').innerText.includes('e2e-beta')", "the run screen");
-            Assert.Equal("recipe.html?path=rounds%2Fnursery%2Fbrain2-w3.json", b.EvalString("document.getElementById('tab-recipe').getAttribute('href')"));
+            Assert.Equal("recipe.html?path=rounds%2Fnursery%2Fbrain2-w11.json", b.EvalString("document.getElementById('tab-recipe').getAttribute('href')"));
             b.Eval("localStorage.removeItem('nursery-room.selection')");
             b.Navigate(host.Base + "/run.html?id=3");
             b.WaitFor("document.getElementById('name') && document.getElementById('name').innerText.includes('e2e-beta')", "the run screen again");
@@ -511,7 +511,7 @@ namespace Evosim.NurseryRoom.Tests.E2e
             var screens = new (string Name, string Url, string Ready)[]
             {
                 ("registry", "/", "document.querySelectorAll('#list tr[data-key]').length === 6 && document.querySelector('#sel h2')"),
-                ("recipe", "/recipe.html?path=rounds/nursery/brain2-w5.json", "document.getElementById('git-plate') && document.querySelectorAll('.row').length > 20"),
+                ("recipe", "/recipe.html?path=rounds/nursery/brain2-w11.json", "document.getElementById('git-plate') && document.querySelectorAll('.row').length > 20"),
                 ("run", "/run.html?id=2&vs=4", "document.querySelector('.exam-t tbody.vs') && document.querySelector('#c-search').childElementCount > 0 && document.querySelector('#c-bodynet')"),
                 ("tank", "/tank.html?run=1&brain=0&draw=0&tank=0", "document.querySelectorAll('#s-brain option').length === 18"),
                 ("genome", "/genome.html?run=2&id=best.g0", "document.getElementById('graph') && document.getElementById('graph').childElementCount > 0"),

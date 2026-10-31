@@ -39,7 +39,7 @@ namespace Evosim.NurseryRoom.Tests
         }
 
         private static string Launch(string name, int threads) =>
-            Js.Serialize(new { recipe = "rounds/nursery/brain2-w5.json", name, threads, reason = "a test" });
+            Js.Serialize(new { recipe = "rounds/nursery/brain2-w11.json", name, threads, reason = "a test" });
 
         [Fact]
         public void TwoRoomsLaunchingOneNameAreTwoRunsAndBothCountAgainstTheCapAndInTheCatalogue()
@@ -90,7 +90,7 @@ namespace Evosim.NurseryRoom.Tests
         private readonly Fx _fx = new Fx();
         public void Dispose() => _fx.Dispose();
 
-        private string Variant(string name) => _fx.Brain2.Replace("\"name\": \"brain2-w5\"", "\"name\": \"" + name + "\"");
+        private string Variant(string name) => _fx.Brain2.Replace("\"name\": \"brain2-w11\"", "\"name\": \"" + name + "\"");
 
         private string NewRecipe(string text = null)
         {
@@ -283,7 +283,7 @@ namespace Evosim.NurseryRoom.Tests
                     File.WriteAllText(Path.Combine(folder, "run.json"),
                         "{\"status\":\"running\",\"processId\":" + self.Id + ",\"processStartedAtUtc\":\"" + self.StartTime.ToUniversalTime().ToString("o") + "\",\"recipe\":{\"path\":" + Js.Serialize(mainFile) + ",\"name\":\"n\"}}");
                 string current = RunRecord.FileSha256(wt.Full(path));
-                Fx.Result(wt.Call("recipe.write", wt.Json(path, text: wt.Brain2.Replace("\"name\": \"brain2-w5\"", "\"name\": \"zz-other\""), expect: current)));
+                Fx.Result(wt.Call("recipe.write", wt.Json(path, text: wt.Brain2.Replace("\"name\": \"brain2-w11\"", "\"name\": \"zz-other\""), expect: current)));
             }
         }
 
@@ -327,7 +327,7 @@ namespace Evosim.NurseryRoom.Tests
         private readonly Fx _fx = new Fx("scratch/live");
         public void Dispose() => _fx.Dispose();
 
-        private static string Launch(string name, string recipe = "rounds/nursery/brain2-w5.json", int threads = 2) =>
+        private static string Launch(string name, string recipe = "rounds/nursery/brain2-w11.json", int threads = 2) =>
             Js.Serialize(new { recipe, name, threads, reason = "a test" });
 
         [Theory]
@@ -371,8 +371,8 @@ namespace Evosim.NurseryRoom.Tests
         }
 
         [Theory]
-        [InlineData("rounds/nursery/brain2-w5.json.")]
-        [InlineData("rounds/nursery/brain2-w5.json..")]
+        [InlineData("rounds/nursery/brain2-w11.json.")]
+        [InlineData("rounds/nursery/brain2-w11.json..")]
         public void ARawRecipePathEndingInADotIsRefusedByLaunch(string raw)
         {
             OperationResult r = _fx.Call("run.launch", Launch("dotted", raw));
@@ -386,14 +386,14 @@ namespace Evosim.NurseryRoom.Tests
         [Theory]
         [InlineData("rounds/nursery/sub/x.json", "the room launches only plain files directly under rounds/nursery/")]
         [InlineData("rounds/other/x.json", "unregistered trial")]
-        [InlineData("rounds/nursery/brain2-w5.json.", "ends in a dot")]
+        [InlineData("rounds/nursery/brain2-w11.json.", "ends in a dot")]
         public void ARerunAppliesTheRegisteredRecipeCheckToTheEntrysRecipe(string recipePath, string said)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_fx.Full(recipePath)));
             if (!File.Exists(_fx.Full(recipePath))) File.WriteAllText(_fx.Full(recipePath), _fx.Brain2);
             RegistryEntry.Append(_fx.Registry, new RegistryEntry
             {
-                Recipe = "x", RecipeHash = Recipe.Load(_fx.Full("rounds/nursery/brain2-w5.json")).Hash(), RecipePath = recipePath,
+                Recipe = "x", RecipeHash = Recipe.Load(_fx.Full("rounds/nursery/brain2-w11.json")).Hash(), RecipePath = recipePath,
                 Out = Path.Combine(_fx.Dir, "entry-out"), Status = "completed", StartedAtUtc = "2026-10-02T00:00:00Z", EndedAtUtc = "2026-10-02T01:00:00Z",
                 GitCommit = "abc1234", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Rerunnable = true,
             });
@@ -410,13 +410,13 @@ namespace Evosim.NurseryRoom.Tests
         {
             RegistryEntry.Append(_fx.Registry, new RegistryEntry
             {
-                Recipe = "brain2", RecipeHash = Recipe.Load(_fx.Full("rounds/nursery/brain2-w5.json")).Hash(), RecipePath = "rounds/nursery/brain2-w5.json",
+                Recipe = "brain2", RecipeHash = Recipe.Load(_fx.Full("rounds/nursery/brain2-w11.json")).Hash(), RecipePath = "rounds/nursery/brain2-w11.json",
                 Out = Path.Combine(_fx.Dir, "entry-out"), Status = "completed", StartedAtUtc = "2026-10-02T00:00:00Z", EndedAtUtc = "2026-10-02T01:00:00Z",
                 GitCommit = "abc1234", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Rerunnable = true,
             });
             JsonElement r = Fx.Result(_fx.Call("run.rerun", Js.Serialize(new { entry = "1", name = "again", threads = 2, reason = "a test" })));
-            Assert.Equal("rounds/nursery/brain2-w5.json", r.GetProperty("recipe").GetString());
-            Assert.Equal("rounds/nursery/brain2-w5.json", _fx.LastRow().GetProperty("result").GetProperty("recipe").GetString());
+            Assert.Equal("rounds/nursery/brain2-w11.json", r.GetProperty("recipe").GetString());
+            Assert.Equal("rounds/nursery/brain2-w11.json", _fx.LastRow().GetProperty("result").GetProperty("recipe").GetString());
         }
 
         [Fact]
@@ -550,7 +550,7 @@ namespace Evosim.NurseryRoom.Tests
             Assert.Equal(new[] { "EVOSIM_GPU_DEVICE", "EVOSIM_REPO_ROOT" }, r.GetProperty("droppedEnvironment").EnumerateArray().Select(e => e.GetString()).ToArray());
             JsonElement row = _fx.LastRow().GetProperty("result");
             Assert.Equal(new[] { "EVOSIM_GPU_DEVICE", "EVOSIM_REPO_ROOT" }, row.GetProperty("droppedEnvironment").EnumerateArray().Select(e => e.GetString()).ToArray());
-            Assert.Equal("rounds/nursery/brain2-w5.json", row.GetProperty("recipe").GetString());
+            Assert.Equal("rounds/nursery/brain2-w11.json", row.GetProperty("recipe").GetString());
         }
     }
 
@@ -619,7 +619,7 @@ namespace Evosim.NurseryRoom.Tests
                 var spec = new LaunchSpec
                 {
                     FileName = exe,
-                    Arguments = new[] { dll, "--recipe", "rounds/nursery/brain2-w5.json", "--out", "runs/run-1", "--threads", "2" },
+                    Arguments = new[] { dll, "--recipe", "rounds/nursery/brain2-w11.json", "--out", "runs/run-1", "--threads", "2" },
                     WorkingDirectory = dir, Folder = Path.Combine(dir, "run-1"), LogFile = log,
                 };
                 Environment.SetEnvironmentVariable("EVOSIM_REPO_ROOT", "D:/not/for/the/run");
@@ -643,7 +643,7 @@ namespace Evosim.NurseryRoom.Tests
                 string[] lines = text.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
                 Assert.Contains("arg 1: " + dll, lines);
                 Assert.Contains("arg 2: --recipe", lines);
-                Assert.Contains("arg 3: rounds/nursery/brain2-w5.json", lines);
+                Assert.Contains("arg 3: rounds/nursery/brain2-w11.json", lines);
                 Assert.Contains("arg 4: --out", lines);
                 Assert.Contains("arg 5: runs/run-1", lines);
                 Assert.Contains("arg 6: --threads", lines);
