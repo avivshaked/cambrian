@@ -671,6 +671,13 @@ namespace Evosim.Farm
                          " N/m2 price " + F(cell.BuildJoulesPerNewton) + " J/N decay " + F(cell.DecaySeconds) +
                          " s reserve " + F(cell.ReserveThresholdSeconds) + "/" + F(cell.ReserveLagSeconds) +
                          " s upkeep " + F(cell.UpkeepWattsPerCubicMetre) + " W/m3 bud x" + F(cell.BudWeight);
+
+                // D268: only when the brain holds, so a recorded header reads as it did.
+                if (cell.BrainHold)
+                {
+                    token += " brain hold below " + F(cell.ReleaseBelow) + " release price " +
+                             F(cell.ReleaseJoulesPerNewton) + " J/N";
+                }
             }
 
             // D235: only noses smell in this world, and with what numbers.
