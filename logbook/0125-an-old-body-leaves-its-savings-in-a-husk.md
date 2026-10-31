@@ -5,7 +5,9 @@ round 50's read (logbook/specs/r50-read/read-end.txt), since round 50's entry, 0
 pictures. The others are the owner's rulings of the day (D127 and D128), the ledger check behind
 them (logbook/specs/r51-husk-ledger.md) and the build on the branch `round-51`. One screen has run
 in round 51's world: 6,000 s of seed 1. Every number is round 50's or the screen's, and each says
-which. A number I guessed says so.*
+which. A number I guessed says so. It was amended that evening, before any seed started. The first
+picture of the husks found a fault in their fall, and the last section says what it was and what
+moved. The amendment's commit is the pre-registration.*
 
 ## What it asks
 
@@ -100,7 +102,7 @@ children died older.
 | # | prediction | falsified by |
 |---|---|---|
 | H1 | **the husks hold a larder**: their joules over ρ (100 J a unit) are at least a tenth of the standing matter at 30,000 s, in 3 of 3 (round 50, whose corpses had a half-life of 139 s: 58, 72 and 96 units, under 0.006 of it; the screen: 1,937 of 15,264 units at 6,000 s, 0.127, against 1,035 in the living and 2,728 in the snow) | the last stats row |
-| H2 | **the larder lies still**: at least a quarter of the husks' joules have settled at 30,000 s, in 3 of 3 (the screen: 0.42; the bar is a guess) | `huskJoulesSettled` over `corpseJoules` |
+| H2 | **the larder lies still**: at least a quarter of the husks' joules have settled at 30,000 s, in 3 of 3 (the fixed smoke: 0.43 at 3,000 s; the screen's 0.42 at 6,000 s and the first smoke's 0.19 at 3,000 s were read on the build with the fault in the last section, and the bar, a guess, was set before the fault was found) | `huskJoulesSettled` over `corpseJoules` |
 | H3 | **where it settles** (a reading): the settled husks on a reef cap against those on the bed, and the caps' share of the tank (the screen ran before the two fields existed) | `husksOnReef` and `huskJoulesOnReef` |
 | H4 | **a husk leaves when it should** (a check, from 9,000 s): the husks standing at 30,000 s number between the deaths of the last 7,000 s less every husk eaten and the deaths of the last 9,000 s, in 3 of 3 (at a half-life of 1,800 s a husk falls to a twentieth in 7,780 s) | stats rows 7,000 and 9,000 s apart |
 | H5 | **what the mouths took** (a reading): husks and bodies eaten, units eaten, parts killed (round 50: 4, 4 and 7 corpses eaten, no body and no part; the screen: none) | the last stats row |
@@ -261,7 +263,29 @@ heavy job at a time beside one or two farm runs.
   wall-clock fields and the two step counts that restart at a resume were left out, as round 49's V2
   left them.
 
-The queue is `rounds/queue-r51.ps1`. It starts `scripts/farm-queue.ps1` from the worktree for the
-three seeds, and then V2 (`rounds/v2-r51.ps1`) on seed 1's checkpoint at 15,000 s. The owner asked
+- **Amended before the launch: a husk now falls to the bed below the world's depth** (`bebca14`).
+  The first film window with husks was drawn from the final smoke at 3,000 s. It showed 621 of the
+  2,390 husks at -45 m, the world's depth, and none of them settled. That depth is the bed's mean,
+  and this round's bed tilts 96 m across the tank, so half the disc lies below it, down to -93 m. The
+  drift clamped a sinking husk at the depth before it tested for the bed. Over the deep half a husk
+  therefore stopped in open water, never settled and drifted on. A settling husk is now stopped by
+  the bed or a cap alone. A world whose corpses do not settle keeps the old clamp, so every recorded
+  run replays. A new test puts bodies over a tilted tank's deep side and fails on the old drift. On
+  the fixed build the Core suite passed 1,036 of 1,036 with its slow experiments. The thread word is
+  still `c9b0cabce249c1dd`, and the Farm and Dynamics suites passed 194 and 118.
+- The fixed smoke, `runs/r51smoke2-s1` (`coreHash 759c87a1…`, `farmHash a2bbcccf…`, `dynamicsHash
+  d675fb37…`), ran the same seed for 3,000 s. It was identical to the first smoke through 610 s. It
+  parted at 620 s in the matter and snow fields, when the first husk passed the depth. At 3,000 s
+  1,201 of its 2,387 husks had settled, where 498 had. They held 0.43 of the husks' joules against
+  0.19, and 39 lay on a reef cap. The rest moved within a realisation's spread. It had 1,814 alive
+  against 1,804 and 725 deaths by age against 717, and the husks held 0.111 of the standing matter in
+  both. The member check on its 2,000 s checkpoint passed, twin-stepped for 100 physics steps. A
+  resume from it to 3,000 s (`runs/r51smoke2R-s1`) was identical to the run on all 100 shared
+  samples. The screen and the first smoke ran with the fault, so their husks read a larder stopped
+  halfway down. H2 cites the fixed smoke.
+
+The queue is `rounds/queue-r51.ps1`. It first builds the farm from the committed tree, because the
+exe the seeds would otherwise have found was older than the fix. It then starts
+`scripts/farm-queue.ps1` from the worktree for the three seeds, and then V2 (`rounds/v2-r51.ps1`) on seed 1's checkpoint at 15,000 s. The owner asked
 for the round to be prepared and not started while the films of rounds 49 and 50 are made, so it
 starts on the owner's word.
