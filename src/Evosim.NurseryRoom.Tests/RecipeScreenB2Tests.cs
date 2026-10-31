@@ -393,7 +393,7 @@ namespace Evosim.NurseryRoom.Tests
 
         /// <summary>
         /// Every path Recipe.cs accepts, taken from Recipe.cs itself: the key lists it passes to <c>Exactly</c> (which refuses a key outside the list), each with
-        /// the path of the object it checks. The exam's controls are checked under a variable (<c>at</c>), which stands for <c>exam.controls[i]</c>.
+        /// the path of the object it checks. The exam's controls are checked under a variable (<c>at</c>), which stands for <c>exam.controls[i]</c>; a variable declared as a local constant stands for its string.
         /// </summary>
         internal static SortedSet<string> AcceptedPaths(string source, out SortedSet<string> variables)
         {
@@ -403,7 +403,14 @@ namespace Evosim.NurseryRoom.Tests
             {
                 string at = m.Groups["at"].Value;
                 if (at.StartsWith("\"", StringComparison.Ordinal)) at = at.Trim('"');
-                else { variables.Add(at); at = "exam.controls[]"; }
+                else
+                {
+                    // a local constant (const string at = "leaves.patches.switching") names its own object; any other variable is the exam's control
+                    // the declaration in force is the last one before the call
+                    Match decl = Regex.Matches(source.Substring(0, m.Index), @"(?<const>const\s+)?string\s+" + Regex.Escape(at) + @"\s*=\s*(?<value>""[^""]*"")?").Cast<Match>().LastOrDefault();
+                    if (decl != null && decl.Groups["const"].Success && decl.Groups["value"].Success) at = decl.Groups["value"].Value.Trim('"');
+                    else { variables.Add(at); at = "exam.controls[]"; }
+                }
                 foreach (Match k in Regex.Matches(m.Groups["keys"].Value, "\"([^\"]+)\""))
                     paths.Add(at == "recipe" ? k.Groups[1].Value : at + "." + k.Groups[1].Value);
             }
