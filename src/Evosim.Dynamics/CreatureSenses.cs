@@ -664,6 +664,19 @@ namespace Evosim.Dynamics
                 case SensorChannel.BedTouch:
                     return partIndex < _rock.Length ? _rock[partIndex] : 0f;
 
+                // D268: whether this part's grip holds, and how hard it is pulled, as the last step's Anchor.Apply left
+                // them, so one step stale as the touch is. Zero on a part that has no grip, and in a world whose cell
+                // does not let the brain hold (the pull record is not allocated there).
+                case SensorChannel.Gripping:
+                    return _body.GripHeld != null && partIndex < _body.GripHeld.Length && _body.GripHeld[partIndex]
+                        ? 1f
+                        : 0f;
+
+                case SensorChannel.GripPull:
+                    return _body.GripPull != null && partIndex < _body.GripPull.Length
+                        ? (float)_body.GripPull[partIndex]
+                        : 0f;
+
                 // D167: the living leaves' smell, and its direction in the part's own frame.
                 case SensorChannel.LeafScent:
                     return partIndex < _leaf.Length ? _leaf[partIndex] : 0f;

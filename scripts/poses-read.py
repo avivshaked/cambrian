@@ -48,7 +48,7 @@ INDEX_ENTRY_BYTES = 16
 PAYLOAD_PREFIX = {1: 12, 2: 16, 3: 16, 4: 16}
 BODY_FIXED = {1: 37, 2: 38, 3: 46, 4: 50}
 
-FLAG_BITS = 1 | 2 | 4 | 8   # absorptive, jointed, photosynthetic, and remains (D220; PoseStream.RemainsBit)
+FLAG_BITS = 1 | 2 | 4 | 8 | 16   # absorptive, jointed, photosynthetic, remains (D220; PoseStream.RemainsBit), and holding a grip now (D268; PoseStream.AnchoredBit)
 STREAM_NAMES = ('poses.bin', 'film.poses.bin')
 
 
@@ -308,7 +308,7 @@ def guild(flags):
         return '???'
 
     return ''.join(letter if flags & bit else '-'
-                   for bit, letter in ((1, 'a'), (2, 'j'), (4, 'p'))) + ('r' if flags & 8 else '')
+                   for bit, letter in ((1, 'a'), (2, 'j'), (4, 'p'))) + ('r' if flags & 8 else '') + ('g' if flags & 16 else '')
 
 
 def main():

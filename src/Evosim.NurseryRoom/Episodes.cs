@@ -238,7 +238,7 @@ namespace Evosim.NurseryRoom
         }
 
         /// <summary>
-        /// The threads the live re-steps count against the cap: one each, for exactly as long as the process lives (not for <see cref="Cap.RecentLaunch"/>:
+        /// The threads the live re-steps count against the room's free cores: one each, for exactly as long as the process lives (not for <see cref="Cap.RecentLaunch"/>:
         /// a step ends when it ends, and its thread is free at once).
         /// </summary>
         public static int LiveThreads(RoomContext room)
@@ -404,16 +404,17 @@ namespace Evosim.NurseryRoom
                     };
                 }
 
-                // 4. The machine: the mask and the thread, the load, the cap.
+                // 4. The machine: the bound and the thread, then the room's slot in the queue, the heat, and the free cores.
                 string noSuchCore = CoreMask.Problem(room.Settings.Affinity, room.SystemMask);
                 if (noSuchCore != null) throw new ArgumentException(noSuchCore);
                 string tooMany = CoreMask.ThreadsProblem(1, room.Settings.Affinity);
                 if (tooMany != null) throw new ArgumentException(tooMany);
                 string dll = NurseryDll(room);
                 DateTime now = DateTime.UtcNow;
-                LoadReading load = room.Load.Read();
+                Slot slot = room.ReadSlot();
+                HeatReading heat = room.Heat.Read();
                 int granted = room.GrantedThreads(now);
-                string over = Cap.Refusal(1, room.Settings.CapLogical, room.Logical, load, granted);
+                string over = Cap.Refusal(1, slot, heat, granted);
                 if (over != null) throw new ArgumentException(over + ". Nothing was started.");
 
                 // 4b. The world: a run whose world this build cannot load is refused before anything is made or moved. Read gives the recipe's hash and
@@ -460,7 +461,7 @@ namespace Evosim.NurseryRoom
                 var spec = new LaunchSpec
                 {
                     FileName = room.Settings.Dotnet, Arguments = args, WorkingDirectory = room.Root, Folder = folder, LogFile = log,
-                    Affinity = room.Settings.Affinity, CleanForRestep = true,
+                    Affinity = slot.Free, CleanForRestep = true,
                 };
                 string badLine = CommandLine.Problem(spec);
                 if (badLine != null) throw new ArgumentException(badLine);
@@ -473,7 +474,7 @@ namespace Evosim.NurseryRoom
                 }
                 string note = outcome.Note;
                 if (outcome.Affinity != spec.Affinity)
-                    note = (note == null ? "" : note + "; ") + $"the launcher applied {(outcome.Affinity == 0 ? "no affinity mask" : "the affinity mask " + CoreMask.Format(outcome.Affinity))}, not the {CoreMask.Format(spec.Affinity)} room.json names";
+                    note = (note == null ? "" : note + "; ") + $"the launcher applied {(outcome.Affinity == 0 ? "no affinity mask" : "the affinity mask " + CoreMask.Format(outcome.Affinity))}, not the {CoreMask.Format(spec.Affinity)} of the room's free cores";
                 File.WriteAllText(Path.Combine(folder, StepFile), Js.Serialize(new
                 {
                     run = run.Id, runFolder = leaf, brain = b, draw = d, tank = t, pid = outcome.Pid, startedUtc = launchedUtc.ToString("o", Inv), threads = 1,
@@ -481,7 +482,6 @@ namespace Evosim.NurseryRoom
                     poolSha256 = poolSha, recipeSha256 = recipeSha, detached = outcome.Detached, launcherNote = note,
                     droppedEnvironment = (outcome.DroppedEnvironment ?? new string[0]).ToList(),
                 }) + "\n", Utf8);
-                room.Load.Invalidate();
                 return new
                 {
                     run = run.Id, brain = b, draw = d, tank = t, uri, cached = false, fresh, state = "running", folder = room.MainRelative(folder),
@@ -491,7 +491,8 @@ namespace Evosim.NurseryRoom
                     copied, movedAside,
                     command = "dotnet " + string.Join(" ", new[] { room.Display(dll) }.Concat(args.Skip(1))),
                     request = Js.Parse(requestText),
-                    load = new { percent = load.Percent, read = Cap.InUse(load.Percent ?? 0, room.Logical), granted, inUse = Cap.InUse(load.Percent ?? 0, room.Logical, granted), logical = room.Logical, cap = room.Settings.CapLogical },
+                    machine = Machine(slot, granted),
+                    heat = Heat(heat),
                 };
             }
         }
@@ -919,18 +920,33 @@ namespace Evosim.NurseryRoom
 
         /// <summary>
         /// What would refuse a step now, for the screen's STEP button to say before it is pressed (the operation itself checks again): a declared timing read
-        /// (or a timing-read file that cannot be read), then the cap with the load and the threads already granted. Null when neither refuses.
+        /// (or a timing-read file that cannot be read), then the cap: the room's slot in the queue, the heat, and the free cores against the threads already
+        /// granted. Null when neither refuses.
         /// </summary>
-        public static object StepRefusal(RoomContext room, LoadReading load, int grantedThreads)
+        public static object StepRefusal(RoomContext room, Slot slot, HeatReading heat, int grantedThreads)
         {
             TimingReadState t = TimingRead.Read(room);
             if (t.State == "declared")
                 return new { kind = "timing", reason = $"a timing read is declared: {t.Who ?? "(no one named)"} is timing, because {t.Why ?? "(no reason given)"}, until {t.Until?.ToUniversalTime().ToString("o", Inv)}; no episode is stepped" };
             if (t.State == "unreadable")
                 return new { kind = "timing", reason = t.Note };
-            string over = Cap.Refusal(1, room.Settings.CapLogical, room.Logical, load, grantedThreads);
+            string over = Cap.Refusal(1, slot, heat, grantedThreads);
             return over == null ? null : new { kind = "cap", reason = over };
         }
+
+        /// <summary>What a start's result says of the machine: the room's slot, the free cores the start was checked against, and the threads already granted.</summary>
+        public static object Machine(Slot slot, int granted) => new
+        {
+            slot = CoreMask.List(slot.Room), free = CoreMask.List(slot.Free), freeCount = CoreMask.Count(slot.Free), granted,
+            claims = slot.Claims.Select(c => new { line = c.Job.Text, cores = CoreMask.List(c.Inside) }).ToList(),
+        };
+
+        /// <summary>What a start's result says of the heat: the verdict and its line, and, for WARN, that it did not refuse.</summary>
+        public static object Heat(HeatReading heat) => new
+        {
+            verdict = heat.Verdict, line = heat.Line,
+            note = heat.Verdict == HeatReading.Warn ? "the heat check reads WARN; WARN does not refuse, so this was started, and the heat is worth watching" : null,
+        };
 
         /// <summary>The episodes the cache holds, as resources a client can list.</summary>
         public static IEnumerable<(string uri, string name)> Cached(RoomContext room)
@@ -952,10 +968,10 @@ namespace Evosim.NurseryRoom
             Add(new Operation
             {
                 Family = "episode", Action = "step", Mutates = true,
-                Summary = "Step one tank of one draw of a run's exam again, with the nursery's own code, as a process of its own pinned to room.json's affinity (--restep, one thread), and write its frames and its result into the episode's cache folder (<runsDir>/episodes/<run folder>/b<brain>-d<draw>-t<tank>). The request is built from nursery://exam-plan/{run}; read nursery://episode/{run}/{brain}/{draw}/{tank} for its progress and, when it is done, the comparison of each member's net with the run's own per[draw], bit for bit (EXACT only when every member is equal). A finished episode of the same request is served from the cache and not stepped again, unless fresh is true (the old folder is kept beside it, never written over). It counts 1 thread against the machine's cap for as long as its process lives. Refused while a timing read is declared (scratch/machine/timing-read.json in the main checkout, which the room only reads), and a step that lives when one is declared is stopped.",
+                Summary = "Step one tank of one draw of a run's exam again, with the nursery's own code, as a process of its own pinned to the free cores of the room's slot in the machine's queue (--restep, one thread), and write its frames and its result into the episode's cache folder (<runsDir>/episodes/<run folder>/b<brain>-d<draw>-t<tank>). The request is built from nursery://exam-plan/{run}; read nursery://episode/{run}/{brain}/{draw}/{tank} for its progress and, when it is done, the comparison of each member's net with the run's own per[draw], bit for bit (EXACT only when every member is equal). A finished episode of the same request is served from the cache and not stepped again, unless fresh is true (the old folder is kept beside it, never written over). It counts 1 thread against the room's free cores for as long as its process lives, and is refused when the machine's queue gives the room no slot, the heat check reads HOT or cannot read, or no core is free. Refused while a timing read is declared (scratch/machine/timing-read.json in the main checkout, which the room only reads), and a step that lives when one is declared is stopped.",
                 Schema = @"{""type"":""object"",""properties"":{""run"":{""type"":""string"",""description"":""The run: a registry number, or the folder name of a run the room knows.""},""brain"":{""type"":""integer"",""description"":""The exam brain's index in the plan (never its label).""},""draw"":{""type"":""integer"",""description"":""The exam draw: 0 to the plan's episodes minus 1. The draw fixes the episode's seed.""},""tank"":{""type"":""integer"",""description"":""The tank's index within that draw's tanks (0 for an exam that holds all its genomes in one).""},""fresh"":{""type"":""boolean"",""description"":""Step it again even though a finished episode of this request is in the cache.""}},""required"":[""run"",""brain"",""draw"",""tank""],""additionalProperties"":false}",
                 Handler = a => EpisodeSteps.Step(_room, _resources, a),
-                Record = r => Pick(r, "run", "brain", "draw", "tank", "uri", "cached", "fresh", "state", "folder", "pid", "threads", "affinity", "droppedEnvironment", "copied", "movedAside", "verdict"),
+                Record = r => Pick(r, "run", "brain", "draw", "tank", "uri", "cached", "fresh", "state", "folder", "pid", "threads", "affinity", "heat", "droppedEnvironment", "copied", "movedAside", "verdict"),
             });
         }
     }

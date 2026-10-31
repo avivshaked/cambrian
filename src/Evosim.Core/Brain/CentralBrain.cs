@@ -30,6 +30,14 @@ namespace Evosim.Core
 
         /// <summary>Where in its range the joint holds.</summary>
         Bend = 1,
+
+        /// <summary>
+        /// Whether an anchoring part holds on (D268): one per anchoring part, for a world whose anchoring cell lets
+        /// the brain hold. Below the cell's release threshold the grip lets go. The prose calls it the hold output;
+        /// the code calls it Grip because <see cref="SensorChannel.Hold"/> already names the joint envelope's sense.
+        /// It drives no joint, so its <see cref="BrainOutput.DriveIndex"/> is -1.
+        /// </summary>
+        Grip = 2,
     }
 
     /// <summary>A unit of a <see cref="CentralBrain"/>: a hidden unit or an output.</summary>

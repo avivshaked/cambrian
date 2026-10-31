@@ -92,38 +92,47 @@ namespace Evosim.NurseryRoom
         }
 
         /// <summary>
-        /// What <c>/api/room</c> answers: the room's numbers and the load. A reading the cap would refuse (none, or not a possible load) is shown as
-        /// unreadable, with the reason, and never as a number the screen would draw while a launch is refused for it.
+        /// What <c>/api/room</c> answers: the room's numbers, its slot as the machine's queue gives it now (the free cores, and the lines that claim cores
+        /// inside the slot), and the heat verdict. A slot that is not known is shown with its reason, never as cores the screen would draw while a launch
+        /// is refused for it.
         /// </summary>
-        public static object RoomStatus(RoomContext room, LoadReading load, DateTime nowUtc)
+        public static object RoomStatus(RoomContext room, DateTime nowUtc)
         {
             // A poll: the timing-read file is read, and a re-step that lives when one is declared is stopped.
             (object timingRead, object resteps) = EpisodeSteps.Status(room);
             int granted = room.GrantedThreads(nowUtc);
-            string unreadable = Cap.Unreadable(load, room.Logical);
+            Slot slot = room.ReadSlot();
+            HeatReading heat = room.Heat.Read();
+            bool known = slot.Problem == null;
             return new
             {
                 timingRead,
                 resteps,
                 // What would refuse an episode step now (the tank screen's STEP button says it before it is pressed): null when nothing does.
-                stepRefusal = EpisodeSteps.StepRefusal(room, load, granted),
+                stepRefusal = EpisodeSteps.StepRefusal(room, slot, heat, granted),
                 pollSeconds = room.Settings.PollSeconds,
-                capLogical = room.Settings.CapLogical,
                 affinity = CoreMask.Format(room.Settings.Affinity),
                 logical = room.Logical,
                 root = room.Root,
                 mainCheckout = room.MainCheckout,
                 nowUtc,
-                load = new
+                machine = new
                 {
-                    percent = unreadable == null ? load.Percent : null,
-                    // What counts against the cap: the larger of the counter's reading and the threads this room granted lately (Cap.InUse).
-                    inUse = unreadable == null ? Cap.InUse(load.Percent.Value, room.Logical, granted) : (int?)null,
-                    read = unreadable == null ? Cap.InUse(load.Percent.Value, room.Logical) : (int?)null,
+                    queue = room.Settings.QueueFile,
+                    problem = slot.Problem,
+                    slot = known ? CoreMask.List(slot.Room) : null,
+                    slotCount = known ? CoreMask.Count(slot.Usable) : (int?)null,
+                    free = known ? CoreMask.List(slot.Free) : null,
+                    freeCount = known ? CoreMask.Count(slot.Free) : (int?)null,
+                    // The threads this room granted that still count against the free cores (RoomContext.GrantedThreads).
                     granted,
-                    problem = unreadable,
-                    readUtc = load.AtUtc,
+                    explain = known ? slot.Explain() : null,
+                    claims = slot.Claims.Select(c => new { line = c.Job.Text, cores = CoreMask.List(c.Inside), card = c.Job.Card, note = c.Job.CoresProblem }).ToList(),
+                    // The jobs that use the graphics card, by their text: the room never does, and only shows the tag.
+                    card = (slot.Queue?.Running ?? new List<QueueJob>()).Where(j => j.Card).Select(j => j.Text).ToList(),
+                    readUtc = slot.Queue?.AtUtc,
                 },
+                heat = new { verdict = heat.Verdict, line = heat.Line, readUtc = heat.AtUtc },
             };
         }
 
@@ -171,9 +180,9 @@ namespace Evosim.NurseryRoom
 
             app.MapGet("/api/room", async () =>
             {
-                // The load is read off the request's thread: the counter is a rate and takes a second.
-                LoadReading load = await Task.Run(() => room.Load.Read());
-                return Results.Text(Js.Serialize(RoomStatus(room, load, DateTime.UtcNow)), "application/json");
+                // Read off the request's thread: the heat check runs a script, which takes seconds when its reading is not kept.
+                object status = await Task.Run(() => RoomStatus(room, DateTime.UtcNow));
+                return Results.Text(Js.Serialize(status), "application/json");
             });
 
             app.MapGet("/api/resources", () => Results.Text(Js.Serialize(new { resources = resources.List(), templates = resources.Templates }), "application/json"));

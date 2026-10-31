@@ -10,163 +10,322 @@ using System.Text.RegularExpressions;
 
 namespace Evosim.NurseryRoom
 {
-    /// <summary>The machine's load as <c>% Processor Utility</c>, as Task Manager reports it, or why it could not be read.</summary>
-    public sealed class LoadReading
+    /// <summary>
+    /// One job of the machine's queue: a line of its <c>## Running</c> section that starts with <c>- </c>. What stands before its first <c> · </c> is its
+    /// text; each part after one is a tag (<c>cores: a-b[,c-d]</c>, <c>card</c>, <c>room</c>) or prose, which is not read.
+    /// </summary>
+    public sealed class QueueJob
     {
-        /// <summary>0 to 100 (a counter can read above 100 on a machine in turbo; it is kept as read), or null.</summary>
-        public double? Percent;
+        /// <summary>The line's text before its first <c> · </c>: what a refusal names the line by.</summary>
+        public string Text;
+
+        /// <summary>The logical processors the line claims, a bit each (bit 0 is processor 0): every one when <see cref="CoresProblem"/> says why its cores could not be read.</summary>
+        public ulong Cores;
+
+        /// <summary>Null when the line's <c>cores:</c> tag was read; else why not, said of the line ("has no cores: tag"), and the line claims every processor.</summary>
+        public string CoresProblem;
+
+        /// <summary>The job uses the graphics card. The room never does; it shows the tag and does nothing else with it.</summary>
+        public bool Card;
+
+        /// <summary>The room's own slot. The coordinator sets it, and moves the slot by changing the line's <c>cores:</c>.</summary>
+        public bool Room;
+    }
+
+    /// <summary>The machine's queue as the room reads it (room.json's <c>queueFile</c>, in the main checkout): its Running jobs, or why they could not be read.</summary>
+    public sealed class QueueReading
+    {
+        public const string RunningHeading = "## Running";
+
+        /// <summary>The queue file as a refusal names it: repository-relative, as room.json holds it.</summary>
+        public string File;
+        public List<QueueJob> Running = new List<QueueJob>();
+
+        /// <summary>Null when the Running section was read; else the reason as a refusal says it, naming the file.</summary>
         public string Problem;
         public DateTime AtUtc = DateTime.UtcNow;
 
-        public static LoadReading Of(double percent) => new LoadReading { Percent = percent };
-        public static LoadReading Failed(string problem) => new LoadReading { Problem = problem };
+        public static QueueReading Failed(string file, string why) => new QueueReading { File = file, Problem = $"the machine's queue {file} cannot be read ({why})" };
+
+        private static readonly Regex CoresWord = new Regex(@"\Acores\b", RegexOptions.IgnoreCase);
+        private static readonly Regex CoresTag = new Regex(@"\Acores:(.*)\z", RegexOptions.IgnoreCase);
+
+        /// <summary>
+        /// The Running jobs of the queue's text: from the line <c>## Running</c> to the next line that starts with <c>## </c>, each line in between that starts
+        /// with <c>- </c>. Prose between the job lines is not read. The coordinator owns the file; the room only reads it.
+        /// </summary>
+        public static QueueReading Parse(string text, string file)
+        {
+            var q = new QueueReading { File = file };
+            bool inRunning = false, found = false;
+            foreach (string raw in (text ?? "").Split('\n'))
+            {
+                string line = raw.TrimEnd('\r');
+                if (line.StartsWith("## ", StringComparison.Ordinal))
+                {
+                    if (found) break;   // the next section: nothing below the Running one is read
+                    inRunning = found = line.TrimEnd() == RunningHeading;
+                    continue;
+                }
+                if (inRunning && line.StartsWith("- ", StringComparison.Ordinal)) q.Running.Add(Job(line.Substring(2)));
+            }
+            if (!found) q.Problem = $"the machine's queue {file} has no {RunningHeading} section";
+            return q;
+        }
+
+        /// <summary>
+        /// One job line: its parts are split at each <c>·</c> and trimmed. A part that is <c>card</c> or <c>room</c> is that tag, and one that begins with the
+        /// word <c>cores</c> is the cores tag; any other part is prose. A line with no cores tag, with more than one, or with one that does not read as
+        /// <c>cores: a-b[,c-d]</c> claims every processor, and says why.
+        /// </summary>
+        private static QueueJob Job(string body)
+        {
+            string[] parts = body.Split('·').Select(p => p.Trim()).ToArray();
+            var job = new QueueJob { Text = parts[0] };
+            var cores = new List<string>();
+            foreach (string p in parts.Skip(1))
+            {
+                if (p.Equals("card", StringComparison.OrdinalIgnoreCase)) job.Card = true;
+                else if (p.Equals("room", StringComparison.OrdinalIgnoreCase)) job.Room = true;
+                else if (CoresWord.IsMatch(p)) cores.Add(p);
+            }
+            Match m = cores.Count == 1 ? CoresTag.Match(cores[0]) : Match.Empty;
+            if (cores.Count == 1 && m.Success && CoreMask.TryParseList(m.Groups[1].Value, out ulong mask)) { job.Cores = mask; return job; }
+            job.Cores = ulong.MaxValue;
+            job.CoresProblem = cores.Count == 0 ? "has no cores: tag"
+                : cores.Count > 1 ? $"has {cores.Count} cores tags"
+                : $"has a cores tag the room cannot read (\"{cores[0]}\"; it is cores: a-b or a, joined by commas, each from 0 to 63)";
+            return job;
+        }
     }
 
-    /// <summary>Where the load comes from; the room's tests give it a value.</summary>
-    public interface ILoadReader
+    /// <summary>Where the machine's queue comes from; the room's tests give it a value.</summary>
+    public interface IQueueReader
     {
-        LoadReading Read();
+        QueueReading Read();
+    }
 
-        /// <summary>Forgets a reading kept for a few seconds: a launch has just changed the load, and the next reading must see it.</summary>
-        void Invalidate();
+    /// <summary>Reads the queue file on every call, as it is now (it is short, and the coordinator moves the room's slot by editing it). It never writes it.</summary>
+    public sealed class QueueFileReader : IQueueReader
+    {
+        private readonly string _path, _shown;
+
+        /// <param name="path">The file's full path, in the main checkout.</param>
+        /// <param name="shown">The file as a refusal names it (room.json's <c>queueFile</c>).</param>
+        public QueueFileReader(string path, string shown) { _path = path; _shown = shown; }
+
+        public QueueReading Read()
+        {
+            string text;
+            try
+            {
+                using (var s = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+                using (var r = new StreamReader(s, Encoding.UTF8)) text = r.ReadToEnd();
+            }
+            catch (Exception e) when (e is FileNotFoundException || e is DirectoryNotFoundException) { return QueueReading.Failed(_shown, "there is no such file"); }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException) { return QueueReading.Failed(_shown, e.Message.Replace(_path, _shown)); }
+            return QueueReading.Parse(text, _shown);
+        }
+    }
+
+    /// <summary>The heat check's verdict (room.json's <c>heatScript</c>): OK, WARN, HOT, or UNREADABLE when it cannot say, with the line it printed or why it gave none.</summary>
+    public sealed class HeatReading
+    {
+        public const string Ok = "OK", Warn = "WARN", Hot = "HOT", Unreadable = "UNREADABLE";
+
+        public string Verdict;
+        public string Line;
+        public DateTime AtUtc = DateTime.UtcNow;
+
+        public static HeatReading Of(string verdict, string line) => new HeatReading { Verdict = verdict, Line = line };
+
+        /// <summary>
+        /// The verdict of the script's exit code and what it printed: 0 OK, 1 WARN, 2 HOT, 3 (and any other code) UNREADABLE. A printed line that does
+        /// not name the verdict its exit code gives is UNREADABLE too: PowerShell ends a script that fails with exit code 1, which is not a WARN.
+        /// </summary>
+        public static HeatReading FromExit(int exitCode, string output)
+        {
+            string line = (output ?? "").Split('\n').Select(l => l.Trim()).FirstOrDefault(l => l.Length > 0) ?? "";
+            if (line.Length > 300) line = line.Substring(0, 300) + "...";
+            string verdict = exitCode == 0 ? Ok : exitCode == 1 ? Warn : exitCode == 2 ? Hot : null;
+            if (verdict == null) return Of(Unreadable, $"the heat check exited {exitCode}" + (line.Length == 0 ? "" : ": " + line));
+            if (!Regex.IsMatch(line, @"(^|\s)" + verdict + @"(\s|$)"))
+                return Of(Unreadable, $"the heat check exited {exitCode}, which is {verdict}, but printed no {verdict} line" + (line.Length == 0 ? "" : ": " + line));
+            return Of(verdict, line);
+        }
+    }
+
+    /// <summary>Where the heat verdict comes from; the room's tests give it a value and never run the script.</summary>
+    public interface IHeatReader
+    {
+        HeatReading Read();
     }
 
     /// <summary>
-    /// Reads <c>\Processor Information(_Total)\% Processor Utility</c> with <c>typeperf</c>, which ships with
-    /// Windows: the counter is a rate, so two samples a second apart are taken and the second is the reading.
-    /// A reading is kept for a few seconds so that a screen's poll and an agent's call do not each wait a second.
+    /// Runs the heat check with <c>pwsh</c> (<c>scripts/temp-check.ps1</c>: one line, and an exit code for its verdict) and keeps the reading for
+    /// <see cref="Keep"/>, so that a screen's poll and an agent's call do not each run it.
     /// </summary>
-    public sealed class TypeperfLoadReader : ILoadReader
+    public sealed class ScriptHeatReader : IHeatReader
     {
-        public const string Counter = "\\Processor Information(_Total)\\% Processor Utility";
+        public static readonly TimeSpan Keep = TimeSpan.FromSeconds(60);
 
         private readonly object _gate = new object();
-        private LoadReading _last;
-        private readonly TimeSpan _keep;
+        private readonly string _script, _shown;
+        private HeatReading _last;
 
-        public TypeperfLoadReader(TimeSpan? keep = null) { _keep = keep ?? TimeSpan.FromSeconds(5); }
+        /// <param name="script">The script's full path.</param>
+        /// <param name="shown">The script as a reading names it (room.json's <c>heatScript</c>).</param>
+        public ScriptHeatReader(string script, string shown) { _script = script; _shown = shown; }
 
-        public LoadReading Read()
+        public HeatReading Read()
         {
             lock (_gate)
             {
-                if (_last != null && DateTime.UtcNow - _last.AtUtc < _keep) return _last;
+                if (_last != null && DateTime.UtcNow - _last.AtUtc < Keep) return _last;
                 _last = ReadNow();
                 return _last;
             }
         }
 
-        public void Invalidate()
+        private HeatReading ReadNow()
         {
-            lock (_gate) _last = null;
-        }
-
-        private static LoadReading ReadNow()
-        {
-            if (!OperatingSystem.IsWindows()) return LoadReading.Failed("the load counter is read on Windows only");
+            if (!File.Exists(_script)) return HeatReading.Of(HeatReading.Unreadable, $"the heat check {_shown} is not there");
             try
             {
-                var info = new ProcessStartInfo("typeperf")
+                var info = new ProcessStartInfo("pwsh")
                 {
                     RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true,
                 };
-                info.ArgumentList.Add(Counter);
-                info.ArgumentList.Add("-sc");
-                info.ArgumentList.Add("2");
+                foreach (string a in new[] { "-NoProfile", "-NonInteractive", "-File", _script }) info.ArgumentList.Add(a);
                 using (Process p = Process.Start(info))
                 {
                     var output = p.StandardOutput.ReadToEndAsync();
                     var error = p.StandardError.ReadToEndAsync();
-                    if (!p.WaitForExit(15000))
+                    if (!p.WaitForExit(30000))
                     {
-                        try { p.Kill(); } catch (Exception) { }
-                        return LoadReading.Failed("typeperf did not answer within 15 s");
+                        try { p.Kill(true); } catch (Exception) { }
+                        return HeatReading.Of(HeatReading.Unreadable, $"the heat check {_shown} did not answer within 30 s");
                     }
                     p.WaitForExit();
-                    double? v = Parse(output.Result);
-                    if (v.HasValue) return LoadReading.Of(v.Value);
-                    string said = (error.Result + " " + output.Result).Trim();
-                    return LoadReading.Failed("typeperf gave no reading of " + Counter + (said.Length == 0 ? "" : ": " + (said.Length > 160 ? said.Substring(0, 160) : said)));
+                    return HeatReading.FromExit(p.ExitCode, output.Result.Trim().Length > 0 ? output.Result : error.Result);
                 }
             }
             catch (Exception e) when (e is System.ComponentModel.Win32Exception || e is InvalidOperationException || e is IOException)
             {
-                return LoadReading.Failed("typeperf could not be run: " + e.Message);
+                return HeatReading.Of(HeatReading.Unreadable, $"the heat check {_shown} could not be run with pwsh: " + e.Message);
             }
-        }
-
-        /// <summary>
-        /// The last sample of typeperf's CSV: rows of quoted fields, a time and then the value. The first sample of a rate
-        /// counter is not a rate, so with only one sample the answer is null. A comma used as the decimal mark is taken as one.
-        /// </summary>
-        public static double? Parse(string csv)
-        {
-            int rows = 0;
-            double? last = null;
-            foreach (string line in (csv ?? "").Split('\n'))
-            {
-                MatchCollection fields = Regex.Matches(line, "\"([^\"]*)\"");
-                if (fields.Count < 2 || line.Contains("PDH-CSV")) continue;
-                rows++;
-                string v = fields[fields.Count - 1].Groups[1].Value.Trim().Replace(',', '.');
-                last = double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out double d) && double.IsFinite(d) ? d : (double?)null;
-            }
-            return rows >= 2 ? last : null;
         }
     }
 
-    /// <summary>The cap: the threads a launch asks for, plus the logical processors already in use, may not pass it.</summary>
+    /// <summary>A Running line of the queue that claims cores inside the room's slot, and which of them.</summary>
+    public sealed class SlotClaim
+    {
+        public QueueJob Job;
+        public ulong Inside;
+    }
+
+    /// <summary>
+    /// The room's slot as the queue gives it now: the cores of the Running lines tagged <c>room</c>, inside room.json's <c>affinity</c> (the bound the room
+    /// never leaves), less logical 4 and 5, less every core another Running line claims. What is left is free, and a launch is pinned to it.
+    /// </summary>
+    public sealed class Slot
+    {
+        /// <summary>room.json's affinity.</summary>
+        public ulong Bound;
+
+        /// <summary>The cores of the room's lines, as the queue names them.</summary>
+        public ulong Room;
+
+        /// <summary>The room's cores inside the bound, less those the room never uses (<see cref="Cap.Never"/>).</summary>
+        public ulong Usable;
+
+        /// <summary>The usable cores no other Running line claims: those a launch is pinned to.</summary>
+        public ulong Free;
+
+        /// <summary>The other Running lines that claim usable cores, in the queue's order.</summary>
+        public List<SlotClaim> Claims = new List<SlotClaim>();
+
+        /// <summary>Null when the slot is known; else why not (the queue cannot be read, or no line carries room), as a refusal says it.</summary>
+        public string Problem;
+
+        public QueueReading Queue;
+
+        /// <summary>How the free cores come from the slot, as a refusal and the screens say it.</summary>
+        public string Explain()
+        {
+            var sb = new StringBuilder($"the room's slot is logical {CoreMask.List(Room)}");
+            if ((Room & ~Bound) != 0) sb.Append($", less {CoreMask.List(Room & ~Bound)} outside room.json's affinity {CoreMask.Format(Bound)}");
+            if ((Room & Bound & Cap.Never) != 0) sb.Append($", less {CoreMask.List(Room & Bound & Cap.Never)}, which the room never uses");
+            foreach (SlotClaim c in Claims)
+                sb.Append($", less {CoreMask.List(c.Inside)} claimed by \"{c.Job.Text}\"" + (c.Job.CoresProblem == null ? "" : $", which {c.Job.CoresProblem} and so claims every processor"));
+            return sb.ToString();
+        }
+    }
+
+    /// <summary>
+    /// The cap: what the machine's queue gives the room, and the heat. A launch of n threads, and an episode step of one, is refused when the queue
+    /// cannot be read, when no Running line carries <c>room</c>, when the heat check reads HOT or cannot read, or when n plus the threads the room has
+    /// granted that still count is more than the free cores (the owner's ruling of 2026-10-11, logbook/specs/nursery-room-queue-cap.md).
+    /// </summary>
     public static class Cap
     {
-        /// <summary>How long a launch counts as using its threads whatever the counter says: the counter is a rate, and a run takes a while to show in it.</summary>
+        /// <summary>Logical 4 and 5, which the room never uses, whatever the queue or room.json says.</summary>
+        public const ulong Never = 0x30UL;
+
+        /// <summary>How long a launch counts as using its threads whatever its run.json says yet: a run takes a while to write it.</summary>
         public static readonly TimeSpan RecentLaunch = TimeSpan.FromMinutes(3);
 
-        /// <summary>The logical processors a load reading says are in use, as a share of <paramref name="logical"/>, rounded up.</summary>
-        public static int InUse(double percent, int logical) =>
-            (int)Math.Ceiling(Math.Clamp(percent, 0d, 100d) / 100d * logical - 1e-9);
-
-        /// <summary>
-        /// The logical processors in use for the cap: the larger of what the counter reads and what the room itself granted
-        /// (<paramref name="grantedThreads"/>: the threads of runs it started that are still running or began in the last
-        /// <see cref="RecentLaunch"/>), so that a run just launched is counted before the counter has seen it, and never twice.
-        /// </summary>
-        public static int InUse(double percent, int logical, int grantedThreads) => Math.Max(InUse(percent, logical), grantedThreads);
-
-        /// <summary>
-        /// A reading that cannot be a load: not a number, below 0, or above 100 times the logical count. A counter can read
-        /// somewhat above 100 on a machine in turbo, which is a reading; the garbage a broken counter returns is not.
-        /// </summary>
-        public static bool Plausible(double percent, int logical) =>
-            !double.IsNaN(percent) && !double.IsInfinity(percent) && percent >= 0 && percent <= 100.0 * Math.Max(1, logical);
-
-        /// <summary>Why a reading cannot be used for the cap (none, or not a possible load), or null when it can; the screens show a reading the cap would refuse as unreadable.</summary>
-        public static string Unreadable(LoadReading load, int logical)
+        /// <summary>The room's slot from a reading of the queue, inside <paramref name="bound"/> (room.json's affinity).</summary>
+        public static Slot SlotOf(QueueReading queue, ulong bound)
         {
-            if (load == null || !load.Percent.HasValue) return load?.Problem ?? "no reading";
-            double p = load.Percent.Value;
-            if (Plausible(p, logical)) return null;
-            string shown = double.IsFinite(p) ? p.ToString("0.#", CultureInfo.InvariantCulture) : p.ToString(CultureInfo.InvariantCulture);
-            return $"the counter read {shown} % Processor Utility, which is not a possible reading on {logical} logical processors";
+            var s = new Slot { Bound = bound, Queue = queue };
+            if (queue == null) { s.Problem = "the machine's queue was not read, so the room's slot is not known"; return s; }
+            if (queue.Problem != null) { s.Problem = queue.Problem + ", so the room's slot is not known"; return s; }
+            List<QueueJob> mine = queue.Running.Where(j => j.Room).ToList();
+            if (mine.Count == 0)
+            {
+                s.Problem = $"no Running line of the machine's queue {queue.File} carries the room tag, so the room has no slot, and it starts nothing until the coordinator gives it one";
+                return s;
+            }
+            QueueJob unread = mine.FirstOrDefault(j => j.CoresProblem != null);
+            if (unread != null)
+            {
+                s.Problem = $"the room's line \"{unread.Text}\" in the machine's queue {queue.File} {unread.CoresProblem}, so the room's slot is not known";
+                return s;
+            }
+            foreach (QueueJob j in mine) s.Room |= j.Cores;
+            s.Usable = s.Room & bound & ~Never;
+            ulong claimed = 0;
+            foreach (QueueJob j in queue.Running.Where(j => !j.Room))
+            {
+                ulong inside = j.Cores & s.Usable;
+                if (inside == 0) continue;
+                s.Claims.Add(new SlotClaim { Job = j, Inside = inside });
+                claimed |= inside;
+            }
+            s.Free = s.Usable & ~claimed;
+            return s;
         }
 
-        /// <summary>Null when the launch fits, or the refusal with its numbers.</summary>
-        public static string Refusal(int threads, int cap, int logical, LoadReading load, int grantedThreads = 0)
+        /// <summary>
+        /// Null when a start of <paramref name="threads"/> threads may go ahead, or the refusal, which names what refused it: the queue or the room's line,
+        /// the heat verdict and its line, or the free cores against the threads asked, with how the slot gives them. WARN does not refuse.
+        /// </summary>
+        public static string Refusal(int threads, Slot slot, HeatReading heat, int grantedThreads = 0)
         {
-            if (load == null || !load.Percent.HasValue)
-                return $"the machine's load cannot be read ({load?.Problem ?? "no reading"}), so the cap of {cap} of {logical} logical processors cannot be checked; refusing {Threads(threads)}";
-            double percent = load.Percent.Value;
-            string shown = double.IsFinite(percent) ? percent.ToString("0.#", CultureInfo.InvariantCulture) : percent.ToString(CultureInfo.InvariantCulture);
-            if (!Plausible(percent, logical))
-                return $"the machine's load reads {shown} % Processor Utility, which is not a possible reading on {logical} logical processors (it is below 0 or above {100 * logical}), so the cap of {cap} cannot be checked; refusing {Threads(threads)}";
-            int read = InUse(percent, logical);
-            int used = Math.Max(read, grantedThreads);
-            if (threads + used <= cap) return null;
-            // The load is said as Task Manager says it, never above 100 (the counter can pass it under boost); the cap rule above reads the raw value.
-            string said = percent > 100 ? $"100 % Processor Utility, the counter read {shown}" : $"{shown} % Processor Utility";
-            string how = grantedThreads > read
-                ? $"{Threads(grantedThreads)} granted to runs this room started that are still running or began in the last {(int)RecentLaunch.TotalMinutes} minutes, and to episode re-steps whose process lives (the counter reads {read}, {said}, and the larger counts)"
-                : $"{read} of {logical} logical processors in use ({said}, rounded up)";
-            return $"{Threads(threads)} asked, plus {how} is {threads + used}, past the cap of {cap} of {logical} logical processors";
+            if (slot.Problem != null) return $"{slot.Problem}; refusing {Threads(threads)}";
+            if (heat == null || (heat.Verdict != HeatReading.Ok && heat.Verdict != HeatReading.Warn && heat.Verdict != HeatReading.Hot))
+                return $"the heat check cannot say whether the machine is too hot ({heat?.Line ?? "no reading"}); refusing {Threads(threads)}";
+            if (heat.Verdict == HeatReading.Hot)
+                return $"the heat check reads HOT ({heat.Line}), and the room starts nothing on a hot machine; refusing {Threads(threads)}";
+            int free = CoreMask.Count(slot.Free);
+            int asked = threads + grantedThreads;
+            if (asked <= free) return null;
+            string how = grantedThreads > 0
+                ? $"{Threads(threads)} asked, plus {Threads(grantedThreads)} granted to runs this room started that are still running or began in the last {(int)RecentLaunch.TotalMinutes} minutes and to episode re-steps whose process lives, is {asked},"
+                : $"{Threads(threads)} asked is";
+            string cores = free == 0 ? "the 0 free cores" : $"the {free} free {(free == 1 ? "core" : "cores")} (logical {CoreMask.List(slot.Free)})";
+            return $"{how} more than {cores}: {slot.Explain()}";
         }
 
         /// <summary>A count of threads, in the singular where it is one.</summary>
@@ -188,8 +347,8 @@ namespace Evosim.NurseryRoom
 
         /// <summary>
         /// The logical processors the run may use, a bit each (bit 0 is processor 0), set on the process before its first instruction so that the
-        /// <c>cmd</c> and the <c>dotnet</c> it starts inherit it. The room always sets it (room.json's <c>affinity</c>, never 0); 0 here means the
-        /// caller asked for no pinning, which only the launcher's own tests do.
+        /// <c>cmd</c> and the <c>dotnet</c> it starts inherit it. The room always sets it (the free cores of its slot, <see cref="Slot.Free"/>, never 0);
+        /// 0 here means the caller asked for no pinning, which only the launcher's own tests do.
         /// </summary>
         public ulong Affinity;
 
@@ -202,8 +361,8 @@ namespace Evosim.NurseryRoom
     }
 
     /// <summary>
-    /// The mask of logical processors a launched run may use (room.json's <c>affinity</c>): a hex string such as <c>0xFFFF0000</c>, up to 64 bits.
-    /// Refused when it is 0, or names a processor the machine lacks; never trimmed to fit.
+    /// A mask of logical processors. room.json's <c>affinity</c> is one, the bound a launched run never leaves: a hex string such as <c>0xFFFFFFCF</c>,
+    /// up to 64 bits, refused when it is 0 or names a processor the machine lacks, and never trimmed to fit. The machine's queue writes its cores as a list.
     /// </summary>
     public static class CoreMask
     {
@@ -225,6 +384,44 @@ namespace Evosim.NurseryRoom
         /// <summary>The mask as <see cref="Parse"/> reads it: <c>0x</c> and upper-case hex digits, with no leading zeros.</summary>
         public static string Format(ulong mask) => "0x" + mask.ToString("X", CultureInfo.InvariantCulture);
 
+        private static readonly Regex Range = new Regex(@"\A(\d{1,2})(?:-(\d{1,2}))?\z");
+
+        /// <summary>
+        /// A list of logical processors as the machine's queue writes them, <c>16-31</c> or <c>0-3,8-11</c> (a single one is <c>a</c>; spaces are
+        /// ignored), read into a mask. False when a part is not a range from 0 to 63 whose first number is not above its last, or the list is empty.
+        /// </summary>
+        public static bool TryParseList(string text, out ulong mask)
+        {
+            mask = 0;
+            string plain = new string((text ?? "").Where(c => !char.IsWhiteSpace(c)).ToArray());
+            if (plain.Length == 0) return false;
+            foreach (string part in plain.Split(','))
+            {
+                Match m = Range.Match(part);
+                if (!m.Success) return false;
+                int a = int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture);
+                int b = m.Groups[2].Success ? int.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture) : a;
+                if (a > b || b > 63) return false;
+                for (int i = a; i <= b; i++) mask |= 1UL << i;
+            }
+            return true;
+        }
+
+        /// <summary>A mask as the queue writes it: ranges joined by commas (<c>0-3,8-11</c>), <c>none</c> for 0.</summary>
+        public static string List(ulong mask)
+        {
+            var parts = new List<string>();
+            for (int i = 0; i < 64; i++)
+            {
+                if ((mask >> i & 1UL) == 0) continue;
+                int j = i;
+                while (j < 63 && (mask >> (j + 1) & 1UL) != 0) j++;
+                parts.Add(j == i ? i.ToString(CultureInfo.InvariantCulture) : $"{i}-{j}");
+                i = j;
+            }
+            return parts.Count == 0 ? "none" : string.Join(",", parts);
+        }
+
         /// <summary>
         /// Null when every processor the mask names is one the system has (<paramref name="systemMask"/>, <see cref="SystemProcessors"/>: the
         /// processors the machine has, whatever this process is itself pinned to), or the refusal, which names the processors lacking.
@@ -239,7 +436,7 @@ namespace Evosim.NurseryRoom
 
         /// <summary>
         /// Null when a run of <paramref name="threads"/> threads fits on the processors the mask allows, or the refusal with both numbers: more
-        /// threads than processors would queue behind each other on the cores the mask names, and the cap counts them as if they ran.
+        /// threads than processors would queue behind each other on the cores the mask names.
         /// </summary>
         public static string ThreadsProblem(int threads, ulong mask)
         {

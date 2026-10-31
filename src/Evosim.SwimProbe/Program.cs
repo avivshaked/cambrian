@@ -503,7 +503,7 @@ namespace Evosim.SwimProbe
                     {
                         body.Brain.Step(
                             (float)_dt, body.DriveSignal, body.Senses,
-                            _loopBend && body.Drive.BendAndPower ? body.BendSignal : null);
+                            _loopBend && body.Drive.BendAndPower ? body.BendSignal : null, body.HoldSignal);
                     }
                     else
                     {

@@ -685,6 +685,14 @@ The phenotype is always a **tree**, mapping cleanly onto a PhysX articulation.
 
 ### 4.3 Brain graph
 
+> **Every world since D146 (2026-10-01) runs a different brain, and this section describes the old one.**
+> `RunConfig.BrainModel` chooses it. `Central` is D146's one network per creature, placed nowhere in the body. Its
+> inputs are every sense of every part, and its outputs are a power and a bend per degree of freedom. Its units are a
+> weighted sum and a bias through `tanh`, and any unit may read any unit's value from the step before. It has no
+> oscillators and grows by mutation, which adds connections and splits them into new units. Founders wire every sense
+> to every output (D147). The per-node brain below is the code's default, kept so that the runs recorded before it
+> replay. It is written up here because those runs used it.
+
 Neurons live **inside morph nodes**, so recursion duplicates a segment's neurons along
 with the segment — producing a chain of identical local controllers, structurally a
 central pattern generator. [K12 §2.2, p.3] uses the same arrangement: *"Each body part

@@ -92,22 +92,22 @@ namespace Evosim.NurseryRoom.Tests
         public static void WriteUnloadableWorld(string root)
         {
             string nursery = Path.Combine(root, "rounds", "nursery");
-            string config = File.ReadAllText(Path.Combine(nursery, "configs", "a8cbe76c9532bc71.json")).Replace("\r\n", "\n");
+            string config = File.ReadAllText(Path.Combine(nursery, "configs", "783c998afb255a10.json")).Replace("\r\n", "\n");
             string line = "    \"" + MissingKey + "\": 0,\n";
             Assert.Contains(line, config);
             File.WriteAllText(Path.Combine(nursery, "configs", "old-world.json"), config.Replace(line, ""));
-            string recipe = File.ReadAllText(Path.Combine(nursery, "brain2-w5.json")).Replace("\r\n", "\n");
-            string from = "\"config\": \"rounds/nursery/configs/a8cbe76c9532bc71.json\"";
+            string recipe = File.ReadAllText(Path.Combine(nursery, "brain2-w11.json")).Replace("\r\n", "\n");
+            string from = "\"config\": \"rounds/nursery/configs/783c998afb255a10.json\"";
             Assert.Contains(from, recipe);
             File.WriteAllText(Path.Combine(nursery, "old-world-recipe.json"),
-                recipe.Replace(from, "\"config\": \"rounds/nursery/configs/old-world.json\"").Replace("\"name\": \"brain2-w5\"", "\"name\": \"old-world\""));
+                recipe.Replace(from, "\"config\": \"rounds/nursery/configs/old-world.json\"").Replace("\"name\": \"brain2-w11\"", "\"name\": \"old-world\""));
         }
 
         private EpisodeFixture(bool unloadable, string[] roomRuns)
         {
             Fx = Fx.InWorktree(roomRuns);
             Launcher = new StepLauncher(Procs);
-            string recipeRel = "rounds/nursery/brain2-w5.json";
+            string recipeRel = "rounds/nursery/brain2-w11.json";
             if (unloadable) { WriteUnloadableWorld(Fx.Root); recipeRel = UnloadableRecipe; }
             string recipePath = Path.Combine(Fx.Root, recipeRel.Replace('/', Path.DirectorySeparatorChar));
             Recipe = unloadable ? Recipe.Read(recipePath) : Recipe.Load(recipePath);
@@ -122,7 +122,7 @@ namespace Evosim.NurseryRoom.Tests
                 FarmHash = "x", NurseryHash = "x", Out = RunFolder, Status = "completed", StartedAtUtc = "x", EndedAtUtc = "x", NotRerunnableBecause = "x",
             };
             File.WriteAllText(Fx.Registry, entry.ToJson() + "\n", new UTF8Encoding(false));
-            Room = new RoomContext(Fx.Root, Fx.Room.Settings, Fx.Main, Fx.Registry, Path.Combine(Fx.Dir, "activity.jsonl"), Launcher, Fx.Load, 32,
+            Room = new RoomContext(Fx.Root, Fx.Room.Settings, Fx.Main, Fx.Registry, Path.Combine(Fx.Dir, "activity.jsonl"), Launcher, Fx.Queue, Fx.Heat, 32,
                 _ => Fx.Build, null, Procs, Copier);
             Ops = new OperationList(Room);
         }
@@ -219,7 +219,7 @@ namespace Evosim.NurseryRoom.Tests
             JsonElement req = Js.Parse(text);
             Assert.Equal(new[] { "brain", "episode", "generation", "members", "pool", "recipe", "recipeHash", "salt", "seed", "tank" },
                 req.EnumerateObject().Select(p => p.Name).OrderBy(n => n, StringComparer.Ordinal).ToArray());
-            Assert.Equal("rounds/nursery/brain2-w5.json", req.GetProperty("recipe").GetString());
+            Assert.Equal("rounds/nursery/brain2-w11.json", req.GetProperty("recipe").GetString());
             Assert.Equal(_f.RecipeHash, req.GetProperty("recipeHash").GetString());
             Assert.Equal("runs/episodes/pilot-fix/b0-d0-t0/pool.tsv", req.GetProperty("pool").GetString());
             Assert.Equal(JsonValueKind.String, req.GetProperty("seed").ValueKind);
@@ -313,7 +313,7 @@ namespace Evosim.NurseryRoom.Tests
                 File.Copy(c, Path.Combine(mainRounds, "configs", Path.GetFileName(c)));
             string only = Path.Combine(_f.Fx.Main, "scratch", "nursery-trials", "main-only.json");
             Directory.CreateDirectory(Path.GetDirectoryName(only));
-            File.Copy(Path.Combine(_f.Fx.Root, "rounds", "nursery", "brain2-w5.json"), only);
+            File.Copy(Path.Combine(_f.Fx.Root, "rounds", "nursery", "brain2-w11.json"), only);
             RegistryEntry e = RegistryEntry.ReadAll(_f.Fx.Registry).Single();
             e.RecipePath = "scratch/nursery-trials/main-only.json";
             File.WriteAllText(_f.Fx.Registry, e.ToJson() + "\n");
@@ -329,7 +329,7 @@ namespace Evosim.NurseryRoom.Tests
         [Fact]
         public void ARecipeThatHashesOtherwiseThanTheRunRecordedIsRefusedBeforeAnythingStarts()
         {
-            string path = Path.Combine(_f.Fx.Root, "rounds", "nursery", "brain2-w5.json");
+            string path = Path.Combine(_f.Fx.Root, "rounds", "nursery", "brain2-w11.json");
             string edited = File.ReadAllText(path).Replace("\"seed\": \"0x1\",", "\"seed\": \"0x2\",");
             Assert.NotEqual(File.ReadAllText(path), edited);
             File.WriteAllText(path, edited);
@@ -549,7 +549,7 @@ namespace Evosim.NurseryRoom.Tests
         public void Dispose() => _f.Dispose();
 
         private OperationResult Launch(string name, int threads) =>
-            _f.Ops.Invoke("run.launch", Js.Parse(Js.Serialize(new { recipe = "rounds/nursery/brain2-w5.json", name, threads, reason = "holds threads" })), OperationList.Screen);
+            _f.Ops.Invoke("run.launch", Js.Parse(Js.Serialize(new { recipe = "rounds/nursery/brain2-w11.json", name, threads, reason = "holds threads" })), OperationList.Screen);
 
         [Fact]
         public void ALiveStepCountsOneThreadAsLongAsItsProcessLivesNotForThreeMinutes()
@@ -579,10 +579,9 @@ namespace Evosim.NurseryRoom.Tests
         }
 
         [Fact]
-        public void AStepThatWouldPassTheCapIsRefusedLikeALaunchAndFitsOnceAStepEnds()
+        public void AStepThatWouldPassTheFreeCoresIsRefusedLikeALaunchAndFitsOnceAStepEnds()
         {
-            _f.Fx.Load.Value = LoadReading.Of(0);   // the counter reads nothing, so what the room itself granted is what counts
-            OperationResult held = Launch("holder", 14);   // 14 granted for three minutes
+            OperationResult held = Launch("holder", 14);   // 14 of the slot's 16 free cores granted for three minutes
             Assert.True(held.Ok, held.Error);
             _f.Ok(_f.Step(0, 0));   // 1 + 14 = 15 of 16
             _f.Ok(_f.Step(0, 1));   // 1 + 15 = 16 of 16
@@ -591,9 +590,8 @@ namespace Evosim.NurseryRoom.Tests
             OperationResult over = _f.Step(0, 2);
             Assert.False(over.Ok);
             Assert.Equal(400, over.Status);
-            Assert.Contains("1 thread asked", over.Error);
-            Assert.Contains("past the cap of 16 of 32", over.Error);
-            Assert.Contains("episode re-steps", over.Error);
+            Assert.StartsWith("1 thread asked, plus 16 threads granted to runs this room started that are still running or began in the last 3 minutes and to episode re-steps whose process lives, is 17, more than the 16 free cores (logical 16-31): the room's slot is logical 16-31", over.Error);
+            Assert.EndsWith(". Nothing was started.", over.Error);
             Assert.Equal(2, _f.Launcher.Started.Count - 1);   // the launch and two steps, and not the refused one
             Assert.False(File.Exists(Path.Combine(_f.Cache(0, 2, 0), "step.json")));
             Assert.Equal("refused", _f.ActivityRows().Last().GetProperty("outcome").GetString());
@@ -606,22 +604,28 @@ namespace Evosim.NurseryRoom.Tests
         }
 
         [Fact]
-        public void TheCapIsCheckedWithTheLoadNowAndAnUnreadableLoadRefuses()
+        public void AStepIsPinnedToTheFreeCoresAndRefusedWithoutASlotOrOnAHotMachine()
         {
-            _f.Fx.Load.Value = LoadReading.Of(100);
-            OperationResult r = _f.Step(0, 0);
-            Assert.False(r.Ok);
-            Assert.Contains("past the cap", r.Error);
-            _f.Fx.Load.Value = LoadReading.Failed("no counter");
-            Assert.Contains("cannot be read", _f.Step(0, 0).Error);
-            Assert.Empty(_f.Launcher.Started);
+            _f.Fx.Queue.Text = FixedQueue.With("speed (a test) · cores: 16-27");
+            _f.Ok(_f.Step(0, 0));
+            Assert.Equal(0xF0000000UL, _f.Launcher.Started.Last().Affinity);   // 28-31, not room.json's 0xFFFF0000
+
+            _f.Fx.Queue.Text = "## Running\n\n- speed (a test) · cores: 16-27\n";
+            OperationResult noSlot = _f.Step(0, 1);
+            Assert.Equal("no Running line of the machine's queue scratch/machine/queue.md carries the room tag, so the room has no slot, and it starts nothing until the coordinator gives it one; refusing 1 thread. Nothing was started.", noSlot.Error);
+            _f.Fx.Queue.Text = FixedQueue.With();
+            _f.Fx.Heat.Value = HeatReading.Of(HeatReading.Hot, "HOT  gpu 86C");
+            Assert.Equal("the heat check reads HOT (HOT  gpu 86C), and the room starts nothing on a hot machine; refusing 1 thread. Nothing was started.", _f.Step(0, 1).Error);
+            _f.Fx.Heat.Value = HeatReading.FromExit(1, "Get-Counter : the counter could not be read");   // a script that failed, which is not a WARN
+            Assert.StartsWith("the heat check cannot say whether the machine is too hot (the heat check exited 1, which is WARN, but printed no WARN line", _f.Step(0, 1).Error);
+            Assert.Single(_f.Launcher.Started);
         }
 
         [Fact]
         public void AStepAsksForAMaskTheMachineHasOrIsRefused()
         {
             // a machine of eight processors cannot be asked to pin to the efficiency cores of a 32-processor one
-            var room = new RoomContext(_f.Fx.Root, _f.Fx.Room.Settings, _f.Fx.Main, _f.Fx.Registry, Path.Combine(_f.Fx.Dir, "a2.jsonl"), _f.Launcher, _f.Fx.Load, 8, _ => _f.Fx.Build, null, _f.Procs, _f.Copier);
+            var room = new RoomContext(_f.Fx.Root, _f.Fx.Room.Settings, _f.Fx.Main, _f.Fx.Registry, Path.Combine(_f.Fx.Dir, "a2.jsonl"), _f.Launcher, _f.Fx.Queue, _f.Fx.Heat, 8, _ => _f.Fx.Build, null, _f.Procs, _f.Copier);
             var ops = new OperationList(room);
             OperationResult r = ops.Invoke("episode.step", Js.Parse("{\"run\":\"1\",\"brain\":0,\"draw\":0,\"tank\":0,\"reason\":\"a test\"}"));
             Assert.False(r.Ok);
@@ -641,7 +645,7 @@ namespace Evosim.NurseryRoom.Tests
 
         private static DateTimeOffset Later => DateTimeOffset.UtcNow.AddHours(1);
 
-        private JsonElement Status() => Js.Parse(Js.Serialize(Program.RoomStatus(_f.Room, LoadReading.Of(10), DateTime.UtcNow)));
+        private JsonElement Status() => Js.Parse(Js.Serialize(Program.RoomStatus(_f.Room, DateTime.UtcNow)));
 
         [Fact]
         public void WhileTheFileIsLiveAStepIsRefusedQuotingWhoAndWhy()
@@ -1102,9 +1106,9 @@ namespace Evosim.NurseryRoom.Tests
             Directory.CreateDirectory(folder);
             ulong[] seeds = ExamPlans.SeedsFor(1UL, 9UL, 0, 2);
             string ids = string.Join(",", Enumerable.Range(0, 10).Select(i => "{\"id\":\"g5." + i + "\",\"body\":" + (i % 3) + "}"));
-            string recipe = Path.Combine(_f.Fx.Root, "rounds", "nursery", "brain2-w5.json").Replace("\\", "\\\\");
+            string recipe = Path.Combine(_f.Fx.Root, "rounds", "nursery", "brain2-w11.json").Replace("\\", "\\\\");
             File.WriteAllText(Path.Combine(folder, "run.json"),
-                "{\"status\":\"completed\",\"seed\":1,\"recipe\":{\"path\":\"" + recipe + "\",\"name\":\"brain2-w5\",\"hash\":\"" + _f.RecipeHash + "\",\"resolved\":{\"setup\":{\"tankSize\":4}," +
+                "{\"status\":\"completed\",\"seed\":1,\"recipe\":{\"path\":\"" + recipe + "\",\"name\":\"brain2-w11\",\"hash\":\"" + _f.RecipeHash + "\",\"resolved\":{\"setup\":{\"tankSize\":4}," +
                 "\"exam\":{\"episodes\":2,\"salt\":\"0x9\",\"controls\":[{\"kind\":\"own\"},{\"kind\":\"constant\",\"power\":0.5}]}}}," +
                 "\"build\":{\"gitCommit\":\"abc\",\"coreHash\":\"c\",\"dynamicsHash\":\"d\",\"farmHash\":\"f\",\"nurseryHash\":\"n\"}," +
                 "\"exam\":{\"name\":\"exam\",\"brains\":[{\"label\":\"own\",\"kind\":\"own\"},{\"label\":\"constant 0.5\",\"kind\":\"constant\"}],\"genomes\":[" + ids + "],\"episodes\":2,\"salt\":\"9\",\"seeds\":[\"" + seeds[0] + "\",\"" + seeds[1] + "\"]}}");
@@ -1120,7 +1124,7 @@ namespace Evosim.NurseryRoom.Tests
             Assert.Equal("record", plan.Source);
             Assert.Equal(_f.RecipeHash, plan.RecipeHash);
             Assert.Equal("tank-exam-genomes.tsv", plan.PoolFile);
-            Assert.Equal("rounds/nursery/brain2-w5.json", plan.RecipePath);
+            Assert.Equal("rounds/nursery/brain2-w11.json", plan.RecipePath);
             Assert.Equal(3, plan.Draws[1].Tanks.Count);
             Assert.Equal(2, plan.Draws[1].Tanks[2].Count);
 
@@ -1131,7 +1135,7 @@ namespace Evosim.NurseryRoom.Tests
             Assert.Equal(1, req.GetProperty("episode").GetInt32());
             Assert.Equal(1, req.GetProperty("brain").GetInt32());
             Assert.Equal(2, req.GetProperty("tank").GetInt32());
-            Assert.Equal("rounds/nursery/brain2-w5.json", req.GetProperty("recipe").GetString());   // inside the tree: named where it is
+            Assert.Equal("rounds/nursery/brain2-w11.json", req.GetProperty("recipe").GetString());   // inside the tree: named where it is
             Assert.Equal(new[] { "pool" }, res.GetProperty("copied").EnumerateArray().Select(x => x.GetProperty("what").GetString()).ToArray());
             RestepRequest.Parse(File.ReadAllText(Path.Combine(_f.Cache(1, 1, 2, "rec1"), "request.json")));
 
@@ -1174,7 +1178,7 @@ namespace Evosim.NurseryRoom.Tests
             var procs = new FakeProcesses();
             var launcher = new StepLauncher(procs);
             // the real registry and the real run folder of the main checkout; the tree is the synthetic one, so the cache lands in a folder this test deletes
-            var room = new RoomContext(fx.Root, fx.Room.Settings, main, null, Path.Combine(fx.Dir, "activity.jsonl"), launcher, fx.Load, 32, _ => fx.Build, null, procs, new DamagingCopier());
+            var room = new RoomContext(fx.Root, fx.Room.Settings, main, null, Path.Combine(fx.Dir, "activity.jsonl"), launcher, fx.Queue, fx.Heat, 32, _ => fx.Build, null, procs, new DamagingCopier());
             var ops = new OperationList(room);
             OperationResult r = ops.Invoke("episode.step", Js.Parse("{\"run\":\"1\",\"brain\":0,\"draw\":0,\"tank\":0,\"reason\":\"the pilot's draw 0\"}"));
             Assert.True(r.Ok, r.Error);

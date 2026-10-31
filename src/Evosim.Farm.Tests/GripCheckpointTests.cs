@@ -31,9 +31,10 @@ namespace Evosim.Farm.Tests
 
         private const int StepsPerMetabolic = 25;
 
-        internal static RunConfig GrippingWorld()
+        /// <param name="brainHold">D268: the one brain, and the anchoring cell lets it hold the grip.</param>
+        internal static RunConfig GrippingWorld(bool brainHold = false)
         {
-            RunConfig config = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(new Dictionary<string, string>
+            var env = new Dictionary<string, string>
             {
                 { "EVOSIM_AREA", "25" },
                 { "EVOSIM_DEPTH", "5" },
@@ -55,7 +56,17 @@ namespace Evosim.Farm.Tests
                 { "EVOSIM_SENSE_BED_TOUCH", "1" },
                 { "EVOSIM_ANCHORING", "1" },
                 { "EVOSIM_EXCESS_DENSITY", "50" },
-            })));
+            };
+
+            if (brainHold)
+            {
+                env["EVOSIM_BRAIN_MODEL"] = "central";
+                env["EVOSIM_NEURON_COST"] = "0";
+                env["EVOSIM_CONNECTION_COST"] = "0";
+                env["EVOSIM_ANCHOR_BRAIN"] = "1";
+            }
+
+            RunConfig config = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(env)));
 
             config.Genome.FounderCellTypes = new[]
             {

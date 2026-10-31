@@ -420,7 +420,7 @@ namespace Evosim.Core
 
             NoteAttacker(creature, partIndex, attackerId, attackerPart);
 
-            float pool = Metabolism.HealthPool(part, Config);
+            float pool = Metabolism.HealthPool(part, Config, Metabolism.IsPlant(creature.Phenotype));
 
             float[] health = creature.PartHealth;
             if (health == null)
@@ -1117,6 +1117,7 @@ namespace Evosim.Core
 
                 IReadOnlyList<PhenotypePart> parts = creature.Phenotype.Parts;
                 int n = health.Length < parts.Count ? health.Length : parts.Count;
+                bool plant = Metabolism.IsPlant(creature.Phenotype);
 
                 double wanted = 0d;
                 double wantedTissue = 0d;
@@ -1131,7 +1132,7 @@ namespace Evosim.Core
                     double share = 1d - health[p];
                     if (share > step) share = step;
 
-                    wanted += share * Metabolism.HealthPool(parts[p], Config) *
+                    wanted += share * Metabolism.HealthPool(parts[p], Config, plant) *
                               Config.HealingJoulesPerHealth;
 
                     if (rebuys) wantedTissue += share * Metabolism.PartTissueJoules(creature.Phenotype, parts[p], Config, freeLink);

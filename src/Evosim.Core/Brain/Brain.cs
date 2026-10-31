@@ -114,6 +114,18 @@ namespace Evosim.Core
         public int TotalDof { get; }
 
         /// <summary>
+        /// Hold outputs (D268): one per gripping part, 0 in the old model and wherever no part grips. They follow
+        /// the joint outputs, so hold output <i>g</i> is unit <c>2 * TotalDof + g</c>, and the length <c>hold</c> must
+        /// be in <see cref="Step"/> when it is given.
+        /// </summary>
+        public int GripCount { get; }
+
+        /// <summary>The part each hold output belongs to, in hold-output order (D268).</summary>
+        public int GripPart(int g) => _gripPart[g];
+
+        private readonly int[] _gripPart = Array.Empty<int>();
+
+        /// <summary>
         /// Which sensor channels any neuron in this creature actually references — bit
         /// <c>1 &lt;&lt; (int)</c><see cref="SensorChannel"/> per channel, DESIGN.md §4.4's
         /// requirement mask.
@@ -171,7 +183,8 @@ namespace Evosim.Core
 
         private Brain(
             float[] bias, int[] inStart, int[] inSource, float[] inWeight, int[] portPart,
-            SensorChannel[] portChannel, int[] portIndex, ulong[] unitIds, int totalDof, int sensorMask)
+            SensorChannel[] portChannel, int[] portIndex, ulong[] unitIds, int totalDof, int sensorMask,
+            int[] gripPart)
         {
             _central = true;
             _bias = bias;
@@ -197,6 +210,8 @@ namespace Evosim.Core
             _memory = Array.Empty<float>();
 
             TotalDof = totalDof;
+            _gripPart = gripPart;
+            GripCount = gripPart.Length;
         }
 
         /// <summary>
@@ -296,7 +311,13 @@ namespace Evosim.Core
             List<BrainOutput> outputs = CentralWiring.Outputs(phenotype);
             Dictionary<ulong, BrainPort> ports = CentralWiring.AllPorts(phenotype);
 
-            int totalDof = outputs.Count / 2;
+            // D268: the hold outputs come after every joint output, so the joint outputs are the first of the list and
+            // two to a degree of freedom as ever.
+            int grips = 0;
+            foreach (BrainOutput o in outputs) if (o.Kind == BrainOutputKind.Grip) grips++;
+            int totalDof = (outputs.Count - grips) / 2;
+            var gripPart = new int[grips];
+            for (int g = 0; g < grips; g++) gripPart[g] = outputs[2 * totalDof + g].Part;
             int units = outputs.Count + brain.Hidden.Count;
 
             var unitIds = new ulong[units];
@@ -385,13 +406,13 @@ namespace Evosim.Core
 
             return new Brain(
                 bias, inStart, inSource, inWeight, portPart.ToArray(), portChannel.ToArray(),
-                portIndex.ToArray(), unitIds, totalDof, sensorMask);
+                portIndex.ToArray(), unitIds, totalDof, sensorMask, gripPart);
         }
 
         // One step of the one brain. Every port is read once, then every unit sums its bias and
         // its links (ports from now, units from the step before, so a loop is a memory of one
         // step) through tanh, then the buffers swap and the outputs go to the drive.
-        private void StepCentral(float[] drive, ISensorField sensors, float[] bend)
+        private void StepCentral(float[] drive, ISensorField sensors, float[] bend, float[] hold)
         {
             for (int p = 0; p < _portValue.Length; p++)
             {
@@ -421,6 +442,12 @@ namespace Evosim.Core
                 drive[k] = _previous[2 * k];
                 if (bend != null) bend[k] = _previous[2 * k + 1];
             }
+
+            // D268: each hold output after the joint outputs.
+            if (hold != null)
+            {
+                for (int g = 0; g < GripCount; g++) hold[g] = _previous[2 * TotalDof + g];
+            }
         }
 
         /// <summary>
@@ -438,7 +465,12 @@ namespace Evosim.Core
         /// bend-and-power drive (propose-joint-drive.md). A part with too few neurons leaves it 0,
         /// the middle of the joint's range.
         /// </param>
-        public void Step(float seconds, float[] drive, ISensorField sensors = null, float[] bend = null)
+        /// <param name="hold">
+        /// D268: when given, filled with each hold output, -1 to 1 (<see cref="GripCount"/> of them). Null where nothing
+        /// holds. The old model has none.
+        /// </param>
+        public void Step(
+            float seconds, float[] drive, ISensorField sensors = null, float[] bend = null, float[] hold = null)
         {
             if (drive == null) throw new ArgumentNullException(nameof(drive));
 
@@ -454,7 +486,7 @@ namespace Evosim.Core
 
             if (_central)
             {
-                StepCentral(drive, sensors, bend);
+                StepCentral(drive, sensors, bend, hold);
                 return;
             }
 

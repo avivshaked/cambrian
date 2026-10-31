@@ -707,7 +707,7 @@ namespace Evosim.Farm.Tests
                     () => writer.Body(1, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 0, new double[0]));
 
                 Assert.Throws<ArgumentOutOfRangeException>(
-                    () => writer.Body(1, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 16, 0, new double[0]));
+                    () => writer.Body(1, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 32, 0, new double[0]));
 
                 Assert.Throws<ArgumentOutOfRangeException>(
                     () => writer.Body(1, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, -1, 0, new double[0]));

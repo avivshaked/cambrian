@@ -975,13 +975,36 @@ namespace Evosim.Core
         /// <remarks>⚠ Unmeasured, as <see cref="DecaySeconds"/>.</remarks>
         public float ReserveLagSeconds { get; }
 
+        /// <summary>
+        /// Whether the brain controls the grip (D268): an anchoring part then has a hold output in the central
+        /// brain and two senses, whether it is holding and how hard it is pulled. Off by default, which leaves
+        /// the grip as round 59 built it.
+        /// </summary>
+        public bool BrainHold { get; }
+
+        /// <summary>
+        /// A held grip lets go when the hold output is below this (D268). Finite and between -1 and 1, since the
+        /// output is a tanh. An unwired output reads 0, above the default, so a brain that ignores it holds.
+        /// </summary>
+        public float ReleaseBelow { get; }
+
+        /// <summary>
+        /// The price of letting go, joules per newton of the part's full breaking force (D268). Zero is allowed,
+        /// where the forming price (<see cref="BuildJoulesPerNewton"/>) is not.
+        /// </summary>
+        /// <remarks>⚠ Unmeasured. D268's first screen sets it, and the forming price, near zero (D262).</remarks>
+        public float ReleaseJoulesPerNewton { get; }
+
         public AnchoringCell(
             float tenacityNewtonsPerSquareMetre = 5.8e4f,
             float buildJoulesPerNewton = 5e-5f,
             float decaySeconds = 3600f,
             float reserveThresholdSeconds = 120f,
             float reserveLagSeconds = 60f,
-            float upkeepWattsPerCubicMetre = 2.5f)
+            float upkeepWattsPerCubicMetre = 2.5f,
+            bool brainHold = false,
+            float releaseBelow = -0.5f,
+            float releaseJoulesPerNewton = 5e-5f)
             : base(upkeepWattsPerCubicMetre)
         {
             Positive(tenacityNewtonsPerSquareMetre, nameof(tenacityNewtonsPerSquareMetre),
@@ -992,12 +1015,22 @@ namespace Evosim.Core
                 "The decay is the grip's upkeep (D162); without it holding is free.");
             NotNegative(reserveThresholdSeconds, nameof(reserveThresholdSeconds));
             NotNegative(reserveLagSeconds, nameof(reserveLagSeconds));
+            if (!(releaseBelow >= -1f && releaseBelow <= 1f))
+            {
+                throw new ArgumentOutOfRangeException(nameof(releaseBelow), releaseBelow,
+                    "The threshold is finite and between -1 and 1, the hold output's range.");
+            }
+
+            NotNegative(releaseJoulesPerNewton, nameof(releaseJoulesPerNewton));
 
             TenacityNewtonsPerSquareMetre = tenacityNewtonsPerSquareMetre;
             BuildJoulesPerNewton = buildJoulesPerNewton;
             DecaySeconds = decaySeconds;
             ReserveThresholdSeconds = reserveThresholdSeconds;
             ReserveLagSeconds = reserveLagSeconds;
+            BrainHold = brainHold;
+            ReleaseBelow = releaseBelow;
+            ReleaseJoulesPerNewton = releaseJoulesPerNewton;
         }
 
         public override string Id => CellTypeIds.Anchoring;
@@ -1013,19 +1046,30 @@ namespace Evosim.Core
         /// <summary>What building a grip of this breaking force costs, J.</summary>
         public float BuildPrice(float breakingForce) => BuildJoulesPerNewton * Math.Max(0f, breakingForce);
 
+        /// <summary>
+        /// What letting go of a grip costs, J (D268). Scaled by the part's full-strength breaking force, as
+        /// <see cref="BuildPrice"/> is, since both stand for the attachment's size.
+        /// </summary>
+        public float ReleasePrice(float breakingForce) =>
+            ReleaseJoulesPerNewton * Math.Max(0f, breakingForce);
+
         public override void WriteParameters(Json.Writer writer) =>
             writer.Field("tenacityNewtonsPerSquareMetre", TenacityNewtonsPerSquareMetre)
                   .Field("buildJoulesPerNewton", BuildJoulesPerNewton)
                   .Field("decaySeconds", DecaySeconds)
                   .Field("reserveThresholdSeconds", ReserveThresholdSeconds)
-                  .Field("reserveLagSeconds", ReserveLagSeconds);
+                  .Field("reserveLagSeconds", ReserveLagSeconds)
+                  .Field("brainHold", BrainHold)
+                  .Field("releaseBelow", ReleaseBelow)
+                  .Field("releaseJoulesPerNewton", ReleaseJoulesPerNewton);
 
         public override string HashContribution() =>
             string.Format(
                 CultureInfo.InvariantCulture,
-                "{0}:upkeep={1:R},joint={2},tenacity={3:R},build={4:R},decay={5:R},reserve={6:R}/{7:R}",
+                "{0}:upkeep={1:R},joint={2},tenacity={3:R},build={4:R},decay={5:R},reserve={6:R}/{7:R},hold={8},below={9:R},release={10:R}",
                 Id, UpkeepWattsPerCubicMetre, AllowsJoint, TenacityNewtonsPerSquareMetre,
-                BuildJoulesPerNewton, DecaySeconds, ReserveThresholdSeconds, ReserveLagSeconds);
+                BuildJoulesPerNewton, DecaySeconds, ReserveThresholdSeconds, ReserveLagSeconds,
+                BrainHold, ReleaseBelow, ReleaseJoulesPerNewton);
 
         private static void Positive(float value, string name, string why)
         {

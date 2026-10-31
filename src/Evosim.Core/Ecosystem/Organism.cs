@@ -154,6 +154,28 @@ namespace Evosim.Core
         public double FoodFromLeavesJoules { get; internal set; }
 
         /// <summary>
+        /// D264, the death row's income: the joules this body's biting parts kept, over its life, from living bodies
+        /// with photosynthetic tissue. The per-body share of <see cref="World.BiteKeptFromLeavesJoules"/>; the
+        /// death row's <c>kl</c>. Cumulative. A count, as <see cref="BiteKeptJoules"/> is. Summed always, since it
+        /// costs an add, and checkpointed only with <see cref="RunConfig.DeathRowIncome"/> on, so a resumed body
+        /// with it on counts on from where it was.
+        /// </summary>
+        public double BiteKeptFromLeavesJoules { get; internal set; }
+
+        /// <summary>D264: as <see cref="BiteKeptFromLeavesJoules"/>, from living bodies with no photosynthetic tissue; the death row's <c>ko</c>.</summary>
+        public double BiteKeptFromOthersJoules { get; internal set; }
+
+        /// <summary>D264: as <see cref="BiteKeptFromLeavesJoules"/>, from remains; the death row's <c>kr</c>.</summary>
+        public double BiteKeptFromRemainsJoules { get; internal set; }
+
+        /// <summary>
+        /// D264: the joules this body's kills have put in its gut over its life (D232), the per-body share of
+        /// <see cref="World.SwallowedJoules"/>; the death row's <c>kg</c>. Cumulative, and unlike
+        /// <see cref="GutJoules"/> never digested away.
+        /// </summary>
+        public double GutSwallowedLifetimeJoules { get; internal set; }
+
+        /// <summary>
         /// D232, a kill swallows the body: the joules this body has swallowed from the bodies its bites killed and not
         /// yet digested into <see cref="Energy"/>. Charged matter like the reserve, counted with it wherever the books
         /// count a living body's joules, and not spendable until it is digested. One number, the swallowed tissue and

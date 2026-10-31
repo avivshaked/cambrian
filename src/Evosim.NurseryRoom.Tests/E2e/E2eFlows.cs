@@ -164,7 +164,7 @@ namespace Evosim.NurseryRoom.Tests.E2e
             b.Click("#list tr[data-key='2|entry']");
             b.WaitFor("document.querySelector('#list tr.sel').dataset.key === '2|entry'", "entry 2 selected");
             string rerun = OpenDialog(b, "#sel [data-op='run.rerun']", "rerun");
-            Assert.True(Regex.IsMatch(rerun, @"so at most 12 threads fit"), "the registry's RERUN dialog does not say how many threads fit: " + rerun);
+            Assert.True(Regex.IsMatch(rerun, @"so at most 16 threads fit\b"), "the registry's RERUN dialog does not say how many threads fit: " + rerun);   // the default queue: the slot's 16 cores, none claimed
             AssertReasonNote(b, "rerun", rerun);
             CancelDialog(b);
 
@@ -215,17 +215,17 @@ namespace Evosim.NurseryRoom.Tests.E2e
             Assert.Contains("so there is nothing to stop", stop.GetProperty("title").GetString());
             Assert.Equal("not running: completed", stop.GetProperty("why").GetString());
             Assert.False(b.EvalBool("document.querySelector('[data-op=\"run.rerun\"]').disabled"), "RERUN is disabled for a registry entry that can be rerun");
-            w.Fx.Load.Value = LoadReading.Of(10);
+            w.Fx.Queue.Text = FixedQueue.With("speed (a test) · cores: 16-19");   // twelve of the slot's sixteen cores are free
             string rerun = OpenDialog(b, "[data-op='run.rerun']", "rerun");
             Assert.Contains("rerun entry #2", rerun, StringComparison.OrdinalIgnoreCase);
             Assert.True(Regex.IsMatch(rerun, @"so at most 12 threads fit\b"), "the RERUN dialog's machine line does not say how many threads fit: " + rerun);
             AssertReasonNote(b, "rerun", rerun);
             CancelDialog(b);
-            w.Fx.Load.Value = LoadReading.Of(46);   // 15 of 32 in use: one thread of the cap's 16 is left, and is said in the singular
+            w.Fx.Queue.Text = FixedQueue.With("speed (a test) · cores: 16-30");   // one core of the slot is free, and is said in the singular
             string one = OpenDialog(b, "[data-op='run.rerun']", "rerun");
             Assert.True(one.Contains("so at most 1 thread fits") && !one.Contains("1 threads"), "the machine line does not say one thread in the singular: " + one);
             CancelDialog(b);
-            w.Fx.Load.Value = LoadReading.Of(10);
+            w.Fx.Queue.Text = FixedQueue.With();
 
             // layout at both sizes, on alpha against its control gamma: the greyed column is only this run's side, the by-body plot is drawn (C5, C7)
             LoadRun(b, host, "id=2&vs=4");
@@ -318,8 +318,8 @@ namespace Evosim.NurseryRoom.Tests.E2e
             Assert.Contains("Committed and unchanged", launch);
             Assert.DoesNotContain("This launch goes ahead", launch);
             Assert.Equal("LAUNCH", b.EvalString("document.querySelector('form.ask button[type=submit]').textContent"));
-            Assert.Contains("launch brain2-w5", launch, StringComparison.OrdinalIgnoreCase);
-            Assert.Matches(@"so at most 12 threads fit\b", launch);
+            Assert.Contains("launch brain2-w11", launch, StringComparison.OrdinalIgnoreCase);
+            Assert.Matches(@"so at most 16 threads fit\b", launch);   // the default queue: the slot's 16 cores, none claimed
             AssertReasonNote(b, "launch", launch);
             CancelDialog(b);
 
@@ -390,13 +390,13 @@ namespace Evosim.NurseryRoom.Tests.E2e
             Assert.Equal("recipe.html?path=rounds%2Fnursery%2Fe2e-beta.json", b.EvalString("document.getElementById('tab-recipe').getAttribute('href')"));
             b.Press("ArrowDown");
             b.WaitFor("document.querySelector('#list tr.sel').dataset.key === '2|entry'", "entry 2 selected");
-            Assert.Equal("recipe.html?path=rounds%2Fnursery%2Fbrain2-w3.json", b.EvalString("document.getElementById('tab-recipe').getAttribute('href')"));
+            Assert.Equal("recipe.html?path=rounds%2Fnursery%2Fbrain2-w11.json", b.EvalString("document.getElementById('tab-recipe').getAttribute('href')"));
             b.Click("#tab-recipe");
-            b.WaitFor("location.pathname.endsWith('recipe.html') && document.querySelector('#author h1') && document.querySelector('#author h1').innerText === 'brain2-w5'", "the selected entry's recipe opened by the tab");
+            b.WaitFor("location.pathname.endsWith('recipe.html') && document.querySelector('#author h1') && document.querySelector('#author h1').innerText === 'brain2-w11'", "the selected entry's recipe opened by the tab");
             // off the registry the tab keeps the last recipe viewed, and with none the picker
             b.Navigate(host.Base + "/run.html?id=3");
             b.WaitFor("document.getElementById('name') && document.getElementById('name').innerText.includes('e2e-beta')", "the run screen");
-            Assert.Equal("recipe.html?path=rounds%2Fnursery%2Fbrain2-w3.json", b.EvalString("document.getElementById('tab-recipe').getAttribute('href')"));
+            Assert.Equal("recipe.html?path=rounds%2Fnursery%2Fbrain2-w11.json", b.EvalString("document.getElementById('tab-recipe').getAttribute('href')"));
             b.Eval("localStorage.removeItem('nursery-room.selection')");
             b.Navigate(host.Base + "/run.html?id=3");
             b.WaitFor("document.getElementById('name') && document.getElementById('name').innerText.includes('e2e-beta')", "the run screen again");
@@ -438,8 +438,8 @@ namespace Evosim.NurseryRoom.Tests.E2e
             b.WaitFor("document.getElementById('addr-note') && !document.getElementById('addr-note').hidden", "the address note for the tank");
             Assert.Contains("the address asked for tank 3, but this run has 1 tank (0 to 0), so tank 0 is shown", Note());
 
-            // C20: with the room's load low, STEP is enabled, and its dialog opens, carries the reason box's note, and cancels
-            w.Fx.Load.Value = LoadReading.Of(10);
+            // C20: with the room's slot free and the machine cool, STEP is enabled, and its dialog opens, carries the reason box's note, and cancels
+            w.Fx.Heat.Value = new FixedHeat().Value;
             Open("run=1&brain=0&draw=0&tank=0");
             b.WaitFor("!document.getElementById('step').disabled", "STEP enabled");
             Assert.Equal("", b.EvalString("document.getElementById('stepwhy').textContent"));
@@ -450,16 +450,16 @@ namespace Evosim.NurseryRoom.Tests.E2e
             CancelDialog(b);
             Assert.False(b.EvalBool("document.getElementById('step').disabled"), "STEP is disabled after its dialog is cancelled");
 
-            // C19: with the load past the cap STEP is refused, with the room's own reason in its title and beside it
-            w.Fx.Load.Value = LoadReading.Of(100);
+            // C19: with the heat check reading HOT STEP is refused, with the room's own reason in its title and beside it
+            w.Fx.Heat.Value = HeatReading.Of(HeatReading.Hot, "2026-10-11 12:00:00  HOT  gpu 86C [GPU 86 C]");
             Open("run=1&brain=0&draw=0&tank=0");
             b.WaitFor("document.getElementById('step').disabled", "STEP disabled by the cap");
             string reason = b.EvalString("fetch('/api/room').then(r => r.json()).then(j => j.stepRefusal && j.stepRefusal.reason)");
-            Assert.False(string.IsNullOrEmpty(reason), "the room gives no reason for refusing a step at 100 % load");
+            Assert.False(string.IsNullOrEmpty(reason), "the room gives no reason for refusing a step on a hot machine");
             Assert.Equal(reason, b.EvalString("document.getElementById('step').title"));
             Assert.Equal("not now: " + reason, b.EvalString("document.getElementById('stepwhy').textContent"));
             Assert.Equal("true", b.EvalString("document.getElementById('step').getAttribute('aria-disabled')"));
-            w.Fx.Load.Value = LoadReading.Of(10);
+            w.Fx.Heat.Value = new FixedHeat().Value;
 
             AssertClean(b, "the tank flow");
             AssertNothingWritten(w, b);
@@ -511,7 +511,7 @@ namespace Evosim.NurseryRoom.Tests.E2e
             var screens = new (string Name, string Url, string Ready)[]
             {
                 ("registry", "/", "document.querySelectorAll('#list tr[data-key]').length === 6 && document.querySelector('#sel h2')"),
-                ("recipe", "/recipe.html?path=rounds/nursery/brain2-w5.json", "document.getElementById('git-plate') && document.querySelectorAll('.row').length > 20"),
+                ("recipe", "/recipe.html?path=rounds/nursery/brain2-w11.json", "document.getElementById('git-plate') && document.querySelectorAll('.row').length > 20"),
                 ("run", "/run.html?id=2&vs=4", "document.querySelector('.exam-t tbody.vs') && document.querySelector('#c-search').childElementCount > 0 && document.querySelector('#c-bodynet')"),
                 ("tank", "/tank.html?run=1&brain=0&draw=0&tank=0", "document.querySelectorAll('#s-brain option').length === 18"),
                 ("genome", "/genome.html?run=2&id=best.g0", "document.getElementById('graph') && document.getElementById('graph').childElementCount > 0"),

@@ -126,6 +126,25 @@ namespace Evosim.Farm
         /// <summary><c>poses.jsonl</c>, opened beside the run's other writers on the first sample.</summary>
         private JsonlWriter _poses;
 
+        /// <summary>
+        /// The grips held now and the grips formed, let go and broken over the living bodies' lives (D268). A body's own
+        /// counts leave with it, so the three counts are of the living and are read as a level, not differenced across a
+        /// death.
+        /// </summary>
+        private static void GripTotals(Simulation sim, out long held, out long formed, out long letGo, out long broken)
+        {
+            held = formed = letGo = broken = 0;
+            IReadOnlyList<Creature> bodies = sim.Dynamics.Creatures;
+            for (int i = 0; i < bodies.Count; i++)
+            {
+                Creature body = bodies[i];
+                held += body.GripsHeld;
+                formed += body.GripsFormed;
+                letGo += body.GripsLetGo;
+                broken += body.GripsBroken;
+            }
+        }
+
         /// <summary>The table's columns, base set plus one per patch — <see cref="Report"/>'s.</summary>
         public static IReadOnlyList<string> Columns(RunConfig config, bool migrating = false) =>
             new Report("x", config, migrating).Columns;
@@ -308,6 +327,10 @@ namespace Evosim.Farm
             var absorptiveNow = new HashSet<long>();
 
             bool recordPositions = dir != null && dir.RecordsPositions;
+
+            // D268: where the table holds the anchoring cell, a body that holds a grip now is flagged in positions.jsonl and
+            // the grip columns are written. Nowhere else, so every other world's rows are the bytes they were.
+            bool anchorsIn = world.Config.CellTypes.Contains(CellTypeIds.Anchoring);
             int positionCount = 0;
 
             if (recordPositions) EnsurePositionCapacity(world.Living.Count + world.Remains.Count);
@@ -419,7 +442,10 @@ namespace Evosim.Farm
                     _positionFlags[positionCount] =
                         (creatureAbsorptive ? PositionsRow.AbsorptiveBit : 0) |
                         (creatureDof > 0 ? PositionsRow.JointedBit : 0) |
-                        (creature.HasPhotosyntheticTissue ? PositionsRow.PhotosyntheticBit : 0);
+                        (creature.HasPhotosyntheticTissue ? PositionsRow.PhotosyntheticBit : 0) |
+                        (anchorsIn && sim.TryPose(creature.Id, out Creature held) && held.GripsHeld > 0
+                            ? PositionsRow.AnchoredBit
+                            : 0);
 
                     positionCount++;
                 }
@@ -978,6 +1004,19 @@ namespace Evosim.Farm
                         .Field("immigrantsRefused", world.ImmigrantsRefused);
                 }
 
+                // D268. Only where the table holds the anchoring cell, so every other stats row is the bytes it was:
+                // the links holding a grip now, and the grips formed, let go by the brain and broken by the pull over
+                // the living bodies' lives (a body's counts go when it dies), and the joules the world has charged.
+                if (world.Config.CellTypes.Contains(CellTypeIds.Anchoring))
+                {
+                    GripTotals(sim, out long gripsHeld, out long gripsFormed, out long gripsLetGo, out long gripsBroken);
+                    w.Field("gripsHeld", gripsHeld)
+                        .Field("gripsFormed", gripsFormed)
+                        .Field("gripsLetGo", gripsLetGo)
+                        .Field("gripsBroken", gripsBroken)
+                        .Field("gripJoules", world.GripJoulesTotal);
+                }
+
                 // D206. Only in a world that keeps its plants' matter, so every other stats row is
                 // the bytes it was: the spent units bodies and corpses hold now, and the store's
                 // three running totals, kept, charged back by fixation, and released to the water.
@@ -1379,6 +1418,18 @@ namespace Evosim.Farm
             {
                 row.Add("**" + world.Immigrated.ToString(c) + "**");
                 row.Add(world.ImmigrantsRefused.ToString(c));
+            }
+
+            // D268, after the immigrants and only where the table holds the anchoring cell (Report's Columns says the
+            // same): the grips held now, formed, let go and broken, and the joules charged for them.
+            if (anchorsIn)
+            {
+                GripTotals(sim, out long gripsHeld, out long gripsFormed, out long gripsLetGo, out long gripsBroken);
+                row.Add(gripsHeld.ToString(c));
+                row.Add(gripsFormed.ToString(c));
+                row.Add(gripsLetGo.ToString(c));
+                row.Add(gripsBroken.ToString(c));
+                row.Add(world.GripJoulesTotal.ToString("0.#######", c));
             }
 
             for (int p = 0; p < alivePerPatch.Length; p++) row.Add(alivePerPatch[p].ToString(c));

@@ -281,7 +281,7 @@ namespace Evosim.NurseryRoom.Tests
 
         // ------------------------------------------------------------------ the reconstruction's refusals
 
-        private static string RealRecipe => "rounds/nursery/brain2-w5.json";
+        private static string RealRecipe => "rounds/nursery/brain2-w11.json";
 
         private string Registry(string recipeHash, string folder)
         {
@@ -321,7 +321,7 @@ namespace Evosim.NurseryRoom.Tests
         public void ARecipeWhoseHashIsTheEntrysRebuildsAPlanFromAPoolOfTwo()
         {
             string folder = OldRun();
-            string hash = Recipe.Load(Path.Combine(Where.Root, "rounds", "nursery", "brain2-w5.json")).Hash();
+            string hash = Recipe.Load(Path.Combine(Where.Root, "rounds", "nursery", "brain2-w11.json")).Hash();
             var r = Resolver(folder, Registry(hash, folder));
             var p = (ExamPlanView)r.Read("nursery://exam-plan/1");
             Assert.Equal("reconstruction", p.Source);
@@ -359,7 +359,7 @@ namespace Evosim.NurseryRoom.Tests
         {
             string folder = OldRun();
             File.Delete(Path.Combine(folder, "tank-exam-genomes.tsv"));
-            string hash = Recipe.Load(Path.Combine(Where.Root, "rounds", "nursery", "brain2-w5.json")).Hash();
+            string hash = Recipe.Load(Path.Combine(Where.Root, "rounds", "nursery", "brain2-w11.json")).Hash();
             var e = Assert.Throws<ResourceRefused>(() => Resolver(folder, Registry(hash, folder)).Read("nursery://exam-plan/1"));
             Assert.Contains("tank-exam-genomes.tsv is not in the run's folder", e.Message);
         }

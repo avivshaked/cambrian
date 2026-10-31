@@ -6,7 +6,7 @@
   "entry": {
     "recipe": "e2e-alpha",
     "recipeHash": "aa",
-    "recipePath": "rounds/nursery/brain2-w5.json",
+    "recipePath": "rounds/nursery/brain2-w11.json",
     "configHash": "c",
     "gitCommit": "g",
     "coreHash": "c",
@@ -1179,7 +1179,7 @@
   },
   "exists": true,
   "folderName": null,
-  "recipePath": "rounds/nursery/brain2-w5.json",
+  "recipePath": "rounds/nursery/brain2-w11.json",
   "recipeExists": true,
   "folderShort": "scratch/nursery/alpha"
 }

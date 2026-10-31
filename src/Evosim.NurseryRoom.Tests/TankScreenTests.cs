@@ -283,41 +283,46 @@ namespace Evosim.NurseryRoom.Tests
             _f.Dispose();
         }
 
-        private JsonElement Status(LoadReading load) => Js.Parse(Js.Serialize(Program.RoomStatus(_f.Room, load, DateTime.UtcNow)));
+        private JsonElement Status() => Js.Parse(Js.Serialize(Program.RoomStatus(_f.Room, DateTime.UtcNow)));
 
         [Fact]
         public void TheButtonsTwoReasonsAreInTheRoomsStatusAndNothingRefusesOtherwise()
         {
             // nothing in the way: null, and the screen leaves the button enabled
-            Assert.Equal(JsonValueKind.Null, Status(LoadReading.Of(10)).GetProperty("stepRefusal").ValueKind);
+            Assert.Equal(JsonValueKind.Null, Status().GetProperty("stepRefusal").ValueKind);
 
             // a timing read that is live: the reason names who and why, and the kind is timing
             _f.WriteTiming(EpisodeFixture.TimingJson("evolution-simulator-6e", "a pace read of the tank bench", DateTimeOffset.UtcNow.AddHours(1)));
-            JsonElement timing = Status(LoadReading.Of(10)).GetProperty("stepRefusal");
+            JsonElement timing = Status().GetProperty("stepRefusal");
             Assert.Equal("timing", timing.GetProperty("kind").GetString());
             Assert.Contains("evolution-simulator-6e", timing.GetProperty("reason").GetString());
             Assert.Contains("a pace read of the tank bench", timing.GetProperty("reason").GetString());
             Assert.Contains("no episode is stepped", timing.GetProperty("reason").GetString());
             // and it wins over the cap when both would refuse
-            Assert.Equal("timing", Status(LoadReading.Of(100)).GetProperty("stepRefusal").GetProperty("kind").GetString());
+            _f.Fx.Heat.Value = HeatReading.Of(HeatReading.Hot, "2026-10-11 12:00:00  HOT  gpu 86C");
+            Assert.Equal("timing", Status().GetProperty("stepRefusal").GetProperty("kind").GetString());
             File.Delete(_f.TimingFile);
 
             // the cap: the same text the operation would refuse with
-            JsonElement cap = Status(LoadReading.Of(100)).GetProperty("stepRefusal");
+            JsonElement cap = Status().GetProperty("stepRefusal");
             Assert.Equal("cap", cap.GetProperty("kind").GetString());
-            Assert.Contains("past the cap of 16 of 32", cap.GetProperty("reason").GetString());
-            _f.Fx.Load.Value = LoadReading.Of(100);
-            Assert.Contains(cap.GetProperty("reason").GetString(), _f.Step(0, 0).Error);
-            _f.Fx.Load.Value = LoadReading.Of(10);
+            Assert.Equal("the heat check reads HOT (2026-10-11 12:00:00  HOT  gpu 86C), and the room starts nothing on a hot machine; refusing 1 thread", cap.GetProperty("reason").GetString());
+            Assert.Equal(cap.GetProperty("reason").GetString() + ". Nothing was started.", _f.Step(0, 0).Error);
+            _f.Fx.Heat.Value = new FixedHeat().Value;
 
-            // a load that cannot be read refuses too, and says so
-            JsonElement unread = Status(LoadReading.Failed("no counter")).GetProperty("stepRefusal");
-            Assert.Equal("cap", unread.GetProperty("kind").GetString());
-            Assert.Contains("cannot be read", unread.GetProperty("reason").GetString());
+            // a queue that gives the room no slot refuses too, and says so
+            _f.Fx.Queue.Text = "## Running\n\n- speed (a test) · cores: 16-19\n";
+            JsonElement noSlot = Status().GetProperty("stepRefusal");
+            Assert.Equal("cap", noSlot.GetProperty("kind").GetString());
+            Assert.Contains("carries the room tag, so the room has no slot", noSlot.GetProperty("reason").GetString());
 
-            // a step that lives counts against the cap, so a nearly full machine refuses the next
+            // a step that lives counts against the free cores, so a slot with one core free refuses the next
+            _f.Fx.Queue.Text = FixedQueue.With("speed (a test) · cores: 16-30");
+            Assert.Equal(JsonValueKind.Null, Status().GetProperty("stepRefusal").ValueKind);
             _f.Ok(_f.Step(0, 0));
-            Assert.Equal(JsonValueKind.Null, Status(LoadReading.Of(0)).GetProperty("stepRefusal").ValueKind);
+            string full = Status().GetProperty("stepRefusal").GetProperty("reason").GetString();
+            Assert.StartsWith("1 thread asked, plus 1 thread granted", full);
+            Assert.Contains("is 2, more than the 1 free core (logical 31): the room's slot is logical 16-31, less 16-30 claimed by \"speed (a test)\"", full);
         }
 
         [Fact]
@@ -458,7 +463,7 @@ namespace Evosim.NurseryRoom.Tests
             File.WriteAllText(settingsFile, Where.SettingsJson(runsDir: "runs").Replace("\"port\":5179", "\"port\":5180").Replace("artifacts/Evosim.Nursery/bin/Debug/net8.0/Evosim.Nursery.dll", "bin/nursery.dll"));
             RoomSettings settings = RoomSettings.Load(settingsFile);
             Assert.Equal(5180, settings.Port);
-            var room = new RoomContext(f.Fx.Root, settings, f.Fx.Main, f.Fx.Registry, Path.Combine(f.Fx.Dir, "activity-smoke.jsonl"), f.Launcher, f.Fx.Load, 32, _ => f.Fx.Build, null, f.Procs, f.Copier);
+            var room = new RoomContext(f.Fx.Root, settings, f.Fx.Main, f.Fx.Registry, Path.Combine(f.Fx.Dir, "activity-smoke.jsonl"), f.Launcher, f.Fx.Queue, f.Fx.Heat, 32, _ => f.Fx.Build, null, f.Procs, f.Copier);
             WebApplication app = Program.Create(room, Where.WwwRoot);
             app.Start();
             using var stopped = new ManualResetEventSlim(File.Exists(stop));

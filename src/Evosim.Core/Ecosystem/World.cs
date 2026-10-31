@@ -3006,6 +3006,18 @@ namespace Evosim.Core
                     "builds (D162).", nameof(config));
             }
 
+            // D268: the hold output is an output of D146's one brain. The per-node brain has no output list to add it
+            // to, and no world has run it since D146.
+            if (config.CellTypes.Contains(CellTypeIds.Anchoring) &&
+                ((AnchoringCell)config.CellTypes.Resolve(CellTypeIds.Anchoring)).BrainHold &&
+                (config.Brain == null || config.Brain.BrainModel != BrainModel.Central))
+            {
+                throw new ArgumentException(
+                    "The anchoring cell lets the brain hold the grip (BrainHold) and BrainModel is not Central. The hold " +
+                    "output is an output of D146's one brain, and the per-node brain has no output list to add it to (D268).",
+                    nameof(config));
+            }
+
             // D228: the true shape is the per-part contact's narrowphase; the body sphere has no parts to test.
             // SpheresApart is sphere contact and takes the body sphere too, so only the two true shapes are refused.
             if ((config.ContactShape == ContactShapeForm.TrueShape || config.ContactShape == ContactShapeForm.TrueShapeAtPoint) &&
@@ -3099,6 +3111,15 @@ namespace Evosim.Core
                     "KillSwallowsBody is on and ContactEating is off. A kill is swallowed only where bites feed as " +
                     "they wound and a body that dies leaves remains for the swallow to replace, so there is no kill " +
                     "for it to read; a header naming it would describe a world the run did not have (D232).",
+                    nameof(config));
+            }
+
+            if (config.DeathRowIncome && !config.ContactEating)
+            {
+                throw new ArgumentException(
+                    "DeathRowIncome is on and ContactEating is off. The death row's income fields count what a body " +
+                    "kept from biting, and bites keep nothing where they do not feed as they wound; a header " +
+                    "naming it would describe a world the run did not have (D264).",
                     nameof(config));
             }
 
@@ -5953,7 +5974,10 @@ namespace Evosim.Core
             _lineageEvents.Add(LineageEvent.Death(
                 ElapsedSeconds, creature.Id, cause, accountAtDeath, reserveAtDeath,
                 creature.MouthJoulesOwnKill, creature.MouthJoulesOtherKill, creature.MouthJoulesCarrion,
-                creature.BiteKeptJoules));
+                creature.BiteKeptJoules,
+                Config.DeathRowIncome,
+                creature.BiteKeptFromLeavesJoules, creature.BiteKeptFromOthersJoules,
+                creature.BiteKeptFromRemainsJoules, creature.GutSwallowedLifetimeJoules));
         }
 
         /// <summary>

@@ -24,8 +24,14 @@ namespace Evosim.NurseryRoom
         /// <summary>How often a screen asks for new data, and how often the readers look at their files.</summary>
         public int PollSeconds;
 
-        /// <summary>The share of the machine's logical processors the room may launch work onto (the owner's ruling).</summary>
-        public int CapLogical;
+        /// <summary>
+        /// The machine's queue, relative to the main checkout (found as the registry is): <c>scratch/machine/queue.md</c>, which the coordinator owns. The
+        /// room reads its Running section for its own slot and the cores other jobs claim, and never writes it (<see cref="Cap"/>).
+        /// </summary>
+        public string QueueFile;
+
+        /// <summary>The heat check, relative to the repository root: <c>scripts/temp-check.ps1</c>, run with pwsh. HOT, or no verdict, refuses a start.</summary>
+        public string HeatScript;
 
         /// <summary>Run folders, relative to the repository root, read as runs though they predate the registry.</summary>
         public List<string> Runs = new List<string>();
@@ -50,8 +56,8 @@ namespace Evosim.NurseryRoom
         public string ActivityFile;
 
         /// <summary>
-        /// The logical processors a launched run may use, as the hex string room.json holds (<c>"0xFFFF0000"</c>, the efficiency cores: the
-        /// coordinator's rule) read into a mask. A launch pins the new process to it before its first instruction (<see cref="CoreMask"/>).
+        /// The bound the room never leaves, as the hex string room.json holds (<c>"0xFFFFFFCF"</c>: every processor but 4 and 5) read into a mask.
+        /// A launch is pinned to the free cores of the room's slot inside it (<see cref="Cap"/>), before its first instruction (<see cref="CoreMask"/>).
         /// Never 0; a processor the machine lacks is refused when a run is launched, since the machine is not known here.
         /// </summary>
         public ulong Affinity;
@@ -65,7 +71,7 @@ namespace Evosim.NurseryRoom
 
         private static readonly Regex PlainFolder = new Regex(@"\A[A-Za-z0-9_-]([A-Za-z0-9._-]*[A-Za-z0-9_-])?(/[A-Za-z0-9_-]([A-Za-z0-9._-]*[A-Za-z0-9_-])?)*\z");
 
-        private static readonly string[] Keys = { "port", "bind", "pollSeconds", "capLogical", "runs", "dotnet", "nurseryDll", "runsDir", "activityFile", "affinity", "trialsDir" };
+        private static readonly string[] Keys = { "port", "bind", "pollSeconds", "runs", "dotnet", "nurseryDll", "runsDir", "activityFile", "affinity", "trialsDir", "queueFile", "heatScript" };
 
         public static RoomSettings Load(string path)
         {
@@ -98,19 +104,22 @@ namespace Evosim.NurseryRoom
                     Port = Whole(root, "port", where),
                     Bind = Text(root, "bind", where),
                     PollSeconds = Whole(root, "pollSeconds", where),
-                    CapLogical = Whole(root, "capLogical", where),
                     Dotnet = Text(root, "dotnet", where),
                     NurseryDll = Text(root, "nurseryDll", where),
                     RunsDir = Text(root, "runsDir", where),
                     ActivityFile = Text(root, "activityFile", where),
                     Affinity = CoreMask.Parse(Text(root, "affinity", where), "affinity", where),
                     TrialsDir = Text(root, "trialsDir", where),
+                    QueueFile = Text(root, "queueFile", where),
+                    HeatScript = Text(root, "heatScript", where),
                 };
                 if (string.IsNullOrWhiteSpace(s.Dotnet)) throw new InvalidDataException($"room settings: {where}: dotnet names the dotnet host a run is started with");
                 if (string.IsNullOrWhiteSpace(s.NurseryDll)) throw new InvalidDataException($"room settings: {where}: nurseryDll names the nursery's program");
                 s.RunsDir = RepoRelative(s.RunsDir, "runsDir", where);
                 s.ActivityFile = RepoRelative(s.ActivityFile, "activityFile", where);
                 s.TrialsDir = RepoRelative(s.TrialsDir, "trialsDir", where);
+                s.QueueFile = RepoRelative(s.QueueFile, "queueFile", where);
+                s.HeatScript = RepoRelative(s.HeatScript, "heatScript", where);
                 if (!PlainFolder.IsMatch(s.TrialsDir))
                     throw new InvalidDataException($"room settings: {where}: trialsDir is a folder named with A-Z a-z 0-9 . _ - only (and / between folders), not \"{s.TrialsDir.Replace("\"", "'")}\"");
                 if (s.TrialsDir.Equals("rounds/nursery", StringComparison.OrdinalIgnoreCase) || s.TrialsDir.StartsWith("rounds/nursery/", StringComparison.OrdinalIgnoreCase))
@@ -119,7 +128,6 @@ namespace Evosim.NurseryRoom
                 if (trialsProblem != null) throw new InvalidDataException($"room settings: {where}: trialsDir is {s.TrialsDir}, {trialsProblem}");
                 if (s.Port < 1 || s.Port > 65535) throw new InvalidDataException($"room settings: {where}: port is 1 to 65535, not {s.Port}");
                 if (s.PollSeconds < 1) throw new InvalidDataException($"room settings: {where}: pollSeconds is 1 or more");
-                if (s.CapLogical < 1) throw new InvalidDataException($"room settings: {where}: capLogical is 1 or more");
                 if (!System.Net.IPAddress.TryParse(s.Bind, out var ip) || !System.Net.IPAddress.IsLoopback(ip))
                     throw new InvalidDataException($"room settings: {where}: bind is a loopback address (127.0.0.1), not \"{s.Bind}\": the room listens on this machine only");
                 JsonElement runs = root.GetProperty("runs");

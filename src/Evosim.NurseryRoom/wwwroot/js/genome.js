@@ -839,6 +839,6 @@ onResize(redrawAll);
   for (const id of ['graphwrap', 'views', 'ggwrap']) ro.observe($(id));
 }
 
-// The machine's load takes seconds to read: the page's own reading does not wait for it.
+// The room's reading of the machine takes seconds (the heat check runs a script): the page's own reading does not wait for it.
 mountMachine().then(room => { if (room) pollSeconds = room.pollSeconds; });
 poll(tick, pollSeconds);

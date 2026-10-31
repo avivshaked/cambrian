@@ -167,7 +167,7 @@ function drawSel(d) {
       done: r => esc(r.note),
     }),
     'run.rerun': btn => {
-      // The form opens at once; the machine's load (which takes seconds to read) is filled in when the room answers.
+      // The form opens at once; the room's slot and the heat (which take seconds to read) are filled in when the room answers.
       ask({
         key: 'rerun', title: 'Rerun entry #' + i.number, send: 'RERUN',
         note: "Runs the entry's recipe again on this build into a new folder, and compares the two.",
@@ -277,6 +277,6 @@ document.addEventListener('keydown', ev => {
 });
 
 onResize(draw);
-// The machine's load takes seconds to read: the registry's own reading does not wait for it.
+// The room's reading of the machine takes seconds (the heat check runs a script): the registry's own reading does not wait for it.
 mountMachine().then(room => { if (room) pollSeconds = room.pollSeconds; });
 poll(tick, pollSeconds);

@@ -43,6 +43,7 @@ namespace Evosim.NurseryRoom.Tests.E2e
 
         private readonly string _profile;
         private readonly Process _process;
+        private string _port;
         private readonly ClientWebSocket _ws = new ClientWebSocket();
         private readonly CancellationTokenSource _stop = new CancellationTokenSource();
         private readonly ConcurrentDictionary<int, TaskCompletionSource<JsonElement>> _pending = new ConcurrentDictionary<int, TaskCompletionSource<JsonElement>>();
@@ -75,11 +76,13 @@ namespace Evosim.NurseryRoom.Tests.E2e
                 string port = null;
                 for (int i = 0; i < 300 && port == null; i++)
                 {
-                    if (_process.HasExited) throw new InvalidOperationException("Edge ended before it opened its debugging port");
+                    // Edge 155's msedge.exe can hand the browser to a process of its own and exit with 0; the browser then still writes the port file.
+                    if (_process.HasExited && _process.ExitCode != 0) throw new InvalidOperationException($"Edge ended (exit {_process.ExitCode}) before it opened its debugging port");
                     try { if (File.Exists(portFile)) port = File.ReadAllLines(portFile).FirstOrDefault(); } catch (IOException) { }
                     if (port == null) Thread.Sleep(100);
                 }
                 if (port == null) throw new TimeoutException("Edge did not open its debugging port in 30 s");
+                _port = port;
                 string wsUrl = null;
                 using (var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) })
                     for (int i = 0; i < 100 && wsUrl == null; i++)
@@ -348,6 +351,7 @@ namespace Evosim.NurseryRoom.Tests.E2e
             try { _stop.Cancel(); } catch (ObjectDisposedException) { }
             try { _ws.Abort(); } catch (Exception) { }
             try { _reader?.Wait(2000); } catch (Exception) { }
+            CloseBrowser();
             if (_process != null)
             {
                 try { if (!_process.HasExited) _process.Kill(true); } catch (Exception) { }
@@ -362,6 +366,32 @@ namespace Evosim.NurseryRoom.Tests.E2e
             }
             _ws.Dispose();
             _stop.Dispose();
+        }
+
+        /// <summary>
+        /// Asks the browser itself to close, over its own DevTools endpoint: when msedge.exe handed the browser to another process, killing the
+        /// process this started does not end it. Anything that goes wrong here is left to the kill and the profile's delete that follow.
+        /// </summary>
+        private void CloseBrowser()
+        {
+            if (_port == null) return;
+            try
+            {
+                string browserWs;
+                using (var http = new HttpClient { Timeout = TimeSpan.FromSeconds(3) })
+                using (JsonDocument version = JsonDocument.Parse(http.GetStringAsync($"http://127.0.0.1:{_port}/json/version").GetAwaiter().GetResult()))
+                    browserWs = version.RootElement.GetProperty("webSocketDebuggerUrl").GetString();
+                using (var ws = new ClientWebSocket())
+                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3)))
+                {
+                    ws.ConnectAsync(new Uri(browserWs), cts.Token).GetAwaiter().GetResult();
+                    byte[] close = Encoding.UTF8.GetBytes("{\"id\":1,\"method\":\"Browser.close\"}");
+                    ws.SendAsync(new ArraySegment<byte>(close), WebSocketMessageType.Text, true, cts.Token).GetAwaiter().GetResult();
+                    var buffer = new byte[4096];
+                    try { ws.ReceiveAsync(new ArraySegment<byte>(buffer), cts.Token).GetAwaiter().GetResult(); } catch (Exception) { }
+                }
+            }
+            catch (Exception) { }
         }
     }
 }

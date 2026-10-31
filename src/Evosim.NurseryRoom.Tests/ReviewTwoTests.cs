@@ -28,7 +28,7 @@ namespace Evosim.NurseryRoom.Tests
         [Fact]
         public void ARegisteredRecipeIsRegisteredAndOneInTheTrialsFolderIsATrial()
         {
-            JsonElement registered = View("rounds/nursery/brain2-w5.json");
+            JsonElement registered = View("rounds/nursery/brain2-w11.json");
             Assert.Equal("registered", registered.GetProperty("launch").GetProperty("state").GetString());
             Assert.False(registered.GetProperty("trial").GetBoolean());
             Assert.Equal(JsonValueKind.Null, registered.GetProperty("launch").GetProperty("reason").ValueKind);
@@ -125,7 +125,7 @@ namespace Evosim.NurseryRoom.Tests
         [Fact]
         public void APathWithNoLinkOnItIsFineWhetherOrNotItExistsYet()
         {
-            Assert.Null(_fx.Room.LinkProblem(_fx.Full("rounds/nursery/brain2-w5.json")));
+            Assert.Null(_fx.Room.LinkProblem(_fx.Full("rounds/nursery/brain2-w11.json")));
             Assert.Null(_fx.Room.LinkProblem(_fx.Full("scratch/not/made/yet.json")));
             Assert.Null(_fx.Room.LinkProblem(_fx.Root));
             Assert.Contains("outside the repository", _fx.Room.LinkProblem(Path.Combine(_fx.Dir, "elsewhere", "x")));
@@ -154,7 +154,7 @@ namespace Evosim.NurseryRoom.Tests
             File.WriteAllText(there, _fx.Brain2);
             if (!Junction(_fx.Full("scratch/nursery-trials"), _elsewhere)) return;
             string before = File.ReadAllText(there);
-            OperationResult r = _fx.Call("recipe.write", _fx.Json("scratch/nursery-trials/zz-file.json", text: _fx.Brain2.Replace("\"name\": \"brain2-w5\"", "\"name\": \"zz-over\""), expect: RunRecord.FileSha256(there)));
+            OperationResult r = _fx.Call("recipe.write", _fx.Json("scratch/nursery-trials/zz-file.json", text: _fx.Brain2.Replace("\"name\": \"brain2-w11\"", "\"name\": \"zz-over\""), expect: RunRecord.FileSha256(there)));
             Assert.False(r.Ok);
             Assert.Contains("is a link", r.Error);
             Assert.Equal(before, File.ReadAllText(there));
@@ -164,7 +164,7 @@ namespace Evosim.NurseryRoom.Tests
         public void ALaunchIsRefusedWhenTheRunsFolderIsALinkAndNothingIsMadeThroughIt()
         {
             if (!Junction(_fx.RunsDir, _elsewhere)) return;
-            OperationResult r = _fx.Call("run.launch", Js.Serialize(new { recipe = "rounds/nursery/brain2-w5.json", name = "through-link", threads = 2, reason = "a test" }));
+            OperationResult r = _fx.Call("run.launch", Js.Serialize(new { recipe = "rounds/nursery/brain2-w11.json", name = "through-link", threads = 2, reason = "a test" }));
             Assert.False(r.Ok);
             Assert.Equal(400, r.Status);
             Assert.Contains("runs is a link", r.Error);
@@ -178,7 +178,7 @@ namespace Evosim.NurseryRoom.Tests
         {
             Directory.CreateDirectory(_fx.RunsDir);
             if (!Junction(Path.Combine(_fx.RunsDir, "linked-run"), _elsewhere)) return;
-            OperationResult r = _fx.Call("run.launch", Js.Serialize(new { recipe = "rounds/nursery/brain2-w5.json", name = "linked-run", threads = 2, reason = "a test" }));
+            OperationResult r = _fx.Call("run.launch", Js.Serialize(new { recipe = "rounds/nursery/brain2-w11.json", name = "linked-run", threads = 2, reason = "a test" }));
             Assert.False(r.Ok);
             Assert.Contains("is a link", r.Error);
             Assert.DoesNotContain(" exists;", r.Error);
@@ -225,13 +225,13 @@ namespace Evosim.NurseryRoom.Tests
         private int _builds;
 
         private RoomContext RoomCountingBuildReads() =>
-            new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, _fx.Room.Activity.Path, _fx.Launcher, _fx.Load, systemMask: _fx.Room.SystemMask, readBuild: _ => { _builds++; return _fx.Build; });
+            new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, _fx.Room.Activity.Path, _fx.Launcher, _fx.Queue, _fx.Heat, systemMask: _fx.Room.SystemMask, readBuild: _ => { _builds++; return _fx.Build; });
 
         private void Enter()
         {
             RegistryEntry.Append(_fx.Registry, new RegistryEntry
             {
-                Recipe = "brain2", RecipeHash = Recipe.Load(_fx.Full("rounds/nursery/brain2-w5.json")).Hash(), RecipePath = "rounds/nursery/brain2-w5.json",
+                Recipe = "brain2", RecipeHash = Recipe.Load(_fx.Full("rounds/nursery/brain2-w11.json")).Hash(), RecipePath = "rounds/nursery/brain2-w11.json",
                 Out = Path.Combine(_fx.Dir, "entry-out"), Status = "completed", StartedAtUtc = "2026-10-02T00:00:00Z", EndedAtUtc = "2026-10-02T01:00:00Z",
                 GitCommit = "abc1234", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Rerunnable = true,
             });
@@ -260,7 +260,7 @@ namespace Evosim.NurseryRoom.Tests
         {
             Enter();
             // a machine of 16 processors, with room.json's mask on processors 16 to 31
-            var lacking = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, _fx.Room.Activity.Path, _fx.Launcher, _fx.Load, systemMask: 0xFFFFUL, readBuild: _ => { _builds++; return _fx.Build; });
+            var lacking = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, _fx.Room.Activity.Path, _fx.Launcher, _fx.Queue, _fx.Heat, systemMask: 0xFFFFUL, readBuild: _ => { _builds++; return _fx.Build; });
             OperationResult r = new OperationList(lacking).Invoke("run.rerun", Js.Parse(Js.Serialize(new { entry = "1", name = "no-core", threads = 2, reason = "a test" })), OperationList.Screen);
             Assert.False(r.Ok);
             Assert.Contains("lacks", r.Error);
@@ -351,7 +351,7 @@ namespace Evosim.NurseryRoom.Tests
             string trial = "scratch/nursery-trials/zz-t.json";
             Fx.Result(_fx.Call("recipe.write", _fx.Json(trial)));
             Fx.Result(_fx.Call("run.launch", Js.Serialize(new { recipe = trial, name = "trial-one", threads = 2, reason = "a test" })));
-            Fx.Result(_fx.Call("run.launch", Js.Serialize(new { recipe = "rounds/nursery/brain2-w5.json", name = "reg-one", threads = 2, reason = "a test" })));
+            Fx.Result(_fx.Call("run.launch", Js.Serialize(new { recipe = "rounds/nursery/brain2-w11.json", name = "reg-one", threads = 2, reason = "a test" })));
 
             var resolver = new ResourceResolver(_fx.Room);
             List<ResourceResolver.RunRef> runs = resolver.Catalog(out _);
@@ -366,7 +366,7 @@ namespace Evosim.NurseryRoom.Tests
             Assert.True(Js.Parse(Js.Serialize(resolver.Run("trial-one"))).GetProperty("trial").GetBoolean());
 
             // a room started afterwards reads it from the log
-            var later = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, _fx.Room.Activity.Path, new FakeLauncher(), _fx.Load, 32, _ => _fx.Build);
+            var later = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, _fx.Room.Activity.Path, new FakeLauncher(), _fx.Queue, _fx.Heat, 32, _ => _fx.Build);
             Assert.True(new ResourceResolver(later).Catalog(out _).Single(r => r.Id == "trial-one").Trial);
         }
     }
@@ -376,7 +376,8 @@ namespace Evosim.NurseryRoom.Tests
         [Theory]
         [InlineData("\"port\":5179", "\"port\":0", "port")]
         [InlineData("\"pollSeconds\":30", "\"pollSeconds\":0", "pollSeconds")]
-        [InlineData("\"capLogical\":16", "\"capLogical\":0", "capLogical")]
+        [InlineData("\"queueFile\":\"scratch/machine/queue.md\"", "\"queueFile\":\"../queue.md\"", "queueFile")]
+        [InlineData("\"heatScript\":\"scripts/no-heat-check-in-the-room-tests.ps1\"", "\"heatScript\":\"C:/x.ps1\"", "heatScript")]
         [InlineData("\"bind\":\"127.0.0.1\"", "\"bind\":\"10.0.0.1\"", "bind")]
         [InlineData("\"dotnet\":\"dotnet\"", "\"dotnet\":\" \"", "dotnet")]
         [InlineData("\"runs\":[]", "\"runs\":{}", "runs")]

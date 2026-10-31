@@ -922,7 +922,7 @@ bindOps({
     ask({
       key: 'rerun', title: 'Rerun entry #' + data.number, send: 'RERUN',
       note: "Runs the entry's recipe again on this build into a new folder, and compares the two.",
-      machine: r => machineText(r, true),   // the form opens at once; the machine's load is filled in when the room answers, with the threads that fit as the launch dialog says them
+      machine: r => machineText(r, true),   // the form opens at once; the room's slot and the heat are filled in when the room answers, with the threads that fit as the launch dialog says them
       fields: [{ name: 'name', label: 'new folder name (a-z, 0-9, -)', value: slug(data.name) + '-rerun' }, { name: 'threads', label: 'threads', type: 'number', value: 4, min: 1 }],
       run: (reason, v) => callOp('run.rerun', { entry: String(data.number), name: v.name.trim(), threads: Number(v.threads), reason }),
       done: x => `started <b>${esc(x.id)}</b> (pid ${esc(x.pid)}). <a href="run.html?id=${encodeURIComponent(x.id)}">open the run</a>`,
@@ -930,6 +930,6 @@ bindOps({
   },
 });
 
-// The machine's load takes seconds to read: the page's own reading does not wait for it.
+// The room's reading of the machine takes seconds (the heat check runs a script): the page's own reading does not wait for it.
 mountMachine().then(room => { if (room) pollSeconds = room.pollSeconds; });
 poll(tick, pollSeconds);

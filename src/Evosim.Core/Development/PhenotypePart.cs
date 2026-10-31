@@ -234,6 +234,18 @@ namespace Evosim.Core
         /// </remarks>
         public bool Smells { get; internal set; } = true;
 
+        /// <summary>
+        /// Whether the brain holds this part's grip (D268): true on an anchoring part developed against a table
+        /// whose anchoring cell has <c>BrainHold</c>, false everywhere else, which is every body of every world
+        /// before the build.
+        /// </summary>
+        /// <remarks>
+        /// Set by <see cref="Developer.Develop"/> from the table it is handed, as <see cref="Smells"/> is, and
+        /// carried by every copy of the part. The one brain's hold output and the two grip senses follow it
+        /// (<see cref="CentralWiring"/>).
+        /// </remarks>
+        public bool Grips { get; internal set; }
+
         /// <summary>Volume in m³, computed by this part's shape when the part was built.</summary>
         /// <remarks>
         /// Stored rather than derived, because deriving it needs the shape registry and this is

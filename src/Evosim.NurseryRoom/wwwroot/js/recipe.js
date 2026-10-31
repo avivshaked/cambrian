@@ -214,9 +214,11 @@ async function loadRecipe() {
 
 const slug = s => (String(s || 'run').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'run').slice(0, 50);
 
-/** The cap line of the launch section: filled when the room's reading arrives, which takes seconds (the page's own reading does not wait for it). */
+/** The free cores line of the launch section: filled when the room's reading arrives, which takes seconds (the page's own reading does not wait for it). */
 function capHtml() {
-  return room ? `${room.capLogical} <span class="unit">of ${room.logical} logical</span>` : '<span class="dim">reading the machine…</span>';
+  if (!room) return '<span class="dim">reading the machine…</span>';
+  const m = room.machine || {};
+  return m.problem ? `<span class="dim" title="${esc(m.problem)}">no slot in the queue</span>` : `<span title="${esc(m.explain || '')}">${m.freeCount} <span class="unit">of slot ${esc(m.slot)}</span></span>`;
 }
 
 function draw(d, diff) {
@@ -278,7 +280,7 @@ function draw(d, diff) {
     <div style="margin:.6rem 0"><button class="btn btn--primary" data-op="recipe.check" id="btn-check">CHECK AGAIN</button></div>
     <div class="section" id="launch">
       <div class="title" style="margin-bottom:.4rem">Launch</div>
-      <div class="field"><span class="field__label">cap</span><span class="field__value" id="launch-cap">${capHtml()}</span></div>
+      <div class="field"><span class="field__label">free cores</span><span class="field__value" id="launch-cap">${capHtml()}</span></div>
       <div style="display:flex;margin-top:.7rem">
         ${launchState === 'refused'
           ? `<button class="btn btn--off" disabled style="margin-right:.5rem" title="${esc(launchReason)}">LAUNCH</button>
@@ -290,7 +292,7 @@ function draw(d, diff) {
         <button class="btn btn--off" disabled title="this recipe is directly under rounds/nursery/, so its run is registered; a recipe in a trials folder is launched as a trial">LAUNCH AS TRIAL</button>`}
       </div>
       ${launchState === 'refused' ? `<p class="dim" style="font-size:.8rem;line-height:1.5"><span class="plate plate--alarm">NOT LAUNCHED</span> ${esc(launchReason)}</p>` : ''}
-      <p class="dim" style="font-size:.8rem;line-height:1.5">A launch starts the nursery on this recipe as a process of its own, in a new folder. The threads and the machine's load are counted against the cap, and a launch past it is refused with the numbers. It asks why, and the answer goes in the activity feed.${d.trial ? ' A trial runs unregistered: its run is not entered in the registry and cannot be rerun.' : ''}</p>
+      <p class="dim" style="font-size:.8rem;line-height:1.5">A launch starts the nursery on this recipe as a process of its own, in a new folder. The threads, with those the room has already granted, are counted against the free cores of the room's slot in the machine's queue, and a launch past them, or on a machine the heat check reads HOT, is refused with the numbers. It asks why, and the answer goes in the activity feed.${d.trial ? ' A trial runs unregistered: its run is not entered in the registry and cannot be rerun.' : ''}</p>
     </div>
     ${d.base ? `<div class="section"><div class="title" style="margin-bottom:.4rem">Differs from ${esc(d.base.name || d.base.path)} <span class="aside">${ctx.hasBase ? diffCount : '—'}</span></div>${
       !ctx.hasBase ? noData('The diff could not be made: ' + ((diff && diff.error) || 'no answer') + '.')
@@ -311,7 +313,7 @@ function draw(d, diff) {
       });
     },
     'run.launch': btn => {
-      // The form opens at once; the machine's load (which takes seconds to read) is filled in when the room answers, and so is whether the file is committed
+      // The form opens at once; the room's slot and the heat (which take seconds to read) are filled in when the room answers, and so is whether the file is committed
       // (read again now, not as it was at the last poll).
       ask({
         key: 'launch', title: (d.trial ? 'Launch as trial ' : 'Launch ') + (d.name || path), send: d.trial ? 'LAUNCH AS TRIAL' : 'LAUNCH',
@@ -369,7 +371,7 @@ async function pick() {
   $('crumb').textContent = 'choose a recipe';
 }
 
-// The machine's load takes seconds to read: the page's own reading does not wait for it.
+// The room's reading of the machine takes seconds (the heat check runs a script): the page's own reading does not wait for it.
 mountMachine().then(r => { room = r; const cap = document.getElementById('launch-cap'); if (cap) cap.innerHTML = capHtml(); });
 if (path) poll(loadRecipe, 30);
 else {

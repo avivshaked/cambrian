@@ -52,13 +52,20 @@ namespace Evosim.Core
         /// </summary>
         public const int RemainsBit = 8;
 
+        /// <summary>
+        /// Bit 4: at least one of the body's parts holds a grip now (D268). Set only in a world whose table holds the
+        /// anchoring cell, so every other world's flags are the bytes they were. It lets a reader map the bodies that
+        /// are fixed in place.
+        /// </summary>
+        public const int AnchoredBit = 16;
+
         /// <summary>Every bit this format defines. Anything else on a flag is refused.</summary>
         /// <remarks>
         /// Refused rather than masked off, because a reader that meets an unknown bit has no way
         /// to tell a new guild from a corrupted row, and the same rule the loaders keep (refuse
         /// rather than default, §9) is the only one that keeps a stored guild honest.
         /// </remarks>
-        public const int AllBits = AbsorptiveBit | JointedBit | PhotosyntheticBit | RemainsBit;
+        public const int AllBits = AbsorptiveBit | JointedBit | PhotosyntheticBit | RemainsBit | AnchoredBit;
 
         private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
 

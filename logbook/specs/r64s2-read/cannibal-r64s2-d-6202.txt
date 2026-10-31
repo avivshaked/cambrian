@@ -1,0 +1,13 @@
+bodies born 169100 grazers born 27712 kill rows 115684
+kills by grazers 114685 {'other': 107172, 'grazer': 7513}
+grazer-on-grazer kills 7513
+  unrelated             7415 0.987
+  sibling                 41 0.005
+  killer is parent        37 0.005
+  killer is child         20 0.003
+  victim age <10s         34 0.005
+  victim age <30s        124 0.017
+  victim age <60s        162 0.022
+  victim age <120s       368 0.049
+  victim age <300s      1129 0.150
+  victim age >=300s     5696 0.758

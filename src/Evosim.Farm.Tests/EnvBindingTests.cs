@@ -59,7 +59,7 @@ namespace Evosim.Farm.Tests
         /// world, filed under a new name. <c>scratch/r45-build</c>'s regress is what says the
         /// world did not move — every shared field of a 1,000 s run identical at every sample.
         /// </remarks>
-        private const string Round42ConfigHash = "24aa019f52cce45c";
+        private const string Round42ConfigHash = "067cb724c6ec17f6";
 
         /// <summary>Round 42 seed 1's environment, from <c>rounds/launch-r42.ps1</c>.</summary>
         /// <remarks>
@@ -677,6 +677,38 @@ namespace Evosim.Farm.Tests
 
             block["EVOSIM_LEAF_TISSUE_ENERGY"] = "1";
             block["EVOSIM_INTAKE_SCALE"] = "1";
+            Assert.Equal(Round42ConfigHash, EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block))).Hash());
+        }
+
+        /// <summary>
+        /// D264, phase 1: the two health scales and the death-row income switch reach the config and its hash, and
+        /// at their defaults the recorded config is untouched.
+        /// </summary>
+        [Fact]
+        public void TheHealthScalesAndTheDeathRowIncomeSwitchReachTheConfigAndAtTheirDefaultsLeaveItAlone()
+        {
+            Dictionary<string, string> block = Round42Seed1();
+            RunConfig plain = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block)));
+            Assert.Equal(1f, plain.AnimalHealthScale);
+            Assert.Equal(1f, plain.PlantHealthScale);
+            Assert.False(plain.DeathRowIncome);
+
+            block["EVOSIM_ANIMAL_HEALTH"] = "10";
+            block["EVOSIM_PLANT_HEALTH"] = "0.2";
+            block["EVOSIM_CONTACT_EATING"] = "1";
+            block["EVOSIM_DEATH_ROW_INCOME"] = "1";
+            RunConfig dialled = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block)));
+
+            Assert.Equal(10f, dialled.AnimalHealthScale);
+            Assert.Equal(0.2f, dialled.PlantHealthScale);
+            Assert.True(dialled.DeathRowIncome);
+            Assert.NotEqual(plain.Hash(), dialled.Hash());
+            Assert.Empty(EnvBinding.UnknownNames(block.Keys));
+
+            block["EVOSIM_ANIMAL_HEALTH"] = "1";
+            block["EVOSIM_PLANT_HEALTH"] = "1";
+            block["EVOSIM_CONTACT_EATING"] = "0";
+            block["EVOSIM_DEATH_ROW_INCOME"] = "0";
             Assert.Equal(Round42ConfigHash, EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block))).Hash());
         }
 

@@ -1,0 +1,3 @@
+2026-10-30-233542-f42bc66e  t=48000
+  whole run     leaves 0.58  others 0.36  remains 0.06  (bite kept 7.94 MJ, swallowed 0.32 MJ)
+  45000-48000  leaves 0.52  others 0.40  remains 0.08  (bite kept 0.45 MJ, swallowed 0.03 MJ)

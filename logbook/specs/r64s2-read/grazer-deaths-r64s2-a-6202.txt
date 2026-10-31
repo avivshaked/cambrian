@@ -1,0 +1,5 @@
+grazers born 21960 grazer deaths 21074
+  aged        9688 0.460  median age 2222 s
+  starved     7548 0.358  median age 521 s
+  eaten       3838 0.182  median age 441 s
+kill rows with a grazer victim: {('by other', 'part'): 63, ('by other', 'root'): 38, ('by grazer', 'part'): 4928, ('by grazer', 'root'): 3800}

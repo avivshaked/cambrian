@@ -139,8 +139,14 @@ namespace Evosim.Farm
         /// </summary>
         public const int RemainsBit = 8;
 
+        /// <summary>
+        /// Flag bit 4: a part of the body holds a grip now (D268). <c>PositionsRow.AnchoredBit</c>'s twin, and set only in
+        /// a world whose table holds the anchoring cell.
+        /// </summary>
+        public const int AnchoredBit = 16;
+
         /// <summary>Every flag bit version 2 defines. A writer refuses any other.</summary>
-        public const int AllFlagBits = AbsorptiveBit | JointedBit | PhotosyntheticBit | RemainsBit;
+        public const int AllFlagBits = AbsorptiveBit | JointedBit | PhotosyntheticBit | RemainsBit | AnchoredBit;
 
         /// <summary>What <see cref="PoseBody.Flags"/> reads on a version 1 stream, which carries none.</summary>
         public const int FlagsNotRecorded = -1;

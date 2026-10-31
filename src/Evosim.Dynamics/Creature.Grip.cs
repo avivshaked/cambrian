@@ -46,6 +46,28 @@ namespace Evosim.Dynamics
 
         public double GripHeldSeconds;
 
+        // D268, the brain's hold on the grip. All of it is null or zero unless the anchoring cell has BrainHold, so a
+        // world without the switch carries nothing new and its step does no new arithmetic.
+
+        /// <summary>
+        /// The brain's hold outputs, one per gripping part in <see cref="Brain"/>'s order, filled by each
+        /// <c>Brain.Step</c> before <see cref="Anchor.Apply"/> reads them. Null unless the cell has <c>BrainHold</c>.
+        /// </summary>
+        public float[] HoldSignal;
+
+        /// <summary>For each link, the index of its hold output in <see cref="HoldSignal"/>, or -1 for none.</summary>
+        public int[] GripOutputOf;
+
+        /// <summary>
+        /// For each link, how hard its grip was pulled in the last step: the pull over the breaking force, clamped to 1,
+        /// and 0 when not holding. The second grip sense reads it one step stale. State, since the sense reads it
+        /// before the step writes it.
+        /// </summary>
+        public double[] GripPull;
+
+        /// <summary>Grips the brain let go over the body's life (D268). A break is counted in <see cref="GripsBroken"/>.</summary>
+        public long GripsLetGo;
+
         /// <summary>Whether this body has a part that can grip in this world.</summary>
         public bool CanGrip => Anchors != null;
 
@@ -73,6 +95,21 @@ namespace Evosim.Dynamics
             GripAttitude = new double[9 * Links];
             GripPoint = new double[3 * Links];
             GripStrength = new double[Links];
+
+            // D268: the hold outputs and the second sense's record, only where the brain holds the grip.
+            if (config.Anchoring.BrainHold)
+            {
+                HoldSignal = new float[Brain.GripCount];
+                GripOutputOf = new int[Links];
+                for (int i = 0; i < Links; i++) GripOutputOf[i] = -1;
+                for (int g = 0; g < Brain.GripCount; g++)
+                {
+                    int link = Brain.GripPart(g);
+                    if (link >= 0 && link < Links) GripOutputOf[link] = g;
+                }
+
+                GripPull = new double[Links];
+            }
 
             // The touch record the grip forms on, kept whether or not the world senses it.
             if (RockTouched == null)
@@ -115,6 +152,7 @@ namespace Evosim.Dynamics
             GripsFormed = previous.GripsFormed;
             GripsBroken = previous.GripsBroken;
             GripHeldSeconds = previous.GripHeldSeconds;
+            GripsLetGo = previous.GripsLetGo;
 
             if (GripHeld == null || previous.GripHeld == null) return;
 
@@ -128,6 +166,7 @@ namespace Evosim.Dynamics
                 Array.Copy(previous.GripAnchor, 3 * from, GripAnchor, 3 * i, 3);
                 Array.Copy(previous.GripAttitude, 9 * from, GripAttitude, 9 * i, 9);
                 Array.Copy(previous.GripPoint, 3 * from, GripPoint, 3 * i, 3);
+                if (GripPull != null && previous.GripPull != null) GripPull[i] = previous.GripPull[from];
             }
         }
     }

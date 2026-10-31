@@ -207,11 +207,11 @@ namespace Evosim.NurseryRoom.Tests
             string folder = Path.Combine(_fx.RunsDir, "pilot");
             Directory.CreateDirectory(folder);
             var lines = new List<string>();
-            string[] labels = Recipe.Load(_fx.Full("rounds/nursery/brain2-w5.json")).Controls.Select(c => c.Label).ToArray();
+            string[] labels = Recipe.Load(_fx.Full("rounds/nursery/brain2-w11.json")).Controls.Select(c => c.Label).ToArray();
             foreach (string label in labels)
                 for (int g = 0; g < 2; g++) lines.Add(Js.Serialize(new { brain = label, genome = g, body = g, net = 10.0, per = new[] { 10.0, 11.0 } }));
             File.WriteAllLines(Path.Combine(folder, "tank-exam.jsonl"), lines);
-            RegistryEntry.Append(_fx.Registry, new RegistryEntry { Recipe = "brain2", RecipeHash = Recipe.Load(_fx.Full("rounds/nursery/brain2-w5.json")).Hash(), RecipePath = "rounds/nursery/brain2-w5.json", ConfigHash = "c", GitCommit = "g", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Out = folder, Status = "completed", Rerunnable = false, NotRerunnableBecause = "a test", StartedAtUtc = "2026-10-01T00:00:00Z", EndedAtUtc = "2026-10-01T01:00:00Z" });
+            RegistryEntry.Append(_fx.Registry, new RegistryEntry { Recipe = "brain2", RecipeHash = Recipe.Load(_fx.Full("rounds/nursery/brain2-w11.json")).Hash(), RecipePath = "rounds/nursery/brain2-w11.json", ConfigHash = "c", GitCommit = "g", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Out = folder, Status = "completed", Rerunnable = false, NotRerunnableBecause = "a test", StartedAtUtc = "2026-10-01T00:00:00Z", EndedAtUtc = "2026-10-01T01:00:00Z" });
             JsonElement p = Js.Parse(Js.Serialize(new ResourceResolver(_fx.Room).Run("1"))).GetProperty("progress");
             Assert.Equal(18, p.GetProperty("examExpected").GetInt32());
             Assert.Equal(18, p.GetProperty("examDone").GetInt32());
@@ -343,7 +343,7 @@ namespace Evosim.NurseryRoom.Tests
             File.WriteAllLines(Path.Combine(folder, "tank-exam.jsonl"), Labels.SelectMany(label => new[] { 0, 1 }.Select(gi =>
                 Js.Serialize(new { brain = label, genome = gi, body = gi, net = 1.0, per = new[] { 1.0, 2.0 } }))));
             File.WriteAllText(Path.Combine(folder, "tank-exam-genomes.tsv"), "0\t" + GenomeJson.Write(Central(SensorChannel.Chemical)) + "\n1\t" + GenomeJson.Write(PerPart(false)) + "\n");
-            RegistryEntry.Append(f.Registry, new RegistryEntry { Recipe = "reach", RecipeHash = "aa", RecipePath = "rounds/nursery/brain2-w5.json", ConfigHash = "c", GitCommit = "g", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Out = folder, Status = "completed", Rerunnable = false, NotRerunnableBecause = "a test", StartedAtUtc = "2026-10-01T00:00:00Z", EndedAtUtc = "2026-10-01T01:00:00Z" });
+            RegistryEntry.Append(f.Registry, new RegistryEntry { Recipe = "reach", RecipeHash = "aa", RecipePath = "rounds/nursery/brain2-w11.json", ConfigHash = "c", GitCommit = "g", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Out = folder, Status = "completed", Rerunnable = false, NotRerunnableBecause = "a test", StartedAtUtc = "2026-10-01T00:00:00Z", EndedAtUtc = "2026-10-01T01:00:00Z" });
             JsonElement run = Js.Parse(Js.Serialize(new ResourceResolver(f.Room).Run("1")));
             JsonElement u = run.GetProperty("uninformative");
             JsonElement g0 = u.GetProperty("genomes")[0], g1 = u.GetProperty("genomes")[1];
@@ -360,7 +360,7 @@ namespace Evosim.NurseryRoom.Tests
             string bare = Path.Combine(f.RunsDir, "bare");
             Directory.CreateDirectory(bare);
             File.WriteAllLines(Path.Combine(bare, "tank-exam.jsonl"), new[] { Js.Serialize(new { brain = "own", genome = 0, net = 1.0 }), Js.Serialize(new { brain = "brainless", genome = 0, net = 1.0 }) });
-            RegistryEntry.Append(f.Registry, new RegistryEntry { Recipe = "bare", RecipeHash = "aa", RecipePath = "rounds/nursery/brain2-w5.json", ConfigHash = "c", GitCommit = "g", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Out = bare, Status = "completed", Rerunnable = false, NotRerunnableBecause = "a test", StartedAtUtc = "2026-10-01T00:00:00Z", EndedAtUtc = "2026-10-01T01:00:00Z" });
+            RegistryEntry.Append(f.Registry, new RegistryEntry { Recipe = "bare", RecipeHash = "aa", RecipePath = "rounds/nursery/brain2-w11.json", ConfigHash = "c", GitCommit = "g", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Out = bare, Status = "completed", Rerunnable = false, NotRerunnableBecause = "a test", StartedAtUtc = "2026-10-01T00:00:00Z", EndedAtUtc = "2026-10-01T01:00:00Z" });
             Assert.Equal(JsonValueKind.Null, Js.Parse(Js.Serialize(new ResourceResolver(f.Room).Run("2"))).GetProperty("uninformative").ValueKind);
         }
 
@@ -400,25 +400,28 @@ namespace Evosim.NurseryRoom.Tests
         }
 
         [Fact]
-        public void TheLoadAPersonReadsIsCappedAtOneHundredWithTheRawValueInTheTitle()
+        public void TheStripShowsTheSlotAndTheHeatAndNoLongerAnyLoad()
         {
             string common = Js_("common.js");
-            Assert.Contains("${esc(fmt(Math.min(l.percent, 100), 3))} %", common);
-            Assert.DoesNotContain("${esc(fmt(l.percent, 3))} %", common);
-            Assert.Contains("title=\"${esc(loadTitle(l.percent))}\"", common);
-            // the refusal says 100 where the counter read more, and the raw value beside it; the cap itself still reads the raw value (16 threads cannot fit beside 32 in use)
-            string said = Cap.Refusal(1, 16, 32, LoadReading.Of(104.2), 0);
-            Assert.Contains("(100 % Processor Utility, the counter read 104.2, rounded up)", said);
-            Assert.Contains("32 of 32 logical processors in use", said);
-            Assert.Contains("(60 % Processor Utility, rounded up)", Cap.Refusal(12, 16, 32, LoadReading.Of(60), 0));
+            Assert.DoesNotContain("capLogical", common);
+            Assert.DoesNotContain("percent", common);
+            Assert.Contains("r.machine", common);
+            Assert.Contains("r.heat", common);
+            Assert.Contains("m.freeCount", common);
+            Assert.Contains("so at most ${n} ${n === 1 ? 'thread fits' : 'threads fit'}", common);
         }
 
         [Fact]
         public void OneThreadIsAskedInTheSingular()
         {
-            Assert.StartsWith("1 thread asked, plus ", Cap.Refusal(1, 16, 32, LoadReading.Of(100), 0));
-            Assert.StartsWith("2 threads asked, plus ", Cap.Refusal(2, 16, 32, LoadReading.Of(100), 0));
-            Assert.Contains("refusing 1 thread", Cap.Refusal(1, 16, 32, LoadReading.Of(double.NaN), 0));
+            HeatReading ok = HeatReading.Of(HeatReading.Ok, "OK");
+            Slot none = Cap.SlotOf(QueueReading.Parse(FixedQueue.With("x · cores: 16-31"), FixedQueue.File), 0xFFFF0000UL);
+            Assert.StartsWith("1 thread asked is more than the 0 free cores: ", Cap.Refusal(1, none, ok, 0));
+            Assert.StartsWith("2 threads asked is more than the 0 free cores: ", Cap.Refusal(2, none, ok, 0));
+            Slot one = Cap.SlotOf(QueueReading.Parse(FixedQueue.With("x · cores: 16-30"), FixedQueue.File), 0xFFFF0000UL);
+            Assert.StartsWith("2 threads asked is more than the 1 free core (logical 31): ", Cap.Refusal(2, one, ok, 0));
+            Assert.StartsWith("1 thread asked, plus 1 thread granted", Cap.Refusal(1, one, ok, 1));
+            Assert.EndsWith("refusing 1 thread", Cap.Refusal(1, one, HeatReading.Of(HeatReading.Hot, "HOT"), 0));
             Assert.StartsWith("1 thread asked, but the affinity mask", CoreMask.ThreadsProblem(1, 0UL));
             Assert.StartsWith("3 threads asked, but the affinity mask", CoreMask.ThreadsProblem(3, 0b11UL));
         }

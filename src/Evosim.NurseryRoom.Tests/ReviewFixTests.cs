@@ -16,7 +16,7 @@ namespace Evosim.NurseryRoom.Tests
         public void Dispose() => _fx.Dispose();
 
         private static string Launch(string name, int threads = 2) =>
-            Js.Serialize(new { recipe = "rounds/nursery/brain2-w5.json", name, threads, reason = "a test" });
+            Js.Serialize(new { recipe = "rounds/nursery/brain2-w11.json", name, threads, reason = "a test" });
 
         [Fact]
         public void TheSystemMaskIsTheMachinesAndHoldsEveryProcessorThisProcessMayUse()
@@ -35,7 +35,7 @@ namespace Evosim.NurseryRoom.Tests
         public void ARoomWithNoCountGivenReadsItsLogicalCountFromTheSystemMask()
         {
             if (!OperatingSystem.IsWindows()) return;
-            var room = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, Path.Combine(_fx.Dir, "other-activity.jsonl"), _fx.Launcher, _fx.Load);
+            var room = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, Path.Combine(_fx.Dir, "other-activity.jsonl"), _fx.Launcher, _fx.Queue, _fx.Heat);
             Assert.Equal(SystemProcessors.Read(), room.SystemMask);
             Assert.Equal(CoreMask.Count(SystemProcessors.Read()), room.Logical);
         }
@@ -55,7 +55,7 @@ namespace Evosim.NurseryRoom.Tests
         [Fact]
         public void ACountThatDisagreesWithTheMaskIsRefused()
         {
-            Assert.Throws<ArgumentException>(() => new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, null, _fx.Launcher, _fx.Load, 8, null, 0xFFFFUL));
+            Assert.Throws<ArgumentException>(() => new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, null, _fx.Launcher, _fx.Queue, _fx.Heat, 8, null, 0xFFFFUL));
         }
 
         [Fact]
@@ -106,7 +106,7 @@ namespace Evosim.NurseryRoom.Tests
                 Assert.Contains("processor(s) 2", e.Message);
                 Assert.False(File.Exists(spec.LogFile));
                 // and the launcher a room makes for itself is given the room's mask, not a second reading
-                var room = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, Path.Combine(dir, "a.jsonl"), null, _fx.Load, null, null, 0x3UL);
+                var room = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, Path.Combine(dir, "a.jsonl"), null, _fx.Queue, _fx.Heat, null, null, 0x3UL);
                 var own = Assert.IsType<ProcessRunLauncher>(room.Launcher);
                 e = Assert.Throws<ArgumentException>(() => own.Start(spec));
                 Assert.Contains("processor(s) 2", e.Message);
@@ -123,8 +123,11 @@ namespace Evosim.NurseryRoom.Tests
         private readonly Fx _fx = Fx.WithAffinity("0x3");   // two processors
         public void Dispose() => _fx.Dispose();
 
+        // the room's slot is the whole machine, so that the bound of two processors is what holds the threads
+        public ThreadsBeyondTheMaskTests() { _fx.Queue.Text = "## Running\n\n- the room (a test) · cores: 0-31 · room\n"; }
+
         private static string Launch(string name, int threads) =>
-            Js.Serialize(new { recipe = "rounds/nursery/brain2-w5.json", name, threads, reason = "a test" });
+            Js.Serialize(new { recipe = "rounds/nursery/brain2-w11.json", name, threads, reason = "a test" });
 
         [Fact]
         public void ALaunchOfMoreThreadsThanTheProcessorsItsMaskAllowsIsRefusedWithBothNumbers()
@@ -148,7 +151,7 @@ namespace Evosim.NurseryRoom.Tests
         {
             RegistryEntry.Append(_fx.Registry, new RegistryEntry
             {
-                Recipe = "brain2", RecipeHash = Recipe.Load(_fx.Full("rounds/nursery/brain2-w5.json")).Hash(), RecipePath = "rounds/nursery/brain2-w5.json",
+                Recipe = "brain2", RecipeHash = Recipe.Load(_fx.Full("rounds/nursery/brain2-w11.json")).Hash(), RecipePath = "rounds/nursery/brain2-w11.json",
                 Out = Path.Combine(_fx.Dir, "entry-out"), Status = "completed", StartedAtUtc = "2026-10-02T00:00:00Z", EndedAtUtc = "2026-10-02T01:00:00Z",
                 GitCommit = "abc1234", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Rerunnable = true,
             });
@@ -167,7 +170,7 @@ namespace Evosim.NurseryRoom.Tests
         public void Dispose() => _fx.Dispose();
 
         private static string Launch(string name) =>
-            Js.Serialize(new { recipe = "rounds/nursery/brain2-w5.json", name, threads = 2, reason = "a test" });
+            Js.Serialize(new { recipe = "rounds/nursery/brain2-w11.json", name, threads = 2, reason = "a test" });
 
         [Fact]
         public void TheResultAndTheRowRecordTheMaskTheLauncherAppliedNotTheOneAsked()
@@ -263,7 +266,7 @@ namespace Evosim.NurseryRoom.Tests
             string path = Trials + "/zz-second.json";
             Fx.Result(_fx.Call("recipe.write", _fx.Json(path)));
             string first = RunRecord.FileSha256(_fx.Full(path));
-            string variant = _fx.Brain2.Replace("\"name\": \"brain2-w5\"", "\"name\": \"zz-variant\"");
+            string variant = _fx.Brain2.Replace("\"name\": \"brain2-w11\"", "\"name\": \"zz-variant\"");
             OperationResult noHash = _fx.Call("recipe.write", _fx.Json(path, text: variant));
             Assert.False(noHash.Ok);
             Assert.Contains("expectHash is required", noHash.Error);
@@ -282,7 +285,7 @@ namespace Evosim.NurseryRoom.Tests
             var resolver = new ResourceResolver(_fx.Room);
             Assert.Contains(resolver.List(), x => x.Uri == "nursery://recipe/" + path);
             Assert.True(Js.Parse(Js.Serialize(resolver.RecipeView(path))).GetProperty("trial").GetBoolean());
-            Assert.False(Js.Parse(Js.Serialize(resolver.RecipeView("rounds/nursery/brain2-w5.json"))).GetProperty("trial").GetBoolean());
+            Assert.False(Js.Parse(Js.Serialize(resolver.RecipeView("rounds/nursery/brain2-w11.json"))).GetProperty("trial").GetBoolean());
         }
 
         [Fact]

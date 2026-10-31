@@ -67,6 +67,58 @@ namespace Evosim.Farm.Tests
             Assert.Equal(reference.FullHashContribution(), plain.FullHashContribution());
         }
 
+        /// <summary>D268: the three names reach the cell, the header says so only when the switch is on, and the switch is refused
+        /// without the cell.</summary>
+        [Fact]
+        public void TheBrainHoldNamesReachTheCellAndTheSwitchIsRefusedWithoutIt()
+        {
+            // Off, with the cell on: the defaults, and a header token a recorded round reads as before.
+            var plain = (AnchoringCell)Built(new Dictionary<string, string> { { "EVOSIM_ANCHORING", "1" } })
+                .CellTypes.Resolve(CellTypeIds.Anchoring);
+            Assert.False(plain.BrainHold);
+            Assert.Equal(-0.5f, plain.ReleaseBelow);
+            Assert.Equal(5e-5f, plain.ReleaseJoulesPerNewton);
+
+            RunConfig config = Built(new Dictionary<string, string>
+            {
+                { "EVOSIM_ANCHORING", "1" },
+                { "EVOSIM_ANCHOR_BRAIN", "1" },
+                { "EVOSIM_ANCHOR_PRICE", "5e-8" },
+                { "EVOSIM_ANCHOR_RELEASE_PRICE", "2e-8" },
+                { "EVOSIM_ANCHOR_RELEASE_BELOW", "-0.25" },
+            });
+            var cell = (AnchoringCell)config.CellTypes.Resolve(CellTypeIds.Anchoring);
+            Assert.True(cell.BrainHold);
+            Assert.Equal(5e-8f, cell.BuildJoulesPerNewton);
+            Assert.Equal(2e-8f, cell.ReleaseJoulesPerNewton);
+            Assert.Equal(-0.25f, cell.ReleaseBelow);
+            Assert.EndsWith(" brain hold below -0.25 release price 2E-08 J/N", Report.RoundFiftyNineToken(config));
+            Assert.DoesNotContain("brain hold", Report.RoundFiftyNineToken(
+                Built(new Dictionary<string, string> { { "EVOSIM_ANCHORING", "1" } })));
+
+            // The names alone, with no cell to hold, are refused rather than ignored.
+            ArgumentException e = Assert.Throws<ArgumentException>(
+                () => Built(new Dictionary<string, string> { { "EVOSIM_ANCHOR_BRAIN", "1" } }));
+            Assert.Contains("EVOSIM_ANCHORING", e.Message);
+
+            // The threshold and the price without the switch are refused, naming the switch and the setting.
+            foreach (string name in new[] { "EVOSIM_ANCHOR_RELEASE_BELOW", "EVOSIM_ANCHOR_RELEASE_PRICE" })
+            {
+                ArgumentException ignored = Assert.Throws<ArgumentException>(() => Built(new Dictionary<string, string>
+                {
+                    { "EVOSIM_ANCHORING", "1" }, { name, "0" },
+                }));
+                Assert.Contains("EVOSIM_ANCHOR_BRAIN", ignored.Message);
+                Assert.Contains(name, ignored.Message);
+            }
+
+            // A threshold outside the output's range is the cell's own refusal.
+            Assert.Throws<ArgumentOutOfRangeException>(() => Built(new Dictionary<string, string>
+            {
+                { "EVOSIM_ANCHORING", "1" }, { "EVOSIM_ANCHOR_BRAIN", "1" }, { "EVOSIM_ANCHOR_RELEASE_BELOW", "1.5" },
+            }));
+        }
+
         [Fact]
         public void TheLeafSmellTheNoCorpseSettingTheTouchAndTheTurningDragReachTheConfig()
         {

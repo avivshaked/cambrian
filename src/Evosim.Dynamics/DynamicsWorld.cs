@@ -338,7 +338,7 @@ namespace Evosim.Dynamics
 
             long s1 = profile ? Stopwatch.GetTimestamp() : 0L;
 
-            if (!remains) body.Brain.Step((float)dt, body.DriveSignal, body.Senses, body.Drive.BendAndPower ? body.BendSignal : null);
+            if (!remains) body.Brain.Step((float)dt, body.DriveSignal, body.Senses, body.Drive.BendAndPower ? body.BendSignal : null, body.HoldSignal);
 
             if (profile)
             {

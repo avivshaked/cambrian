@@ -1,11 +1,17 @@
 """Writes unity/Assets/Theatre/TheatreSkinMapConstants.cs from the skin map's two fixed-number files.
 
-    python -I gen_constants.py [<projection.json> <weights.json> <out.cs> [<hybrid.json>]]
+    python -I gen_constants.py [<projection.json> <weights.json> <out.cs> [<hybrid.json> [<value.json> [<chroma.json> [<sheen.json> [<zone.json>]]]]]]
 
 With no arguments it reads scratch/skin-map/pooled-24000/ in the main checkout and writes into the skin-map worktree. The
 hybrid hue's constants (HybridFeatures, HybridWeights, HybridFittingScores, HybridRule) come from hue-screen/hybrid.json.
 Every number is read from the files; none is typed here. A weight input marked "used": false is left out, which is
 how skin_features.py drops a feature that was constant, failed the parent-and-child check or is not a feature of the run.
+An optional fifth argument, value.json (scratch/skin-map/full-colour/fit_value.py), adds ValueRule, ValueWeights and
+ValueFittingScores for mode 3's value axis; its features, zclip and brain_shrink_links must equal hybrid.json's. Without it
+the output is unchanged. Optional sixth and seventh arguments, chroma.json and sheen.json (scratch/skin-map/full-colour/v6/
+fit_axes.py), append ChromaRule, ChromaWeights and ChromaFittingScores, and the same three for Sheen, with the same asserts;
+an optional eighth, zone.json (scratch/skin-map/full-colour/v7/fit_zone.py), appends the same three for Zone, the fifth lineage
+axis; the sixth to eighth need the fifth, and without them the output is unchanged.
 """
 import json
 import sys
@@ -33,6 +39,11 @@ def main():
     global HYBRID
     if len(sys.argv) > 4:
         HYBRID = sys.argv[4]
+    value_path = sys.argv[5] if len(sys.argv) > 5 else None
+    chroma_path = sys.argv[6] if len(sys.argv) > 6 else None
+    sheen_path = sys.argv[7] if len(sys.argv) > 7 else None
+    zone_path = sys.argv[8] if len(sys.argv) > 8 else None
+    assert not (chroma_path or sheen_path or zone_path) or value_path, 'chroma.json, sheen.json and zone.json need value.json before them'
 
     p = json.load(open(projection, 'r', encoding='utf-8'))
     w = json.load(open(weights, 'r', encoding='utf-8'))
@@ -167,6 +178,61 @@ def main():
     for v in scores:
         add('            %s,' % lit(v))
     add('        };')
+
+    if value_path:
+        va = json.load(open(value_path, 'r', encoding='utf-8'))
+        assert va['features'] == hy['features'], 'value features differ from hybrid.json (same order required)'
+        assert va['zclip'] == hy['zclip'], 'value zclip differs from hybrid.json'
+        assert va['brain_shrink_links'] == hy['brain_shrink_links'], 'value brain_shrink_links differs from hybrid.json'
+        assert len(va['features']) == len(va['weights']), 'value features and weights differ in length'
+        vscores = va['fitting_scores_sorted']
+        assert all(a <= b for a, b in zip(vscores, vscores[1:])), 'value fitting scores are not sorted'
+        add('')
+        add('        /// <summary>The rule the value constants below were written from (<c>EVOSIM_THEATRE_SKIN_MAP=3</c>).</summary>')
+        add('        public const string ValueRule = "%s";' % va['rule'])
+        add('')
+        add('        /// <summary>The value score\'s weight on each of the hybrid features\' clipped, shrunk z (same features, same order).</summary>')
+        add('        public static readonly double[] ValueWeights =')
+        add('        {')
+        for n, v in zip(va['features'], va['weights']):
+            add('            %s, // %s' % (lit(v), n))
+        add('        };')
+        add('')
+        add('        /// <summary>The value scores of the fitting set (%d bodies), sorted ascending; the body\'s value rank is its middle rank among them.</summary>' % len(vscores))
+        add('        public static readonly double[] ValueFittingScores =')
+        add('        {')
+        for v in vscores:
+            add('            %s,' % lit(v))
+        add('        };')
+
+    for axis, path, label in (('Chroma', chroma_path, 'chroma'), ('Sheen', sheen_path, 'sheen'), ('Zone', zone_path, 'zone')):
+        if not path:
+            continue
+        ax = json.load(open(path, 'r', encoding='utf-8'))
+        assert ax['features'] == hy['features'], '%s features differ from hybrid.json (same order required)' % label
+        assert ax['zclip'] == hy['zclip'], '%s zclip differs from hybrid.json' % label
+        assert ax['brain_shrink_links'] == hy['brain_shrink_links'], '%s brain_shrink_links differs from hybrid.json' % label
+        assert len(ax['features']) == len(ax['weights']), '%s features and weights differ in length' % label
+        ascores = ax['fitting_scores_sorted']
+        assert all(a <= b for a, b in zip(ascores, ascores[1:])), '%s fitting scores are not sorted' % label
+        add('')
+        add('        /// <summary>The rule the %s constants below were written from (<c>EVOSIM_THEATRE_SKIN_MAP_AXES=1</c>).</summary>' % label)
+        add('        public const string %sRule = "%s";' % (axis, ax['rule']))
+        add('')
+        add('        /// <summary>The %s score\'s weight on each of the hybrid features\' clipped, shrunk z (same features, same order).</summary>' % label)
+        add('        public static readonly double[] %sWeights =' % axis)
+        add('        {')
+        for n, v in zip(ax['features'], ax['weights']):
+            add('            %s, // %s' % (lit(v), n))
+        add('        };')
+        add('')
+        add('        /// <summary>The %s scores of the fitting set (%d bodies), sorted ascending; the body\'s %s rank is its middle rank among them.</summary>' % (label, len(ascores), label))
+        add('        public static readonly double[] %sFittingScores =' % axis)
+        add('        {')
+        for v in ascores:
+            add('            %s,' % lit(v))
+        add('        };')
+
     add('    }')
     add('}')
 

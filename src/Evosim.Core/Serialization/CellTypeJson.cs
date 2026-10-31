@@ -60,7 +60,10 @@ namespace Evosim.Core
                     n["decaySeconds"].AsFloat(),
                     n["reserveThresholdSeconds"].AsFloat(),
                     n["reserveLagSeconds"].AsFloat(),
-                    upkeep),
+                    upkeep,
+                    n["brainHold"].AsBool(),
+                    n["releaseBelow"].AsFloat(),
+                    n["releaseJoulesPerNewton"].AsFloat()),
 
                 [CellTypeIds.Nose] = (n, upkeep) => new NoseCell(
                     upkeep,

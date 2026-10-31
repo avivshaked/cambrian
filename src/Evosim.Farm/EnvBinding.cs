@@ -537,6 +537,10 @@ namespace Evosim.Farm
             // and nothing damages it, nothing heals, nothing reaches a corpse and no attribute
             // costs anything.
             Num("EVOSIM_HEALTH", D.HealthPerCubicMetre, (s, v) => s.Health = v),
+            // D264: the health pool of every part that is not photosynthetic, and of every part that is, each
+            // times its scale. 1 is the recorded world.
+            Num("EVOSIM_ANIMAL_HEALTH", 1f, (s, v) => s.AnimalHealth = v),
+            Num("EVOSIM_PLANT_HEALTH", 1f, (s, v) => s.PlantHealth = v),
             Num("EVOSIM_HEAL", D.HealingPerSecond, (s, v) => s.Healing = v),
             Num("EVOSIM_HEAL_COST", D.HealingJoulesPerHealth, (s, v) => s.HealingCost = v),
             Num("EVOSIM_INTAKE_REACH", D.IntakeReachMetres, (s, v) => s.IntakeReach = v),
@@ -557,6 +561,8 @@ namespace Evosim.Farm
             Num("EVOSIM_BITE_DAMAGE_SCALE", 1f, (s, v) => s.BiteDamageScale = v),
             // D232: a kill is swallowed whole into the killer's gut and leaves no remains. Read only with contact eating on.
             Flag("EVOSIM_KILL_GUT", (s, v) => s.KillSwallowsBody = v),
+            // D264: a death row carries the body's lifetime bite income by source. An instrument. Read only with contact eating on.
+            Flag("EVOSIM_DEATH_ROW_INCOME", (s, v) => s.DeathRowIncome = v),
 
             // D177: the consumer cell's upkeep, W/m3. The value already lives in every config's cell
             // table, so the knob adds no field; unset is ConsumerCell's own, the recorded world.
@@ -615,6 +621,11 @@ namespace Evosim.Farm
             Num("EVOSIM_ANCHOR_RESERVE_LAG", 60f, (s, v) => s.AnchorReserveLag = v),
             Num("EVOSIM_ANCHOR_UPKEEP", 2.5f, (s, v) => s.AnchorUpkeep = v),
             Num("EVOSIM_ANCHOR_BUD_WEIGHT", 1f, (s, v) => s.AnchorBudWeight = v),
+            // D268: the brain's hold on the grip. The switch is refused without the cell (BuildConfig) and without the central
+            // brain (World's config check). Off, the cell grips as round 59 built it.
+            Flag("EVOSIM_ANCHOR_BRAIN", (s, v) => s.AnchorBrain = v),
+            Num("EVOSIM_ANCHOR_RELEASE_BELOW", -0.5f, (s, v) => s.AnchorReleaseBelow = v),
+            Num("EVOSIM_ANCHOR_RELEASE_PRICE", 5e-5f, (s, v) => s.AnchorReleasePrice = v),
             // D235's nose: the cell type appended to the table, its noise per smell and its share of buds. Its upkeep, reference
             // area, backgrounds and facing intake stay at NoseCell's defaults.
             Flag("EVOSIM_NOSE", (s, v) => s.Nose = v),
@@ -854,12 +865,36 @@ namespace Evosim.Farm
 
             // D165: the anchoring cell joins the table at its end, so every other type keeps its
             // place and a world without it is the table it always was.
+            // D268: the threshold and the price mean nothing without the switch, so a launcher that names either one
+            // without it is refused, not left to be silently ignored.
+            if (!s.AnchorBrain)
+            {
+                foreach (string name in new[] { "EVOSIM_ANCHOR_RELEASE_BELOW", "EVOSIM_ANCHOR_RELEASE_PRICE" })
+                {
+                    if (s.Provided.Contains(name))
+                    {
+                        throw new ArgumentException(
+                            name + " is set and EVOSIM_ANCHOR_BRAIN is off. The release threshold and price only mean " +
+                            "something when the brain holds the grip (D268); turn EVOSIM_ANCHOR_BRAIN on, or unset " +
+                            name + ".");
+                    }
+                }
+            }
+
+            if (s.AnchorBrain && !s.Anchoring)
+            {
+                throw new ArgumentException(
+                    "EVOSIM_ANCHOR_BRAIN is on and EVOSIM_ANCHORING is off. The brain's hold is on the anchoring cell " +
+                    "(D268), so there is nothing for it to hold; turn the cell on too, or leave the switch off.");
+            }
+
             if (s.Anchoring)
             {
                 config.CellTypes = config.CellTypes.Appending(
                     new AnchoringCell(
                         s.AnchorTenacity, s.AnchorPrice, s.AnchorDecay,
-                        s.AnchorReserveThreshold, s.AnchorReserveLag, s.AnchorUpkeep)
+                        s.AnchorReserveThreshold, s.AnchorReserveLag, s.AnchorUpkeep,
+                        s.AnchorBrain, s.AnchorReleaseBelow, s.AnchorReleasePrice)
                     {
                         BudWeight = s.AnchorBudWeight,
                     });
@@ -1142,6 +1177,8 @@ namespace Evosim.Farm
             config.Mutation.GrowthReserveChance = s.GrowthReserveMutation;
 
             config.HealthPerCubicMetre = s.Health;
+            config.AnimalHealthScale = s.AnimalHealth;
+            config.PlantHealthScale = s.PlantHealth;
             config.HealingPerSecond = s.Healing;
             config.HealingJoulesPerHealth = s.HealingCost;
             config.IntakeReachMetres = s.IntakeReach;
@@ -1155,6 +1192,7 @@ namespace Evosim.Farm
             config.BiteTakesStore = s.BiteTakesStore;
             config.BiteDamageScale = s.BiteDamageScale;
             config.KillSwallowsBody = s.KillSwallowsBody;
+            config.DeathRowIncome = s.DeathRowIncome;
             config.ProtectionWattsPerUnit = s.PriceProtection;
             config.ToughnessWattsPerUnit = s.PriceToughness;
             config.Mutation.AttributeMutationChance = s.AttributeMutation;
@@ -2131,6 +2169,12 @@ namespace Evosim.Farm
         /// <summary>The chance a birth steps the gene — <c>EVOSIM_GROWTH_RESERVE_MUT</c>. 0 draws nothing.</summary>
         public float GrowthReserveMutation;
         public float Health;
+
+        /// <summary>D264: the health pool of every part of an animal (a body with no photosynthetic part), times this — <c>EVOSIM_ANIMAL_HEALTH</c>.</summary>
+        public float AnimalHealth;
+
+        /// <summary>D264: the health pool of every part of a plant (a body with any photosynthetic part), times this — <c>EVOSIM_PLANT_HEALTH</c>.</summary>
+        public float PlantHealth;
         public float Healing;
         public float HealingCost;
         public float IntakeReach;
@@ -2156,6 +2200,9 @@ namespace Evosim.Farm
 
         /// <summary>D232: a kill is swallowed whole into the killer's gut (<c>EVOSIM_KILL_GUT</c>), read only with the contact-eating dial on.</summary>
         public bool KillSwallowsBody;
+
+        /// <summary>D264: a death row carries the body's lifetime bite income by source (<c>EVOSIM_DEATH_ROW_INCOME</c>), read only with the contact-eating dial on.</summary>
+        public bool DeathRowIncome;
         public float PriceProtection;
         public float PriceToughness;
         public float AttributeMutation;
@@ -2206,6 +2253,15 @@ namespace Evosim.Farm
         public float AnchorReserveLag;
         public float AnchorUpkeep;
         public float AnchorBudWeight;
+
+        /// <summary>D268: the brain holds the grip (<c>EVOSIM_ANCHOR_BRAIN</c>), refused without <c>EVOSIM_ANCHORING</c>.</summary>
+        public bool AnchorBrain;
+
+        /// <summary>D268: a held grip lets go below this hold output (<c>EVOSIM_ANCHOR_RELEASE_BELOW</c>).</summary>
+        public float AnchorReleaseBelow;
+
+        /// <summary>D268: the price of letting go, J per N of breaking force (<c>EVOSIM_ANCHOR_RELEASE_PRICE</c>).</summary>
+        public float AnchorReleasePrice;
         public bool Nose;
         public float NoseLeafNoise;
         public float NoseCarrionNoise;

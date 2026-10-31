@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "8ce712345604e770",
+  "configHash": "724b4228dfa910ec",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -237,6 +237,9 @@
     "weatherSpread": 0.3
   },
   "mouth": {
+    "animalHealthScale": 1,
+    "plantHealthScale": 1,
+    "deathRowIncome": false,
     "attackWattsPerUnit": 0.1,
     "healingJoulesPerHealth": 1,
     "healingPerSecond": 0.01,
