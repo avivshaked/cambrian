@@ -6,9 +6,10 @@ Each entry also carries the SHA-256 of the PDF that was read (added 2026-09-07, 
 item 23, on the Astra review's point that a gitignored corpus needs a way to tell the file
 a rebuild fetches from the file the review cited). A rebuilt copy whose hash differs is a
 different version of the paper, and a page-anchored claim against it is unverified until
-the page is checked. Forty-seven of the fifty-four have a PDF on disk (counted 2026-09-12;
-this sentence said every one of thirty-seven until then); the seven without one, round 4's
-entries 50, 51, 52, 55, 57, 58 and 59, are held as extracted text only.
+the page is checked. Sixty-one of the sixty-eight have a PDF on disk (counted 2026-10-31,
+after round 8; it said forty-seven of fifty-four from 2026-09-12, and every one of
+thirty-seven before that); the seven without one, round 4's entries 50, 51, 52, 55, 57, 58
+and 59, are held as extracted text only.
 
 ### [14] Virtual Creature Morphology – A Review
 - Status: OBTAINED
@@ -657,3 +658,150 @@ The round used these public endpoints for abstracts, metadata and retraction sta
 - Tarazona et al. 2017 [TGC17]: the Universitat de València repository copy, hdl 10550/92697, is behind a bot challenge.
 - Weissman et al. 2025 [WYRW25]: the journal version at eScholarship is behind a firewall challenge.
 - Varpe et al. 2009 [VJTF09] and Wieczynski et al. 2018 [WTV18]: the round found no open copy.
+
+## Round 8 (2026-09-29, filed 2026-10-31) asked Q13: lifespan, senescence and the lifespan gene
+
+All open-access routes, fetched by pass 2's tools (`scripts/lit/r7/`) and logged in `logbook/specs/r52-literature/retrieval-log.tsv`. Each PDF was checked to start `%PDF` and read on page 1. The PDFs sit directly under `papers/`. Their text was extracted at filing, on 2026-10-31, into a folder per paper holding a `source.md` with `### Page N` headings, and no manifest. The hashes were taken on 2026-10-31 by the session that filed the round. Pass 1 saved nothing.
+
+### [85] [PER19] Variation in actuarial senescence does not reflect life span variation across mammals (Péron, Lemaître, Ronget, Tidière & Gaillard 2019)
+- Status: OBTAINED
+- Saved as: `85-peron-2019-actuarial-senescence-lifespan-mammals.pdf`
+- Source used: https://journals.plos.org/plosbiology/article/file?id=10.1371/journal.pbio.3000432&type=printable
+- Route: open-access (PLOS printable PDF)
+- DOI: `10.1371/journal.pbio.3000432`
+- SHA-256: `06dac2a638a20fd996179d396195a3d0afdb2ecb21043006646731394c12c7eb` (`85-peron-2019-actuarial-senescence-lifespan-mammals.pdf`, 1,390,094 bytes)
+
+### [86] [COL21] The long lives of primates and the 'invariant rate of ageing' hypothesis (Colchero et al. 2021)
+- Status: OBTAINED
+- Saved as: `86-colchero-2021-invariant-rate-of-ageing.pdf`
+- Source used: https://www.nature.com/articles/s41467-021-23894-3.pdf
+- Route: open-access (Nature Communications PDF)
+- DOI: `10.1038/s41467-021-23894-3`
+- SHA-256: `554992474757f630cd2c710aa95aa515cca5846292c174908ba42663cea0ecd6` (`86-colchero-2021-invariant-rate-of-ageing.pdf`, 1,180,837 bytes)
+
+### [87] [MC19] Evolution of ageing as a tangle of trade-offs: energy versus function (Maklakov & Chapman 2019)
+- Status: OBTAINED
+- Saved as: `87-maklakov-2019-tangle-of-trade-offs.pdf`
+- Source used: https://ueaeprints.uea.ac.uk/id/eprint/72327/1/Published_Manuscript.pdf
+- Route: open-access (University of East Anglia repository; the Royal Society's PDF returned 403)
+- DOI: `10.1098/rspb.2019.1604`
+- SHA-256: `3043ff56b4fb8893f8a40b1f60ff0b735499945a0d75a7bdf9b3a1b201e4b812` (`87-maklakov-2019-tangle-of-trade-offs.pdf`, 408,422 bytes)
+
+### [88] [BBV20] Experimentally increased brood size accelerates actuarial senescence and increases subsequent reproductive effort in a wild bird population (Boonekamp, Bauch & Verhulst 2020)
+- Status: OBTAINED
+- Saved as: `88-boonekamp-2020-brood-size-actuarial-senescence.pdf`
+- Source used: https://eprints.gla.ac.uk/219642/1/219642.pdf
+- Route: open-access (University of Glasgow repository, CC BY; Wiley returned 403; two scripted reads were cut short and a curl retry completed it)
+- DOI: `10.1111/1365-2656.13186`
+- SHA-256: `a6ab522af5753ab77d432886e5f38f62dfc2d3977a0e2288796970adce1a3962` (`88-boonekamp-2020-brood-size-actuarial-senescence.pdf`, 1,256,867 bytes)
+
+### [89] [WIN25] The optimal clutch size revisited: separating individual quality from the parental survival costs of reproduction (Winder, Simons & Burke 2025)
+- Status: OBTAINED (eLife reviewed preprint, version 4)
+- Saved as: `89-winder-2025-optimal-clutch-size-revisited.pdf`
+- Source used: https://github.com/elifesciences/enhanced-preprints-data/raw/master/data/87018/v4/87018-v4.pdf
+- Route: open-access (eLife's public preprint-data repository, served from raw.githubusercontent.com; version 1 was also fetched and not kept)
+- DOI: `10.7554/eLife.87018`
+- SHA-256: `f8903b4058122f042a22ccaa3bf987dbebcdb886d085dc5d8a085313a20341e7` (`89-winder-2025-optimal-clutch-size-revisited.pdf`, 1,413,872 bytes)
+
+### [90] [RM19] Testing the effect of early-life reproductive effort on age-related decline in a wild insect (Rodríguez-Muñoz et al. 2019)
+- Status: OBTAINED
+- Saved as: `90-rodriguez-munoz-2019-early-reproduction-cricket-ageing.pdf`
+- Source used: https://eprints.gla.ac.uk/219646/1/219646.pdf
+- Route: open-access (University of Glasgow repository; two scripted reads were cut short and a curl retry completed it)
+- DOI: `10.1111/evo.13679`
+- SHA-256: `4f1ca6ea8c44b98e00231033e4f8aed02a32ebec3286c2e7a012f96ee9f38e55` (`90-rodriguez-munoz-2019-early-reproduction-cricket-ageing.pdf`, 820,096 bytes)
+
+### [91] [LC85] Selection for life span in Drosophila melanogaster (Luckinbill & Clare 1985)
+- Status: OBTAINED
+- Saved as: `91-luckinbill-1985-selection-for-life-span.pdf`
+- Source used: https://www.nature.com/articles/hdy198566.pdf
+- Route: open-access (Heredity archive PDF at nature.com)
+- DOI: `10.1038/hdy.1985.66`
+- SHA-256: `019fa4e3a6445b15d34f2f5b8954de6a6229a8a91edcc8a9fbfb1295afb12c4d` (`91-luckinbill-1985-selection-for-life-span.pdf`, 4,522,948 bytes)
+
+### [92] [MR87] Natural selection and the heritability of fitness components (Mousseau & Roff 1987)
+- Status: OBTAINED (scanned; the text layer drops decimal points)
+- Saved as: `92-mousseau-1987-heritability-fitness-components.pdf`
+- Source used: https://www.nature.com/articles/hdy1987113.pdf
+- Route: open-access (Heredity archive PDF at nature.com)
+- DOI: `10.1038/hdy.1987.113`
+- SHA-256: `5c5802699a77babaeced724749ef45bcab3ed5cf533076d793e0ff8c7aee98f3` (`92-mousseau-1987-heritability-fitness-components.pdf`, 6,045,856 bytes)
+
+### [93] [PEN95] A bit-string model for biological aging (Penna 1995)
+- Status: OBTAINED (arXiv preprint)
+- Saved as: `93-penna-1995-bit-string-ageing.pdf`
+- Source used: https://arxiv.org/pdf/cond-mat/9503099
+- Route: open-access (arXiv cond-mat/9503099v1)
+- DOI: `10.1007/bf02180147`
+- SHA-256: `fcbbb2797f059100894b2187c2c030855435e9ef37c1825a4717343b72a50065` (`93-penna-1995-bit-string-ageing.pdf`, 58,103 bytes)
+
+### [94] [WER15] Programed death is favored by natural selection in spatial systems (Werfel, Ingber & Bar-Yam 2015)
+- Status: OBTAINED (accepted manuscript)
+- Saved as: `94-werfel-2015-programmed-death-spatial.pdf`
+- Source used: https://link.aps.org/accepted/10.1103/PhysRevLett.114.238103
+- Route: open-access (APS accepted manuscript via CHORUS)
+- DOI: `10.1103/physrevlett.114.238103`
+- SHA-256: `d4ee718b155c4f5d9f1ab12bb72db9e5bf8faa752df117bf9e1015ec7d708ac6` (`94-werfel-2015-programmed-death-spatial.pdf`, 603,066 bytes)
+
+### [95] [KK16] Can aging be programmed? A critical literature review (Kowald & Kirkwood 2016)
+- Status: OBTAINED
+- Saved as: `95-kowald-2016-can-aging-be-programmed.pdf`
+- Source used: https://curis.ku.dk/ws/files/173506951/Kowald_et_al_2016_Aging_Cell.pdf
+- Route: open-access (University of Copenhagen repository, publisher's version, CC BY)
+- DOI: `10.1111/acel.12510`
+- SHA-256: `c5fab3735fb2c694aef655a91431270488ee8585ac43b3797065b22bc262ae01` (`95-kowald-2016-can-aging-be-programmed.pdf`, 1,298,587 bytes)
+
+### [96] [MRR19] A birth-death model of ageing: from individual-based dynamics to evolutive differential inclusions (Méléard, Rera & Roget 2019)
+- Status: OBTAINED (arXiv preprint)
+- Saved as: `96-meleard-2019-birth-death-model-ageing.pdf`
+- Source used: https://arxiv.org/pdf/1807.10549v3
+- Route: open-access (arXiv 1807.10549v3)
+- DOI: `10.1007/s00285-019-01382-z`
+- SHA-256: `109617b6bfec87679808c79bb73601da217cf5f9176718c880b3d9f804497f25` (`96-meleard-2019-birth-death-model-ageing.pdf`, 1,404,690 bytes)
+
+### [97] [ROG24] A scenario for an evolutionary selection of ageing (Roget, MacMurray, Jolivet, Méléard & Rera 2024)
+- Status: OBTAINED (eLife reviewed preprint, version 2)
+- Saved as: `97-roget-2024-evolutionary-selection-of-ageing.pdf`
+- Source used: https://github.com/elifesciences/enhanced-preprints-data/raw/master/data/92914/v2/92914-v2.pdf
+- Route: open-access (eLife's public preprint-data repository, served from raw.githubusercontent.com)
+- DOI: `10.7554/eLife.92914`
+- SHA-256: `1e70992027158b0546ba328f2bef80b134a650b44029be43146ad48e0ed894cc` (`97-roget-2024-evolutionary-selection-of-ageing.pdf`, 2,445,803 bytes)
+
+### [98] [GT22] The selection force weakens with age because ageing evolves and not vice versa (Giaimo & Traulsen 2022)
+- Status: OBTAINED
+- Saved as: `98-giaimo-2022-selection-force-weakens.pdf`
+- Source used: https://www.nature.com/articles/s41467-022-28254-3.pdf
+- Route: open-access (Nature Communications PDF)
+- DOI: `10.1038/s41467-022-28254-3`
+- SHA-256: `8484d2a7e302e7af6ca4b1afde84c2aff7123f44aec2f9eb2b4c23636312f558` (`98-giaimo-2022-selection-force-weakens.pdf`, 722,685 bytes)
+
+### Round 8: read as PubMed Central article pages, not saved
+
+PubMed Central's PDFs sat behind its proof-of-work gate, so these pages were read as HTML at `https://pmc.ncbi.nlm.nih.gov/articles/<record>/`. The first nine are cited from the page. The last three were fetched and are cited at the abstract.
+
+| key | record |
+|---|---|
+| [JON14] | PMC4157354 |
+| [LEM15] | PMC4426628 |
+| [SADK00] | PMC16235 |
+| [KIR15] | PMC4360127 |
+| [NUS13] | PMC4246505 |
+| [SWO21] | PMC7950207 |
+| [RUBY18] | PMC6218226 |
+| [KAT13] | PMC3816429 |
+| [RP10] | PMC2982254 |
+| [CIC97] | PMC1688586 |
+| [H92] | PMC1204793 |
+| [MIT01] | PMC6084020 |
+
+### Round 8: sought, NOT obtained
+
+- Ricklefs & Scheuerlein 2002 [RS02]: OUP returned 403.
+- Speakman 2005 [SPK05]: biologists.com returned 403.
+- Cohen et al. 2020 [COH20]: Wiley returned 403.
+- Jones et al. 2008: the Durham repository returned 403.
+- Boonekamp et al. 2014 [BOO14]: the Groningen repository's Cloudflare challenge.
+- Reinke et al. 2022 [REI22]: Kent returned 504, HAL challenged, and the Texas Tech repository served an empty file.
+- Flatt 2011: rero.ch answered 410.
+- Read as PubMed Central pages after their PDFs were gated: Houle 1992 (OUP, Cloudflare), Ruby et al. 2018 (genetics.org, Cloudflare), Katzenberger et al. 2013 (PNAS, Cloudflare), Nussey et al. 2013 (Edinburgh, Cloudflare), Mitnitski et al. 2001 (Hindawi, 403) and Jones et al. 2014 (PMC proof-of-work).
+- No open copy found: [FPW90], [KR91], [ZBH95], [CAR92], [HAM10], [TRA04]; [DAS22] is not open.
