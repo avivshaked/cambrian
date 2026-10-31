@@ -288,6 +288,7 @@ namespace Evosim.Farm.Gpu.Dbl
         public int TrueShape;    // D228: a part touches as its convex core with a margin (SolverConfig.ContactShape)
         public int StrokeAssembly;   // D231: the powered stroke pushes the assembly welded beyond a jointed link (SolverConfig.StrokePushesAssembly)
         public int AtPoint;      // D228 level (b): with TrueShape, the force acts at the contact point (ContactShapeForm.TrueShapeAtPoint)
+        public int CoincidentApart;  // ContactShapeForm.SpheresApart: a coincident sphere pair is pushed apart along X by organism id, not both along +Y
         public int Paced;        // D239: 1 when the pace factor is not 1; 0 divides nothing and the water is stored as it was sampled
 
         public long TraceStep;
@@ -10003,6 +10004,11 @@ namespace Evosim.Farm.Gpu.Dbl
                         Real inv = (Real)1.0 / distance;
                         nx = bx * inv; ny = by * inv; nz = bz * inv;
                     }
+                    else if (cfg.CoincidentApart != 0 && gl.Id[g] != gl.Id[other])
+                    {
+                        // ContactShapeForm.SpheresApart: Contacts.Apply's CoincidentNormal. The lower id is pushed to -X.
+                        nx = gl.Id[g] < gl.Id[other] ? -1 : 1; ny = 0; nz = 0;
+                    }
                     else
                     {
                         nx = 0; ny = 1; nz = 0;
@@ -10364,6 +10370,11 @@ namespace Evosim.Farm.Gpu.Dbl
                     {
                         Real inv = (Real)1.0 / distance;
                         nx = bx * inv; ny = by * inv; nz = bz * inv;
+                    }
+                    else if (cfg.CoincidentApart != 0 && gl.Id[g] != gl.Id[og])
+                    {
+                        // ContactShapeForm.SpheresApart: Contacts.ApplyPerPart's CoincidentNormal. The lower id is pushed to -X.
+                        nx = gl.Id[g] < gl.Id[og] ? -1 : 1; ny = 0; nz = 0;
                     }
                     else
                     {
@@ -14207,7 +14218,7 @@ namespace Evosim.Farm.Gpu.Dbl
                 ShapedMass = w.ShapedMass ? 1 : 0,
                 MirrorDrive = w.MirroredDrive ? 1 : 0, Nose = w.Nose ? 1 : 0,
                 FarPlume = w.LeafPlume ? 1 : 0, FarCurrent = w.CurrentSense ? 1 : 0,
-                TrueShape = w.TrueShape ? 1 : 0, AtPoint = w.AtPoint ? 1 : 0,
+                TrueShape = w.TrueShape ? 1 : 0, AtPoint = w.AtPoint ? 1 : 0, CoincidentApart = w.CoincidentApart ? 1 : 0,
                 StrokeAssembly = w.StrokeAssembly ? 1 : 0,
                 BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
                 Anchoring = w.AnchorCell != null ? 1 : 0,
