@@ -64,6 +64,11 @@ ABSORPTIVE = 1
 JOINTED = 2
 PHOTOSYNTHETIC = 4
 
+# Bit 4, PositionsRow.AnchoredBit (D268): the body holds a grip now. Written only in a world whose table holds the
+# anchoring cell. It is no guild: guild_of() looks at the three bits above and ignores this one, and a Sample counts
+# the bodies that carry it on their own (`anchored_count`).
+ANCHORED = 16
+
 # Ecosystem.ColumnMetres. A creature is metre-scale and the ribbon the instrument was built for
 # was about a metre wide, so the footprint is counted in metre squares and this reader counts the
 # same ones: its `cols` must reproduce the report's.
@@ -632,6 +637,7 @@ class Sample:
         # jointed body with no tissue. Round 34 (logbook/0080) reads jointed bodies against rigid
         # ones whatever they feed on, so the flag is counted again here on its own.
         jointed = [i for i in range(self.n) if flags[i] & JOINTED]
+        self.anchored_count = sum(1 for f in flags if f & ANCHORED)
         self.jointed_count = len(jointed)
         self.jointed_depth = (sum(ys[i] for i in jointed) / len(jointed)) if jointed else None
         rigid_n = self.n - len(jointed)
@@ -819,6 +825,7 @@ def summarise(args, run_dir, positions, water, clade_of, births):
 
     printed = 0
     read = 0
+    anchored = []   # (t, bodies holding a grip, bodies) per printed sample, D268
 
     for t, line in stream(positions):
         read += 1
@@ -828,11 +835,17 @@ def summarise(args, run_dir, positions, water, clade_of, births):
         _, ids, xs, ys, zs, flags = unpack(line)
         sample = Sample(t, ids, xs, ys, zs, flags, water, clade_of, args.nn_max)
         print(sample_line(sample))
+        anchored.append((t, sample.anchored_count, sample.n))
         printed += 1
 
     print()
     print(f'{printed} of {read} samples printed'
           + (f' (every {args.every})' if args.every > 1 else ''))
+
+    # Only a world whose table holds the anchoring cell sets the bit (D268), so only its summary says anything.
+    if any(count for _, count, _ in anchored):
+        print('bodies holding a grip (flag 16), of the living: '
+              + ', '.join(f'{t:.0f} s {count}/{n}' for t, count, n in anchored[:: max(1, len(anchored) // 8)]))
 
     if read == 0:
         print('positions.jsonl is empty: a tiled world writes no file at all, so an empty one '

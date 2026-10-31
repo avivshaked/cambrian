@@ -121,7 +121,7 @@ namespace Evosim.Farm
                     (float)body.BaseRotation.Z,
                     (float)body.BaseRotation.W,
                     creature.BodyFraction,
-                    GuildFlags(creature),
+                    GuildFlags(creature, body),
                     creature.SecondsOfReserve,
                     BreedFraction(creature, sim.World.Config),
                     (float)creature.Energy,
@@ -188,7 +188,7 @@ namespace Evosim.Farm
         /// not this change's to restructure. <c>PoseStreamTests</c> holds the stream's flags equal
         /// to <c>positions.jsonl</c>'s on a stepped world, which is what keeps the two one rule.
         /// </remarks>
-        public static int GuildFlags(Organism creature)
+        public static int GuildFlags(Organism creature, Creature body = null)
         {
             if (creature == null) throw new ArgumentNullException(nameof(creature));
 
@@ -204,7 +204,11 @@ namespace Evosim.Farm
             return (absorptive ? PositionsRow.AbsorptiveBit : 0) |
                    (dof > 0 ? PositionsRow.JointedBit : 0) |
                    (creature.HasPhotosyntheticTissue ? PositionsRow.PhotosyntheticBit : 0) |
-                   (creature.IsRemains ? PositionsRow.RemainsBit : 0);
+                   (creature.IsRemains ? PositionsRow.RemainsBit : 0) |
+
+                   // D268: the solver body's grips, where it has any. Null for the remains and for a caller with no
+                   // body, and a body of a world without the anchoring cell holds none, so the bit is set nowhere else.
+                   (body != null && body.GripsHeld > 0 ? PositionsRow.AnchoredBit : 0);
         }
 
         public void Dispose()
