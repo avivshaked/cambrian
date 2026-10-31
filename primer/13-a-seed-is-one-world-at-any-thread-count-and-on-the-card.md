@@ -117,15 +117,17 @@ and 25% of one family of angles came out one unit in the last place apart.
 
 So live play in the Editor is a cousin by construction. A cousin, in this project's words, is a picture made by
 restoring a run and stepping it on where it does not replay to the bit. It shows the run's bodies, but not the run's
-own seconds. The theatre says COUSIN on screen, and an identity claim about a farm run is made on the farm, never
-across the two runtimes ([the root CLAUDE.md](../CLAUDE.md)).
+own seconds. The theatre says COUSIN on screen (the farm's notes). An identity claim about a farm run is made on the
+farm, never across the two runtimes ([the root CLAUDE.md](../CLAUDE.md)).
 
 ## The hashes detect a mismatch and promise nothing more
 
 A run carries its identity in its manifest ([DESIGN.md §7](../DESIGN.md)). The config hash, configHash, covers every
 tunable, the settings that define a world's rules, and names the world a run obeys. Hashes of the source name the
-build. In Unity that was one hash of the simulation's scripts, the simHash. On the farm it is one each for the core,
-the solver and the farm. The manifest adds the engine and the thread count, and the whole of it is the run's identity.
+build. In Unity there were two, the simHash of the simulation's scripts and the coreHash of the core. On the farm
+there are three, one each for the core, which holds the economy and development, the solver and the farm's own loop.
+With the config hash they make the four a resume checks. The manifest adds the engine and the thread count, and the
+whole of it is the run's identity.
 
 The design is plain about what the hashes buy. PhysX was never bitwise deterministic across machines or Unity
 versions, so the hashes exist to detect a mismatch. They do not make a run portable (the root CLAUDE.md). The farm
@@ -195,10 +197,10 @@ body's values. So the card's digest hashes such values as one pattern, or leaves
 
 ## A build with its switches off must step the old world row for row
 
-New features reach the world behind switches, and every new switch is off by default ([D243](../DECISIONS.md#d243)).
-That makes a strong test possible. With every new switch off, a new build must step a recorded world as the old build
-did, to the bit. On the card that test is called an identity sitting, and a build lands on the project's main line
-after it passes.
+New features reach the world behind switches, and every new switch is off by default ([D243](../DECISIONS.md#d243),
+[D249](../DECISIONS.md#d249)). That makes a strong test possible. With every new switch off, a new build must step a
+recorded world as the old build did, to the bit. On the card that test is called an identity sitting. On my reading of
+the sittings' records, a build lands on the project's main line after it passes.
 
 Integration branch 2 shows the shape ([D248](../DECISIONS.md#d248), [its
 sitting](../logbook/specs/int2-identity/README.md)). The branch brought a stroke that pushes a limb's whole assembly,
@@ -221,11 +223,11 @@ The sittings are routine now, and the machine does not always cooperate. The sit
 was cut a minute in by a Windows Update restart on 2026-10-29. It ran again that morning and passed on the same terms
 ([its record](../logbook/specs/nose-card-identity/README.md)).
 
-## Replay failed twice on the farm, and each failure cost a stretch of a world
+## A resume has parted three times on the farm, and two causes are found
 
-Since the farm took over, replay has failed in two ways, and a resume found both. Either a checkpoint left out
-something the world reads, or a list on the card filled in an order that no rerun repeats. Each failure left a stretch
-of some world that can never be run again.
+Since the farm took over, a resume has parted from its run in three ways. In two the cause is on record: a checkpoint
+left out something the world reads, or a list on the card filled in an order that no rerun repeats. The third is still
+open. Each left a stretch of some world that can never be run again.
 
 The first way began with the senses. The farm's checkpoint carried everything the solver reads, and at first not
 everything a sense reads. The health each part had lost went unwritten. A resume of round 45 seed 2 therefore parted
@@ -252,12 +254,12 @@ the parts that share its cells. In round 60 that list held 256 entries, and anyt
 added entries as they arrived, and the list was sorted only afterwards ([D193](../DECISIONS.md#d193)). So which
 entries a full list kept depended on which thread got there first, and no rerun goes the same way.
 
-A query is one part's search in one step. Seed 6002's list overflowed in 6,257,897 queries and seed 6003's in 19,008,
-in crowds of 16,000 to 18,000 bodies ([logbook 0143](../logbook/0143-the-crowds-leave-the-islands.md)). Spans without
-a drop matched when resumed. Seed 6002 resumed at 46,500 s differed from the round from its first second. Its years 7
-and 8, where two of the round's predictions rest, are one realisation that no rerun can reproduce. A dropped candidate
-may be a mouth that never touched its leaf. So the kills in those years may be fewer than the rules would give. 0143
-marks that as a guess.
+Seed 6002's list overflowed 6,257,897 times and seed 6003's 19,008 times, in crowds of 16,000 to 18,000 bodies (D193,
+[logbook 0143](../logbook/0143-the-crowds-leave-the-islands.md)). Logbook 0143 counts one part's search as a query and
+D193 counts body-steps, so the two sources differ on the unit. Spans without a drop matched when resumed. Seed 6002
+resumed at 46,500 s differed from the round from its first second. Its years 7 and 8, where two of the round's
+predictions rest, are one realisation that no rerun can reproduce. A dropped candidate may be a mouth that never
+touched its leaf. So the kills in those years may be fewer than the rules would give. 0143 marks that as a guess.
 
 The fix had two parts. A longer list alone did not help. At 512 entries the dense span still overflowed, because a
 pair of parts sharing several cells was listed once for each. The fix refuses a repeat, and past the cap it keeps the
@@ -270,18 +272,26 @@ nearly 15 m long. The re-read found that a few dozen long blades most likely mad
 of the last span counted 2,491,424 drops at the round's cap. The entry calls that count a close guide to the round's.
 A resume past a drop parts from its run, so the round's own count cannot be read again.
 
+The third parting is still open. On 24 October the build that brought contact eating's store share
+([D224](../DECISIONS.md#d224)) was resumed on the card from 6,000 s. It was resumed again from 1,500 s, while the
+share was idle ([its identity record](../logbook/specs/r62cs-prereg/identity.md)). Each resume parted from its run at
+the first row, in the seventh or eighth significant figure of the joules spent on gestation. Its lineage followed a
+few rows later. So the parting comes with contact eating, the remains or that build's checkpoint, and no file yet says
+which. Until it does, a stopped world of that build is rerun fresh or read as a cousin. I found no later fix in the
+logbook, the decisions or the handoff (inference).
+
 ## Replay costs speed and buys a cause for every difference
 
-The costs are written down. D078 slowed Unity's solver by a fifth at small crowds. The farm gave up a runtime
-optimisation, and the card writes some of its products the long way. Every build that lands spends a sitting on the
-card. And a few stretches of worlds stand as single realisations: the shared box before D078, the card resumes before
-round 60's build, and seed 6002's last two years.
+The costs are written down. D078 added a fifth to a Unity run's wall-clock time at small crowds. The farm gave up a
+runtime optimisation, and the card writes some of its products the long way. Every build that lands spends a sitting
+on the card. And a few stretches of worlds stand as single realisations. They are the shared box before D078, the card
+resumes before round 60's build, seed 6002's last two years, and the resumed stretches of D224's build.
 
 What it buys, on my reading, is that every difference has a cause someone can find. When two runs part, the digest
-names the step and the body. When a resume parts, either the checkpoint is missing a field or an order is loose, and
-both have been found that way. The project changes its realisation freely, for speed ([D153](../DECISIONS.md#d153)) or
-for single precision (D157). It has not given up replay inside an engine, and every failure above was fixed once found
-(inference from the decisions read together).
+names the step and the body. When a resume has parted, a missing field or a loose order has so far been the cause, and
+the third parting is not yet traced. The project changes its realisation freely, for speed
+([D153](../DECISIONS.md#d153)) or for single precision (D157). It has not given up replay inside an engine, and every
+failure above whose cause was found has been fixed (inference from the decisions read together).
 
 ## What here is inference
 
@@ -298,8 +308,9 @@ for single precision (D157). It has not given up replay inside an engine, and ev
   logbook 0152's inference, from two seeds and the timing.
 - **That the project keeps replay inside an engine as a standing rule** is inferred from D078, D153, D157 and D193 read
   together. No decision states it in those words.
-- **That a build lands only after its sitting passes** generalises D243, D248 and D249, each of which names its own
-  sitting.
+- **That a build lands only after its sitting passes** generalises D243, D248 and D249, each of which names its own sitting.
+- **That the third parting is still open** rests on finding no later fix in the logbook, DECISIONS.md or HANDOFF on
+  2026-10-31.
 - **Double precision as the wider of two formats**, PCG as a recipe of whole numbers, and the explicit multiply as
   "separately rounded" are the author's plain glosses. No project file states them in those words.
 
@@ -315,7 +326,8 @@ for single precision (D157). It has not given up replay inside an engine, and ev
 | [`own-solver-spike-spec.md`](../logbook/specs/own-solver-spike-spec.md) | contact from the previous step, summed in a fixed order |
 | [`DynamicsWorldDigest.cs`](../src/Evosim.Dynamics/DynamicsWorldDigest.cs), [`gpu-accept.py`](../scripts/reads/gpu-accept.py) | the solver's digest, and the card's identity check |
 | [`DECISIONS.md`](../DECISIONS.md) D078, D105, D153, D157, D168 | Unity on no worker threads; the card in single; speed-ups judged by trade-off; sound on its own terms; small moves kept |
-| [`DECISIONS.md`](../DECISIONS.md) D193, D243, D248 | the race fixed; switches off by default; integration branch 2's sitting |
+| [`DECISIONS.md`](../DECISIONS.md) D193, D224, D243, D248, D249 | the race fixed; the store-share build whose resumes part; switches off by default; integration branch 2's sitting; the general off-by-default rule |
+| [`r62cs-prereg/identity.md`](../logbook/specs/r62cs-prereg/identity.md) | the third parting, still open |
 | [logbook 0052](../logbook/0052-the-coarse-step.md), [0069](../logbook/0069-the-shared-world-does-not-replay.md) | the butterfly rule; the shared world that did not replay |
 | [logbook 0112](../logbook/0112-one-thread-a-creature.md), [0115](../logbook/0115-the-crowd-on-the-card.md) | the card's first spike and its group sizes; the not-a-number sign bits |
 | [`int2-identity`](../logbook/specs/int2-identity/README.md), [`nose-card-identity`](../logbook/specs/nose-card-identity/README.md) | two switch-off sittings |

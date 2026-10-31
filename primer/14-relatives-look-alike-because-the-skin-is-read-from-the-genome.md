@@ -50,8 +50,7 @@ them ([the build record](../logbook/specs/skin-map-build/README.md)), in four gr
 
 - The first group is the share of the body's volume in each kind of tissue, such as structure, link, nerve, leaf,
   absorber and biting tissue.
-- The second measures the body plan, such as how many parts it has and the length of its longest chain. It also counts
-  the mirrored parts and takes the shape of the box that holds the body.
+- The second measures the body plan, such as how many parts it has and the length of its longest chain. It also takes the share of parts that are mirrored, and the shape of the box that holds the body.
 - The third is two genes that children keep. One is the share of energy a parent puts into a child, and the other the
   spare reserve it keeps before breeding.
 - The last is the brain's size and summaries of its weights.
@@ -73,19 +72,23 @@ as before, and its blades take a colour set per world by the owner's ruling of 2
 
 ## The projection is fixed once
 
-The 26 features come in different units, a share here and a count there. A projection puts them on one footing ([the
-skin plan](../logbook/specs/theatre-skin-plan.md), section 5(c)). First each feature is standardised against a
-reference population: its mean is taken away, and it is divided by its spread. A value of 0 then means typical, and 1
-means one spread above typical.
+The 26 features come in different units, a share here and a count there. The build puts them on one footing in two
+steps ([the build record](../logbook/specs/skin-map-build/README.md), [the
+tool](../scripts/skin-map/skin_features.py)). First each feature is standardised against a reference population: its
+mean is taken away, and it is divided by its spread. A value of 0 then means typical, and 1 means one spread above
+typical.
 
-Then the cloud of standardised features is turned, with a principal-component rotation. The first new axis lies along
-the direction in which the population varies most, the second along the next, and so on. The rotation is kept as fixed
-numbers in the theatre's code, with the population it came from named beside them. The same numbers serve every world
-and every later round, so a genome draws the same skin wherever it lives.
+Then each of the skin's ten numbers is its own weighted sum of the standardised features, plus a bias, passed through
+an S-shaped function. The means, spreads, weights and biases are fixed numbers in the theatre's code. The same numbers
+serve every world and every later round, so a genome draws the same skin wherever it lives.
 
-Each of the skin's ten numbers is then an S-shaped function of a weighted sum of those turned features. The S-shape
-squeezes any input into the range 0 to 1. A genome far from the reference runs into the end of a range, and never
-wraps round to the other end. The table gives what each number drives.
+The skin plan asked for one step more ([its section 5(c)](../logbook/specs/theatre-skin-plan.md)). It wanted the cloud
+of standardised features turned first, by a principal-component rotation whose first axis lies along the direction in
+which the population varies most. The tool computes that rotation and writes it to a file beside its output, and no
+skin number reads it yet.
+
+The S-shape squeezes any input into the range 0 to 1. A genome far from the reference runs into the end of a range,
+and never wraps round to the other end. The table gives what each number drives.
 
 | # | number | what it drives on the skin |
 |---|---|---|
@@ -110,8 +113,8 @@ ordered on 2026-10-29 that the fit be pooled over several worlds instead. It now
 spread across most of its range.
 
 The colour took one more decision that day. An animal's hue is picked on a path from blue through violet, magenta and
-red to gold, with no greens, so an animal never reads as a plant. The coordinator relayed that the owner wanted a rich
-variety among the animals.
+red to gold, with no greens. My reading is that this keeps an animal from reading as a plant. The coordinator relayed
+that the owner wanted a rich variety among the animals.
 
 ## One number, checked
 
@@ -140,14 +143,14 @@ strangers.
 | pooled animals, animals only | 6,012 | 0.721 | 0.0% | 0.025, 0.71 | 1.26 |
 
 Both bars pass on every row. Among animals, the typical child sits fifty times nearer its parent than a typical
-stranger does. The working folder's notes add the steps between: two siblings sit 0.10 apart at the median and two
-cousins 0.39. Those two figures are not in the build record.
+stranger does. The working folder's notes, which are untracked, add the steps between: two siblings sit 0.10 apart at
+the median and two cousins 0.39. Those two figures are not in the build record.
 
 The tail is where the map earns its keep or fails. One parent and child in twenty differ by 0.71 or more, about half
 the typical gap between strangers. Under the first fit, the build record looked at the large jumps. There were 74
 parent and child pairs with a skin jump over 0.5 at a species distance under 1. Every one came from the body. In about
-two thirds of them the number of parts had changed. In the rest, one joint had folded a two-part body from end-on to
-side-on.
+two thirds of them the number of parts had changed. In the rest, one anchor, the point where a part attaches, had
+folded a two-part body from end-on to side-on.
 
 So the jumps are the map doing what it was asked. A child whose body really changed looks changed. The species
 distance scores a new part as a small step, and the skin, which reads the part count directly, scores it as a large
@@ -158,11 +161,12 @@ rim's width, the carve and the saturation, and the features that moved most were
 
 Two faults came through the sheets of stills and not through the number. The first sheet was fitted on one world in
 which 93% of the bodies were producers. Kin looked alike there, but strangers did not look different, because the
-animals had been placed against a crowd of plants. Pooling the fit across worlds fixed that.
+animals had been placed against a crowd of plants. Fitting on the animals alone, pooled across worlds, fixed that.
 
 The fourth sheet showed that an animal's hue came almost entirely from what it ate. Eaters came out pink-red to
 orange, and absorbers one shade of violet, whatever their lineage. On 2026-10-30 the theatre's session screened four
 replacements and kept a hybrid. Its base hue is the rank of a lineage score, and diet moves the saturation instead.
+The build record says so, and the screen's own record is on a branch not yet in the main line.
 
 My reading of both faults is that the check was blind to them by its shape. It takes the distance over all ten numbers
 at once. It can say that skins track genomes in sum, and it cannot say that the most visible number, the colour,
@@ -178,10 +182,11 @@ chosen on 2026-10-27. In that frame I see a rust-red animal shaped like a club, 
 The sheets are in a working folder outside the project's documents, and what I say I saw in them is my observation.
 What follows keeps apart the looks the project's documents say the owner accepted and the versions between them.
 
-The documents hold these acceptances, in order.
+The documents hold these rulings and acceptances, in order.
 
-- **The plan-hash skin**, 2026-09-16, accepted as the first step inside the theatre ([logbook
-  0104](../logbook/0104-the-theatre-gets-its-second-look.md)). Kin who shared a plan shared a skin.
+- **The plan-hash skin**, built on the owner's ruling of 2026-09-16 as the first step inside the theatre ([logbook
+  0104](../logbook/0104-the-theatre-gets-its-second-look.md)). Kin who shared a plan shared a skin. The menu had asked
+  for a version read from the genome's own features, and no record says the owner accepted this one.
 - **A biological direction**, 2026-10-25. The owner asked for forms that read as biological rather than geometric,
   judged against photographs of marine life, and for the continuous map this piece describes (the skin plan).
 - **The best-so-far frame**, 2026-10-27, which became the yardstick on every later sheet ([HANDOFF](../HANDOFF.md),
@@ -189,7 +194,8 @@ The documents hold these acceptances, in order.
 - **The map moved up and the plants set apart**, 2026-10-29. The coordinator moved the map forward at the owner's
   request, and the owner ruled a blade colour per world for the producers (D256).
 - **Full colour**, 2026-10-30. The hue path ran from blue to gold through the pinks, so most eaters landed in pink and
-  magenta. The owner ruled that the animals take the whole colour wheel ([HANDOFF](../HANDOFF.md), the session table).
+  magenta. The owner ruled full colour for the animals ([HANDOFF](../HANDOFF.md), the session table). The working folder's notes
+  read it as the whole wheel except the leaves' greens.
 - **Good enough for now**, 2026-10-31. The look carried forward is version 7e3's, with its marks darker and stronger
   in each animal's own hue, plus edge and outline fixes from 7e5. The owner made clear that keeping pink out had never
   been the aim, and that coral is welcome ([HANDOFF](../HANDOFF.md), the theatre section).
@@ -214,10 +220,10 @@ map](../logbook/specs/skin-map-build/skin-map-sheet-6e.png)
 
 The sheet above is the third, kept beside the build record. Each pair of rows draws the same bodies twice, first by
 the plan-hash skin and then by the skin map. In the top pair, the family of one clade goes from hot pink to salmon
-with a pale maze. Each child carries its skin distance from its parent, 0.00 to 0.21, and 0.60 for the grandchild
-that grew a tall stalk. In the middle pair, a parent and child from each of four worlds come out salmon, blue with
-cyan, magenta and violet-pink, and each child matches its parent. Under the plan-hash skin the same eight were pink
-and pale yellow. The producers at the bottom are drawn as before. The second sheet,
+with a pale maze. Each child carries its skin distance from its parent, 0.00 to 0.21, and 0.60 for the grandchild that
+grew a tall stalk. In the middle pair, a parent and child from each of four worlds come out salmon, blue with cyan,
+magenta and violet-pink, and each child matches its parent. Under the plan-hash skin the same eight were pink and pale
+yellow. The producers at the bottom are drawn as before. The second sheet,
 [6d](../logbook/specs/skin-map-build/skin-map-sheet-6d.png), is the same but for its producers, which it turned khaki.
 
 I looked at five of the sheets. On the first, the plan-hash look of the time drew the whole family hot pink. The map
@@ -245,10 +251,10 @@ The family's split has a cause in the notes. One reading of the genome feeds two
 sits near both thresholds, so a small difference turns its maze off and its outline on. The notes plan to give each
 switch its own part of the genome. That cause rests on the working folder alone.
 
-The build record lists three more. The pattern's seed still comes from a hash of the pattern's key, which flips at a
+The build record lists four more. The pattern's seed still comes from a hash of the pattern's key, which flips at a
 bin edge. The theatre caches a skin by creature id, so a sheet that mixes worlds could reuse one world's skin for
-another's body with the same id. And the skin plan still names one world as the reference population, where the fit
-now pools ten.
+another's body with the same id. The skin plan still names one world as the reference population, where the fit now
+pools ten. And the animals' new colours are strongly saturated, which the film's water light may soften.
 
 The drawing code is not yet in the main line of the project. The feature reader and its test are, under
 `scripts/skin-map/`, and the theatre's code for the map sits on a branch behind a switch that is off by default. The
@@ -257,6 +263,7 @@ mouths come next, and each animal's mouth will take a kind from its main eating 
 
 ## What here is inference
 
+- **That a hue path with no greens keeps an animal from reading as a plant** is the author's reading.
 - **No creature sees another's colour, and nothing selects on it** is the author's inference from the separation of
   farm and theatre, which no source draws out.
 - **The species distance scores a new part as a small step and the skin as a large one** is the author's reading of
