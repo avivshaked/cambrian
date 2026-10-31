@@ -94,6 +94,7 @@ The owner launches every agent by hand. Ping the owner's phone when the next age
 | evolution-simulator-c0 | The shape lane: G5 passed (item 6). It builds the coincident-contact fix the owner agreed on 2026-10-30, carried as `ContactShapeForm.SpheresApart` (`scratch/wt-coincident`, branch `coincident-contact`); the coordinator reviews before it lands, then a card sitting, and the proposal goes into DECISIONS.md |
 | evolution-simulator-e4 | The nose lane: N1r failed (above). Idle until the carried smell is built. Then the nose's nursery test is re-asked under D270 |
 | evolution-simulator-c8 | The theatre, G6 (item 8): the trunk `theatre-look` on worker 7, the family drawing on `theatre-look-family`, and the skin map. The owner ruled full colour on 2026-10-30; the v5 sheet (`theatre-look-fullcolour`) renders after c0's suites free 16-19 |
+| evolution-simulator-w1 | The writing lane, launched by the owner on 2026-10-31 from `scratch/owner/writing-lane-pickup.md`: the owed logbook entries (round 62 first, then 63 and 64, then the older ones) and the primer's new chapters. No machine time. Its theatre frames come through the coordinator from c8 |
 | assay-d6 | Another project, Assay, sharing the machine. Its agents relay through it, so every Assay line goes to assay-d6. It is suspended now, and since its lane A (0-3) overlaps the test cores, it asks the coordinator before resuming |
 
 ## The machine
