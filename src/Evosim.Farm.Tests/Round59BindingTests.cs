@@ -242,6 +242,31 @@ namespace Evosim.Farm.Tests
         }
 
         /// <summary>
+        /// The fourth value: <c>EVOSIM_CONTACT_SHAPE=spheresapart</c> (any case) binds to
+        /// <see cref="ContactShapeForm.SpheresApart"/> with per-part contact on or off, reaches the solver's config, and
+        /// unset is still the spheres.
+        /// </summary>
+        [Fact]
+        public void TheContactShapeSwitchTakesTheFourthValueSpheresApart()
+        {
+            Assert.Equal(ContactShapeForm.Spheres, Built(new Dictionary<string, string>()).ContactShape);
+
+            var on = new Dictionary<string, string> { { "EVOSIM_CONTACT_SHAPE", "spheresapart" } };
+            RunConfig config = Built(on);
+            Assert.Equal(ContactShapeForm.SpheresApart, config.ContactShape);
+            Assert.False(config.ContactPerPart);
+            Assert.Equal(ContactShapeForm.SpheresApart, Evosim.Dynamics.SolverConfig.From(config, 0.01).ContactShape);
+
+            on["EVOSIM_CONTACT_SHAPE"] = "SpheresApart";
+            on["EVOSIM_CONTACT_PER_PART"] = "1";
+            RunConfig perPart = Built(on);
+            Assert.Equal(ContactShapeForm.SpheresApart, perPart.ContactShape);
+            Assert.True(perPart.ContactPerPart);
+
+            Assert.Equal(ContactShapeForm.Spheres, Built(new Dictionary<string, string> { { "EVOSIM_CONTACT_SHAPE", "spheres" } }).ContactShape);
+        }
+
+        /// <summary>
         /// D228's third value: <c>EVOSIM_CONTACT_SHAPE=trueshapeatpoint</c> (any case) binds to
         /// <see cref="ContactShapeForm.TrueShapeAtPoint"/>, needs per-part contact like the second, reaches the solver's
         /// config, and the header names it in lower case.

@@ -1196,6 +1196,81 @@ namespace Evosim.Farm.Tests
         }
 
         /// <summary>
+        /// <c>ContactShapeForm.SpheresApart</c> on the CPU accelerator in double: a crowd that holds two plates on one
+        /// place, two identical jointed bodies on another and four more bodies in contact, on each sphere path, is the
+        /// solver's to the bit after every block, at the options' group sizes of 32 and 64. The world is first shown to
+        /// part on the CPU from the same crowd under <c>Spheres</c>, where the plates stay on one place, so a switch that
+        /// never reached the kernel cannot pass as a match. The CPU accelerator takes its device's largest group and
+        /// ignores the option, so the two group sizes are one run twice here; identity across the card's group sizes is
+        /// the card sitting's.
+        /// </summary>
+        [Theory]
+        [InlineData(false, 32)]
+        [InlineData(false, 64)]
+        [InlineData(true, 32)]
+        [InlineData(true, 64)]
+        public void ACoincidentPairUnderSpheresApartOnTheCpuAcceleratorIsTheSolver(bool perPart, int group)
+        {
+            var apart = new Dictionary<string, string> { { "EVOSIM_CONTACT_SHAPE", "spheresapart" } };
+
+            (DynamicsWorld plain, World core0) = Pair(perPart, false);
+            (DynamicsWorld cpu, World coreA) = Pair(perPart, false, apart);
+            (DynamicsWorld gpu, World coreB) = Pair(perPart, false, apart);
+
+            Assert.Equal(ContactShapeForm.Spheres, plain.Config.ContactShape);
+            Assert.Equal(ContactShapeForm.SpheresApart, cpu.Config.ContactShape);
+
+            foreach ((DynamicsWorld w, World core) in new[] { (plain, core0), (cpu, coreA), (gpu, coreB) })
+            {
+                PopulateCoincident(w, core);
+            }
+
+            using var backend = new GpuBackend(gpu.Config,
+                new GpuOptions { Device = "cpu", Precision = "double", CpuThreads = 4, GroupSize = group });
+            gpu.UseBackend(backend);
+            AssertSame(cpu, gpu, "before the first block");
+
+            for (int block = 0; block < 4; block++)
+            {
+                plain.StepBlock(25);
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, "coincident pair, after block " + block);
+            }
+
+            // Under Spheres the plates are pushed up together and stay on one place. Under SpheresApart the lower id
+            // is on the -X side of the higher.
+            Assert.Equal(plain.ById(101).Position[0], plain.ById(102).Position[0]);
+            Assert.Equal(plain.ById(103).Position[0], plain.ById(104).Position[0]);
+            double lowX = cpu.ById(101).Position[0], highX = cpu.ById(102).Position[0];
+            _out.WriteLine((perPart ? "per part" : "body sphere") + ": plates at x " + lowX.ToString("R") + " and " + highX.ToString("R"));
+            Assert.True(lowX < highX - 0.01, "the plates did not part along X");
+            Assert.True(cpu.ById(103).Position[0] < cpu.ById(104).Position[0] - 0.01, "the jointed twins did not part along X");
+
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
+        }
+
+        /// <summary>
+        /// Two plates on one place (ids 101 and 102), two identical drawn bodies on another (103 and 104) and four
+        /// drawn bodies in a cluster that touch each other: the coincident pairs the contact has no direction for.
+        /// </summary>
+        private static void PopulateCoincident(DynamicsWorld world, World core)
+        {
+            Vec3 axis = GpuTank.Axis(core);
+            var half = new Float3(0.2f, 0.1f, 0.15f);
+            var plates = new Vec3(axis.X - 2.2, -9.0, axis.Z);
+            var twins = new Vec3(axis.X + 2.2, -9.0, axis.Z);
+
+            world.AddInIdOrder(GpuTank.Plate(101, world.Config, core, half, plates, QuatD.Identity));
+            world.AddInIdOrder(GpuTank.Plate(102, world.Config, core, half, plates, QuatD.Identity));
+            world.AddInIdOrder(GpuTank.Body(103, world.Config, core, new Rng(77UL), twins));
+            world.AddInIdOrder(GpuTank.Body(104, world.Config, core, new Rng(77UL), twins));
+
+            Populate(world, core, 4, 11UL, 1);
+        }
+
+        /// <summary>
         /// D239: at a pace factor of 3 the kernels divide the current's velocity by k and its acceleration by k squared
         /// where the host does, and the block's clock is the world's (dt over k). Each is the solver's to the bit after
         /// every block, and the world is first shown to part from the same world at k = 1, so a factor that never

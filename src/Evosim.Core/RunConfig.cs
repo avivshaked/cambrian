@@ -988,6 +988,12 @@ namespace Evosim.Core
         /// it (<c>EVOSIM_CONTACT_SHAPE</c>). An enum so that a later build can add a level that
         /// applies the force at the contact point without moving any recorded config's hash.
         /// </para>
+        /// <para>
+        /// <see cref="ContactShapeForm.SpheresApart"/> is <c>Spheres</c> with one change: two contact centres
+        /// that coincide are pushed apart along <c>X</c>, by organism id, and not both along <c>+Y</c>
+        /// (<c>proposals/propose-coincident-contact.md</c>). Unlike the true shapes it does not need
+        /// <see cref="ContactPerPart"/>.
+        /// </para>
         /// </remarks>
         [Tunable("world")]
         public ContactShapeForm ContactShape { get; set; } = ContactShapeForm.Spheres;
@@ -5021,7 +5027,7 @@ namespace Evosim.Core
     /// <summary>
     /// What a part is to the per-part contact - <see cref="RunConfig.ContactShape"/>, D228. By name in the
     /// file and the hash, as every enum tunable is. Appended in order, never inserted: a later level that
-    /// applies the force at the contact point is a third value.
+    /// applies the force at the contact point is a third value, and the fourth parts a coincident pair.
     /// </summary>
     public enum ContactShapeForm
     {
@@ -5041,5 +5047,13 @@ namespace Evosim.Core
         /// rests on a corner tips.
         /// </summary>
         TrueShapeAtPoint = 2,
+
+        /// <summary>
+        /// Sphere contact exactly as <see cref="Spheres"/>, except where two contact centres lie within 1e-9 m
+        /// of each other: there the body with the lower organism id takes the normal <c>-X</c> and the one
+        /// with the higher id <c>+X</c>, so a coincident pair is pushed apart and not both up
+        /// (<c>proposals/propose-coincident-contact.md</c>). Not a true shape: it takes the same sphere paths.
+        /// </summary>
+        SpheresApart = 3,
     }
 }

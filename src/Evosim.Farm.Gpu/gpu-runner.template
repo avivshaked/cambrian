@@ -1056,7 +1056,7 @@ namespace __NS__
                 CreatureContact = w.CreatureContact ? 1 : 0, OffsetTorque = w.OffsetTorque ? 1 : 0,
                 ShapedMass = w.ShapedMass ? 1 : 0,
                 MirrorDrive = w.MirroredDrive ? 1 : 0, Nose = w.Nose ? 1 : 0,
-                TrueShape = w.TrueShape ? 1 : 0, AtPoint = w.AtPoint ? 1 : 0,
+                TrueShape = w.TrueShape ? 1 : 0, AtPoint = w.AtPoint ? 1 : 0, CoincidentApart = w.CoincidentApart ? 1 : 0,
                 StrokeAssembly = w.StrokeAssembly ? 1 : 0,
                 BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
                 Anchoring = w.AnchorCell != null ? 1 : 0,
