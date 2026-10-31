@@ -47,8 +47,10 @@ for line in open(os.path.join(a.run, "lineage.jsonl")):
         if r.get("p", -1) >= 0:
             tracked.add(r["p"])
 
-BODY = struct.Struct("<i3f16xfB3fB")   # version 4: id, xyz, (quaternion skipped), fraction, flags, S, breed, J, dof
-assert BODY.size == 50
+BODY4 = struct.Struct("<i3f16xfB3fB")   # version 4: id, xyz, (quaternion skipped), fraction, flags, S, breed, J, dof
+assert BODY4.size == 50
+BODY5 = struct.Struct("<i3f16xfB3fIB")  # version 5: version 4's, with the ate mask before dof
+assert BODY5.size == 54
 
 path = poses.stream_path(a.run)
 size = os.path.getsize(path)
@@ -68,8 +70,9 @@ def fmt(v):
 with open(path, "rb") as f:
     head = poses.read_header(f)
     version = head["version"]
-    if version != 4:
-        raise SystemExit("this pass reads a version 4 stream; this one is %d" % version)
+    if version not in (4, 5):
+        raise SystemExit("this pass reads a version 4 or 5 stream; this one is %d" % version)
+    BODY = BODY5 if version == 5 else BODY4
     frames = poses.scan(f, size, version)
     for seconds, offset, payload in frames:
         if seconds > a.end + 1e-6:
@@ -83,8 +86,10 @@ with open(path, "rb") as f:
         lx, ly, lz = [], [], []
         mine = []
         for _ in range(count):
-            ident, x, y, z, frac, flags, s, breed, j, dof = BODY.unpack_from(rec, at)
-            at += 50 + 4 * dof
+            fields = BODY.unpack_from(rec, at)
+            ident, x, y, z, frac, flags, s, breed, j = fields[:9]
+            dof = fields[-1]
+            at += BODY.size + 4 * dof
             if flags & 8:
                 continue
             if ident in tracked:
