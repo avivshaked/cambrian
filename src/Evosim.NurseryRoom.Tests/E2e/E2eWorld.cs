@@ -27,7 +27,7 @@ namespace Evosim.NurseryRoom.Tests.E2e
     internal sealed class E2eWorld : IDisposable
     {
         public const string Alpha = "2", Beta = "3", Gamma = "4", Delta = "5";
-        public const string Committed = "rounds/nursery/brain2-w5.json";
+        public const string Committed = "rounds/nursery/brain2-w11.json";
         public const string ChangedRecipe = "rounds/nursery/e2e-delta.json", UntrackedRecipe = "rounds/nursery/e2e-untracked.json";
         public const string TrialRecipe = "scratch/nursery-trials/e2e-trial.json";
         public const string Unloadable = EpisodeFixture.UnloadableRecipe;
@@ -45,22 +45,22 @@ namespace Evosim.NurseryRoom.Tests.E2e
         {
             Ep = new EpisodeFixture("scratch/nursery/live");
             string nursery = Path.Combine(Root, "rounds", "nursery");
-            string brain2 = File.ReadAllText(Path.Combine(nursery, "brain2-w5.json"));
+            string brain2 = File.ReadAllText(Path.Combine(nursery, "brain2-w11.json"));
             foreach (string name in new[] { "beta", "gamma", "delta" })
-                File.WriteAllText(Path.Combine(nursery, "e2e-" + name + ".json"), brain2.Replace("\"name\": \"brain2-w5\"", "\"name\": \"e2e-" + name + "\""));
+                File.WriteAllText(Path.Combine(nursery, "e2e-" + name + ".json"), brain2.Replace("\"name\": \"brain2-w11\"", "\"name\": \"e2e-" + name + "\""));
             Directory.CreateDirectory(Path.Combine(Root, "scratch", "nursery-trials"));
-            File.WriteAllText(Path.Combine(Root, "scratch", "nursery-trials", "e2e-trial.json"), brain2.Replace("\"name\": \"brain2-w5\"", "\"name\": \"e2e-trial\""));
+            File.WriteAllText(Path.Combine(Root, "scratch", "nursery-trials", "e2e-trial.json"), brain2.Replace("\"name\": \"brain2-w11\"", "\"name\": \"e2e-trial\""));
             EpisodeFixture.WriteUnloadableWorld(Root);
 
             // A run still going, listed by room.json and not in the registry: its record says running, so STOP is offered. Its folder is old, so that it is listed last.
             string live = Path.Combine(Fx.Main, "scratch", "nursery", "live");
             Directory.CreateDirectory(live);
             File.WriteAllText(Path.Combine(live, "run.json"), "{\"status\":\"running\"}");
-            Directory.SetCreationTimeUtc(live, DateTime.UtcNow.AddDays(-30));
+            Directory.SetCreationTimeUtc(live, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
 
             // Genomes: alpha reads Chemical only; gamma reads Chemical and Flow; delta has one of each; beta reads both.
             Genome chem = Central(SensorChannel.Chemical), both = Central(SensorChannel.Chemical, SensorChannel.Flow);
-            MakeRun("alpha", "rounds/nursery/brain2-w5.json", "2026-10-01T09:00:00Z", "completed", SixBrains, new[] { chem, chem }, new[] { 0, 1 }, 1.0);
+            MakeRun("alpha", "rounds/nursery/brain2-w11.json", "2026-10-01T09:00:00Z", "completed", SixBrains, new[] { chem, chem }, new[] { 0, 1 }, 1.0);
             MakeRun("beta", "rounds/nursery/e2e-beta.json", "2026-10-02T09:00:00Z", "completed", FiveBrains, new[] { both, both }, new[] { 0, 1 }, 0.8);
             MakeRun("gamma", "rounds/nursery/e2e-gamma.json", "2026-10-03T09:00:00Z", "completed", SixBrains, new[] { both, both }, new[] { 1, 2 }, 0.5);
             MakeRun("delta", "rounds/nursery/e2e-delta.json", "2026-10-04T09:00:00Z", "failed", SixBrains, new[] { chem, both }, new[] { 0, 1 }, 1.2);
@@ -84,7 +84,7 @@ namespace Evosim.NurseryRoom.Tests.E2e
         public void MakeChanged(string rel) => File.AppendAllText(Full(rel), "\n");
 
         /// <summary>A recipe file git has never seen.</summary>
-        public void MakeUntracked(string rel) => File.WriteAllText(Full(rel), File.ReadAllText(Full(Committed)).Replace("\"name\": \"brain2-w5\"", "\"name\": \"e2e-untracked\""));
+        public void MakeUntracked(string rel) => File.WriteAllText(Full(rel), File.ReadAllText(Full(Committed)).Replace("\"name\": \"brain2-w11\"", "\"name\": \"e2e-untracked\""));
 
         // ------------------------------------------------------------------ the genomes
 

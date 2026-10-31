@@ -304,7 +304,7 @@ namespace Evosim.NurseryRoom.Tests
 
         public void Dispose() { RecipeGitTests.Remove(_fx.Dir); }
 
-        private const string Brain2 = "rounds/nursery/brain2-w5.json";
+        private const string Brain2 = "rounds/nursery/brain2-w11.json";
 
         private JsonElement View(string rel, ResourceResolver r = null) =>
             Js.Parse(Js.Serialize((r ?? new ResourceResolver(_fx.Room)).RecipeView(rel)));
@@ -332,7 +332,7 @@ namespace Evosim.NurseryRoom.Tests
 
             // a recipe the repository has never seen, written the way recipe.write does
             string fresh = "rounds/nursery/zz-new.json";
-            File.WriteAllText(_fx.Full(fresh), File.ReadAllText(_fx.Full(Brain2)).Replace("\"name\": \"brain2-w5\"", "\"name\": \"zz-new\""));
+            File.WriteAllText(_fx.Full(fresh), File.ReadAllText(_fx.Full(Brain2)).Replace("\"name\": \"brain2-w11\"", "\"name\": \"zz-new\""));
             JsonElement none = View(fresh).GetProperty("gitState");
             Assert.Equal("untracked", none.GetProperty("state").GetString());
             Assert.Equal(JsonValueKind.Null, none.GetProperty("lastCommit").ValueKind);

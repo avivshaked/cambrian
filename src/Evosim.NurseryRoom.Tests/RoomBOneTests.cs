@@ -133,7 +133,7 @@ namespace Evosim.NurseryRoom.Tests
 
         private List<JsonElement> Controls()
         {
-            Recipe r = Recipe.Load(_fx.Full("rounds/nursery/brain2-w5.json"));
+            Recipe r = Recipe.Load(_fx.Full("rounds/nursery/brain2-w11.json"));
             return Js.Items(Js.At(Js.Parse(r.Canonical()), "exam", "controls")).ToList();
         }
 
@@ -201,8 +201,8 @@ namespace Evosim.NurseryRoom.Tests
             foreach (string label in PilotLabels)
                 for (int g = 0; g < 2; g++) lines.Add(Js.Serialize(new { brain = label, genome = g, body = g, net = 10.0 + g, per = new[] { 10.0 + g, 11.0 + g } }));
             File.WriteAllLines(Path.Combine(folder, "tank-exam.jsonl"), lines);
-            string hash = Recipe.Load(_fx.Full("rounds/nursery/brain2-w5.json")).Hash();
-            RegistryEntry.Append(_fx.Registry, new RegistryEntry { Recipe = "brain2", RecipeHash = hash, RecipePath = "rounds/nursery/brain2-w5.json", ConfigHash = "c", GitCommit = "g", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Out = folder, Status = "completed", Rerunnable = false, NotRerunnableBecause = "a test", StartedAtUtc = "2026-10-01T00:00:00Z", EndedAtUtc = "2026-10-01T01:00:00Z" });
+            string hash = Recipe.Load(_fx.Full("rounds/nursery/brain2-w11.json")).Hash();
+            RegistryEntry.Append(_fx.Registry, new RegistryEntry { Recipe = "brain2", RecipeHash = hash, RecipePath = "rounds/nursery/brain2-w11.json", ConfigHash = "c", GitCommit = "g", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Out = folder, Status = "completed", Rerunnable = false, NotRerunnableBecause = "a test", StartedAtUtc = "2026-10-01T00:00:00Z", EndedAtUtc = "2026-10-01T01:00:00Z" });
             JsonElement run = Js.Parse(Js.Serialize(new ResourceResolver(_fx.Room).Run("1")));
             JsonElement[] heads = run.GetProperty("exam").GetProperty("headers").EnumerateArray().ToArray();
             Assert.Equal(18, heads.Length);
@@ -212,7 +212,7 @@ namespace Evosim.NurseryRoom.Tests
             Assert.True(run.GetProperty("recipeExists").GetBoolean());
 
             // the entry's recipe hash does not agree with the file: the file is not what ran, so the channel is not taken from it
-            RegistryEntry.Append(_fx.Registry, new RegistryEntry { Recipe = "brain2", RecipeHash = "00", RecipePath = "rounds/nursery/brain2-w5.json", ConfigHash = "c", GitCommit = "g", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Out = folder + "2", Status = "completed", Rerunnable = false, NotRerunnableBecause = "a test", StartedAtUtc = "2026-10-01T00:00:00Z", EndedAtUtc = "2026-10-01T01:00:00Z" });
+            RegistryEntry.Append(_fx.Registry, new RegistryEntry { Recipe = "brain2", RecipeHash = "00", RecipePath = "rounds/nursery/brain2-w11.json", ConfigHash = "c", GitCommit = "g", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Out = folder + "2", Status = "completed", Rerunnable = false, NotRerunnableBecause = "a test", StartedAtUtc = "2026-10-01T00:00:00Z", EndedAtUtc = "2026-10-01T01:00:00Z" });
             Directory.CreateDirectory(folder + "2");
             File.Copy(Path.Combine(folder, "tank-exam.jsonl"), Path.Combine(folder + "2", "tank-exam.jsonl"));
             JsonElement other = Js.Parse(Js.Serialize(new ResourceResolver(_fx.Room).Run("2")));
@@ -365,7 +365,7 @@ namespace Evosim.NurseryRoom.Tests
         private void Row(string op, object args, string outcome = "ok", object result = null, string who = "mcp", string reason = "why", string time = "2026-10-02T12:00:00Z") =>
             _fx.Room.Activity.Append(new { timeUtc = time, operation = op, args, reason, who, tree = ".", outcome, detail = (string)null, result });
 
-        private string Enter(string name, string recipe = "rounds/nursery/brain2-w5.json")
+        private string Enter(string name, string recipe = "rounds/nursery/brain2-w11.json")
         {
             string folder = Path.Combine(_fx.RunsDir, name);
             Directory.CreateDirectory(folder);
@@ -377,14 +377,14 @@ namespace Evosim.NurseryRoom.Tests
         public void TheActivityOfARunIsItsLaunchStopsRerunsAndEpisodeStepsAndNothingOfAnother()
         {
             Enter("alpha"); Enter("beta");
-            Row("run.launch", new { recipe = "rounds/nursery/brain2-w5.json", name = "alpha", threads = 2 }, result: new { id = "alpha", folder = "runs/alpha" }, time: "2026-10-02T12:00:01Z");        // mine
-            Row("run.launch", new { recipe = "rounds/nursery/brain2-w5.json", name = "beta", threads = 2 }, result: new { id = "beta", folder = "runs/beta" }, time: "2026-10-02T12:00:02Z");           // beta's
+            Row("run.launch", new { recipe = "rounds/nursery/brain2-w11.json", name = "alpha", threads = 2 }, result: new { id = "alpha", folder = "runs/alpha" }, time: "2026-10-02T12:00:01Z");        // mine
+            Row("run.launch", new { recipe = "rounds/nursery/brain2-w11.json", name = "beta", threads = 2 }, result: new { id = "beta", folder = "runs/beta" }, time: "2026-10-02T12:00:02Z");           // beta's
             Row("run.stop", new { id = "1" }, result: new { id = "alpha" }, time: "2026-10-02T12:00:03Z");                                                                                      // mine, by its number
             Row("run.stop", new { id = "beta" }, result: new { id = "beta" }, time: "2026-10-02T12:00:04Z");                                                                                    // beta's
             Row("episode.step", new { run = "alpha", brain = 1, draw = 0, tank = 0 }, result: new { run = "1" }, time: "2026-10-02T12:00:05Z");                                                // mine
             Row("episode.step", new { run = "2", brain = 1, draw = 0, tank = 0 }, result: new { run = "2" }, time: "2026-10-02T12:00:06Z");                                                    // beta's, by its number
             Row("run.rerun", new { entry = "1", name = "alpha-rerun", threads = 2 }, result: new { id = "alpha-rerun", folder = "runs/alpha-rerun" }, time: "2026-10-02T12:00:07Z");           // a rerun of mine
-            Row("run.launch", new { recipe = "rounds/nursery/brain2-w5.json", name = "alpha", threads = 2 }, outcome: "refused", time: "2026-10-02T12:00:08Z");                                  // refused for my name
+            Row("run.launch", new { recipe = "rounds/nursery/brain2-w11.json", name = "alpha", threads = 2 }, outcome: "refused", time: "2026-10-02T12:00:08Z");                                  // refused for my name
             Row("recipe.write", new { path = "rounds/nursery/x.json" }, result: new { path = "rounds/nursery/x.json" }, time: "2026-10-02T12:00:09Z");                                        // no run's
             var resolver = new ResourceResolver(_fx.Room);
 
@@ -442,15 +442,15 @@ namespace Evosim.NurseryRoom.Tests
         [Fact]
         public void TheRegistryNamesTheBaseOfARecipeAndWhetherThisTreeHoldsIt()
         {
-            File.WriteAllText(_fx.Full("rounds/nursery/zz-based.json"), "{\"base\":\"rounds/nursery/brain2-w5.json\",\"name\":\"zz-based\"}");
+            File.WriteAllText(_fx.Full("rounds/nursery/zz-based.json"), "{\"base\":\"rounds/nursery/brain2-w11.json\",\"name\":\"zz-based\"}");
             File.WriteAllText(_fx.Full("rounds/nursery/zz-orphan.json"), "{\"base\":\"rounds/nursery/not-here.json\",\"name\":\"zz-orphan\"}");
             Enter("with-base", "rounds/nursery/zz-based.json");
-            Enter("no-base", "rounds/nursery/brain2-w5.json");
+            Enter("no-base", "rounds/nursery/brain2-w11.json");
             Enter("orphan", "rounds/nursery/zz-orphan.json");
             Enter("no-recipe", "rounds/nursery/missing-recipe.json");
             JsonElement items = Js.Parse(Js.Serialize(new ResourceResolver(_fx.Room).Registry())).GetProperty("items");
             JsonElement Item(string name) => items.EnumerateArray().Single(i => i.GetProperty("name").GetString() == name);
-            Assert.Equal("rounds/nursery/brain2-w5.json", Item("with-base").GetProperty("basePath").GetString());
+            Assert.Equal("rounds/nursery/brain2-w11.json", Item("with-base").GetProperty("basePath").GetString());
             Assert.True(Item("with-base").GetProperty("baseExists").GetBoolean());
             Assert.Equal(JsonValueKind.Null, Item("no-base").GetProperty("basePath").ValueKind);
             Assert.False(Item("no-base").GetProperty("baseExists").GetBoolean());
@@ -463,7 +463,7 @@ namespace Evosim.NurseryRoom.Tests
         public void AnEpisodeOfARunWhoseExamPlanIsRefusedIsRefusedAndNamesNoEpisodeFolder()
         {
             // the entry's recipe hash is not the file's, so the plan is not rebuilt (it is not guessed): the plan is refused, and so is every episode of it
-            Enter("planless", "rounds/nursery/brain2-w5.json");
+            Enter("planless", "rounds/nursery/brain2-w11.json");
             var resolver = new ResourceResolver(_fx.Room);
             Assert.Throws<ResourceRefused>(() => resolver.Read("nursery://exam-plan/1"));
             ResourceRefused e = Assert.Throws<ResourceRefused>(() => resolver.Read("nursery://episode/1/0/0/0"));
@@ -488,7 +488,7 @@ namespace Evosim.NurseryRoom.Tests
         [Fact]
         public async Task ThroughTheRealPipelineTheRefusedEpisodeIsAnAnswerWithARefusedFieldAndNoFolderPath()
         {
-            Enter("planless", "rounds/nursery/brain2-w5.json");
+            Enter("planless", "rounds/nursery/brain2-w11.json");
             int port = FreePort();
             RoomSettings settings = RoomSettings.Parse(Where.SettingsJson(runsDir: "runs").Replace("\"port\":5179", "\"port\":" + port).Replace("artifacts/Evosim.Nursery/bin/Debug/net8.0/Evosim.Nursery.dll", "bin/nursery.dll"));
             var room = new RoomContext(_fx.Root, settings, _fx.Main, _fx.Registry, Path.Combine(_fx.Dir, "activity-http.jsonl"), _fx.Launcher, _fx.Queue, _fx.Heat, 32, _ => _fx.Build);
@@ -522,7 +522,7 @@ namespace Evosim.NurseryRoom.Tests
         {
             string Make(string name, double[] own, double[] other)
             {
-                string folder = Enter(name, "rounds/nursery/brain2-w5.json");
+                string folder = Enter(name, "rounds/nursery/brain2-w11.json");
                 var lines = new List<string>();
                 for (int g = 0; g < own.Length; g++)
                 {
@@ -534,7 +534,7 @@ namespace Evosim.NurseryRoom.Tests
             }
             Make("one", new[] { 10.0, 12, 14 }, new[] { 5.0, 6, 7 });
             Make("two", new[] { 10.0, 10, 10 }, new[] { 10.0, 9, 8 });
-            Enter("three", "rounds/nursery/brain2-w5.json");   // no exam rows
+            Enter("three", "rounds/nursery/brain2-w11.json");   // no exam rows
             var resolver = new ResourceResolver(_fx.Room);
             JsonElement c = Js.Parse(Js.Serialize(resolver.Read("nursery://exam-compare/1/vs/2")));
             Assert.True(c.GetProperty("available").GetBoolean());

@@ -16,7 +16,7 @@ namespace Evosim.NurseryRoom.Tests
         public void Dispose() => _fx.Dispose();
 
         private static string Launch(string name, int threads = 2) =>
-            Js.Serialize(new { recipe = "rounds/nursery/brain2-w5.json", name, threads, reason = "a test" });
+            Js.Serialize(new { recipe = "rounds/nursery/brain2-w11.json", name, threads, reason = "a test" });
 
         [Fact]
         public void TheSystemMaskIsTheMachinesAndHoldsEveryProcessorThisProcessMayUse()
@@ -127,7 +127,7 @@ namespace Evosim.NurseryRoom.Tests
         public ThreadsBeyondTheMaskTests() { _fx.Queue.Text = "## Running\n\n- the room (a test) · cores: 0-31 · room\n"; }
 
         private static string Launch(string name, int threads) =>
-            Js.Serialize(new { recipe = "rounds/nursery/brain2-w5.json", name, threads, reason = "a test" });
+            Js.Serialize(new { recipe = "rounds/nursery/brain2-w11.json", name, threads, reason = "a test" });
 
         [Fact]
         public void ALaunchOfMoreThreadsThanTheProcessorsItsMaskAllowsIsRefusedWithBothNumbers()
@@ -151,7 +151,7 @@ namespace Evosim.NurseryRoom.Tests
         {
             RegistryEntry.Append(_fx.Registry, new RegistryEntry
             {
-                Recipe = "brain2", RecipeHash = Recipe.Load(_fx.Full("rounds/nursery/brain2-w5.json")).Hash(), RecipePath = "rounds/nursery/brain2-w5.json",
+                Recipe = "brain2", RecipeHash = Recipe.Load(_fx.Full("rounds/nursery/brain2-w11.json")).Hash(), RecipePath = "rounds/nursery/brain2-w11.json",
                 Out = Path.Combine(_fx.Dir, "entry-out"), Status = "completed", StartedAtUtc = "2026-10-02T00:00:00Z", EndedAtUtc = "2026-10-02T01:00:00Z",
                 GitCommit = "abc1234", CoreHash = "c", DynamicsHash = "d", FarmHash = "f", NurseryHash = "n", Rerunnable = true,
             });
@@ -170,7 +170,7 @@ namespace Evosim.NurseryRoom.Tests
         public void Dispose() => _fx.Dispose();
 
         private static string Launch(string name) =>
-            Js.Serialize(new { recipe = "rounds/nursery/brain2-w5.json", name, threads = 2, reason = "a test" });
+            Js.Serialize(new { recipe = "rounds/nursery/brain2-w11.json", name, threads = 2, reason = "a test" });
 
         [Fact]
         public void TheResultAndTheRowRecordTheMaskTheLauncherAppliedNotTheOneAsked()
@@ -266,7 +266,7 @@ namespace Evosim.NurseryRoom.Tests
             string path = Trials + "/zz-second.json";
             Fx.Result(_fx.Call("recipe.write", _fx.Json(path)));
             string first = RunRecord.FileSha256(_fx.Full(path));
-            string variant = _fx.Brain2.Replace("\"name\": \"brain2-w5\"", "\"name\": \"zz-variant\"");
+            string variant = _fx.Brain2.Replace("\"name\": \"brain2-w11\"", "\"name\": \"zz-variant\"");
             OperationResult noHash = _fx.Call("recipe.write", _fx.Json(path, text: variant));
             Assert.False(noHash.Ok);
             Assert.Contains("expectHash is required", noHash.Error);
@@ -285,7 +285,7 @@ namespace Evosim.NurseryRoom.Tests
             var resolver = new ResourceResolver(_fx.Room);
             Assert.Contains(resolver.List(), x => x.Uri == "nursery://recipe/" + path);
             Assert.True(Js.Parse(Js.Serialize(resolver.RecipeView(path))).GetProperty("trial").GetBoolean());
-            Assert.False(Js.Parse(Js.Serialize(resolver.RecipeView("rounds/nursery/brain2-w5.json"))).GetProperty("trial").GetBoolean());
+            Assert.False(Js.Parse(Js.Serialize(resolver.RecipeView("rounds/nursery/brain2-w11.json"))).GetProperty("trial").GetBoolean());
         }
 
         [Fact]
