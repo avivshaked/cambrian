@@ -10,13 +10,13 @@
 param([ValidateSet('cpu', 'cpuresume', 'g32', 'g64')][string]$Step)
 $R = 'D:\Projects\experiments\evolution-simulator'
 $b = "$R\scratch\wt-anchor"
-$env = "$b\rounds\env-anchor-brain-check.ps1"
+$world = "$b\rounds\env-anchor-brain-check.ps1"
 $exe = "$b\artifacts\Evosim.Farm\bin\Release\net8.0\Evosim.Farm.exe"
 $group = "$b\scripts\card\card-group.ps1"
 $root = "$R\scratch\anchor-hold\on\$Step"
 New-Item -ItemType Directory -Force $root | Out-Null
 $arms = "abchk-$Step-6202,abchk-$Step-6203"
-$found = @('-Launcher', "$env,$env", '-Seeds', '6202,6203')
+$found = @('-Launcher', "$world,$world", '-Seeds', '6202,6203')
 $common = @('-Threads', '8', '-Mask', '65280', '-WaitForManifestSeconds', '600', '-RunsRoot', $root, '-Exe', $exe)
 switch ($Step) {
     'cpu' {
