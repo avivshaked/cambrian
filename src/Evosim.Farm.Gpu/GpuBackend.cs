@@ -59,13 +59,12 @@ namespace Evosim.Farm.Gpu
 
         /// <summary>
         /// D270, for the tests: the cells of the far-sense held columns (the plume's four floats a link and the current's three) across
-        /// the classes: two a class, a cell each, when both switches are off. Default 0 only so that a runner generated before the
-        /// columns existed still builds; the regenerated one answers.
+        /// the classes: two a class, a cell each, when both switches are off.
         /// </summary>
-        long FarHeldCells => 0;
+        long FarHeldCells { get; }
 
         /// <summary>D270, for the tests: the bytes of the far-sense held columns the blocks have uploaded so far (none with both switches off).</summary>
-        long FarHeldBytesUp => 0;
+        long FarHeldBytesUp { get; }
 
         /// <summary>The scent's fill on the card from the world's corpses (GpuScent), under <see cref="GpuOptions.Scent"/>.</summary>
         void FillScentOnCard(World world);
