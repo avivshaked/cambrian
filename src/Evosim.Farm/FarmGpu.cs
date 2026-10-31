@@ -37,22 +37,22 @@ namespace Evosim.Farm
             EnvSettings s, SolverConfig solver, Evosim.Core.PartShapeRegistry shapes, GpuDevice shared = null)
         {
             // D233's family carries its form to the host's contact as a hull of core points (ConvexCore.OfFamily)
-            // under a true-shape contact (D228). The card packs every core as a box's half-extents, so a family link
-            // would touch there as the box of its half-extents and part from the host at its first touch. A world
-            // develops only the shapes its list holds, so a list with no shape that takes a form holds no family part.
-            // Under sphere contact a family link touches as its sphere of FamilyReach on both engines, and the card
-            // carries its fin law (D255), so the refusal stands only for a true-shape contact.
+            // under a true-shape contact (D228). The card carries that hull at the level of the force at the link's
+            // centre (TrueShape): it packs each family link's points and its GJK and surfaces read them. At the level
+            // of the force at the contact point (TrueShapeAtPoint) the host touches the hull at its eight corner
+            // points, which the card does not carry, so that level still refuses. A world develops only the shapes its
+            // list holds, so a list with no shape that takes a form holds no family part. Under sphere contact a
+            // family link touches as its sphere of FamilyReach on both engines, and the card carries its fin law (D255).
             if (shapes == null) throw new System.ArgumentNullException(nameof(shapes));
-            bool trueShapeContact = solver.ContactShape == Evosim.Core.ContactShapeForm.TrueShape ||
-                                    solver.ContactShape == Evosim.Core.ContactShapeForm.TrueShapeAtPoint;
-            for (int i = 0; trueShapeContact && i < shapes.Count; i++)
+            bool atPointContact = solver.ContactShape == Evosim.Core.ContactShapeForm.TrueShapeAtPoint;
+            for (int i = 0; atPointContact && i < shapes.Count; i++)
             {
                 if (shapes[i].TakesForm)
                 {
                     throw new System.InvalidOperationException(
-                        "the gpu engine has no family shape under a true-shape contact ('" + shapes[i].Id +
-                        "' takes a form, D233); the card packs a true-shape core as a box. Run this world on the " +
-                        "cpu engine, or under sphere contact (D255)");
+                        "the gpu engine has no family shape under the true-shape contact at the point ('" + shapes[i].Id +
+                        "' takes a form, D233); the card touches a family hull at the link's centre (trueshape) and does " +
+                        "not carry its corner points. Run this world on the cpu engine, or under trueshape or sphere contact");
                 }
             }
 

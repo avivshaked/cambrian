@@ -170,6 +170,12 @@ namespace __NS__
         // D228's cores, by link row: each link's core half-extents and margin (ConvexCore.Of), packed with the
         // body and uploaded only when a pack changes them. A stub of one cell unless cfg.TrueShape.
         public ArrayView<Real> CoreHx, CoreHy, CoreHz, CoreM;
+
+        // D233's family under D228's true shape: CoreFam is 1 for a link row whose core is a hull of the family
+        // part's contact-core points (Creature.LinkCoreHull), else 0; Hull holds each such row's WholeStep.HullStride
+        // reals, row r at [r * HullStride, (r + 1) * HullStride), the host's points converted at the pack. CoreFam is a
+        // one-cell stub unless cfg.TrueShape; Hull a one-cell stub until a body with a hull is packed.
+        public ArrayView<Real> CoreFam, Hull;
         public ArrayView<int> NOver, OvSlot, OvId, OvPart, OvHeld, NHeld, HeldId, BedGlass;
         public ArrayView<long> Census, Overflow;
         // LinkPush: the contact force a link row hands its class kernel, three rows of Rows (x, y, z); under cfg.AtPoint
@@ -588,6 +594,8 @@ namespace __NS__
     public static partial class WholeStep
     {
         public const int LinkStride = 16;          // DevelopmentLimits.MaxParts: the global per-link stride
+        public const int HullPoints = 98;          // Superellipsoid.ContactCorePoints: the points of a family part's hull core (D233)
+        public const int HullStride = 3 * HullPoints;   // reals a hull core takes in SGlob.Hull
         public const int CandCap = 512;            // contact candidates a query keeps; past it, counted and dropped
         public const int Window = 10;              // EffectorDrive.SmoothWindow
         public const int TraceFrames = 3;          // Creature.TraceFrames
@@ -6987,13 +6995,14 @@ namespace __NS__
                     s.LRot3[row], s.LRot4[row], s.LRot5[row],
                     s.LRot6[row], s.LRot7[row], s.LRot8[row]);
                 Real tMargin = gl.CoreM[row];
+                int tHullAt = gl.CoreFam[row] != 0 ? row * HullStride : -1;
 
                 Real tBedStiffness = m * cfg.Omega * cfg.Omega;
                 Real tBedDamping = (Real)2.0 * cfg.Zeta * m * cfg.Omega;
 
                 Real tKept = 0, tnx = 0, tny = 0, tnz = 0, tpx = 0, tpy = 0, tpz = 0;
                 AgainstTheWorldTrue(cx, cy, cz, radius, ex, ey, ez, vx, vy, vz, m, tBedStiffness, tBedDamping,
-                                    tHalf, tRotation, tMargin, w, cfg,
+                                    tHalf, gl.Hull, tHullAt, tRotation, tMargin, w, cfg,
                                     ref fx, ref fy, ref fz, ref bedGlass, cfg.RockTouch,
                                     ref tKept, ref tnx, ref tny, ref tnz, ref tpx, ref tpy, ref tpz);
 
@@ -7251,6 +7260,37 @@ namespace __NS__
             return centre + rotation * corner;
         }
 
+        /// <summary>
+        /// ConvexCore.Support with a hull (D233): the hull point of the largest dot product with the direction taken
+        /// in the core's frame, the first of the fixed order winning a tie, then turned and moved. <paramref name="at"/>
+        /// is the element where the link's HullStride reals begin in <paramref name="hull"/>.
+        /// </summary>
+        private static V3 GjkSupportHull(ArrayView<Real> hull, int at, M3 rotation, V3 centre, V3 direction)
+        {
+            V3 local = rotation.TransposedTimes(direction);
+
+            int best = 0;
+            Real bestDot = local.X * hull[at] + local.Y * hull[at + 1] + local.Z * hull[at + 2];
+            for (int k = 3; k + 2 < HullStride; k += 3)
+            {
+                Real dot = local.X * hull[at + k] + local.Y * hull[at + k + 1] + local.Z * hull[at + k + 2];
+                if (dot > bestDot)
+                {
+                    bestDot = dot;
+                    best = k;
+                }
+            }
+
+            return centre + rotation * new V3(hull[at + best], hull[at + best + 1], hull[at + best + 2]);
+        }
+
+        /// <summary>
+        /// ConvexCore.Support(half, hull, ...): the box overload, line for line, when <paramref name="at"/> is
+        /// negative (a core that is not a hull), the hull's otherwise.
+        /// </summary>
+        private static V3 GjkSupportOf(ArrayView<Real> hull, int at, V3 half, M3 rotation, V3 centre, V3 direction) =>
+            at < 0 ? GjkSupport(half, rotation, centre, direction) : GjkSupportHull(hull, at, rotation, centre, direction);
+
         private static V3 GjkVertex(Real[] s, int block, int k) =>
             new V3(s[block + 3 * k], s[block + 3 * k + 1], s[block + 3 * k + 2]);
 
@@ -7280,11 +7320,13 @@ namespace __NS__
 
         /// <summary>
         /// ConvexCore.Distance: the distance between two cores and the nearest point of each, or false when
-        /// they intersect or touch.
+        /// they intersect or touch. <paramref name="atA"/> and <paramref name="atB"/> are where a core's hull begins
+        /// in <paramref name="hull"/> (D233), or -1 for a box, segment or point core.
         /// </summary>
         private static bool GjkDistance(
             V3 halfA, M3 rotationA, V3 centreA,
             V3 halfB, M3 rotationB, V3 centreB,
+            ArrayView<Real> hull, int atA, int atB,
             Real[] s, out Real distance, out V3 pointA, out V3 pointB)
         {
             // Each core contains its own centre, so coincident centres are an intersection.
@@ -7299,8 +7341,8 @@ namespace __NS__
 
             int n = 0;
             GjkAddVertex(s, ref n,
-                GjkSupport(halfA, rotationA, centreA, first),
-                GjkSupport(halfB, rotationB, centreB, -first));
+                GjkSupportOf(hull, atA, halfA, rotationA, centreA, first),
+                GjkSupportOf(hull, atB, halfB, rotationB, centreB, -first));
 
             s[GjkL] = (Real)1.0;
             V3 v = GjkVertex(s, GjkW, 0);
@@ -7315,8 +7357,8 @@ namespace __NS__
                 if (vv <= GjkTouching * GjkTouching) break;
 
                 // The difference's support point along -v: A's along -v, B's along +v.
-                V3 wa = GjkSupport(halfA, rotationA, centreA, -v);
-                V3 wb = GjkSupport(halfB, rotationB, centreB, v);
+                V3 wa = GjkSupportOf(hull, atA, halfA, rotationA, centreA, -v);
+                V3 wb = GjkSupportOf(hull, atB, halfB, rotationB, centreB, v);
                 V3 w = wa - wb;
 
                 // No progress possible: the support point is a vertex already held, or the gap is closed.
@@ -7570,6 +7612,10 @@ namespace __NS__
             V3 halfB = new V3(gl.CoreHx[rowB], gl.CoreHy[rowB], gl.CoreHz[rowB]);
             Real marginA = gl.CoreM[rowA];
             Real marginB = gl.CoreM[rowB];
+
+            // D233: a family link's core is a hull of its points (gl.CoreFam); any other link's is the box above.
+            int atA = gl.CoreFam[rowA] != 0 ? rowA * HullStride : -1;
+            int atB = gl.CoreFam[rowB] != 0 ? rowB * HullStride : -1;
             M3 rotationA = new M3(
                 s.LRot0[rowA], s.LRot1[rowA], s.LRot2[rowA],
                 s.LRot3[rowA], s.LRot4[rowA], s.LRot5[rowA],
@@ -7584,7 +7630,7 @@ namespace __NS__
 
             Real d;
             V3 pa, pb;
-            if (GjkDistance(halfA, rotationA, centreA, halfB, rotationB, centreB, simplex, out d, out pa, out pb))
+            if (GjkDistance(halfA, rotationA, centreA, halfB, rotationB, centreB, gl.Hull, atA, atB, simplex, out d, out pa, out pb))
             {
                 // Apart: along the closest points, from B toward A.
                 V3 gap = pa - pb;
@@ -7662,7 +7708,7 @@ namespace __NS__
 
             Real d;
             V3 pa, pb;
-            if (GjkDistance(halfA, rotationA, centreA, halfB, rotationB, centreB, simplex, out d, out pa, out pb))
+            if (GjkDistance(halfA, rotationA, centreA, halfB, rotationB, centreB, gl.Hull, -1, -1, simplex, out d, out pa, out pb))
             {
                 // Apart: along the closest points, from B toward A.
                 V3 gap = pa - pb;
@@ -7705,10 +7751,10 @@ namespace __NS__
         /// (BedHeightNear, GlassOutsideNear) are written for.
         /// </summary>
         private static void SupportSphere(
-            V3 half, M3 rotation, Real cx, Real cy, Real cz, Real ex, Real ey, Real ez, V3 direction,
-            out Real sx, out Real sy, out Real sz, out Real sex, out Real sey, out Real sez)
+            V3 half, ArrayView<Real> hull, int hullAt, M3 rotation, Real cx, Real cy, Real cz, Real ex, Real ey, Real ez,
+            V3 direction, out Real sx, out Real sy, out Real sz, out Real sex, out Real sey, out Real sez)
         {
-            V3 at = GjkSupport(half, rotation, CarryBase ? V3.Zero : new V3(cx, cy, cz), direction);
+            V3 at = GjkSupportOf(hull, hullAt, half, rotation, CarryBase ? V3.Zero : new V3(cx, cy, cz), direction);
 
             if (CarryBase)
             {
@@ -7751,7 +7797,8 @@ namespace __NS__
         /// </summary>
         private static void AgainstTheWorldTrue(
             Real cx, Real cy, Real cz, Real r, Real ex, Real ey, Real ez, Real vx, Real vy, Real vz, Real m,
-            Real bedStiffness, Real bedDamping, V3 half, M3 rotation, Real margin, SWorld w, SCfg cfg,
+            Real bedStiffness, Real bedDamping, V3 half, ArrayView<Real> hull, int hullAt, M3 rotation, Real margin,
+            SWorld w, SCfg cfg,
             ref Real fx, ref Real fy, ref Real fz, ref int bedGlass,
             int noteRock, ref Real rockKept, ref Real rnx, ref Real rny, ref Real rnz,
             ref Real rpx, ref Real rpy, ref Real rpz)
@@ -7764,7 +7811,7 @@ namespace __NS__
                 Real bounded = CarryBase ? ((-cfg.WorldDepth - cy) - ey) + r : -cfg.WorldDepth - (cy - r);
                 if (bounded > 0)
                 {
-                    SupportSphere(half, rotation, cx, cy, cz, ex, ey, ez, new V3(0, -1, 0),
+                    SupportSphere(half, hull, hullAt, rotation, cx, cy, cz, ex, ey, ez, new V3(0, -1, 0),
                                   out sx, out sy, out sz, out sex, out sey, out sez);
 
                     Real below = CarryBase ? ((-cfg.WorldDepth - sy) - sey) + margin : -cfg.WorldDepth - (sy - margin);
@@ -7816,7 +7863,7 @@ namespace __NS__
 
                 if (rx != 0 || ry != 0 || rz != 0)
                 {
-                    SupportSphere(half, rotation, cx, cy, cz, ex, ey, ez, new V3(-nx, -ny, -nz),
+                    SupportSphere(half, hull, hullAt, rotation, cx, cy, cz, ex, ey, ez, new V3(-nx, -ny, -nz),
                                   out sx, out sy, out sz, out sex, out sey, out sez);
 
                     Real shgt, sgx, sgz, spen, sslope;
@@ -7896,7 +7943,7 @@ namespace __NS__
                 {
                     Real magnitude = __M__.Sqrt(rx * rx + ry * ry + rz * rz);
                     Real unit = (Real)1.0 / magnitude;
-                    SupportSphere(half, rotation, cx, cy, cz, ex, ey, ez, new V3(-(rx * unit), -(ry * unit), -(rz * unit)),
+                    SupportSphere(half, hull, hullAt, rotation, cx, cy, cz, ex, ey, ez, new V3(-(rx * unit), -(ry * unit), -(rz * unit)),
                                   out sx, out sy, out sz, out sex, out sey, out sez);
 
                     SD sat;
@@ -7958,7 +8005,7 @@ namespace __NS__
                     if (radial > (Real)1e-9) { ox = x / radial; oz = z / radial; }
                     else { ox = -1; oz = 0; }
 
-                    SupportSphere(half, rotation, cx, cy, cz, ex, ey, ez, new V3(ox, 0, oz),
+                    SupportSphere(half, hull, hullAt, rotation, cx, cy, cz, ex, ey, ez, new V3(ox, 0, oz),
                                   out sx, out sy, out sz, out sex, out sey, out sez);
 
                     Real gsx = sx - cfg.AxisX;
