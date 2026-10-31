@@ -26,13 +26,18 @@
 > means *specific claims verified against the primary text* rather than cover-to-cover
 > reading. Forty-seven of the fifty-four have their PDF on disk; seven round-4 entries are
 > held as extracted text only, and only the eight round-1 and round-2 packages carry an
-> extraction manifest (§7.2).~~ ↻ **After round 8, sixty-eight are held**, with fourteen
+> extraction manifest (§7.2).~~ ~~↻ **After round 8, sixty-eight are held**, with fourteen
 > PDFs added from a search of 2026-09-29. Sixty-nine papers inform the synthesis matrix,
 > fourteen of them from round 8, and twenty-five more round-8 sources are cited outside it.
 > Ten are read in full, as before. Round 8 read its papers at the passages cited, and "in
 > part" still mostly means *specific claims verified against the primary text*. Sixty-one of
 > the sixty-eight have their PDF on disk. Round 8's fourteen were extracted to text at filing, with no manifest, and only
-> the eight round-1 and round-2 packages carry an extraction manifest (§7.2).
+> the eight round-1 and round-2 packages carry an extraction manifest (§7.2).~~ ↻ **After
+> round 9, eighty-eight are held**, with twenty PDFs added on 2026-09-30. Eighty-four papers
+> inform the synthesis matrix, fifteen of them from round 9. Thirty supporting sources from
+> rounds 8 and 9 are cited outside it. Ten are read in full, as before, and round 9 read its
+> papers at the passages cited. Eighty-one of the eighty-eight have their PDF on disk. Round
+> 9's twenty carry an extraction manifest, so twenty-eight packages now do (§7.2).
 >
 > ~~Round 2 opened a seventh question (endogenous selection, `DESIGN.md` §5A) that **has
 > never been searched for at all**~~ **Round 3 (2026-08-29)** searched it. §5A is no longer
@@ -52,6 +57,9 @@ round. In the same way, review round 7 was triggered by experiment round 57.
 Review round 8 was searched on 2026-09-29, before review round 7, and filed on
 2026-10-31. Rows are numbered in order of filing.
 
+Review round 9 was searched on 2026-09-29 as well, and filed after round 8. Its working
+files call it round 7 and its question Q12, numbers that went to the seasonal-light round.
+
 | Round | Date | Trigger | Queries | Papers read | Design changes produced |
 |---|---|---|---|---|---|
 | **1** | 2026-08-02 | Initial — six ranked questions before implementation | 15 | 3 full, 2 partial | DESIGN.md draft 1→3: added §2 (premature convergence), changed §8.2/§8.3 (selection + multi-BC), corrected §5.4 (fluid model diversity cost), §4.4 (effector scheme), §4.1 (reflection flags), §11.2 (exploit checklist), closed §12.1 (encoding) |
@@ -62,6 +70,7 @@ Review round 8 was searched on 2026-09-29, before review round 7, and filed on
 | **6** | 2026-09-07 | The owner's question, put while round 29 ran, was how nature solved the chicken and egg problem that movement in the primordial soup would not have been worth it without senses, and senses would not have been worth it before movement. Behind it, D082 and 0072: no round has ever selected for moving, and the owner's reading is that the world is not one in which random movement beats sitting still | Four parallel search sweeps (Claude Sonnet subagents, read-only web, scoped briefs), about thirty queries between them; **the §3.2 strings were not re-run** and no forward snowball was done, both logged in §3.9 per §3.5 | **17 PDFs fetched, all 17 into the synthesis** ([P77] [BP77] [D97] [KB96] [SL23] [W11] [TS12] [MK72] [SBB86] [SJ10] [J09] [J11] [JKG15] [KDL13] [JG21] [MZ09] [HG25]); every claim used was located by the reviewer in the extracted `source.md` at the page. 17 works recorded closed or bot-gated and not bypassed, among them the two founding texts, Fraenkel & Gunn 1940 and Berg & Brown 1972 | **Q11 opened and answered.** Nature did not solve the problem; it never had it. Blind motility pays on its own where the habitat is physically structured [W11 p.1] and the body is large enough for its own motion to refresh the water it feeds from (a radius near 20 µm for a 50% gain [KB96 p.1]; nothing below 0.6 µm [D97 p.1, p.4]; a bacterium relocates rather than stirs [P77 p.7–8; BP77 p.1]); the first sense is a scalar compared with itself a few seconds earlier, biasing a walk that was already random [MK72 p.1; SBB86 p.1; SJ10 p.1]; in animals the first sensorimotor unit was one cell, and nervous systems came to coordinate a new effector, not to link sensing to moving for the first time [JKG15 p.2–3; KDL13 p.4, p.8; J09 p.7; J11 p.1]. **Design impact: a diagnosis and a proposal, no mechanism changed.** §5A.2c's field has no per-body depletion, so undirected movement earns nothing here by construction; DESIGN §0r records it and `fable-propose-motility.md` (absorbed into D083 and deleted on ruling) puts three world rules in front of the owner |
 | **7** | 2026-10-05 to 2026-10-06 | The simulator's experiment round 57 (`DECISIONS.md` D151): leaf bodies under a 6,000 s year of two seasons, three days at 1.6 and three at 0.4 of the mean light, with each day's light multiplied by a shared log-normal weather factor (log s.d. 0.3, lag-1 correlation 0.5), a stored reserve, a breeding gate and no light sense. Its pre-registration needed literature behind its predictions on reserves, breeding timing and trait variance under seasonal and stochastic light | 43 web queries on 2026-10-05 (§3.10), 31 abstract fetches through Europe PMC, OpenAlex, arXiv and PMC; verification on 2026-10-06 against CrossRef, OpenAlex, Europe PMC, Semantic Scholar and the bioRxiv API. **The §3.2 strings were not re-run** and no forward snowball was done, both logged in §3.10 | **10 papers verified and added to the synthesis**, no PDF saved. **Read in full from open text (5):** [FDT11] [PW21] [GSS14] [MK07] [BWWR15] (main text; [GSS14] and [BWWR15] supplements not read). **Abstract only (5):** [WTV18] [SK12] [VJTF09] [TGC17] (its design read in full in the same group's open 2019 paper) and [WYRW25] (journal abstract only; both preprint versions read in full). **Locators are section and figure locators, not PDF pages**, because no PDF was saved and the full texts were read as PMC, Europe PMC or bioRxiv XML and HTML, which carry no PDF pagination | **Q12 opened and answered in theory; no mechanism changed.** `DESIGN.md` §0y records the round as rounds 3, 4 and 6 were recorded (§0e, §0e2, §0r). The round backs the predictions of experiment round 57's pre-registration, `logbook/0136-winters-and-weather.md` (on the `round-57` branch at filing). Clause R (the reserve rises) rests on [FDT11] (no storage at low variability and low predictability, Results, Figs 3–4) and [VJTF09] (abstract: stores pay by allowing breeding before the feeding season). Clause T (births move to summer's first day) rests on [VJTF09], abstract only. Clause V (the reserve spread narrows) rests on [PW21] (within-population trait variance fell over time in every regime, Results, Fig. 5). Every mapping from a paper to this world is the round's inference, and none of the ten modelled this world's setting. Two papers disagree on the direction of the weather's autocorrelation effect ([MK07] against [WTV18]), recorded in §7.3 |
 | **8** | 2026-09-29 (searched and appraised); filed 2026-10-31 | `DECISIONS.md` D128 ruled death by age as a Gompertz hazard on a heritable base that costs repair upkeep, with each birth and each destroyed part advancing the body's clock, and asked for a review round on its sources before its numbers were fixed. D130 put the heritable gene into experiment round 52 with its values unruled | Two passes on 2026-09-29. Pass 1 logged no queries. Pass 2 logged 63 attempts in `logbook/specs/r52-literature/search-log.tsv`: 42 OpenAlex keyword or filter queries, 5 OpenAlex forward snowballs, 3 Semantic Scholar keyword and 6 bulk queries returned results, and 7 Semantic Scholar attempts failed with HTTP 429. Metadata lookups for 50 candidate DOIs in each service, and CrossRef retraction checks on 42. **The §3.2 strings were not re-run**, logged in §3.11 | **14 PDFs retrieved and kept** (`papers/` 85 to 98). **39 sources appraised:** 14 core into the synthesis matrix ([PER19] [COL21] [JON14] [KR91] [MC19] [LEM15] [BBV20] [WIN25] [SADK00] [ZBH95] [LC85] [MR87] [CAR92] [KK16]) and 25 supporting, cited outside it. By read level: 14 PDFs at the passages cited, 9 PubMed Central article pages without page numbers, 16 abstracts. None read in full. Pass 1's 42 sources enter only where pass 2 re-read them | **Q13 opened and answered in part; no mechanism changed.** The owner ruled the gene's values on 2026-09-29 from pass 1 (logbook/0127): repair exponent 0.5, mutation chance 0.08, founders 0.5 to 1.5. D128's doubling at a fifth of the base and its birth and wound pushes stood. Pass 2 found f = 0.2 defensible [JON14; FPW90]. It found the gene acting on the rate, where the evidence puts lifespan variation in onset and early mortality [PER19 p.3; COL21 p.1, p.3]. The birth push is 3 to 25 times the cost measured in birds [BBV20 p.6; WIN25 p.3], and no source gives the repair exponent [KR91]. D132 held the values through rounds 53 and 54 and cites pass 2. `DESIGN.md` §0z records the round |
+| **9** | 2026-09-29 (searched); 2026-09-30 (fetched); 2026-10-31 (appraised and filed) | `DECISIONS.md` D134 ruled the fast nursery, which breeds brains in an easier world under D133's score, and the owner asked whether academic justification could be found. A first report answered at abstract level. The round's working files call it round 7 and its question Q12; this review files it as round 9, question Q14 | First report: queries not logged. Pass 1: 60 web search and fetch calls, first page only. **The §3.2 strings were not re-run** and no forward snowball was done, logged in §3.12 | **20 PDFs retrieved and kept** (`papers/` 175 to 192, 194 and 195), ten through institutional access; Soros & Stanley 2014 not obtained. **20 appraised:** 15 core into the synthesis matrix ([MD08] [MD09] [GM97] [JAK97] [PJ10] [CA16] [LOPA03] [CLWO13] [KNA07] [WLCS19] [LST11] [GEOP08] [BB72] [SHLF21] [BEJ25]) and 5 supporting ([LFM13] [WS11] [LM14] [TEN26] [AB14]). All were read at the passages cited, none in full, with no database check | **Q14 opened and answered in part; no mechanism changed.** The literature names D134's move, environmental complexification, as a scheme apart from fitness shaping [MD08 p.2–3]. Direct evolution failed where a staged world succeeded [GM97 p.13–14; PJ10 p.5; CA16 p.15]. A single hand-built ramp failed at the hardest levels [WLCS19 p.14], and every embodied success shaped its score as well as its world [CA16 p.11; PJ10 p.4; GEOP08 p.4]. No paper moved an evolved sensing-and-steering brain from an easier tank to a harder one. `DESIGN.md` §0z2 records the round |
 
 Round 2 searched nothing and retrieved nothing. It re-read papers already in
 `research/papers/` against a question that had not been asked in round 1. The answer changed
@@ -171,6 +180,7 @@ result did not reach statistical significance and is reported here as suggestive
 | Q11 | *(opened round 6)* Under what conditions is undirected movement worth its cost before any directional sense exists; how did the first sense couple to movement; and did early animals ever pass through a stage with senses and no effectors, or effectors and no senses? | ✅ **Answered.** **(a) When blind movement pays.** Only in a physically structured habitat: "for natural selection to favor motility for the acquisition of nutrients by bacteria, their environment must be physically structured", and "chemotaxis evolved in bacteria that were already capable of self-propulsion in random directions" [W11 p.1]. At bacterial size movement does not raise uptake, since "the adsorption rate for molecules of moderate size cannot be significantly enhanced by motion of the cell or by stirring" [BP77 p.1] and "this bug can't do anything by stirring its local surroundings"; what it can do is "find places where the food is better", moving "to find greener pastures" a distance of order D/v to outrun diffusion [P77 p.7–8]. The size threshold: an organism "smaller than 0.6 µm diameter is unlikely to obtain any advantage by expending energy on locomotion", and the smallest of 97 motile genera averages 0.8 µm while 18 of 94 non-motile genera are smaller [D97 p.1, p.4]. Above that, swimming or sinking raises the flux to an absorber, by about 50% at a radius near 20 µm, and "mass transfer increases with cell size and with" relative motion in every flow regime [KB96 p.1]. Encounters with particles are diffusive below a micrometre and ballistic, scaling with swimming speed, above it [SL23 p.4]. Even with a sense, directed search beats undirected only at intermediate turbulence [TS12 p.2]. **(b) The first sense.** Bacteria detect no gradient across the body: "the apparent detection of a spatial gradient by the bacteria therefore involves an actual detection of a temporal gradient experienced as a result of movement through space" [MK72 p.1]; the comparison reaches "4 sec into the past: the past second is given a positive weighting, the previous 3 sec are given a negative weighting" [SBB86 p.1]. The signal can be the cell's own energy state: "motility, combined with the sensory perception of the internal energetic conditions, is prerequisite for tactic responses" [SJ10 p.1]. **(c) Animals.** Parker's scenario had "independent effectors" arise first and early nervous systems connect them to sensors; Pantin's answer, which the field now holds beside it, is that nervous systems arose to coordinate the new effector, muscle [JKG15 p.2]; "there can be significant IO and IC function without a nervous system" [JKG15 p.3]. The problem early nervous systems solved "was not so much to act intelligently, a problem that had already been solved in various ways without a nervous system, but to act as a single multicellular unit" [KDL13 p.4], and "at microscopic scales, information processing tasks required for adaptive behavior can be accomplished without any nervous system" [KDL13 p.8]. The simplest eyespot is two cells, a photoreceptor and a pigment cell, and larvae "directly regulate ciliary beating during phototaxis by the eyespots" [J09 p.7]; "the first nervous systems consisted of combined sensory-motor neurons, directly translating sensory input into motor output" [J11 p.1]; much early sensing "was reafferent; it was responsive to the consequences of the animal's own actions" [JG21 p.1]. Neurons and brains arose more than once [MZ09 p.1]. **(d) Artificial life.** No fetched paper names the dilemma as such; the nearest are [VG05]'s finding that locomotion pays only when it is the sole route to reproduction (round 3) and [HG25 p.1]'s that energy costs drive evolved networks smaller. *The design reading, marked as this review's inference: this world's feeding draws from a cell 5 m across that every body shares, so a body neither depletes its own water nor refreshes it by moving; the physics that made blind movement pay is absent by construction, and the fix is a world rule, in front of the owner.* |
 | Q12 | *(opened round 7)* When a population's light varies by season and by unpredictable weather, and its bodies cannot sense the light, what do theory and experiment predict for stored reserves, for the timing of breeding and for the variance of breeding traits? | 🟡 **Answered in theory; the transfer to this world is inference, and the world's own answer is experiment round 57.** **(a) Storage.** In a stochastic dynamic programming model where environmental energy follows a log-normal AR(1) process (a series in which each step is correlated with the one before), storing is not optimal at low variability and low predictability. The stored fraction rises as either grows, and storage pays only at intermediate environmental energy with stores not yet full [FDT11 Results, Figs 1, 3–4]. That optimum is a reaction norm on the *sensed* current environment, the model has no minimum breeding investment, and its fitness is expected lifetime reproduction, so it carries no bet-hedging term [FDT11 model conditions; Discussion]. In a seasonal model, stores pay mainly by allowing breeding before the feeding season, when an egg is worth most [VJTF09 abstract]. **(b) Bet-hedging.** Bet-hedging is the trade that [SK12]'s title names, among the mean, the variance and the correlation of fitness. Dormancy evolved upward with the frequency of unpredictable bad years in *Neurospora*, as the geometric-mean model predicts: mean final dormancy was 0.16 with no bad years and 0.30 to 0.33 at 40–50% [GSS14 Results, Table 2, Fig. 1]. Rotifers under an unpredictable regime started sex earlier and hatched fewer diapausing eggs [TGC17 abstract]. A genotype's fitness variance splits into each individual's variance and the correlation among its individuals [SK12 abstract], and in finite populations the sign of selection on a bet hedger can reverse with population size [WYRW25 abstract; preprint Results]. Which response evolves (plasticity, bet-hedging or tracking) depends on the timescale and predictability of the variation [BWWR15 Results, Fig. 2]. **(c) Autocorrelation, direction disputed.** More positive autocorrelation at fixed variance always raised the evolutionarily stable allocation to survival [MK07 Results, Fig. 2c; Discussion]. Stress tolerance was disfavoured in redder environments, through a trade-off with reproduction [WTV18 abstract]. **(d) Trait variance.** Slower cycles kept more within-population life-history variance, periodicity mattered more than random timing, and variance fell over time in every regime [PW21 Results, Figs 4–5]. **(e) Artificial life.** No study was found of evolved storage or bet-hedging under seasonal plus stochastic resource input; it may be a gap in the field or in the search (§9). *The design reading, marked as this review's inference: the weather (coefficient of variation about 0.31, e-folding time about 1.4 days) lies at or beyond the low end of [FDT11]'s range, so the season and not the weather should raise the reserve; births should bunch at the turn to summer; and the reserve's spread should narrow over the run. These are clauses R, T and V of round 57's pre-registration.* |
 | Q13 | *(opened round 8)* How does mortality rise with age across species; what does a longer life cost; do reproduction and injury speed ageing; how heritable is lifespan and how fast does it respond to selection; and what do models in which lifespan evolves show? | 🟡 **Answered in part; most of the values D128 needs are judgement.** **(a) Shape.** Senescence is detected in the wild in 175 species [NUS13 HTML], but not everywhere: trajectories also stay flat, fall or hump, and terminal over mean adult mortality runs from above 20 to below 0.5 [JON14 HTML]. Across 96 mammals the rate of senescence does not slow with body size; longer lives come from later onset and lower prime-age mortality [PER19 p.3], which carry 47–62% of lifespan variance [PER19 p.6]. Within primate genera "variation in the rate of ageing … is orders of magnitude smaller than variation in pre-adult and age-independent mortality" [COL21 p.1, p.3]. A fitted Gompertz rate is confounded with initial mortality [RS02 abstract; KIR15 HTML]. **(b) The cost of a longer life.** The theory needs only that longer life "usually involves some cost" and gives no functional form [KR91 abstract]. Within species, 21 of 26 wild vertebrate studies support an early–late trade-off [LEM15 HTML], and direct selection for long life cut fecundity [ZBH95 abstract]. Others uncouple the two [MC19 p.1, p.4; COH20 abstract]. **(c) Reproduction.** Lifelong brood enlargement raised jackdaws' Gompertz slope from 0.16 to 0.25 a year, left the intercept unchanged and cut remaining life from 4.7 to 3.8 years [BBV20 p.6]. Across birds the cost is −0.05 log-odds of annual survival per egg [WIN25 p.3], with a "flat" landscape within species [WIN25 p.1]. A ten-year cricket study found no evidence of a trade-off with survival, and only weak evidence of one with senescence [RM19 p.1]. **(d) Injury.** Wing clipping shortened bumble-bee life [CAR92 abstract]. One sublethal head strike cut fly median life from 48.3 to 38.3 days, saturating at four strikes [KAT13 HTML]. No comparative source was found. **(e) Heritability and response.** Life-history heritability averages 0.262 in wild animals [MR87 p.6], and human longevity's is below 10% [RUBY18 HTML]. Late-reproduced flies rose from about 35 to over 70 days in 21 generations, at uncontrolled larval density only [LC85 p.1, p.5]. Mortality regimes diverged in 50 to 90 generations [SADK00 HTML]. **(f) Models.** Survival falling faster than exponentially emerges from inherited age-specific mutations [PEN95 p.3]. Local reproduction favours shorter lives [WER15 p.2; TRA04 abstract], and re-implementations traced such results to movement or a shorter generation time [KK16 p.13]. Ageing evolves stably and negative ageing does not [GT22 p.1]. **(g) Artificial life.** No evolvable-lifespan model from an artificial-life venue was found. *The design reading, marked as this review's inference: f = 0.2 is defensible on the measured doubling times; the gene's stretching of the doubling time runs against the within-lineage evidence; the repair exponent has no source; the birth push is 3 to 25 times the measured cost; the wound push has the right direction and a guessed size.* |
+| Q14 | *(opened round 9)* Does evolving in an easier world first, with the score fixed, have support, and when does it fail? Why are sensing-and-steering brains slow to evolve in artificial life, and under what conditions do they evolve? | 🟡 **Answered in part; the nursery's own form is untested in the literature.** **(a) The scheme.** Environmental complexification is one of four incremental schemes, beside staged evolution, fitness shaping and behavioural decomposition [MD08 p.2–3; MD09 p.2]. Direct evolution found no working controller where incremental schemes did [MD08 p.7; MD09 p.5]. Prey capture stalled after about 20 generations directly, and a sequence of harder prey solved it [GM97 p.13–14]. In Sims-style creatures, light following from scratch was "overall not satisfactory", and walkers later given vision mostly evolved it [PJ10 p.5]. Foraging in 3D articulated bodies evolved as noise on food placement rose stage by stage [CA16 p.1, p.15]. Direct optimisation scored 17.9, 39.6 and 13.6 against a solved 230 on POET's environments [WLCS19 p.10]. Varying goals that share structure sped evolution, up to a thousandfold in one model [KNA07 p.3]. **(b) When it fails.** A hand-built direct-path curriculum failed at the very and extremely challenging levels [WLCS19 p.14]. Raising noise too fast left most runs "wander about randomly" [CA16 p.15]. Random goals slowed evolution [KNA07 p.2, p.5]. Variation must not be "so large that reliably fit controllers fail to evolve at all" [JAK97 p.9]. The user must design the sequence [GM97 p.20], and a late switch over-specialises [MD08 p.3]. When only the hardest function paid, none of 50 populations evolved it, against 23 of 50 when simpler functions paid too [LOPA03 p.3, p.5]. Blocking deleterious mutations cut that from 28 of 50 to 16 or fewer [CLWO13 p.2]. **(c) The score.** No paper kept a pure intake score. Every embodied success shaped it: a locomotion term [CA16 p.11], speed toward the light [PJ10 p.4], a bonus for each step closer [GEOP08 p.4]. When all score equally poorly, behavioural diversity bootstraps search [MD09 p.1, p.5]. Novelty search solved a deceptive maze in 39 of 40 runs against fitness's 3 [LST11 p.16–17], but only 5 of 100 in an unenclosed one [LST11 p.19]. **(d) Why slow.** Objective search converged on reactive behaviour and solved under 20% of cognitive tasks [LM14 p.6]. "Turning appears harder to evolve than running" [CA16 p.16], and one target and sustained foraging are "two entirely different skills" [CA16 p.23]. Sims' light following was matched but not exceeded in 19 years [LFM13 p.1–2]. **(e) Conditions.** Dense food lowers the threshold for any perception, and its cost restricts it [SHLF21 p.1, p.8–9]. Long-range gathering was more consistent in larger worlds [BEJ25 p.6]. Taxis evolved within 1,000 to 2,000 updates under a per-step reward, and memory for it could evolve but did worse [GEOP08 p.5]. A bacterium with no spatial sense lengthens its runs going up a gradient [BB72 p.1–2], the temporal comparison Q11 found [MK72 p.1; SBB86 p.1]. **(f) The gap.** No paper moved an evolved sensing-and-steering brain from an easier tank to a harder one. *The design reading, marked as this review's inference: D134's move has a name and a record, and its claim must stay modest because the embodied record shaped its scores. A single ramp is the form most often seen to fail, and a varied world with transfer the form most often seen to work.* |
 
 **PICOC framing** sets the review's terms. *Population:* evolved virtual creatures with genetically encoded 3D morphology and control. *Intervention:* co-evolution of body and controller under
 evolutionary / quality-diversity search. *Comparison:* fixed-morphology controller
@@ -572,7 +582,43 @@ was bypassed.
 
 The session that filed the round read no new source. It hashed the fourteen PDFs and
 re-located the round's page-cited claims in thirteen of them, through the text layer. That
-corrected one locator and failed to confirm another (§4).
+corrected one locator. A second check on 2026-10-31, against the text extracted at
+filing, confirmed every page (§4).
+
+### 3.12 Round 9 searches (2026-09-29, fetched 2026-09-30, filed 2026-10-31)
+
+Round 9 ran in four steps. Its working files call it round 7 and its question Q12, because
+they were written before those numbers went to the seasonal-light round (§3.10).
+
+The first step was a report by a Claude Sonnet research agent on the night of 2026-09-29,
+`logbook/specs/nursery-curriculum-literature.md`. It answered the owner's question on D134.
+It logged no queries, and read thirteen sources at abstract or search-snippet level. D134
+cites it.
+
+Pass 1 was the `literature-review` skill's first pass, by a Claude Sonnet subagent the same
+night. Its pool and log are `research/nursery-curriculum/pass1-candidates.md`. It made 60
+web search and fetch calls, about ten results each, first page only. It used an unfiltered
+search engine and site filters on pnas.org, PubMed, Semantic Scholar, arXiv, OpenReview and
+DBLP. Google Scholar and the journal sites were not searched. The query list stayed in a
+session record that was not kept, and the log names its themes instead.
+
+The pool holds 46 rows. Strand A, 27 rows, covers environmental curricula and incremental
+evolution. Strand B, 19 rows, covers why sensing and steering evolve slowly, and its numbering
+skips B16. Two rows were already held, [HG25] and [DO21].
+
+The owner kept twenty-one papers: twenty from the pool, and Berg & Brown 1972 from round 6's
+queue. The brief is `research/nursery-curriculum/round7-fetch-brief.md`. A Claude Sonnet
+session with a browser fetched them on 2026-09-30, with the owner signing in to each
+publisher. Ten came through institutional access and ten by open routes. Soros & Stanley 2014
+was not obtained. Each PDF was matched against its first page. The `pdf-clean-markdown`
+skill then built a package with `source.md`, `manifest.json`, figures, tables and a `JART.md`.
+
+Pass 2 read the twenty `source.md` files on 2026-10-31, at the passages that bear on Q14. It
+did not rely on the `JART.md` files. It re-hashed the twenty PDFs, and every hash and size
+matched the fetch record. It ran no search, database lookup or retraction check (§7.2).
+
+The §3.2 strings were not re-run. Q14 is a new question, so the skip is logged here per §3.5
+rule 1. No forward snowball was done.
 
 
 ## 4. PRISMA flow
@@ -856,6 +902,60 @@ gave p.2–3. That paper never names Gompertz.
 [PER19]'s caveat that its data are zoo animals stands at p.2 and again at p.6. There the
 animals "were born and died in zoological institutions".
 
+Round 9 additions (2026-09-29, fetched 2026-09-30, filed 2026-10-31):
+
+```
+IDENTIFICATION
+  First report: queries not logged; sources listed (A to M)          13
+  Pass 1: web search and fetch calls                                 60
+SCREENING
+  Candidate pool rows (strand A 27, strand B 19)                     46
+     already held ([HG25], [DO21])                                    2
+  Kept by the owner for retrieval                                    21
+     from the pool                                                   20
+     from round 6's queue (Berg & Brown 1972)                         1
+RETRIEVAL
+  PDFs obtained (papers/ 175 to 192, 194, 195)                    20/21
+     through institutional access                                    10
+     open access or publisher page                                   10
+  Not obtained (Soros & Stanley 2014)                                 1
+APPRAISAL
+  Read at the passages cited, in source.md                           20
+  Read in full                                                        0
+  Database cross-match or retraction check                            0
+  Hashes re-checked against the fetch record                         20
+  ADDED TO THE SYNTHESIS MATRIX                                      15
+  Cited outside the matrix (supporting)                               5
+```
+
+Eight of the first report's thirteen sources were fetched. The five not fetched were Kashtan &
+Alon 2005, Brant & Stanley 2017, Black et al. 2020, Lehman et al. 2020 and a specification-gaming
+list that is not peer reviewed.
+
+Round 9 left seven metadata notes.
+
+[GEOP08]'s page 1 names Grabowski, Elsberry, Ofria & Pennock. Pass 1 and the fetch brief gave
+Beckmann, McKinley & Ofria.
+
+[CLWO13]'s page 1 names Covert, Lenski, Wilke & Ofria. The first report gave five other names.
+Its "five of 23" is Covert's account of [LOPA03] [CLWO13 p.2].
+
+[JAK97] tests a Khepera T-maze and a gantry robot. The octopod in the first report is a separate
+1997 Sussex report, seen only in [JAK97]'s references.
+
+[LST11] is the authors' 39-page layout from a course page, where the journal runs 35 pages. Its
+locators are PDF pages.
+
+[WLCS19] is arXiv version 3, and no peer-reviewed version was checked. Without transfer, no
+extremely challenging environment was *generated* [WLCS19 p.19]. The first report said none was
+solved.
+
+[SHLF21]'s abstract names four best predictors: resource density, basal cost, perceptual cost and
+mutation rate. The first report's "strongest effect" for density is not the paper's.
+
+[GM97], [JAK97] and [BB72] are scans with rough OCR. [MD09] and [LST11] carry no DOI in the
+record, and [BEJ25] and [TEN26] are arXiv preprints.
+
 ## 5. Synthesis matrix
 
 | Key | Claim used | Method / scope | Stance vs design | Quality | Limitations |
@@ -930,6 +1030,21 @@ animals "were born and died in zoological institutions".
 | **[MR87]** *(round 8)* | Life-history narrow-sense heritability mean 0.262 (SE 0.012), median 0.250 [p.6]; *Drosophila* 0.12 ± 0.02, from Roff & Mousseau 1987 [p.8] | Meta-analysis of 1,120 estimates in wild, outbred animals | **Sets the heritability band** behind a response of 1–3% of the base a generation (pass 2's inference) | 📄 Peer-reviewed, *Heredity*; scanned PDF | *Drosophila* excluded from its own data set; old |
 | **[CAR92]** *(round 8)* | Abstract only. Clipping 18% of forewing area "significantly reduced life expectancies"; wear predicts mortality | Field experiment, eight bumble-bee colonies | **Supports the wound push's direction** | 📄 Peer-reviewed, *J. Anim. Ecol.*; closed | No effect size seen |
 | **[KK16]** *(round 8)* | Re-implementations of programmed-death models failed, or death evolved "only because it granted individuals the ability to move", or because it "shortened the generation time" [p.13] | Critical review with re-implementations | **A check on any lifespan result here** — a fall in the base must be tested as a movement or generation-time effect (inference) | 📄 Peer-reviewed, *Aging Cell* 🔓 CC BY; PDF pages | Review of models, not of field data |
+| **[MD08]** *(round 9)* | Incremental schemes are staged evolution, environmental complexification, fitness shaping and behavioural decomposition [p.2]; complexification tunes the task's parameters [p.3]; a late switch over-specialises [p.3]; direct evolution found no working controller, "all individuals obtaining the minimum fitness" [p.7] | Simulated wheeled robot, eight lights, feed-forward networks, ε-MOEA, 10 runs | **Names the nursery's scheme**, kept apart from fitness shaping (inference) | 📄 Peer-reviewed, SAB 2008, LNAI 5040; PDF pages | One task; its own method is multi-objective, not a curriculum |
+| **[MD09]** *(round 9)* | Bootstrap problem: "if all individuals from the first randomly generated population perform equally poorly", nothing evolves [p.1]; direct evolution found no working controller [p.5]; behavioural diversity and multi-subgoal evolution bootstrapped at generations 218 and 138 (p < 0.001), with equal final fitness [p.5] | Light-seeking robot, seven lights, NSGA-2, population 200, 30 runs of 1,000 generations | **Supports D134 (4)**: diversity, not a proxy, for a population that all scores zero (inference) | 📄 Peer-reviewed, IEEE CEC 2009; PDF pages | Its behaviour label is the light vector, which encodes the task |
+| **[GM97]** *(round 9)* | Direct evolution finds "mechanical" strategies [p.1–2]; prey capture stalled after about 20 generations, the mean of ten runs [p.13–14]; a sequence of harder prey solved it [p.13], with capture in 85% of test trials [p.17]; the user must design the sequence [p.20] | Grid pursuit; recurrent networks by ESP, Delta coding between tasks | **The closest precedent for a world-side ramp under one score** (inference) | 📄 Peer-reviewed, *Adaptive Behavior*; scan | A converged population "cannot easily adapt" without Delta coding [p.10]; discrete grid |
+| **[JAK97]** *(round 9)* | Aspects reality lacks must be "randomly varied from trial to trial" [p.8]; real aspects vary too, but not so much that nothing evolves [p.9]; reliable noise gets used [p.10]; transferred controllers succeeded 98 and 97 times in 100 [p.39] | Theory, plus two transfers to real robots | **Backs D134's draw of carrion density per episode** (inference) | 📄 Peer-reviewed, *Adaptive Behavior*; scan | Simulation to reality, not easy tank to hard |
+| **[PJ10]** *(round 9)* | Light following from random genotypes was "overall not satisfactory"; walkers given vision mostly evolved it [p.5] | Sims-style creatures; 300 clones of one of 41 walkers, weights mutated; fitness the speed toward the light [p.4]; 115 runs [p.8] | **The nursery's pattern of fixed bodies and bred brains**, under a shaped score (inference) | 📄 Peer-reviewed, GECCO 2010; PDF pages | Approach speed is a proxy D133 rejects; the comparison is qualitative |
+| **[CA16]** *(round 9)* | "A notoriously difficult task" [p.1]; under the plain score "the best organisms move very little", so locomotion was added [p.11]; noise rose 0.1%, 5%, 50%, then uniform, and too fast left runs wandering [p.15]; turning is harder than running [p.16]; sustained foraging is a second skill [p.23] | 3D rigid bodies, body and brain co-evolved; staged runs seeded by founders chosen by eye [p.6] | **The nearest substrate, and the strongest warning**: its curriculum needed a shaped score and a human eye (inference) | 📄 Peer-reviewed, *GPEM* 17(4); PDF pages | One lineage; brittle high-level neurons [p.25] |
+| **[LOPA03]** *(round 9)* | Complex functions built on simpler ones "provided that these were also selectively favoured" [p.1]; EQU in 23 of 50 populations [p.3], 0 of 50 when only EQU paid, 124 of 360 when one or two rewards were dropped [p.5]; a pivotal mutation was deleterious when it arose [p.3] | Avida, nine rewarded logic functions | **Supports paying partial skills in the same currency**, as small carrion does; rewards fixed, not staged (inference) | 📄 Peer-reviewed, *Nature*; PDF pages | Logic, not bodies; by D134's terms its rewards are shaping |
+| **[CLWO13]** *(round 9)* | Reverting or replacing deleterious mutations lowered fitness; EQU in 28 of 50 controls against 16 or fewer in each treatment [p.2]; 13 of 20 replays under the control protocol [p.3] | Avida, four mutation treatments, 50 populations each | **Cautions against strict acceptance**, such as D134's two paired SE (inference) | 📄 Peer-reviewed, *PNAS*; PDF pages | Asexual digital organisms |
+| **[KNA07]** *(round 9)* | Modularly varying goals sped evolution, more for harder goals, up to a thousandfold [p.1, p.3]; random goals mostly slowed it [p.2, p.5]; the same variants as fixed objectives gave "virtually no speedup" [p.4] | Logic circuits, networks, RNA; GA and hill-climbing | **Supports varying the world over ramping it**, if variants share structure (inference) | 📄 Peer-reviewed, *PNAS*; PDF pages | Varies the goal, which D134 holds fixed |
+| **[WLCS19]** *(round 9)* | Direct optimisation scored 17.9, 39.6 and 13.6 against 230 [p.10]; children admitted at 50 to 300, "neither too hard nor too easy" [p.7, p.10]; a direct-path curriculum failed at the hardest levels [p.14]; without transfer no extremely challenging environment arose [p.19] | 2D biped, evolution strategies, co-evolved terrain | **Supports a curriculum, cautions against one ramp** (inference) | 📄 arXiv preprint v3 | Five ES runs; three runs without transfer |
+| **[LST11]** *(round 9)* | Fitness as distance to goal [p.15] solved a deceptive maze in 3 of 40 runs, random 4, novelty 39 [p.16–17]; unenclosed, novelty 5 of 100, fitness 2 [p.19] | NEAT, mazes and a biped | **A distance score deceives**, as D133 holds; a behaviour label weakens in open space (inference) | 📄 Peer-reviewed, *Evol. Comput.*; authors' layout | PDF pages, not journal pages |
+| **[GEOP08]** *(round 9)* | Taxis evolved within 1,000 to 2,000 updates; evolved memory did worse than hand-coded (p = 4.9 × 10⁻⁷) [p.5]; random tumbles and fixed turns did equally well [p.6]; merit grew with each step closer [p.4] | Avida, 100 × 100 grid, 1,000 organisms, 50 replicates; distance as an idealised sense | **Fast taxis under a per-step distance reward**, the score D133 rejects (inference) | 📄 Peer-reviewed, GECCO 2008; PDF pages | Idealised sense; sensing itself rewarded |
+| **[BB72]** *(round 9)* | Chemotaxis "results from the suppression of directional changes"; going up a gradient "they change direction less frequently" [p.1]; wild-type runs about 0.86 s, 68° between runs [p.1, Table 1]; serine lengthens runs [p.2] | 3D tracking of single *E. coli* | **The primary source for run lengthening**, reached in Q11 only through [MK72] and [SBB86] | 📄 Peer-reviewed, *Nature*; scan | One species; OCR rough in Table 1 |
+| **[SHLF21]** *(round 9)* | Density, basal cost, perceptual cost and mutation rate best predict perceptual range [p.1]; dense food lowered the threshold for any perception, and sparse food's larger ranges were "sporadic" [p.8]; cost cut perception [p.9] | Agent-based foragers with a fixed switch from random walk to approach; only range evolves; 150 steps [p.3–4] | **Supports dense food and a cheap sense** to start, as D134 and D262 hold (inference) | 📄 Peer-reviewed, *Front. Ecol. Evol.* 🔓 CC BY; PDF pages | Steering built in, not evolved |
+| **[BEJ25]** *(round 9)* | Compass agents' long-range gathering was "more consistent and effective at larger environmental scales" [p.6]; extinction rarer at larger sizes [p.8]; vision agents moved less and ate more [p.9] | JAX grid world, up to 1,024² cells and 60,000 agents, reproduction only; four seeds a size [p.8] | **Cautions against a small tank** (inference) | 📄 arXiv preprint | Grid world; few seeds; p.8 says mining came sooner at small sizes and then at large |
 
 ## 6. Annotated bibliography
 
@@ -1475,6 +1590,79 @@ Supporting sources, outside the matrix:
 | [MRR19] | Méléard, Rera & Roget 2019, "A birth-death model of ageing…", *J. Math. Biol.* 79:901–939 | `10.1007/s00285-019-01382-z` | PDF [96], no claim at a page |
 | [GT22] | Giaimo & Traulsen 2022, "The selection force weakens with age because ageing evolves and not vice versa", *Nat. Commun.* 13:686 | `10.1038/s41467-022-28254-3` | PDF [98], p.1 |
 
+### Round 9 additions (2026-09-29, fetched 2026-09-30, filed 2026-10-31)
+
+*Round 9 kept twenty PDFs, each extracted at fetch into a `source.md` with `### Page N`
+headings and a manifest. Every locator here matches one, and pass 2 located each claim on
+2026-10-31. No DOI was matched at a database and no retraction check was run (§7.2). Five
+supporting sources follow the core entries, outside the synthesis matrix.*
+
+**[MD08]** J.-B. Mouret & S. Doncieux, "Incremental evolution of animats' behaviors as a
+multi-objective optimization," SAB 2008, LNAI 5040, pp. 210–219. DOI
+`10.1007/978-3-540-69134-1_21`, 📄. PDF [175], read at p.2–3, p.7 and p.9. *The taxonomy D134 leans on.*
+
+**[MD09]** J.-B. Mouret & S. Doncieux, "Overcoming the bootstrap problem in evolutionary
+robotics using behavioral diversity," IEEE CEC 2009, pp. 1161–1168, IEEE Xplore document
+4983077, DOI not recorded, 📄. PDF [176], read at p.1–2 and p.5–6.
+
+**[GM97]** F. Gomez & R. Miikkulainen, "Incremental evolution of complex general behavior,"
+*Adaptive Behavior* 5(3–4):317–342, 1997. DOI `10.1177/105971239700500305`, 📄. PDF [177],
+a scan, read at p.1–2, p.10, p.13–14, p.17 and p.20.
+
+**[JAK97]** N. Jakobi, "Evolutionary robotics and the radical envelope-of-noise hypothesis,"
+*Adaptive Behavior* 6(2), 1997. DOI `10.1177/105971239700600205`, 📄. PDF [178], a scan,
+read at p.8–10 and p.39–40.
+
+**[PJ10]** Pilat & Jacob, "Evolution of vision capabilities in embodied virtual creatures,"
+GECCO 2010. DOI `10.1145/1830483.1830502`, 📄. PDF [179], read at p.4–5 and p.8.
+
+**[CA16]** N. Chaumont & C. Adami, "Evolution of sustained foraging in three-dimensional
+environments with physics," *GPEM* 17(4):359–390, 2016. DOI `10.1007/s10710-016-9270-z`, 📄.
+PDF [184], read at p.1, p.6, p.11, p.14–16, p.23 and p.25. *The nearest substrate to this project.*
+
+**[LOPA03]** R. E. Lenski, C. Ofria, R. T. Pennock & C. Adami, "The evolutionary origin of
+complex features," *Nature* 423:139–144, 2003. DOI `10.1038/nature01568`, 📄. PDF [185], read
+at p.1, p.3 and p.5.
+
+**[CLWO13]** A. W. Covert III, R. E. Lenski, C. O. Wilke & C. Ofria, "Experiments on the role
+of deleterious mutations as stepping stones in adaptive evolution," *PNAS* 110(34):E3171–E3178,
+2013. DOI `10.1073/pnas.1313424110`, 📄. PDF [190], read at p.1–3.
+
+**[KNA07]** N. Kashtan, E. Noor & U. Alon, "Varying environments can speed up evolution,"
+*PNAS* 104(34):13711–13716, 2007. DOI `10.1073/pnas.0611630104`, 📄. PDF [187], read at p.1–5.
+
+**[WLCS19]** R. Wang, J. Lehman, J. Clune & K. O. Stanley, "Paired open-ended trailblazer
+(POET)," arXiv:1901.01753 v3, 2019. PDF [188], read at p.3, p.7, p.10, p.13–14 and p.18–19.
+
+**[LST11]** J. Lehman & K. O. Stanley, "Abandoning objectives: evolution through the search
+for novelty alone," *Evolutionary Computation* 19(2):189–223, 2011, DOI not recorded, 📄. PDF
+[183], the authors' layout, read at p.12 and p.15–19.
+
+**[GEOP08]** L. M. Grabowski, W. R. Elsberry, C. Ofria & R. T. Pennock, "On the evolution of
+motility and intelligent tactic response," GECCO 2008. DOI `10.1145/1389095.1389129`, 📄. PDF
+[182], read at p.4–7.
+
+**[BB72]** H. C. Berg & D. A. Brown, "Chemotaxis in *Escherichia coli* analysed by
+three-dimensional tracking," *Nature* 239:500, 1972. DOI `10.1038/239500a0`, 📄. PDF [186], a
+scan, read at p.1–2. *Round 6's founding text, now held.*
+
+**[SHLF21]** Swain, Hoffman, Leyba & Fagan, "Exploring the evolution of perception: an
+agent-based approach," *Front. Ecol. Evol.* 9:698041, 2021. DOI `10.3389/fevo.2021.698041`, 📄
+🔓 CC BY. PDF [191], read at p.1, p.3–4 and p.8–9.
+
+**[BEJ25]** J. Bejjani et al., "The emergence of complex behavior in large-scale ecological
+environments," arXiv:2510.18221, 2025. PDF [192], read at p.1–2, p.6 and p.8–9.
+
+Supporting sources, outside the matrix:
+
+| key | citation | DOI | read |
+|---|---|---|---|
+| [LFM13] | Lessin, Fussell & Miikkulainen 2013, "Open-ended behavioral complexity for evolved virtual creatures", GECCO 2013 | `10.1145/2463372.2463411` | PDF [180], p.1–4; a hand-designed syllabus of fitness goals, no control |
+| [WS11] | Woolley & Stanley 2011, "On the deleterious effects of a priori objectives on evolution and representation", GECCO 2011 | `10.1145/2001576.2001707` | PDF [181], p.1, p.4–5; Picbreeder images re-evolved as targets: three of six failed in all 20 runs |
+| [LM14] | Lehman & Miikkulainen 2014, "Overcoming deception in evolution of cognitive behaviors", GECCO 2014 | `10.1145/2576768.2598300` | PDF [189], p.1–2, p.6–7; objective search under 20% on T-maze memory tasks |
+| [TEN26] | Tensen et al. 2026, "Microcosmos: reimagining artificial life for the GPU era", arXiv:2607.02954 | — | PDF [194], p.4, p.6; chemotaxis shown under displacement plus energy, no figures in the text |
+| [AB14] | Auerbach & Bongard 2014, "Environmental influence on the evolution of morphological complexity in machines", *PLoS Comput. Biol.* 10(1):e1003399 | `10.1371/journal.pcbi.1003399` | PDF [195], p.1, p.4; complex environments gave complex bodies under a cost |
+
 ## 7. Threats to validity
 
 ### 7.1 Search validity
@@ -1622,6 +1810,17 @@ Supporting sources, outside the matrix:
   statistical physics. Human trauma epidemiology beyond one query, plant and clonal
   senescence, and sex differences in ageing were not searched.
 
+- ⚠ **Round 9 searched the web at one remove.** Pass 1 went back to the web search tool,
+  first page only, with no counts, and its query list was not kept. Its first report read
+  snippets. The owner chose the twenty-one from a supportive brief that asked for a hunt for
+  counter-evidence. The machine-learning curriculum papers were pooled and not fetched, so
+  the counter-evidence on curricula is thinner than the support. The §3.2 strings were not
+  re-run and no forward snowball was done (§3.12).
+
+- **Round 9 found no transfer study.** No paper moved an evolved sensing-and-steering brain
+  from an easier tank to a harder one. The nearest are [CA16]'s rising noise on one lineage,
+  [PJ10]'s walkers given vision, and [JAK97]'s transfer to real robots.
+
 ### 7.2 Verification validity
 
 - ⚠ **The two-database cross-match rule** was not met. Verification used **CrossRef
@@ -1687,6 +1886,14 @@ Supporting sources, outside the matrix:
   The check against it corrected one locator (§4). The nine article-page reads carry no
   pages at all.
 
+- ⚠ **Round 9 ran no database check.** Each record was matched against its own first page,
+  as in round 6. No DOI was matched at a database and no retraction check was run. Two of
+  the core papers, [WLCS19] and [BEJ25], are preprints, and [LST11] is the authors' layout.
+
+- ↻ **Round 9's packages carry an extraction manifest.** All twenty were built by
+  `pdf-clean-markdown` with a `manifest.json`, so twenty-eight packages now have one. Three are
+  scans whose OCR is rough: [GM97], [JAK97] and [BB72].
+
 ### 7.3 Synthesis validity
 
 - The n is small. ~~Eleven papers inform the synthesis (five from rounds 1–2, six added in
@@ -1699,11 +1906,14 @@ Supporting sources, outside the matrix:
   the round's own note; this one was left unstruck until 2026-09-12).~~ ~~↻ **Fifty-five
   after round 7**, with ten added on 2026-10-06. Five of the ten were read in full, so ten
   are read in full across the whole corpus. Round 7's other five were read at the
-  abstract.~~ ↻ **Sixty-nine after round 8**, with fourteen added to the matrix on
+  abstract.~~ ~~↻ **Sixty-nine after round 8**, with fourteen added to the matrix on
   2026-10-31 from a search of 2026-09-29. None of the fourteen was read in full, so ten are
   still read in full across the whole corpus. Eight were read at cited PDF pages, three as
   article pages and three at the abstract. Twenty-five supporting sources are cited outside
-  the matrix, thirteen of them at the abstract only.
+  the matrix, thirteen of them at the abstract only.~~ ↻ **Eighty-four after round 9**, with
+  fifteen added to the matrix on 2026-10-31 from a search of 2026-09-29. All fifteen were read
+  at cited PDF pages and none in full, so ten are still read in full across the corpus.
+  Thirty supporting sources are cited outside the matrix, five of them from round 9.
 
   The round-3, round-4 and most round-5 additions were read at targeted passages against
   specific claims. That is honest for provenance-checking and weaker than a full read for
@@ -1842,6 +2052,24 @@ Supporting sources, outside the matrix:
   captive records. A fitted Gompertz rate is also confounded with initial mortality [RS02
   abstract; KIR15 HTML].
 
+- ⚠ **No paper tested the nursery's move.** None bred a sensing-and-steering brain in an easier
+  tank under an intake score and moved it to a harder one. Every link from Q14's papers to the
+  nursery is the round's inference.
+
+- ⚠ **Every embodied success shaped its score.** [CA16] added a locomotion term, [PJ10] scored
+  speed toward the light and [GEOP08] paid each step closer. D134's line between shaping the
+  world and shaping the score is therefore untested on bodies. [LOPA03]'s simpler rewards are
+  shaping by D134's terms too.
+
+- ⚠ **The round's papers come from a few groups.** Stanley or Lehman co-wrote [LST11],
+  [WLCS19], [LM14], [WS11] and [TEN26]. Miikkulainen co-wrote [GM97], [LFM13] and [LM14], and
+  Ofria co-wrote [GEOP08], [LOPA03] and [CLWO13]. The case against fixed objectives is mostly
+  one school's.
+
+- ⚠ **Replicates are few and substrates far.** [WLCS19] ran five ES runs a comparison, [BEJ25]
+  four seeds a size, and [CA16] chose founders by eye. Most substrates are grids, logic
+  circuits or 2D. Only [CA16], [PJ10] and [LFM13] used 3D articulated bodies.
+
 ## 8. AI assistance disclosure (PRISMA-trAIce)
 
 | Stage | Performed by | Human oversight |
@@ -1866,6 +2094,10 @@ Supporting sources, outside the matrix:
 | Round 7: filing into this review (§0, §2, §3.10, §4, §5, §6, §7, §8, §9) and `FETCH-RESULTS.md` | Claude Opus 5.5, from the round's working files alone; no search, fetch or reading of sources | — |
 | **Round 8** (2026-09-29): search, retrieval and appraisal, in two passes | Two Claude Opus 5.5 research subagents. Pass 1: web fetch and Europe PMC, nothing saved. Pass 2: OpenAlex, Semantic Scholar and CrossRef public APIs with no key; open copies only, gates recorded and not bypassed; no institutional access | Commissioned for D128's values and D130; the owner ruled the values from pass 1 the same day |
 | Round 8: filing into this review (§0, §2, §3.11, §4, §5, §6, §7, §8, §9), `FETCH-RESULTS.md` and `DESIGN.md` §0z | Claude Opus 5.5, from the round's reports and logs and the fourteen saved PDFs; no web search or fetch | — |
+| **Round 9** (2026-09-29): first report, search and candidate pool | Claude Sonnet research agents, web search and fetch; nothing saved | Commissioned by the owner's question on D134; the owner kept twenty-one of the pool |
+| Round 9 (2026-09-30): retrieval and extraction | A Claude Sonnet session with a browser; the owner signed in to each publisher, and no credential was seen or stored; no gate bypassed; `pdf-clean-markdown` | The owner approved one third-party course copy, [LST11] |
+| Round 9 (2026-10-31): pass 2 reading and appraisal, and a draft of this filing | Claude Opus 5.5 subagent, from the twenty `source.md` files and the round's working files; no web search, fetch or database lookup | — |
+| Round 9 (2026-10-31): filing into this review (§0, §2, §3.12, §4, §5, §6, §7, §8, §9), `FETCH-RESULTS.md` and `DESIGN.md` §0z2 | Claude Opus 5.5, from pass 2's draft and the round's files; the fetch block reordered and renumbered; no web search or fetch | — |
 
 No citation in this document was generated from model memory. Every reference originates
 from a tool-call result within the session. ~~Every cited work was retrieved and read except
@@ -1883,12 +2115,16 @@ Round 8 adds three more. Sixteen of its sources were read at the abstract only a
 article pages without page numbers, each marked so where cited. Twenty-one pass-1 sources
 were never re-read and stay leads.
 
+Round 9 adds two more. Soros & Stanley 2014 was not obtained and is a lead only. The first
+report's snippet-level claims enter only where pass 2 re-read them in a fetched paper.
+
 Page-level locators in `DESIGN.md` refer to PDF page numbers.
 
 Each matches the `### Page N` heading in that paper's extracted `source.md`.
 
 Retrieved PDFs and their extractions are not committed. They are copyrighted publisher
-material, and two were obtained through institutional access.
+material, and ~~two were obtained through institutional access~~ ↻ twelve were obtained
+through institutional access, two in round 1 and ten in round 9.
 
 [`FETCH-RESULTS.md`](FETCH-RESULTS.md) records the exact retrieval URL for each, so the set
 is reconstructible by anyone with equivalent access.
@@ -1905,6 +2141,9 @@ experiment round 57 is the world's own answer.
 
 Q13 is answered in part by round 8. Most of its values are judgement, and the world's own
 answer is experiment round 52, whose two seeds moved the gene in opposite directions (D132).
+
+Q14 is answered in part by round 9. The literature names the nursery's move and records it
+working, but always with a shaped score. No paper tests the transfer the nursery makes.
 
 Four items were resolved by round 3, and are kept here rather than deleted.
 
@@ -2011,7 +2250,8 @@ Open, in priority order:
    fetched.
 
 6. **Q5, on controller representation**, is unchanged. Only [K12]'s scheme is held, and
-   Lessin's muscle-drive line remains unexplored.
+   ~~Lessin's muscle-drive line remains unexplored~~ ↻ Lessin's muscles are held in [LFM13]
+   but were read for Q14 only, not appraised for Q5.
 
 7. NEW in round 4: cohort cycles as a full theme. The de Roos & Persson size- and
    stage-structured line describes single-generation cycles, in which one dominant cohort
@@ -2083,8 +2323,10 @@ substrate from the one this project targets.
 The round-3 snowball reinforced that judgement, since the citation traffic around [C18] is
 dominated by that same substrate.
 
-5. **Round 6's manual-fetch queue and one check.** Fraenkel & Gunn 1940 and Berg & Brown
-   1972 are the two founding texts of Q11(b) and both are read here only through others;
+5. **Round 6's manual-fetch queue and one check.** ~~Fraenkel & Gunn 1940 and Berg & Brown
+   1972 are the two founding texts of Q11(b) and both are read here only through others;~~
+   ↻ Berg & Brown 1972 was obtained in round 9 as [BB72]. Fraenkel & Gunn 1940 is still read
+   only through others;
    Wuichet & Zhulin 2010 is the evolutionary evidence for the co-option of metabolic sensors
    and was not fetched. And the "sessile trap" of evolutionary robotics, populations that
    converge on standing still because it is cheaper, surfaced in sweep 4 as a pattern
@@ -2170,3 +2412,28 @@ dominated by that same substrate.
 
     The founding texts were named and not retrieved: Gompertz 1825, Kirkwood 1977, Williams
     1957, Hamilton 1966 and Medawar 1952.
+
+15. NEW in round 9: the fetch queue for Q14, and its leads.
+
+    | work | why it is wanted |
+    |---|---|
+    | **[SS14] Soros & Stanley 2014**, ALIFE 14, pp. 793–800 | conditions for open-ended evolution; the UCF record held no file and a Semantic Scholar mirror answered with a bot check |
+    | [WLCS19]'s peer-reviewed version | the preprint was read |
+    | a database check of all twenty | none was run (§7.2) |
+
+    Twenty-four pool rows were not kept and are leads, read at most at the abstract. Strand A
+    holds Wang et al. 2020 (Enhanced POET), Dharna et al. 2022, Milano & Nolfi 2021, Milano,
+    Carvalho & Nolfi 2017, Bongard 2011, Koos, Mouret & Doncieux 2013, Bengio et al. 2009,
+    Narvekar et al. 2020, Nolfi & Floreano 1998, Petrovic, a Sussex report on incremental
+    evolution, Bongard 2013 and Brant & Stanley 2017. Strand B holds van der Post & Hogeweg,
+    Griffith & Yaeger 2006, Wagner et al. 2013, Moore, Clark & McKinley 2013, Komosinski 2000,
+    Miconi 2008, Bedau et al. 2000, Hein & McKinley 2012, de Bruin et al. 2024, an untitled
+    foraging paper and Sims 1994.
+
+    The first report adds Kashtan & Alon 2005, Black, Bourrat & Rainey 2020, Lehman et al.
+    2020, arXiv:2505.22696 on curricula that failed, and Harvey, Husbands & Cliff. Read the
+    machine-learning curriculum papers first, since they hold most of the unread
+    counter-evidence.
+
+    The transfer gap of §7.1 stands. A study that evolves a sensing-and-steering brain in an
+    easier world and moves it to a harder one would be the nearest precedent for the nursery.

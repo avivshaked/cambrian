@@ -358,6 +358,18 @@ the rate. One doubling per parent-sized child is also 3 to 25 times the cost mea
 §5A.6c, which still described D038's wear alone, is brought up to D128 as ruled in the same
 change.
 
+## 0z2. Changelog: review round 9, the nursery's curriculum and slow steering brains (searched 2026-09-29, filed 2026-10-31)
+
+This round changes no mechanism. Round 9 of the literature review (research §0, Q14) read the
+twenty papers behind D134's fast nursery, which breeds brains in an easier world under D133's
+score. The literature names the move, environmental complexification, as a scheme apart from
+fitness shaping, and records it working where direct evolution failed. It also records a single
+hand-built ramp failing at the hardest levels, and every embodied success shaping its score as
+well as its world. No paper moved an evolved sensing-and-steering brain from an easier tank to a
+harder one. The papers were read at the passages cited and none in full, so under D134 none is
+cited here. The review's Q14 row carries the citations, and the round's readings went to the
+coordinator as input.
+
 ## 0w. Changelog — the aquarium, the streams, and water that stays uniform (2026-09-11 and 12, D089, D090, the Astra review)
 
 The container is a setting (`RunConfig.WorldShape`, `EVOSIM_SHAPE`, default `Box`). A `Tank`

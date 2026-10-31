@@ -6,9 +6,9 @@ Each entry also carries the SHA-256 of the PDF that was read (added 2026-09-07, 
 item 23, on the Astra review's point that a gitignored corpus needs a way to tell the file
 a rebuild fetches from the file the review cited). A rebuilt copy whose hash differs is a
 different version of the paper, and a page-anchored claim against it is unverified until
-the page is checked. Sixty-one of the sixty-eight have a PDF on disk (counted 2026-10-31,
-after round 8; it said forty-seven of fifty-four from 2026-09-12, and every one of
-thirty-seven before that); the seven without one, round 4's entries 50, 51, 52, 55, 57, 58
+the page is checked. Eighty-one of the eighty-eight have a PDF on disk (counted 2026-10-31,
+after round 9; it said sixty-one of sixty-eight after round 8, forty-seven of fifty-four from
+2026-09-12, and every one of thirty-seven before that); the seven without one, round 4's entries 50, 51, 52, 55, 57, 58
 and 59, are held as extracted text only.
 
 ### [14] Virtual Creature Morphology – A Review
@@ -805,3 +805,175 @@ PubMed Central's PDFs sat behind its proof-of-work gate, so these pages were rea
 - Flatt 2011: rero.ch answered 410.
 - Read as PubMed Central pages after their PDFs were gated: Houle 1992 (OUP, Cloudflare), Ruby et al. 2018 (genetics.org, Cloudflare), Katzenberger et al. 2013 (PNAS, Cloudflare), Nussey et al. 2013 (Edinburgh, Cloudflare), Mitnitski et al. 2001 (Hindawi, 403) and Jones et al. 2014 (PMC proof-of-work).
 - No open copy found: [FPW90], [KR91], [ZBH95], [CAR92], [HAM10], [TRA04]; [DAS22] is not open.
+
+## Round 9 (searched 2026-09-29, fetched 2026-09-30, filed 2026-10-31) asked Q14: the nursery, incremental evolution and why sensing-and-steering brains evolve slowly
+
+A Claude Sonnet session with a browser fetched these on 2026-09-30, from the brief `research/nursery-curriculum/round7-fetch-brief.md`, with the owner signing in to each publisher. Ten came through institutional access and ten by open routes, and no gate was bypassed. The round's working files call it round 7 and its question Q12, numbers that went to the seasonal-light round. This record was renumbered, keyed and put in order when the round was filed on 2026-10-31. Each paper has a package under `papers/` with `source.md` (`### Page N` headings), `manifest.json`, figures, tables and a `JART.md`, built by the `pdf-clean-markdown` skill. Pass 2 re-hashed all twenty PDFs on 2026-10-31, and every hash and size matches the entries below.
+
+### [175] [MD08] Incremental evolution of animats' behaviors as a multi-objective optimization (Mouret & Doncieux 2008)
+- Status: OBTAINED
+- Saved as: `175-mouret-2008-incremental-animats.pdf`
+- SHA-256: `2869216982054b35d44330cc9b257188a43187e401da9d64d33779b2963ef403` (`175-mouret-2008-incremental-animats.pdf`, 376,957 bytes)
+- Source used: https://link.springer.com/chapter/10.1007/978-3-540-69134-1_21
+- Route: publisher page (Springer Nature Link), no institutional login needed (owner's report)
+- Notes: SAB 2008, LNCS 5040 (From Animals to Animats 10). Page 1 matches title and both authors.
+
+### [176] [MD09] Overcoming the bootstrap problem in evolutionary robotics using behavioral diversity (Mouret & Doncieux 2009)
+- Status: OBTAINED
+- Saved as: `176-mouret-2009-bootstrap-behavioral-diversity.pdf`
+- SHA-256: `b864b2bbd4c15df651f0bc95b002670d1165c4ba33cc47b52bc71c7129f94665` (`176-mouret-2009-bootstrap-behavioral-diversity.pdf`, 785,199 bytes)
+- Source used: https://ieeexplore.ieee.org/document/4983077
+- Route: institutional: IEEE Xplore
+- Notes: 2009 IEEE Congress on Evolutionary Computation. Page 1 matches title and both authors.
+
+### [177] [GM97] Incremental evolution of complex general behavior (Gomez & Miikkulainen 1997)
+- Status: OBTAINED
+- Saved as: `177-gomez-1997-incremental-complex-general-behavior.pdf`
+- SHA-256: `45765b4870cccab3dd0c03894c21276f2244dd3942948ddb86232c03460c0838` (`177-gomez-1997-incremental-complex-general-behavior.pdf`, 1,273,238 bytes)
+- Source used: https://journals.sagepub.com/doi/10.1177/105971239700500305
+- Route: institutional: SAGE Journals
+- Notes: Adaptive Behavior 5(3-4). Page 1 matches title and both authors. The file name was set by the SAGE download.
+
+### [178] [JAK97] Evolutionary robotics and the radical envelope-of-noise hypothesis (Jakobi 1997)
+- Status: OBTAINED
+- Saved as: `178-jakobi-1997-envelope-of-noise.pdf`
+- SHA-256: `6c637e670cb5a09a8cb30417eecf7f0a3317dfe6e9a8a180082fe5990b3ae663` (`178-jakobi-1997-envelope-of-noise.pdf`, 3,235,197 bytes)
+- Source used: https://journals.sagepub.com/doi/abs/10.1177/105971239700600205 (DOI 10.1177/105971239700600205)
+- Route: institutional: SAGE Journals
+- Notes: Adaptive Behavior 6(2). Page 1 matches title and author. The DOI was found by title search on journals.sagepub.com.
+
+### [179] [PJ10] Evolution of vision capabilities in embodied virtual creatures (Pilat & Jacob 2010)
+- Status: OBTAINED
+- Saved as: `179-pilat-2010-vision-embodied-virtual-creatures.pdf`
+- SHA-256: `ca4353a615a58c50a9e3d18a38fae614bbe2cef394a7f691e7e18c9ab85f0207` (`179-pilat-2010-vision-embodied-virtual-creatures.pdf`, 1,576,137 bytes)
+- Source used: https://dl.acm.org/doi/10.1145/1830483.1830502
+- Route: institutional: ACM Digital Library
+- Notes: GECCO 2010. Page 1 matches title and both authors. The DOI was found by title search on dl.acm.org.
+
+### [180] [LFM13] Open-ended behavioral complexity for evolved virtual creatures (Lessin, Fussell & Miikkulainen 2013)
+- Status: OBTAINED
+- Saved as: `180-lessin-2013-open-ended-behavioral-complexity.pdf`
+- SHA-256: `f7e143d69427a2b38593854db00e0e92cec564addda442acddb1d1de1bbd7c0c` (`180-lessin-2013-open-ended-behavioral-complexity.pdf`, 4,520,977 bytes)
+- Source used: https://dl.acm.org/doi/10.1145/2463372.2463411
+- Route: institutional: ACM Digital Library
+- Notes: GECCO 2013. Page 1 matches title and all three authors. The DOI was found by title search on dl.acm.org.
+
+### [181] [WS11] On the deleterious effects of a priori objectives on evolution and representation (Woolley & Stanley 2011)
+- Status: OBTAINED
+- Saved as: `181-woolley-2011-deleterious-a-priori-objectives.pdf`
+- SHA-256: `4efeee32e2c206360135f1e796dfb8bdf17c91c1227ed41abbe4a10f47c145ac` (`181-woolley-2011-deleterious-a-priori-objectives.pdf`, 5,781,835 bytes)
+- Source used: https://dl.acm.org/doi/10.1145/2001576.2001707
+- Route: institutional: ACM Digital Library
+- Notes: GECCO 2011. Page 1 matches title and both authors. The brief's DOI was not given; this one was found by title search on dl.acm.org, and a first guessed DOI (10.1145/2001576.2001606) was a different paper (Lehman & Stanley, novelty search and local competition) and was not used.
+
+### [182] [GEOP08] On the evolution of motility and intelligent tactic response (Grabowski, Elsberry, Ofria & Pennock 2008)
+- Status: OBTAINED
+- Saved as: `182-grabowski-2008-motility-tactic-response.pdf`
+- SHA-256: `d8c810a7eb3571dfa678adfd8a1e5d0589d592a8087caaf0cb4db16ae35050c9` (`182-grabowski-2008-motility-tactic-response.pdf`, 1,073,728 bytes)
+- Source used: https://dl.acm.org/doi/10.1145/1389095.1389129
+- Route: institutional: ACM Digital Library
+- Notes: GECCO 2008. **The authors were wrong in Pass 1 and in the round 7 brief**, which gave "Beckmann, McKinley & Ofria 2008"; page 1 reads Laura M. Grabowski, Wesley R. Elsberry, Charles Ofria and Robert T. Pennock. The title matches, so it is the intended paper. The DOI was found by title search on dl.acm.org. Every citation of this paper uses the key for Grabowski et al.
+
+### [183] [LST11] Abandoning objectives: evolution through the search for novelty alone (Lehman & Stanley 2011)
+- Status: OBTAINED
+- Saved as: `183-lehman-2011-abandoning-objectives.pdf`
+- SHA-256: `de1e27262b4c10b6d20fae064bb4531e925e86162c5be0e1f4f511da9f2b184a` (`183-lehman-2011-abandoning-objectives.pdf`, 745,672 bytes)
+- Source used: https://www.cs.swarthmore.edu/~meeden/DevelopmentalRobotics/lehman_ecj11.pdf
+- Route: open access: third-party course page (Swarthmore CS, a developmental robotics course), authorised by the owner on 2026-09-30 after MIT Press proved gated
+- Notes: Evolutionary Computation 19(2):189-223. Page 1 matches title and both authors. **Version unverified and not the published typeset copy**: the file runs 39 pages against the published 35, so it is the authors' own layout. A page number in the review is a page of this PDF, not of the journal. The publisher page (https://direct.mit.edu/evco/article-abstract/19/2/189/1365) gave the abstract only.
+
+### [184] [CA16] Evolution of sustained foraging in three-dimensional environments with physics (Chaumont & Adami 2016)
+- Status: OBTAINED
+- Saved as: `184-chaumont-2016-sustained-foraging-3d-physics.pdf`
+- SHA-256: `04d7d3c30be616dfd4822a86c2617ab328c4722e51695f7edd52d76aa0413298` (`184-chaumont-2016-sustained-foraging-3d-physics.pdf`, 2,431,864 bytes)
+- Source used: https://link.springer.com/article/10.1007/s10710-016-9270-z (DOI 10.1007/s10710-016-9270-z)
+- Route: institutional: Springer Nature Link (published version)
+- Notes: Genetic Programming and Evolvable Machines 17(4):359-390. The arXiv preprint 1112.5116 was not fetched; the published version is the one read.
+
+### [185] [LOPA03] The evolutionary origin of complex features (Lenski, Ofria, Pennock & Adami 2003)
+- Status: OBTAINED
+- Saved as: `185-lenski-2003-evolutionary-origin-complex-features.pdf`
+- SHA-256: `db23c13976e74d4e2a29e4ff5e7a0a627bf0fc1f4188789c61588947fd6d4571` (`185-lenski-2003-evolutionary-origin-complex-features.pdf`, 442,291 bytes)
+- Source used: https://www.nature.com/articles/nature01568 (DOI 10.1038/nature01568)
+- Route: institutional: Nature
+- Notes: Nature 423. Page 1 matches title and all four authors.
+
+### [186] [BB72] Chemotaxis in Escherichia coli analysed by three-dimensional tracking (Berg & Brown 1972)
+- Status: OBTAINED
+- Saved as: `186-berg-1972-chemotaxis-e-coli-tracking.pdf`
+- SHA-256: `0fd02df14eff2e0b38c24de4f4e702b19fe522953b439acb331ef10e08822fcc` (`186-berg-1972-chemotaxis-e-coli-tracking.pdf`, 1,363,169 bytes)
+- Source used: https://www.nature.com/articles/239500a0 (DOI 10.1038/239500a0)
+- Route: institutional: Nature
+- Notes: Nature 239:500. Page 1 matches title and both authors. Round 6 recorded it as closed; it is now obtained.
+
+### [187] [KNA07] Varying environments can speed up evolution (Kashtan, Noor & Alon 2007)
+- Status: OBTAINED
+- Saved as: `187-kashtan-2007-varying-environments.pdf`
+- SHA-256: `2b8c56d8086bfad12a70209c5a45f0effd5fdf20bf724610eb6bcabf8a4e2f31` (`187-kashtan-2007-varying-environments.pdf`, 1,070,370 bytes)
+- Source used: https://www.pnas.org/doi/10.1073/pnas.0611630104 (DOI 10.1073/pnas.0611630104)
+- Route: publisher (PNAS), downloaded by the owner from the publisher's page
+- Notes: PNAS 104(34):13711-13716. Page 1 matches title and all three authors. Europe PMC (PMC1948871) and NCBI PMC were tried by script first and were behind a Cloudflare challenge and a JavaScript download step; neither was worked around.
+
+### [188] [WLCS19] Paired open-ended trailblazer (POET): endlessly generating increasingly complex and diverse learning environments and their solutions (Wang, Lehman, Clune & Stanley 2019)
+- Status: OBTAINED
+- Saved as: `188-wang-2019-poet.pdf`
+- SHA-256: `dd47d961249b0328d8d9e88801cdb7a74da6a8224dc08f0d23da7d6f79fa766c` (`188-wang-2019-poet.pdf`, 2,970,636 bytes)
+- Source used: https://arxiv.org/pdf/1901.01753
+- Route: open access: arXiv (v3, 21 Feb 2019)
+- Notes: arXiv preprint. Page 1 matches title and all four authors. A peer-reviewed version was not fetched; Pass 2 checks whether one exists.
+
+### [189] [LM14] Overcoming deception in evolution of cognitive behaviors (Lehman & Miikkulainen 2014)
+- Status: OBTAINED
+- Saved as: `189-lehman-2014-overcoming-deception.pdf`
+- SHA-256: `d4288cdb5ff95529dc82c2adc9732add74927dc0b56feb475df934ae942e715c` (`189-lehman-2014-overcoming-deception.pdf`, 411,466 bytes)
+- Source used: https://nn.cs.utexas.edu/downloads/papers/lehman.gecco14.pdf
+- Route: open access: the UT Austin Neural Networks Research Group's own site
+- Notes: GECCO 2014 (DOI 10.1145/2576768.2598300). Page 1 matches title and both authors.
+
+### [190] [CLWO13] Experiments on the role of deleterious mutations as stepping stones in adaptive evolution (Covert, Lenski, Wilke & Ofria 2013)
+- Status: OBTAINED
+- Saved as: `190-covert-2013-deleterious-stepping-stones.pdf`
+- SHA-256: `2765f747a645c44b3c4fb7821123709cb4cdff05b82b4a742b9812d39cc5eee9` (`190-covert-2013-deleterious-stepping-stones.pdf`, 1,085,638 bytes)
+- Source used: https://www.pnas.org/doi/10.1073/pnas.1313424110 (DOI 10.1073/pnas.1313424110)
+- Route: publisher (PNAS), downloaded by the owner from the publisher's page
+- Notes: PNAS 110(34):E3171-E3178. Page 1 matches title and all four authors. The DOI was found by web search; the brief gave none. Same PMC route as entry 187 was blocked and not worked around (PMC3752215).
+
+### [191] [SHLF21] Exploring the evolution of perception: an agent-based approach (Swain, Hoffman, Leyba & Fagan 2021)
+- Status: OBTAINED
+- Saved as: `191-swain-2021-evolution-of-perception.pdf`
+- SHA-256: `b3ce94e8087ab806a39b3b825c19180a054fe8629fa3bdf955790ae1871b8a7f` (`191-swain-2021-evolution-of-perception.pdf`, 3,232,383 bytes)
+- Source used: https://www.frontiersin.org/journals/ecology-and-evolution/articles/10.3389/fevo.2021.698041/pdf
+- Route: open access: Frontiers in Ecology and Evolution (publisher, CC BY)
+- Notes: Frontiers in Ecology and Evolution 9:698041. Page 1 matches title and all four authors; the brief's "Swain et al." is right.
+
+### [192] [BEJ25] The emergence of complex behavior in large-scale ecological environments (Bejjani et al. 2025)
+- Status: OBTAINED
+- Saved as: `192-bejjani-2025-emergence-complex-behavior.pdf`
+- SHA-256: `35936e3d667378f18e4028ba6bd4aa8d58fc6fcf96f7679d946549fc47cd5fec` (`192-bejjani-2025-emergence-complex-behavior.pdf`, 36,076,599 bytes)
+- Source used: https://arxiv.org/pdf/2510.18221
+- Route: open access: arXiv
+- Notes: arXiv preprint. Page 1 matches title and first author (Joseph Bejjani).
+
+### [193] [SS14] Identifying necessary conditions for open-ended evolution through the artificial life world of Chromaria (Soros & Stanley 2014)
+- Status: NOT OBTAINED
+- Route tried: the UCF institutional repository record (https://stars.library.ucf.edu/scopus2010/9117/) offered no file the owner could download; the owner has no university access on that page. The publisher's proceedings page (MIT Press, ALIFE 14, pp. 793-800, expected open) was not reached by search. A Semantic Scholar mirror (pdfs.semanticscholar.org, hash 4671423a...) answered a script's request twice with an empty 202, which reads as a bot check and was not worked around.
+- Notes: Pass 2 treats it as read from its abstract only, with no page-anchored claim, unless the owner finds a copy.
+
+### [194] [TEN26] Microcosmos: reimagining artificial life for the GPU era (Tensen et al. 2026)
+- Status: OBTAINED
+- Saved as: `194-tensen-2026-microcosmos.pdf`
+- SHA-256: `619559f78659974148e2d7d9e0c1588e598d2ac05f2ce845213367088e2e846f` (`194-tensen-2026-microcosmos.pdf`, 5,745,860 bytes)
+- Source used: https://arxiv.org/pdf/2607.02954
+- Route: open access: arXiv
+- Notes: arXiv preprint. Page 1 matches title and first author (Mark Tensen). Kenneth O. Stanley is a co-author.
+
+### [195] [AB14] Environmental influence on the evolution of morphological complexity in machines (Auerbach & Bongard 2014)
+- Status: OBTAINED
+- Saved as: `195-auerbach-2014-environment-morphological-complexity.pdf`
+- SHA-256: `2a13d62122a86ad8ea5ab5c853eb5fc4c8ac665653b2b1b2f1c49871d9dfa650` (`195-auerbach-2014-environment-morphological-complexity.pdf`, 2,670,320 bytes)
+- Source used: https://journals.plos.org/ploscompbiol/article/file?id=10.1371/journal.pcbi.1003399&type=printable
+- Route: open access: PLOS Computational Biology (publisher, CC BY)
+- Notes: PLoS Comput Biol 10(1):e1003399. Page 1 matches title and both authors.
+
+### Round 9: sought, NOT obtained
+- Soros & Stanley 2014 (193), as above. Twenty of the twenty-one papers on the round's list were obtained.
