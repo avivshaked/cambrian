@@ -540,6 +540,11 @@ namespace Evosim.Farm
                     {
                         loop.MetabolicSteps++;
 
+                        // Which mouths took matter in this step, folded into the mask of the next frame written. The
+                        // frames fall on physics steps and the mouth pass on metabolic ones, so a bite is seen here or
+                        // not at all.
+                        film.ObserveBites(sim);
+
                         // The config holds the launch's integer count as a float, exactly.
                         loop.AssayFired = Program.ActOnWorld(
                             world, inoculum, config.InoculateAtSeconds, (int)config.InoculateCount,
@@ -1387,6 +1392,12 @@ namespace Evosim.Farm
                 {
                     _admitted[admitted[i].Id] = admitted[i].Genome;
                 }
+            }
+
+            /// <summary>Folds a metabolic step's bites into the next frame's masks. A no-op before the window starts.</summary>
+            public void ObserveBites(Simulation sim)
+            {
+                if (Started && _poses != null) _poses.Observe(sim);
             }
 
             /// <summary>A frame, if one is due at this physics step. Never two at one step.</summary>

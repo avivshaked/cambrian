@@ -852,6 +852,10 @@ namespace Evosim.Farm
             // world's intake reads them.
             "<MouthPoints>k__BackingField", "<MouthPointCount>k__BackingField",
 
+            // The mask of eating parts that took matter in the last step: a recording the mouth pass zeroes and
+            // rewrites at the top of each step and nothing reads, so a restored body's 0 is no fault.
+            "<TookMatterMask>k__BackingField",
+
             // The reserve a gestating body started the step with (2026-09-24), filled at the top
             // of World.Step before Gestate reads it.
             "ReserveAtStepStart",

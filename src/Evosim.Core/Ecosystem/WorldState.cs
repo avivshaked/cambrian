@@ -796,6 +796,7 @@ namespace Evosim.Core
             StateIo.Tag(r, "LIVE");
             int living = r.ReadInt32();
             _living.Clear();
+            _tookMatter.Clear(); // the last step's record names bodies this world no longer holds
             for (int i = 0; i < living; i++) _living.Add(ReadOrganism(r, version, remains: false));
 
             _remains.Clear();

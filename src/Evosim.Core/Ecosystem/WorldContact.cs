@@ -713,6 +713,9 @@ namespace Evosim.Core
             public Organism Bitten;
             public int Slot;
             public double Joules;
+
+            // The biting part's index in the biter's plan, for the recording of which mouth took matter.
+            public int BiterPart;
         }
 
         // One pass's scratch, cleared at the top of every damage pass: the offers in the order the wounds
@@ -803,7 +806,7 @@ namespace Evosim.Core
                 _biteTotals[slot] += offer;
             }
 
-            _biteOffers.Add(new BiteOffer { Biter = biter, Bitten = bitten, Slot = slot, Joules = offer });
+            _biteOffers.Add(new BiteOffer { Biter = biter, Bitten = bitten, Slot = slot, Joules = offer, BiterPart = biterPart });
         }
 
         /// <summary>
@@ -831,6 +834,10 @@ namespace Evosim.Core
                     double cap = _biteCaps[o.Slot];
                     double fraction = total > cap ? cap / total : 1d;
                     keep = fraction * o.Joules * keptShare;
+
+                    // A recording only: the biting part took matter if any of the offer was under its cap. Whether
+                    // the reserve kept it or the water got the waste share is not the mouth's act.
+                    if (fraction * o.Joules > 0d) NoteTookMatterAtPart(o.Biter, o.BiterPart);
 
                     if (gutOn)
                     {

@@ -61,8 +61,10 @@ namespace Evosim.Farm
         /// owner's review of round 48's first window clips). Version 4 (the same day) adds the
         /// reserve in joules, which a scene's account chart draws: seconds of reserve are joules
         /// over a standing cost the theatre cannot work out, so a window's account had no line.
+        /// Version 5 adds each body's mask of eating parts that took matter since the previous frame
+        /// (<see cref="PoseBody.AteMask"/>), which the theatre animates a mouth's bite by.
         /// </remarks>
-        public const int Version = 4;
+        public const int Version = 5;
 
         /// <summary>The oldest format this build reads.</summary>
         public const int OldestVersion = 1;
@@ -97,6 +99,19 @@ namespace Evosim.Farm
         /// version 3's forty-six and a third float32 after the other two, the reserve in joules.
         /// </summary>
         public const int BodyFixedBytesVersion4 = 50;
+
+        /// <summary>
+        /// Bytes a body costs before its joint coordinates in a version 5 frame, once inflated:
+        /// version 4's fifty, with a uint32 mask of the eating parts that took matter inserted after the reserve in
+        /// joules and before the joint count.
+        /// </summary>
+        public const int BodyFixedBytesVersion5 = 54;
+
+        /// <summary>
+        /// What <see cref="PoseBody.AteMask"/> reads on a stream older than version 5, which carries none: no bit
+        /// set, as a bite never seen. An older window is never refused for lacking it.
+        /// </summary>
+        public const uint AteNotRecorded = 0u;
 
         /// <summary>
         /// Seconds of reserve the stream does not know: NaN, on every body of a version 1 or 2
@@ -201,6 +216,7 @@ namespace Evosim.Farm
 
         /// <summary>Bytes a body costs before its joint coordinates in a frame of this version.</summary>
         public static int BodyFixedBytes(int version) =>
+            version >= 5 ? BodyFixedBytesVersion5 :
             version >= 4 ? BodyFixedBytesVersion4 :
             version >= 3 ? BodyFixedBytesVersion3 :
             version >= 2 ? BodyFixedBytesVersion2 : BodyFixedBytesVersion1;
@@ -297,6 +313,17 @@ namespace Evosim.Farm
         /// chart draws; <see cref="PoseStream.ReserveNotRecorded"/> (NaN) before version 4.
         /// </summary>
         public float ReserveJoules;
+
+        /// <summary>
+        /// Which of the body's eating parts took matter at any simulation step since the previous frame: bit
+        /// <c>k</c> is the <c>k</c>-th eating part (<c>MouthPoint.IsEatingPart</c>) in part order, an OR over the
+        /// steps so a bite shorter than the frame interval is not lost. 0 on a stream older than version 5
+        /// (<see cref="PoseStream.AteNotRecorded"/>), and always 0 for remains and for a body with no mouth.
+        /// </summary>
+        public uint AteMask;
+
+        /// <summary>Whether the body's <paramref name="eatingOrdinal"/>-th eating part took matter since the previous frame.</summary>
+        public bool Ate(int eatingOrdinal) => eatingOrdinal >= 0 && eatingOrdinal < 32 && (AteMask & (1u << eatingOrdinal)) != 0u;
 
         /// <summary>Joint coordinates in the solver's own order. Never null; empty for a rigid body.</summary>
         public float[] Joints;
@@ -461,7 +488,7 @@ namespace Evosim.Farm
             }
 
             Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, PoseStream.FlagsNotRecorded,
-                PoseStream.ReserveNotRecorded, PoseStream.ReserveNotRecorded, PoseStream.ReserveNotRecorded, dof, joints);
+                PoseStream.ReserveNotRecorded, PoseStream.ReserveNotRecorded, PoseStream.ReserveNotRecorded, PoseStream.AteNotRecorded, dof, joints);
         }
 
         /// <summary>One body of a version 2 stream, with its guild flags.</summary>
@@ -490,7 +517,7 @@ namespace Evosim.Farm
             }
 
             Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, flags,
-                PoseStream.ReserveNotRecorded, PoseStream.ReserveNotRecorded, PoseStream.ReserveNotRecorded, dof, joints);
+                PoseStream.ReserveNotRecorded, PoseStream.ReserveNotRecorded, PoseStream.ReserveNotRecorded, PoseStream.AteNotRecorded, dof, joints);
         }
 
         /// <summary>One body of a version 3 stream, with its guild flags and its seconds of reserve.</summary>
@@ -522,7 +549,7 @@ namespace Evosim.Farm
             }
 
             Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, flags, reserveSeconds, breedFraction,
-                PoseStream.ReserveNotRecorded, dof, joints);
+                PoseStream.ReserveNotRecorded, PoseStream.AteNotRecorded, dof, joints);
         }
 
         /// <summary>One body of a version 4 stream: version 3's and the reserve in joules.</summary>
@@ -533,11 +560,15 @@ namespace Evosim.Farm
             float bodyFraction, int flags, float reserveSeconds, float breedFraction, float reserveJoules,
             int dof, double[] joints)
         {
-            if (Version < 4)
+            if (Version != 4)
             {
                 throw new InvalidOperationException(
-                    "A version " + Version + " stream has no field for a body's reserve in joules, and " +
-                    "dropping it here would lose it without saying so.");
+                    Version < 4
+                        ? "A version " + Version + " stream has no field for a body's reserve in joules, and " +
+                          "dropping it here would lose it without saying so."
+                        : "A version " + Version + " stream carries every body's mask of eating parts that took " +
+                          "matter. Call the overload that takes it; a body written without it would read as a " +
+                          "body that never ate.");
             }
 
             if (flags < 0 || (flags & ~PoseStream.AllFlagBits) != 0)
@@ -547,7 +578,37 @@ namespace Evosim.Farm
                     "A body's flags are the three guild bits, the remains bit and nothing else.");
             }
 
-            Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, flags, reserveSeconds, breedFraction, reserveJoules, dof, joints);
+            Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, flags, reserveSeconds, breedFraction, reserveJoules,
+                PoseStream.AteNotRecorded, dof, joints);
+        }
+
+        /// <summary>One body of a version 5 stream: version 4's and the mask of eating parts that took matter.</summary>
+        /// <param name="ateMask">
+        /// Bit <c>k</c> set when the <c>k</c>-th eating part (in part order) took matter at any step since the
+        /// previous frame; see <see cref="PoseBody.AteMask"/>.
+        /// </param>
+        public void Body(
+            long id, float x, float y, float z,
+            float qx, float qy, float qz, float qw,
+            float bodyFraction, int flags, float reserveSeconds, float breedFraction, float reserveJoules,
+            uint ateMask, int dof, double[] joints)
+        {
+            if (Version < 5)
+            {
+                throw new InvalidOperationException(
+                    "A version " + Version + " stream has no field for a body's mask of eating parts that took " +
+                    "matter, and dropping it here would lose it without saying so.");
+            }
+
+            if (flags < 0 || (flags & ~PoseStream.AllFlagBits) != 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(flags), flags,
+                    "A body's flags are the three guild bits, the remains bit and nothing else.");
+            }
+
+            Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, flags, reserveSeconds, breedFraction, reserveJoules,
+                ateMask, dof, joints);
         }
 
         /// <remarks>
@@ -560,7 +621,7 @@ namespace Evosim.Farm
             long id, float x, float y, float z,
             float qx, float qy, float qz, float qw,
             float bodyFraction, int flags, float reserveSeconds, float breedFraction, float reserveJoules,
-            int dof, double[] joints)
+            uint ateMask, int dof, double[] joints)
         {
             if (!_framing) throw new InvalidOperationException("No frame is open.");
 
@@ -611,6 +672,12 @@ namespace Evosim.Farm
             if (Version >= 4)
             {
                 PutFloat(_buffer, _at, reserveJoules);
+                _at += 4;
+            }
+
+            if (Version >= 5)
+            {
+                PutU32(_buffer, _at, ateMask);
                 _at += 4;
             }
 
@@ -947,6 +1014,7 @@ namespace Evosim.Farm
                     ReserveSeconds = version >= 3 ? Get.Float(records, at + 37) : PoseStream.ReserveNotRecorded,
                     BreedFraction = version >= 3 ? Get.Float(records, at + 41) : PoseStream.ReserveNotRecorded,
                     ReserveJoules = version >= 4 ? Get.Float(records, at + 45) : PoseStream.ReserveNotRecorded,
+                    AteMask = version >= 5 ? Get.U32(records, at + 49) : PoseStream.AteNotRecorded,
                 };
 
                 int dof = records[at + fixedBytes - 1];

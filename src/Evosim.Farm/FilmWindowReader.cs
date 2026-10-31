@@ -460,6 +460,34 @@ namespace Evosim.Farm
         public PoseFrame ReadFrame(int frame) => Stream.Read(frame);
 
         /// <summary>
+        /// Whether the window's stream records which eating parts took matter (version 5 on). On an older window every
+        /// body's <see cref="PoseBody.AteMask"/> reads 0, as a bite never seen; the window is read all the same.
+        /// </summary>
+        public bool RecordsBites => Stream != null && Stream.Header.Version >= 5;
+
+        /// <summary>
+        /// The mask of eating parts a body's frame says took matter at any step since the previous frame (bit k is the
+        /// k-th eating part in part order; <see cref="PoseBody.AteMask"/>), or false when the frame does not hold the
+        /// body. Reads the whole frame, so a caller asking for many bodies of one frame reads it once with
+        /// <see cref="ReadFrame"/> and takes <see cref="PoseBody.AteMask"/> off each body.
+        /// </summary>
+        public bool TryAteMask(int frame, long id, out uint mask)
+        {
+            mask = PoseStream.AteNotRecorded;
+
+            PoseBody[] bodies = ReadFrame(frame).Bodies;
+
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                if (bodies[i].Id != id) continue;
+                mask = bodies[i].AteMask;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// The last frame recorded at or before a second, or -1 when the second is before the first
         /// frame. A frame sits up to one physics step after its nominal second, so a second asked
         /// for by its nominal value finds the frame before it; <see cref="NearestFrame"/> is the

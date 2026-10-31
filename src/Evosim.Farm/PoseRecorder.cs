@@ -35,6 +35,11 @@ namespace Evosim.Farm
         private readonly double _cadence;
         private double _due;
 
+        // Which eating parts of which body took matter at any metabolic step since the last frame was written: an OR
+        // of World.TookMatterThisStep over the steps. A frame writes it out and clears it. Only bodies that ate are in
+        // it, so a world with no mouth keeps it empty.
+        private readonly Dictionary<long, uint> _ate = new Dictionary<long, uint>();
+
         /// <summary>Opens the stream inside a run directory.</summary>
         public PoseRecorder(string runDirectory, float cadenceSeconds, string configHash)
         {
@@ -73,10 +78,33 @@ namespace Evosim.Farm
         /// <summary>The cadence the header carries.</summary>
         public double CadenceSeconds => _cadence;
 
+        /// <summary>
+        /// Folds the metabolic step just taken into the mask each body's next frame will carry: the eating parts that
+        /// took matter in it (<c>World.TookMatterThisStep</c>) are ORed into what the steps since the last frame
+        /// found. Call it after every metabolic step, whether a frame is due or not (<see cref="Sample"/> does, and a
+        /// film window calls it on its metabolic steps); a step skipped is a bite not seen. Reads the world and writes
+        /// only the recorder, so it moves no trajectory. Calling it twice for one step is harmless.
+        /// </summary>
+        public void Observe(Simulation sim)
+        {
+            if (_writer == null || sim == null) return;
+
+            IReadOnlyList<Organism> ate = sim.World.TookMatterThisStep;
+
+            for (int i = 0; i < ate.Count; i++)
+            {
+                Organism creature = ate[i];
+                _ate.TryGetValue(creature.Id, out uint before);
+                _ate[creature.Id] = before | creature.TookMatterMask;
+            }
+        }
+
         /// <summary>Writes a frame if one is due at the world's current second.</summary>
         public void Sample(Simulation sim)
         {
             if (_writer == null || sim == null) return;
+
+            Observe(sim);
 
             double t = sim.World.ElapsedSeconds;
             if (t + 1e-9 < _due) return;
@@ -125,6 +153,7 @@ namespace Evosim.Farm
                     creature.SecondsOfReserve,
                     BreedFraction(creature, sim.World.Config),
                     (float)creature.Energy,
+                    _ate.TryGetValue(creature.Id, out uint ate) ? ate : 0u,
                     body.Dof,
                     body.Q);
 
@@ -154,6 +183,7 @@ namespace Evosim.Farm
                     creature.SecondsOfReserve,
                     BreedFraction(creature, sim.World.Config),
                     (float)creature.Energy,
+                    0u, // remains have no mouth that works
                     body.Dof,
                     body.Q);
 
@@ -161,6 +191,9 @@ namespace Evosim.Farm
             }
 
             _writer.EndFrame();
+
+            // The next frame's OR starts from the steps after this one.
+            _ate.Clear();
             return written;
         }
 

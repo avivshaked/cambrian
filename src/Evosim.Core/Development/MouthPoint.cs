@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Evosim.Core
 {
@@ -52,6 +53,52 @@ namespace Evosim.Core
         {
             if (part == null) throw new ArgumentNullException(nameof(part));
             return part.Intake > IntakeThreshold;
+        }
+
+        /// <summary>
+        /// How many eating parts a body's "took matter" mask can name: it is a 32-bit mask over the eating parts in
+        /// part order. A body past it records nothing for the parts beyond (the default development limit is 16
+        /// parts, so no body of a recorded world gets near it).
+        /// </summary>
+        public const int MaxMaskedEatingParts = 32;
+
+        /// <summary>
+        /// The place part <paramref name="partIndex"/> holds among the body's eating parts, counted in part order from
+        /// 0 (the order <see cref="Organism.TookMatterMask"/>'s bits and D214's mouth points follow), or -1 when the
+        /// part is not an eating part.
+        /// </summary>
+        public static int EatingOrdinal(Phenotype phenotype, int partIndex)
+        {
+            if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
+
+            IReadOnlyList<PhenotypePart> parts = phenotype.Parts;
+            if (partIndex < 0 || partIndex >= parts.Count || !IsEatingPart(parts[partIndex])) return -1;
+
+            int ordinal = 0;
+            for (int i = 0; i < partIndex; i++) if (IsEatingPart(parts[i])) ordinal++;
+            return ordinal;
+        }
+
+        /// <summary>
+        /// The mask with a bit set for each of the body's eating parts, in part order, up to
+        /// <see cref="MaxMaskedEatingParts"/>.
+        /// </summary>
+        public static uint AllEatingPartsMask(Phenotype phenotype)
+        {
+            if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
+
+            IReadOnlyList<PhenotypePart> parts = phenotype.Parts;
+            uint mask = 0u;
+            int ordinal = 0;
+
+            for (int i = 0; i < parts.Count && ordinal < MaxMaskedEatingParts; i++)
+            {
+                if (!IsEatingPart(parts[i])) continue;
+                mask |= 1u << ordinal;
+                ordinal++;
+            }
+
+            return mask;
         }
 
         /// <summary>
