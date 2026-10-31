@@ -71,6 +71,8 @@ namespace Evosim.NurseryRoom
             new[] { "leaves.patches.count", "patches" },
             new[] { "leaves.patches.radius", "patch radius (m)" },
             new[] { "leaves.patches.ring", "radius of the ring the patches lie on (m)" },
+            new[] { "leaves.patches.switching", "switching patches (two patches take turns being fed)" },
+            new[] { "leaves.patches.switching.*", "switching patches: {last} (s, or degrees for minimumTurn)" },
 
             // the search
             new[] { "search", "search" },
@@ -112,6 +114,10 @@ namespace Evosim.NurseryRoom
             new[] { "exam.controls[].mode", "kinesis mode" },
             new[] { "exam.controls[].bias", "kinesis bias" },
             new[] { "exam.controls[].gain", "kinesis gain" },
+            new[] { "exam.controls[].period", "time between switches (s)" },
+            new[] { "exam.controls[].regrowAfter", "delay before the fed patch regrows what dies (s)" },
+            new[] { "exam.controls[].witherOver", "time the fed patch takes to wither at a switch (s)" },
+            new[] { "exam.controls[].minimumTurn", "smallest turn from the old patch to the new (degrees)" },
         };
 
         /// <summary>Every label by path, in the order above. The recipe resource carries it.</summary>
