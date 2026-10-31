@@ -190,10 +190,14 @@ direction-dependent. A plate drags far more water broadside than edge-on, and th
 anisotropy is part of what makes flapping work. A known limitation, recorded rather than
 hidden.
 
-One more thing is not hidden but is easy to miss. Every evolutionary run recorded so far has
-had added mass switched off: `addedMassCoefficient` reads 0 in every configuration in the
-record, so the worlds of chapters 5 and 6 swam on drag alone. The term is built and waits on
-a ruling, because switching it on changes the physics of every seed (logbook/0071).
+One more thing is easy to miss. Every world through round 28 swam with added mass switched off.
+`addedMassCoefficient` read 0 because nothing set it, so the worlds of chapters 5 and 6 swam on drag
+alone. Switching it on changes the physics of every seed (logbook/0071), so it waited on a ruling. D081
+made it a launch setting, and the movement round, round 29, ran at 0.5, the sphere's coefficient
+([DESIGN §0q](../DESIGN.md), logbook/0072). The worlds since have run at 0.5, as far as the run configs
+kept on the project's machine show. From 2026-09-30 the powered stroke of D135 was built on this same isotropic number,
+and [piece 10](10-a-fin-pushes-the-water-by-its-width.md) tells what that cost the fins. This paragraph
+was corrected on 2026-10-31; until then it said the term was still off everywhere.
 
 ## What it looks like
 
