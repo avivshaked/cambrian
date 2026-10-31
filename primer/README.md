@@ -66,11 +66,13 @@ describes unwritten code is a design document with adjectives.
 | [10](10-a-fin-pushes-the-water-by-its-width.md) | A fin pushes the water by its width | The fin law: why a stroke built on volume bought no fins, the paddle on the bench, the blade beyond the joint, and a world that has not yet grown one |
 | [11](11-a-fourth-shape-lets-evolution-walk-a-limbs-proportions.md) | A fourth shape lets evolution walk a limb's proportions | The superellipsoid family: three genes that step, contact on the true shape built and switched off, and a screen that found the shapes reachable but not yet favoured |
 | [12](12-the-open-ocean-grew-its-oases-and-then-filled-the-water-between-them.md) | The open ocean grew its oases, and then filled the water between them | Why the tank was left, what makes an island an oasis, blooms on their own clocks, and a film world that grew to the ceiling |
+| [13](13-a-seed-is-one-world-at-any-thread-count-and-on-the-card.md) | A seed is one world, at any thread count and on the card | Replay and why it matters: the shared box that did not replay in Unity, sums in a fixed order on the farm, the Editor as a cousin, hashes that detect, the card proving itself against itself, and the two ways a resume has parted since |
 
 Chapter 6 is the tiled ecology's history and stays that way. Chapters 7 and 8 were written
 on 2026-09-08 with the owner's agreement, after the shared world had held its reference
 (round 28) and the vertex world had closed both identities through a confirming round. The
 water is a grid from round 32 (D086). Piece 08's afterword says what changed. Pieces 09 to 12 were
 written on 2026-10-31, after contact eating, the fin law, the shape family and the open square had each
-run in the world and been read. Piece 12 cites the literature review's keys, which resolve in its
+run in the world and been read. Piece 13 followed the same day, on replay, which every round
+since the farm has kept. Piece 12 cites the literature review's keys, which resolve in its
 bibliography rather than in DESIGN.md.
