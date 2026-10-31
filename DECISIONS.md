@@ -10220,6 +10220,8 @@ in any condition set for the world.
 - a separate nose range in plume worlds;
 - porting the far grid to the card, which would save under 1 ms a step.
 
+**Built:** branch `smell-plume` from `logbook/specs/smell-plume-build.md`, merged into main at `c98ce0ea` on 2026-10-31, off by default. With both switches off, r64's arms D and E founded on the card for 600 s equal their recorded runs row for row. With them on, arms R and O (`rounds/env-d270-r.ps1`, `-o.ps1`) are identical at groups 32 and 64, and the plume emits in both. The merge's commit message lists the suites. The far grid stays on the host, as decided above, and the card carries the held far readings.
+
 ### D271
 **Coincident bodies are pushed apart along X by id order, behind a contact form of their own** · 2026-10-30
 
