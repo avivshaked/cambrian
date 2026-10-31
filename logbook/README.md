@@ -166,6 +166,19 @@ Last, the vocabulary of reproducibility, from
 | ***job worker threads*** | the pool of extra CPU threads Unity solves those islands on |
 | ***state digest*** | `EVOSIM_DIGEST_EVERY`, the instrument that fingerprints every body's position and velocity every N steps, so two runs can be compared to the step and body where they first differ |
 
+Then the vocabulary of the grazer rounds, from [0147](0147-grazers-paid-their-way-once-they-swam-faster-and-grew-up-slowly.md)
+onward, in the open square of D204.
+
+| term | what it means |
+|---|---|
+| ***world*** | one founded run on one seed. Since round 58 several worlds run at once on the graphics card, the ***card***, as one ***group*** |
+| ***screen*** | a short set of worlds that each move one setting, run to choose a value rather than to test a prediction; most are read on a pre-registered rule |
+| ***grazer*** | any body with a mouth, the cell that bites and eats; a ***bred*** grazer is one born in the world, as against a founder brought in by the trickle |
+| ***contact eating*** | the rule from D219 to D221: a mouth feeds only on the body it touches, as it wounds it, and the dead are left as ***remains*** that can be eaten by contact until a window closes |
+| ***D222's tests*** | the bar for a healthy grazer guild: 1, it keeps itself going (born share, cohort replacement, a chain of ten); 2, grazers meet 0.9 of their upkeep at each summer's start; 3, most of their intake is living food. D244 adds that a world must first hold 30 grazers |
+| ***intake over upkeep*** | the joules a grazer keeps from eating, over what being a body costs it in the same time; 1 pays its way |
+| ***pace factor*** | k, the number of physics seconds in one world second (D239); at k = 3 a body swims three times as far for each joule of upkeep |
+
 These are the report columns the entries quote, with what each number means.
 
 | column | meaning |
@@ -341,5 +354,6 @@ key only translates the entries' reporting shorthand.
 | [0144](0144-planted-grazers-on-one-fixed-map.md) | 2026-10-16 | Round 61's predictions: planted grazers on one fixed map (round 61, pre-registered: round 60's tank with one fixed island map per world, the nursery's ten best leaf swimmers planted through the trickle beside a control on each life seed; whether grazers keep a population, eat the leaves down and cross between islands) |
 | [0145](0145-the-planted-grazers-starve-and-the-world-changes.md) | 2026-10-18 | Round 61's read: the planted grazers starve, the tank fills, and the world changes (round 61, run to 72,000 s and read: the grazers killed leaves but starved on their endowment, so only P2 and C1 held; seed 6103's giant blades and 488 blown-up bodies; far too many creatures and no empty water; the setup judged wrong for the project's aim, leading to the grazer dial search and the open ocean, D201 to D205) |
 | [0146](0146-in-patches-the-smell-finds-the-leaf-not-the-patch.md) | 2026-10-19 | In patches the smell finds the leaf, not the patch (the nursery's patchy tank, D182 and D184: three patches of leaves in 3,400 m², bodies and brains searched on their energy return; the smell carries nine-tenths of the eating, but the evolved bodies hold to a patch no better than the founders or a body with no brain; round 59's planted grazers on the same bench, clause D2) |
+| [0147](0147-grazers-paid-their-way-once-they-swam-faster-and-grew-up-slowly.md) | 2026-10-31 | Round 62 and its screens: grazers paid their way once they swam faster and grew up slowly (the open ocean of D204; the launch stopped in minutes; the reach screen; the twins at 3 m stopped at 24,000 s on D215 because grazers lived on carrion; fast rot; contact eating cut a kill's kept joules from about 420 J to 25 J, and the store share, the deeper wound and the kill gut lifted it only to 60 to 90 J; search, not the meal, was the limit; the thrust arm and growth as a climb passed D222, and r62cf confirmed it on three seeds, with grazers that stay on their oases) |
 | [0108](0108-a-body-earns-its-outline.md) | 2026-09-19 | A body earns its outline (round 41d, round 41c's world with D099's silhouette cap on and the joint free again, pre-registered: 0107's predictions carried, the fold read gone on the contact instrument and the probe, the free joint's founding recorded; stopped at 15,000 s under V5 when the bush grew by another route, the cap binding and the bush still earning 1.7 times a leaf's light on the same matter) |
 | [0107](0107-matter-is-matter.md) | 2026-09-18 | Matter is matter (round 41, round 40's world on the one-substance economy of D098 at 3,000 units and a 100 J overhead, pre-registered: the crowd the matter builds, the water it regenerates, the larder it leaves the eaters; rounds 41, 41b and 41c stopped, the last on a knot: a terminal-only self-edge grows a sixteen-part ball that earns sixteen areas of light and costs the physics every pair) |
