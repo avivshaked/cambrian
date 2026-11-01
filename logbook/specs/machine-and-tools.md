@@ -175,6 +175,9 @@ The root file's rules still apply. The entries below were moved word for word, s
     16.8 GB. The owner asked that day that stray processes be watched (the owner, 2026-10-27), so each look at
     the machine reads committed memory beside the heat. Closing an idle session frees about 1.5 to 2.5 GB with
     its helpers, and which sessions close is the owner's choice.
+  - **A process id handed to the owner goes stale.** Windows reuses ids within hours. On 2026-11-01 one of nine hung
+    shells' ids, given to the owner to stop, belonged three hours later to r65's card-run process. So a kill command
+    for the owner names the process by its command line, or its ids are read again in the same message that gives it.
   - **A helper command starts pinned while a card run is up.** On 2026-10-27 at 07:43:11 the CPU read
     88 °C for one second at 156 W, beside growth group 2 on 22 to 31. The theatre's renders on 16 to 21
     peaked at 80 °C that half hour. The spike came from the theatre agent's own helper commands, unpinned
