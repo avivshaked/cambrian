@@ -123,7 +123,9 @@ The owner launches every agent by hand. Ping the owner's phone when the next age
 
 Each is set out in full, with the options and what each implies, in every message that asks for it.
 
-None is open. Two things are owed to the owner and are not decisions until they arrive. One is the mirrored-twin film (D234): one mirrored body with the switch off and on, c8's to make. The owner accepted reflecting the drive and rules after watching it, so nothing about it goes to the owner before the film does (said 2026-10-30 and again 2026-10-31). The other is the mouths' pass before the film (under "Where the theatre stands").
+One is open, and nothing waits on it. **The skin's thickness cap** (`EVOSIM_THEATRE_SKIN_THICK_CAP`, preview in `scratch/owner/skin-tips-thickness-cap/`, sent 2026-11-01): cap 2 mends torn tail tips and matches the uncarved outline; cap 1 half-mends them; both make sound flat rims crisper, which changes the accepted look, cap 1 on about 2,000 bodies a film window and cap 2 on more. The coordinator recommends cap 2. It stays at 0 until the owner rules.
+
+Two things are owed to the owner and are not decisions until they arrive. One is the mirrored-twin film (D234): one mirrored body with the switch off and on, c8's to make. The owner accepted reflecting the drive and rules after watching it, so nothing about it goes to the owner before the film does (said 2026-10-30 and again 2026-10-31). The other is the mouths' pass before the film (under "Where the theatre stands").
 
 The writing lane's scope is the coordinator's to set (the owner, 2026-10-31, who reads the record only as material for something beyond a log). It is widened to the literature rounds of queued item 11, within these limits: it touches only `research/LITERATURE-REVIEW.md`, `FETCH-RESULTS.md` and DESIGN.md's changelog, runs the review's §3.5 protocol, commits no PDF and no extracted text, uses no machine time, and sends any design change it finds to the coordinator.
 
