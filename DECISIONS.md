@@ -297,6 +297,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D273](#d273) | A card world resumed from its checkpoint repeats its run, from the build that writes the remains' exposure | 2026-11-01 | decided by the coordinator on 2026-11-01, after the resume probe and its read |
 | [D274](#d274) | The smell screen runs under true-shape contact, as two groups of three, after a 6,000 s founding bench | 2026-11-01 | decided by the coordinator on 2026-11-01, at the owner's delegation of the grazer screens |
 | [D275](#d275) | A bite needs the mouth: a mouth's blow wounds and feeds only where its mouth point touches | 2026-11-01 | ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation (option A of three) |
+| [D276](#d276) | The theatre's normal view draws no hunger, and leans toward realism | 2026-11-01 | ruled by the owner on 2026-11-01 |
 
 ---
 
@@ -10314,3 +10315,23 @@ typical. Keeping the rule and filming every bite: food would vanish beside mouth
 
 **Risk.** Grazers lose most of their bites at first, and they already fail D222's second test in every recent world. The
 richer bite of the first screen answers for that until the dial-back.
+
+### D276
+**The theatre's normal view draws no hunger, and leans toward realism** · 2026-11-01
+
+**Status:** ruled by the owner on 2026-11-01, after a leaf-bite clip showed a starving grazer turn from near black to its
+own colour in one frame, 0.4 s after its meal.
+
+**Decision.**
+- The normal theatre view, the film look included, does not shade a body by its reserve. Every body is drawn in its own
+  colour, whatever its hunger.
+- The reserve shading may stay as a filter view behind its own dial, off by default, as the cell view (`CELL_VIEW`) is.
+- The normal view leans toward realism. A per-body world value drawn as colour belongs in a filter view.
+
+**Why.** The theatre tinted each body by `tanh(reserve / EnergyFullScaleSeconds)`, so a starving body was drawn near black
+and a meal recoloured it. A meal steps the reserve by a whole leaf's joules, so the colour stepped too, applied whenever
+the repaint rotation next reached the body, 0 to 3 s late. In the 90 s window of `r65-c-6203` from 22,500 s, 15 of 381
+eaters went from under 0.1 to over 0.3 at one meal. No animal in the sea changes colour with its last meal.
+
+**Rejected.** Repainting a body at once when its tint jumps, which the coordinator had chosen as a fix of the lag: it
+keeps hunger in the normal view. Easing the tint over a second: the same.
