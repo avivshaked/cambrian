@@ -61,6 +61,22 @@ Windows are recorded by the round's own frozen farm, so G7's build must carry th
   64897 at every onset while its mouth point sat 0.75 m from 64897's surface, about 8 mouth radii. A bite counts as a mouth touch
   when the verdict is `touch` and the line's mouth-to-surface is within one mouth radius (`gap/radius` at most 1). G8's shot list
   chooses bites by that rule, from a whole-window table (`EVOSIM_THEATRE_ATE_CONTACT_ALL`).
+- What sets the pose stream's ate bit, read at `8259e17a` (an Opus read on 2026-11-01, nothing built or run). One writer,
+  `NoteTookMatter` (`WorldMouth.cs:254`), zeroed at the top of each mouth pass (`:247`); `PoseRecorder.Observe` ORs it over the
+  steps since the last frame (`Evosim.Farm/PoseRecorder.cs:88-99`). The intake classes:
+
+  | Intake | Takes from | Sets the bit | Rule |
+  |---|---|---|---|
+  | Contact bite: `ApplyDamage` (`WorldMouth.cs:386-442`), `SettleBites`, `NoteTookMatterAtPart` (`WorldContact.cs:840`) | a live part or a remains part | yes, the only path in r64t | true-shape touch: core distance under the sum of the margins (`ContactTrueShape.Pair`, `:96-129`), from one step's overlaps; the part has attack, the wound took health, intake is above zero |
+  | Corpse meal by reach (`MouthsThatReach`, `WorldMouth.cs:277`) | a corpse | never runs with contact eating | `ApplyIntake` returns at `:598`; `RunConfig.cs:1715` says the two reach settings are then read by nothing |
+  | Detritus from the water (`ConsumerCell.Acquire`, `StandardCellTypes.cs:762-777`, credited in `World.cs:5086-5099`) | the water | no | its contact is always null (`Metabolism.cs:521`) |
+  | Digestion and swallowing | the gut | no | none |
+
+  A bite that kills swallows the victim in the same pass (`CollectTheDead`, `WorldMouth.cs:207-221`), before the frame stamped
+  with the onset is written. That is why 35 of 37 leaf onsets in r64t-t-6203's window measured far. Each has a kill row with the
+  eater as `by`, and the leaf is present one frame earlier. So a kill is measured at onset − 1: the eating part (`byPart`) against
+  the kill row's victim. A wound, or a limb cut off when the row's `root` is 0, is measured at the onset frame. On screen, a leaf
+  swallowed whole vanishes on the frame the pulse starts.
 - The film look moved at `60676350` and moved back at `13eea6c1`. Between them the one skin capped every vertex's half thickness at
   its dominant bone's plain half extent. That changed about 2,000 skins in a window at NO_BOX 0, and the renders of phase70 and
   phase71 carry it. From `13eea6c1` the cap is `EVOSIM_THEATRE_SKIN_THICK_CAP`, default 0, the accepted look, until the owner has
