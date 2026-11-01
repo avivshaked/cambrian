@@ -1,0 +1,9 @@
+r65-c-6202  t=24000
+  whole run     leaves 0.82  others 0.09  remains 0.09  (bite kept 0.81 MJ, swallowed 0.02 MJ)
+  21000-24000  leaves 0.77  others 0.14  remains 0.09  (bite kept 0.21 MJ, swallowed 0.01 MJ)
+r65-r-6202  t=24000
+  whole run     leaves 0.79  others 0.09  remains 0.12  (bite kept 1.31 MJ, swallowed 0.01 MJ)
+  21000-24000  leaves 0.76  others 0.13  remains 0.11  (bite kept 0.33 MJ, swallowed 0.00 MJ)
+r65-o-6202  t=24000
+  whole run     leaves 0.81  others 0.08  remains 0.11  (bite kept 0.86 MJ, swallowed 0.02 MJ)
+  21000-24000  leaves 0.76  others 0.11  remains 0.12  (bite kept 0.26 MJ, swallowed 0.00 MJ)

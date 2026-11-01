@@ -1,0 +1,1 @@
+r65-r-6202  21000-24000 s  2977 bred grazers: 1460 seen to bite, median 156.5 s to first bite; 993 died first (0.334 of all); 524 alive and unbitten at the stream's end (24000 s)

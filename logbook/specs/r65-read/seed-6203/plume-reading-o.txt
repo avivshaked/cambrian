@@ -1,0 +1,6 @@
+r65-o-6203  21000 s  downstream median 3.054  p10 0.7978  p90 9.04 (1944 points, 8 groves)  all bearings median 0.825 (7776 points)  m2 s/m3
+    drift by grove: 0:0.41  1:0.67  2:0.57  3:0.31  4:0.56  6:0.34  9:0.74  10:0.53
+r65-o-6203  22500 s  downstream median 3.37  p10 0.8285  p90 9.729 (1944 points, 8 groves)  all bearings median 0.932 (7776 points)  m2 s/m3
+    drift by grove: 0:0.43  1:0.74  2:0.65  3:0.23  4:0.61  6:0.35  9:0.71  10:0.19
+r65-o-6203  24000 s  downstream median 3.169  p10 0.6772  p90 9.591 (1944 points, 8 groves)  all bearings median 0.9255 (7776 points)  m2 s/m3
+    drift by grove: 0:0.51  1:0.73  2:0.48  3:0.42  4:0.63  6:0.27  9:0.64  10:0.14
