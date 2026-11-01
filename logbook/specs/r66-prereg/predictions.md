@@ -69,6 +69,22 @@ below holds. Otherwise C reruns in each group, as a group of four.
 5. Each world's header names `trueshape` and the mouth rule, and Mk's and M4k's configs carry their leaf energy, or the
    world is stopped.
 
+### The checks' results
+
+The build is `bite-needs-mouth` in `scratch/wt-mouth`, its code that of `f28dbbc7`. Runs are under `scratch/r66/identity/`.
+
+- **Check 1.** The default suites ran on 2026-11-01 (`scratch/mouth-bite/suites/`). Core passed 1,793 of 1,793 and Farm 413
+  of 414. The one failure is `FilmWindowDigestTests`' pin, which main already fails, and whose digest covers the window's
+  build hashes. Dynamics passed 453 of 466, with 3 skipped and 10 failed. All 10 read the crowd fixture, which predates the
+  tunable and is refused. The fixture is re-recorded before the merge.
+- **Check 2 passes.** C on the new build, founded on the card at group 32 for 1,200 s (`r66id-c-6202`, `-6203`), equals
+  r65's C on both seeds: no difference in any of 24,120 stats values, and lineage equal row for row (3,114 and 2,662 rows,
+  apart from the columns `compare-run-rows.py` names as the build's).
+- **Checks 3 and 4 run longer than written.** No world bites before about 3,800 s: r65's C first bit at 3,850 s on 6202
+  and 3,760 s on 6203, and M's 1,200 s at group 32 counted no blow at all. So the switch-on comparison runs to 6,000 s: M
+  founded at group 64 to 6,000 s, against g32's M resumed from 1,200 s to 6,000 s. s is read over 3,000 to 6,000 s, in
+  bodies that are no longer founders.
+
 ## Readouts
 
 A grazer is a body born with attack and intake both above 0. No window is judged on fewer than 30 (D244).
@@ -80,7 +96,8 @@ A grazer is a body born with attack and intake both above 0. No window is judged
    24,000 s are at most half of C's (`overshoot-read.py`). Grazers that hold the leaves down are the overshoot that
    D262 asks for. Without it, the dial goes up again before it comes down.
 4. **Grazers learn to aim.** The landed share of mouth blows over 21,000 to 24,000 s is at least 1.25 times its share
-   over 3,000 to 6,000 s, in M on both seeds. Reported in every arm.
+   over 12,000 to 15,000 s, in M on both seeds. Reported in every arm. The early window is the first with thousands of
+   blows on both seeds: r65's C counted 55 and 272 blows by 6,000 s, and 2,716 and 6,465 between 12,000 and 15,000 s.
 5. **The pace holds.** A world under 0.5 times real time is stopped at once. Each arm's body-seconds per wall second are
    within 10% of r65-C's on the same seed. The groups run on different days, so raw pace is reported and not judged.
 
@@ -99,8 +116,9 @@ newborns' time to first bite (`first-bite.py`), the share of kills by claws, and
 - **M4k** overshoots on at least one seed: grazers 1.5 to 4 times C's and leaves under half of C's (low). The leaves'
   costlier growth may thin them before grazers boom. If so, M4k's leaves fall early, before 9,000 s, and its grazers
   never rise.
-- **Aim** rises in M by 1.1 to 1.5 times (low). The rule pays a body whose mouth leads, and 24,000 s is about 30 to 60
-  grazer generations, but r65 found that founders barely steer.
+- **Aim** rises in M by 1.1 to 1.5 times (low). The rule pays a body whose mouth leads. Between the windows' middles
+  r65's C gained 10 and 15 generations at its deepest line (`generationMax` 22 to 32, and 28 to 43), which is little time
+  for selection, and r65 found that founders barely steer.
 - **The pace** falls by at most 5% per body. The gap measure is up to a few GJK calls per contact per metabolic step,
   screened first by distance.
 
@@ -119,6 +137,11 @@ newborns' time to first bite (`first-bite.py`), the share of kills by claws, and
 - **Grazers live in every arm but mark 3 fails**: no arm overshot, and the ladder goes up by 4 again.
 - **Mark 2 fails everywhere while the grazers live**: grazers earn too much from animals under the rule. That is the gap
   D264's phase 3, the diet gene and matter kinds, is meant to close (inference).
+- **Mark 4 fails, and grazers struggle in M**: the founders aim badly and the world does not select aim in time. The
+  pool's founders were trained in the nursery under the old rule, where any part touching food could eat. The next step
+  is then the nursery retraining the pool with D275 on, before the film's round, rather than raising the dials further
+  (agreed with the owner on 2026-11-01). A tank steps the farm's own `Simulation`, so a tank world with contact eating,
+  true-shape contact and the switch carries the rule (read from the code, not yet run).
 - **M dies on either seed**: the rule is too strict for founders. That goes to the owner with the read, since the rule's
   radius is the owner's.
 
