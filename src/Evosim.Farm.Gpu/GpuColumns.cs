@@ -422,6 +422,28 @@ namespace Evosim.Farm.Gpu
             Scatter.Run(_acc, _stream, View, _staging.View, slots.View, n, Width, pitch, Cap);
         }
 
+        /// <summary>Whether the device buffer has had no whole upload since it was made or resized.</summary>
+        public bool Whole => _whole;
+
+        /// <summary>
+        /// One run of a one-row column up, <paramref name="len"/> elements from <paramref name="start"/>, queued as
+        /// <see cref="UpQueued"/> is (a plain copy where the host array is not page-locked). The caller sends the whole
+        /// column first when <see cref="Whole"/>.
+        /// </summary>
+        public void UpRangeQueued(int start, int len)
+        {
+            if (len <= 0) return;
+            if (_lock == null)
+            {
+                View.SubView(start, len).CopyFromCPU(_stream, new ReadOnlySpan<T>(Host, start, len));
+                CopyTally.Note((long)len * System.Runtime.CompilerServices.Unsafe.SizeOf<T>());
+                return;
+            }
+
+            View.SubView(start, len).CopyFromCPUUnsafeAsync(_stream, ref Host[start], len);
+            CopyTally.Note((long)len * System.Runtime.CompilerServices.Unsafe.SizeOf<T>(), waits: false);
+        }
+
         /// <summary>The first <paramref name="rows"/> rows up, <c>rows · Cap</c> elements.</summary>
         public void UpRows(int rows)
         {

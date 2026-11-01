@@ -13872,6 +13872,10 @@ namespace Evosim.Farm.Gpu.Dbl
         // the whole of the rows, so a true-shape world with no family part pays nothing. Uploaded after a pack that wrote it.
         private readonly Col<Real> _hull;
         private bool _hullLive, _hullUp;
+
+        // The slots packed this block that carry a hull core: the only rows of the hull column that need to go up
+        // once the column is whole on the card.
+        private readonly List<int> _hullPacked = new List<int>();
         private readonly Col<int>[] _active = new Col<int>[2];
         private int _committed;
 
@@ -14939,12 +14943,17 @@ namespace Evosim.Farm.Gpu.Dbl
             PlaceBrains();
 
             bool anyHull = false;
+            _hullPacked.Clear();
             foreach (int g in _slots.Packs)
             {
                 ClassSet set = _classes[_slots.ClassOf[g]];
                 set.NotePack(_slots.LocalOf[g]);
                 set.WidenPanels(_slots.Body[g].PanelStart[_slots.Body[g].Links]);
-                if (_w.TrueShape && HasHullCore(_slots.Body[g])) anyHull = true;
+                if (_w.TrueShape && HasHullCore(_slots.Body[g]))
+                {
+                    anyHull = true;
+                    _hullPacked.Add(g);
+                }
             }
 
             // D233: the hull cores' columns are made before the parallel pack writes into them.
@@ -15105,11 +15114,32 @@ namespace Evosim.Farm.Gpu.Dbl
                 foreach (Col<Real> c in _core) c.UpUsedQueued(UsedUnits(c, upUsed));
                 _coreUp = false;
             }
-            if (_hullUp)
+            if (_hullUp || _hull.Whole)
             {
-                // D233's hull cores change only in a pack that wrote them, as the cores above do.
+                // The column was just made or resized: the card holds none of it yet.
                 _hull.UpUsedQueued(UsedUnits(_hull, upUsed));
                 _hullUp = false;
+            }
+            else if (_hullPacked.Count > 0)
+            {
+                // D233's hull cores change only in a pack that wrote them, as the cores above do, so only those slots'
+                // rows go up. A slot's LinkStride links' points are one run; neighbouring slots join into one copy.
+                if (2 * _hullPacked.Count >= upUsed)
+                {
+                    _hull.UpUsedQueued(UsedUnits(_hull, upUsed));
+                }
+                else
+                {
+                    _hullPacked.Sort();
+                    int run = WholeStep.LinkStride * WholeStep.HullStride;
+                    int from = _hullPacked[0], count = 1;
+                    for (int k = 1; k <= _hullPacked.Count; k++)
+                    {
+                        if (k < _hullPacked.Count && _hullPacked[k] == from + count) { count++; continue; }
+                        _hull.UpRangeQueued(from * run, count * run);
+                        if (k < _hullPacked.Count) { from = _hullPacked[k]; count = 1; }
+                    }
+                }
             }
             for (int k = 0; k < _classes.Length; k++) _classes[k].Upload(_slots.Classes[k].Used);
             _stock.UpQueued();
@@ -15628,9 +15658,8 @@ namespace Evosim.Farm.Gpu.Dbl
             {
                 _hull.Resize(HullElements(_gcap));
                 _hullLive = true;
+                _hullUp = true;
             }
-
-            _hullUp = true;
         }
 
         private SGlob Glob => new SGlob
