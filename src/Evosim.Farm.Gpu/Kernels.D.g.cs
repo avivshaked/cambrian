@@ -9188,6 +9188,12 @@ namespace Evosim.Farm.Gpu.Dbl
         internal static double CosR(double a) => Math.Cos(Reduced(a));
         internal static float TanhF(float a) => a > TanhGuard ? 1f : a < -TanhGuard ? -1f : (float)Math.Tanh(a);
 
+        // The GJK's product (GjkMul) and the volume a tetrahedron needs, as a fraction of its longest edge cubed, to be
+        // believed when it holds the origin (GjkFlat). Double is the solver's arithmetic as it stands: a plain product,
+        // and no tetrahedron is ever too flat to trust.
+        private static Real GjkMul(Real a, Real b) => a * b;
+        private const Real GjkFlat = 0.0;
+
         // ============================================================== fluid
 
         /// <summary>
@@ -10732,17 +10738,43 @@ namespace Evosim.Farm.Gpu.Dbl
         // vertices; then the four weights of the nearest point.
         private const int GjkW = 0, GjkA = 12, GjkB = 24, GjkL = 36;
 
+        // Every product in the GJK is written GjkMul, and the vector and matrix operations it uses are copied below
+        // with their products written so. In single the card's PTX compiler would otherwise contract a product and the
+        // sum beside it into one fused multiply-add, which rounds once and not twice: the support point then differs from
+        // the vertex the simplex holds in its last bits, GjkHeld's exact comparison misses it, and the loop adds a
+        // near-duplicate fourth vertex whose flat tetrahedron the sign tests mis-read (the census dump of
+        // r64t-t-6203 at 22,500.5 s). The evaluation order of each sum is the operator's, so in double GjkMul is the plain product and
+        // these are the solver's own arithmetic to the bit.
+        private static Real GjkDot(V3 a, V3 b) => GjkMul(a.X, b.X) + GjkMul(a.Y, b.Y) + GjkMul(a.Z, b.Z);
+
+        private static Real GjkSqr(V3 a) => GjkMul(a.X, a.X) + GjkMul(a.Y, a.Y) + GjkMul(a.Z, a.Z);
+
+        private static V3 GjkCross(V3 a, V3 b) => new V3(
+            GjkMul(a.Y, b.Z) - GjkMul(a.Z, b.Y), GjkMul(a.Z, b.X) - GjkMul(a.X, b.Z), GjkMul(a.X, b.Y) - GjkMul(a.Y, b.X));
+
+        private static V3 GjkScale(V3 a, Real s) => new V3(GjkMul(a.X, s), GjkMul(a.Y, s), GjkMul(a.Z, s));
+
+        private static V3 GjkTimes(M3 m, V3 v) => new V3(
+            GjkMul(m.M00, v.X) + GjkMul(m.M01, v.Y) + GjkMul(m.M02, v.Z),
+            GjkMul(m.M10, v.X) + GjkMul(m.M11, v.Y) + GjkMul(m.M12, v.Z),
+            GjkMul(m.M20, v.X) + GjkMul(m.M21, v.Y) + GjkMul(m.M22, v.Z));
+
+        private static V3 GjkTransposedTimes(M3 m, V3 v) => new V3(
+            GjkMul(m.M00, v.X) + GjkMul(m.M10, v.Y) + GjkMul(m.M20, v.Z),
+            GjkMul(m.M01, v.X) + GjkMul(m.M11, v.Y) + GjkMul(m.M21, v.Z),
+            GjkMul(m.M02, v.X) + GjkMul(m.M12, v.Y) + GjkMul(m.M22, v.Z));
+
         /// <summary>ConvexCore.Support: the core's farthest point along a direction. A local component that is 0 or NaN reads as +.</summary>
         private static V3 GjkSupport(V3 half, M3 rotation, V3 centre, V3 direction)
         {
-            V3 local = rotation.TransposedTimes(direction);
+            V3 local = GjkTransposedTimes(rotation, direction);
 
             V3 corner = new V3(
                 local.X < 0 ? -half.X : half.X,
                 local.Y < 0 ? -half.Y : half.Y,
                 local.Z < 0 ? -half.Z : half.Z);
 
-            return centre + rotation * corner;
+            return centre + GjkTimes(rotation, corner);
         }
 
         private static V3 GjkVertex(Real[] s, int block, int k) =>
@@ -10783,7 +10815,7 @@ namespace Evosim.Farm.Gpu.Dbl
         {
             // Each core contains its own centre, so coincident centres are an intersection.
             V3 first = centreB - centreA;
-            if (first.SqrMagnitude <= GjkTouching * GjkTouching)
+            if (GjkSqr(first) <= GjkTouching * GjkTouching)
             {
                 distance = 0;
                 pointA = centreA;
@@ -10805,7 +10837,7 @@ namespace Evosim.Farm.Gpu.Dbl
             {
                 if (!GjkReduce(s, ref n, out v)) { inside = true; break; }
 
-                Real vv = v.SqrMagnitude;
+                Real vv = GjkSqr(v);
                 if (vv <= GjkTouching * GjkTouching) break;
 
                 // The difference's support point along -v: A's along -v, B's along +v.
@@ -10814,7 +10846,7 @@ namespace Evosim.Farm.Gpu.Dbl
                 V3 w = wa - wb;
 
                 // No progress possible: the support point is a vertex already held, or the gap is closed.
-                if (vv - V3.Dot(v, w) <= GjkTolerance * System.Math.Sqrt(vv)) break;
+                if (vv - GjkDot(v, w) <= GjkTolerance * System.Math.Sqrt(vv)) break;
                 if (GjkHeld(s, n, w)) break;
 
                 GjkAddVertex(s, ref n, wa, wb);
@@ -10836,13 +10868,13 @@ namespace Evosim.Farm.Gpu.Dbl
             for (int k = 0; k < n; k++)
             {
                 Real lam = s[GjkL + k];
-                pa = pa + GjkVertex(s, GjkA, k) * lam;
-                pb = pb + GjkVertex(s, GjkB, k) * lam;
+                pa = pa + GjkScale(GjkVertex(s, GjkA, k), lam);
+                pb = pb + GjkScale(GjkVertex(s, GjkB, k), lam);
             }
 
             pointA = pa;
             pointB = pb;
-            distance = (pa - pb).Magnitude;
+            distance = System.Math.Sqrt(GjkSqr(pa - pb));
             return distance > GjkTouching;
         }
 
@@ -10896,7 +10928,7 @@ namespace Evosim.Farm.Gpu.Dbl
             n = m;
 
             V3 sum = V3.Zero;
-            for (int k = 0; k < n; k++) sum = sum + GjkVertex(s, GjkW, k) * s[GjkL + k];
+            for (int k = 0; k < n; k++) sum = sum + GjkScale(GjkVertex(s, GjkW, k), s[GjkL + k]);
             v = sum;
             return true;
         }
@@ -10905,8 +10937,8 @@ namespace Evosim.Farm.Gpu.Dbl
         private static void GjkSegment(V3 a, V3 b, out Real la, out Real lb)
         {
             V3 ab = b - a;
-            Real len2 = V3.Dot(ab, ab);
-            Real t = len2 > 0 ? -V3.Dot(a, ab) / len2 : (Real)0.0;
+            Real len2 = GjkDot(ab, ab);
+            Real t = len2 > 0 ? -GjkDot(a, ab) / len2 : (Real)0.0;
 
             if (!(t > 0)) { la = (Real)1.0; lb = (Real)0.0; }
             else if (t >= (Real)1.0) { la = (Real)0.0; lb = (Real)1.0; }
@@ -10917,22 +10949,22 @@ namespace Evosim.Farm.Gpu.Dbl
         private static void GjkTriangle(V3 a, V3 b, V3 c, out Real la, out Real lb, out Real lc)
         {
             V3 ab = b - a, ac = c - a;
-            V3 normal = V3.Cross(ab, ac);
+            V3 normal = GjkCross(ab, ac);
 
-            if (normal.SqrMagnitude <= (Real)1e-20 * V3.Dot(ab, ab) * V3.Dot(ac, ac) || !(V3.Dot(ab, ab) > 0))
+            if (GjkSqr(normal) <= (Real)1e-20 * GjkDot(ab, ab) * GjkDot(ac, ac) || !(GjkDot(ab, ab) > 0))
             {
                 GjkEdges(a, b, c, out la, out lb, out lc);
                 return;
             }
 
             // The origin's offsets from a, b and c.
-            Real d1 = -V3.Dot(ab, a), d2 = -V3.Dot(ac, a);
+            Real d1 = -GjkDot(ab, a), d2 = -GjkDot(ac, a);
             if (d1 <= 0 && d2 <= 0) { la = 1; lb = 0; lc = 0; return; }
 
-            Real d3 = -V3.Dot(ab, b), d4 = -V3.Dot(ac, b);
+            Real d3 = -GjkDot(ab, b), d4 = -GjkDot(ac, b);
             if (d3 >= 0 && d4 <= d3) { la = 0; lb = 1; lc = 0; return; }
 
-            Real vc = d1 * d4 - d3 * d2;
+            Real vc = GjkMul(d1, d4) - GjkMul(d3, d2);
             if (vc <= 0 && d1 >= 0 && d3 <= 0)
             {
                 Real t = d1 / (d1 - d3);
@@ -10940,10 +10972,10 @@ namespace Evosim.Farm.Gpu.Dbl
                 return;
             }
 
-            Real d5 = -V3.Dot(ab, c), d6 = -V3.Dot(ac, c);
+            Real d5 = -GjkDot(ab, c), d6 = -GjkDot(ac, c);
             if (d6 >= 0 && d5 <= d6) { la = 0; lb = 0; lc = 1; return; }
 
-            Real vb = d5 * d2 - d1 * d6;
+            Real vb = GjkMul(d5, d2) - GjkMul(d1, d6);
             if (vb <= 0 && d2 >= 0 && d6 <= 0)
             {
                 Real t = d2 / (d2 - d6);
@@ -10951,7 +10983,7 @@ namespace Evosim.Farm.Gpu.Dbl
                 return;
             }
 
-            Real va = d3 * d6 - d5 * d4;
+            Real va = GjkMul(d3, d6) - GjkMul(d5, d4);
             if (va <= 0 && (d4 - d3) >= 0 && (d5 - d6) >= 0)
             {
                 Real t = (d4 - d3) / ((d4 - d3) + (d5 - d6));
@@ -10960,7 +10992,7 @@ namespace Evosim.Farm.Gpu.Dbl
             }
 
             Real denom = (Real)1.0 / (va + vb + vc);
-            Real bv = vb * denom, cv = vc * denom;
+            Real bv = GjkMul(vb, denom), cv = GjkMul(vc, denom);
             la = (Real)1.0 - bv - cv; lb = bv; lc = cv;
         }
 
@@ -10969,21 +11001,52 @@ namespace Evosim.Farm.Gpu.Dbl
         {
             Real p, q;
             GjkSegment(a, b, out p, out q);
-            Real best = (a * p + b * q).SqrMagnitude;
+            Real best = GjkSqr(GjkScale(a, p) + GjkScale(b, q));
             la = p; lb = q; lc = 0;
 
             GjkSegment(b, c, out p, out q);
-            Real d = (b * p + c * q).SqrMagnitude;
+            Real d = GjkSqr(GjkScale(b, p) + GjkScale(c, q));
             if (d < best) { best = d; la = 0; lb = p; lc = q; }
 
             GjkSegment(c, a, out p, out q);
-            d = (c * p + a * q).SqrMagnitude;
+            d = GjkSqr(GjkScale(c, p) + GjkScale(a, q));
             if (d < best) { la = q; lb = 0; lc = p; }
         }
 
         /// <summary>
+        /// True when the tetrahedron is too flat for its sign tests to be believed: its volume (the triple product's
+        /// sixth) is below GjkFlat of its longest edge cubed. Always false in double, where GjkFlat is 0. A float triple
+        /// product of a flat tetrahedron is noise, the four face sides it gives are noise, and noise that agrees on all
+        /// four reads as "the origin is enclosed" for an origin that is not near it (the census dump's pair, 0.41 m
+        /// apart). A NaN reads as not flat.
+        /// </summary>
+        private static bool GjkSliver(V3 p0, V3 p1, V3 p2, V3 p3)
+        {
+            if (!(GjkFlat > 0)) return false;
+
+            V3 e1 = p1 - p0, e2 = p2 - p0, e3 = p3 - p0;
+            Real six = System.Math.Abs(GjkDot(e1, GjkCross(e2, e3)));
+
+            Real longest = GjkSqr(e1);
+            Real other = GjkSqr(e2);
+            if (other > longest) longest = other;
+            other = GjkSqr(e3);
+            if (other > longest) longest = other;
+            other = GjkSqr(p2 - p1);
+            if (other > longest) longest = other;
+            other = GjkSqr(p3 - p1);
+            if (other > longest) longest = other;
+            other = GjkSqr(p3 - p2);
+            if (other > longest) longest = other;
+
+            // longest is the square of the longest edge; its cube is longest times its root.
+            return six < GjkFlat * longest * System.Math.Sqrt(longest);
+        }
+
+        /// <summary>
         /// ConvexCore.Tetrahedron: the weights of the nearest point of the tetrahedron in the buffer's four
-        /// vertices; false when the origin is inside it.
+        /// vertices; false when the origin is inside it. In single a tetrahedron too flat to trust (GjkSliver) is not
+        /// inside: the nearest of its four faces is taken.
         /// </summary>
         private static bool GjkTetrahedron(Real[] s)
         {
@@ -10993,35 +11056,42 @@ namespace Evosim.Farm.Gpu.Dbl
             Real w0 = 0, w1 = 0, w2 = 0, w3 = 0;
             bool any = false;
 
-            // Faces (0,1,2) | 3, (0,2,3) | 1, (0,3,1) | 2, (1,3,2) | 0.
-            for (int face = 0; face < 4; face++)
+            // A second attempt runs only when the first found no face the origin is outside of and the tetrahedron is
+            // too flat to say so (GjkSliver); it takes the nearest of all four faces, as a triangle would be taken.
+            for (int attempt = 0; attempt < 2; attempt++)
             {
-                V3 a, b, c, d;
-                if (face == 0) { a = p0; b = p1; c = p2; d = p3; }
-                else if (face == 1) { a = p0; b = p2; c = p3; d = p1; }
-                else if (face == 2) { a = p0; b = p3; c = p1; d = p2; }
-                else { a = p1; b = p3; c = p2; d = p0; }
+                if (attempt == 1 && (any || !GjkSliver(p0, p1, p2, p3))) break;
 
-                V3 normal = V3.Cross(b - a, c - a);
-                Real signOrigin = -V3.Dot(a, normal);
-                Real signFourth = V3.Dot(d - a, normal);
-                if (signOrigin * signFourth > 0) continue;
-
-                Real la, lb, lc;
-                GjkTriangle(a, b, c, out la, out lb, out lc);
-                Real dist = (a * la + b * lb + c * lc).SqrMagnitude;
-                if (!(dist < best))
+                // Faces (0,1,2) | 3, (0,2,3) | 1, (0,3,1) | 2, (1,3,2) | 0.
+                for (int face = 0; face < 4; face++)
                 {
-                    any = true;
-                    continue;
-                }
+                    V3 a, b, c, d;
+                    if (face == 0) { a = p0; b = p1; c = p2; d = p3; }
+                    else if (face == 1) { a = p0; b = p2; c = p3; d = p1; }
+                    else if (face == 2) { a = p0; b = p3; c = p1; d = p2; }
+                    else { a = p1; b = p3; c = p2; d = p0; }
 
-                best = dist;
-                any = true;
-                if (face == 0) { w0 = la; w1 = lb; w2 = lc; w3 = 0; }
-                else if (face == 1) { w0 = la; w1 = 0; w2 = lb; w3 = lc; }
-                else if (face == 2) { w0 = la; w1 = lc; w2 = 0; w3 = lb; }
-                else { w0 = 0; w1 = la; w2 = lc; w3 = lb; }
+                    V3 normal = GjkCross(b - a, c - a);
+                    Real signOrigin = -GjkDot(a, normal);
+                    Real signFourth = GjkDot(d - a, normal);
+                    if (attempt == 0 && signOrigin * signFourth > 0) continue;
+
+                    Real la, lb, lc;
+                    GjkTriangle(a, b, c, out la, out lb, out lc);
+                    Real dist = GjkSqr(GjkScale(a, la) + GjkScale(b, lb) + GjkScale(c, lc));
+                    if (!(dist < best))
+                    {
+                        any = true;
+                        continue;
+                    }
+
+                    best = dist;
+                    any = true;
+                    if (face == 0) { w0 = la; w1 = lb; w2 = lc; w3 = 0; }
+                    else if (face == 1) { w0 = la; w1 = 0; w2 = lb; w3 = lc; }
+                    else if (face == 2) { w0 = la; w1 = lc; w2 = 0; w3 = lb; }
+                    else { w0 = 0; w1 = la; w2 = lc; w3 = lb; }
+                }
             }
 
             if (!any) return false;
