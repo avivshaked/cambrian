@@ -118,10 +118,10 @@ logic was sound, and the fault lay in how the card computed it.
 ## The card's arithmetic
 
 To see the card's own numbers, a farm branch added a census dump, and the 6203 world was resumed on the card from
-22,500 s. Half a second later it reproduced one far kill, animal 66874 on leaf 70081. The dump is
-`census-dump-t6203.jsonl` beside this entry. The bookkeeping was clean. The card's GJK had ended "origin inside" at
-its third pass, calling the two parts touching, where the host found their cores 0.41 m apart. Both cores were flat,
-zero along one axis.
+22,500 s. Half a second later it reproduced one far kill, animal 66874 on leaf 70081. The dump stays untracked in its
+working folder, as every run file does, and the read cites it. The bookkeeping was clean. The card's GJK had ended
+"origin inside" at its third pass, calling the two parts touching, where the host found their cores 0.41 m apart. Both
+cores were flat, zero along one axis.
 
 The cause was a multiply and an add fused into one operation. The card's compiler does this unless told not to, and
 the fused result differs from the processor's in its last bits. The card's notes had said so since 26 September, with
@@ -161,7 +161,7 @@ weeks before, with its cure. A rule in a notes file binds only the code written 
 |---|---|
 | [`r64t-prereg/predictions.md`](specs/r64t-prereg/predictions.md) | the screen's design, predictions and falsifiers, committed before launch |
 | [`r64t-read/README.md`](specs/r64t-read/README.md) | the read, the host probe, the kill gaps and the fix |
-| [`true-shape-kill-gaps/`](specs/true-shape-kill-gaps/) | the ball table under spheres, the kill gaps, the card's GJK on the host's numbers and the census dump |
+| [`true-shape-kill-gaps/`](specs/true-shape-kill-gaps/) | the ball table under spheres, the kill gaps, and the card's GJK on the host's numbers |
 | [`DECISIONS.md`](../DECISIONS.md) D196, D228, D252, D272 | the reach, the two levels of true shape, sphere contact, and the ruling |
 | [`src/Evosim.Farm.Gpu/CLAUDE.md`](../src/Evosim.Farm.Gpu/CLAUDE.md) | the card's rule on fused products, and the GJK written to it |
 | commits `fe0548e7`, `15396c3f`, `a1e443af` | the GJK fix, its tests, and the family hulls under true shape |
