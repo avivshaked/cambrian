@@ -50,6 +50,9 @@ Windows are recorded by the round's own frozen farm, so G7's build must carry th
 - The reference renders that the batch readings cite in older theatre trees now sit in the trunk's
   `scratch/safari/` (`coral-refs/`, `remains-refs/`, `pace-refs/`), with the old paths in `REFS-MOVED.md` beside them.
 - Step 0's dials-off check moves the earlier frames' folder aside and needs captions written after its start. A Unity that exits before rendering (the package manager's helper dropping its connection, as on 2026-10-30) once let last day's frames pass as the new build's, and leaves `Temp/UnityLockfile` behind; with no Unity process running, that file is stale and is moved aside.
+- No commit lands on a chain's `-Target` branch between step 0's seat and the chain's last step. Every later step checks that the
+  branch is an ancestor of the worker's head, and refuses when it is not. A builder's commit made mid-chain cost phase62 its film
+  (2026-11-01). Hold a builder's commit until the chain ends, or brief the builder to stop before committing.
 - A step letter in `slot-r62kg.ps1` must be new: `-cmatch` fires every step with that letter. Search the script for the
   letter before using it, since hold48's round-producer step already held `Ж`.
 - Growth: `LiveWorldView.Resize` rescales the parts in place, and the one skin's bones take the growth as a scale. That matches Core's uniform growth, but no render of a growing body has checked it yet.
