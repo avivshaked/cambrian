@@ -113,8 +113,8 @@ then found in the host's state and its gap measured. The table is `kill-gaps.md`
 The 220 kills both engines agreed on all touched. Of the 12 only the card made, six were 0.10 to 0.56 m apart, so the
 falsifier fired. They were few, a handful against hundreds. A further pass ran the card's own GJK routine on the host,
 with the host's numbers, and every pair it could test came out apart (`card-gjk-on-host.md`). So the routine's logic
-was sound, and the fault lay in how the card computed it. c8 also asked whether the card's list of touching pairs
-could have gone stale, and read the card code that ruled it out.
+was sound, and the fault lay in how the card computed it. The theatre lane also asked whether the card's list of
+touching pairs could have gone stale, and read the card code that ruled it out.
 
 ## The card's arithmetic
 
