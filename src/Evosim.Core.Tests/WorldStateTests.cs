@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Evosim.Core;
 using Xunit;
@@ -418,6 +419,113 @@ namespace Evosim.Core.Tests
             Assert.Equal(new[] { 0f, 0f }, wounded.PartDamage);
             Assert.Equal(Readings(world), Readings(restored));
             Assert.Equal(StateOf(world), StateOf(restored));
+        }
+
+        private static List<float> ShadingScan(World world, float fromHeightY)
+        {
+            var scan = new List<float>();
+            for (int k = 0; k <= 40; k++) scan.Add(world.Field.ShadingAt(fromHeightY - 0.25f * k));
+            return scan;
+        }
+
+        /// <summary>
+        /// Whole-body remains keep the exposure and the up vector of their last living step and shade the living
+        /// with them while the light is by exposure; the harness refreshes both for the living only, so a
+        /// checkpoint has to carry them. Left out until StateVersion 21, a resumed world cast every uncut remains'
+        /// shadow on the orientation average until it closed (the probe of 2026-11-01: <c>shading</c> read high from
+        /// the first row of every resume).
+        /// </summary>
+        [Fact]
+        public void RemainsRestoredKeepTheExposureAndUpOfTheirLastLivingStep()
+        {
+            RunConfig config = ContactEatingTests.RemainsStage(window: 60f);
+            config.LightByExposure = true;
+            config.LightSilhouetteCap = true;
+
+            float reserve = config.FounderEnergyJoules;
+            config.FounderEnergyJoules = 0.001f;
+            var world = new World(config, seed: 3);
+            world.Inoculate(Fixtures.ArmedBox(half: 0.3f), 1, -1f);
+            config.FounderEnergyJoules = reserve;
+
+            Organism body = world.Living[0];
+            var up = new Float3(0.3f, 0.9f, 0.1f);
+
+            for (int step = 0; step < 40 && world.Remains.Count == 0; step++)
+            {
+                // What the harness does for the living before each metabolic step.
+                if (!body.IsRemains)
+                {
+                    body.PartExposure = new[] { 0.2f };
+                    body.UpInBody = up;
+                }
+
+                world.Step(0.5f);
+            }
+
+            Assert.True(body.IsRemains, "the fixture never starved the body into remains");
+            Assert.Single(world.Remains);
+            Assert.NotNull(body.CurrentExposure);
+            Assert.Equal(0.2f, body.CurrentExposure[0]);
+
+            byte[] state = StateOf(world);
+            World restored = Restored(config, 3, state);
+
+            Organism kept = restored.Remains[0];
+            Assert.Equal(body.Id, kept.Id);
+            Assert.NotNull(kept.PartExposure);
+            Assert.Equal(body.PartExposure, kept.PartExposure);
+            Assert.Equal(body.UpInBody, kept.UpInBody);
+            Assert.Equal(state, StateOf(restored));
+
+            for (int step = 1; step <= 20; step++)
+            {
+                world.Step(0.5f);
+                restored.Step(0.5f);
+
+                Assert.True(
+                    ShadingScan(world, -1f).SequenceEqual(ShadingScan(restored, -1f)),
+                    "the resumed world's shading parted from the unbroken run's at metabolic step " + step);
+            }
+
+            Assert.Equal(Readings(world), Readings(restored));
+        }
+
+        /// <summary>
+        /// A version-20 stream carries no exposure and no up, and is read as the build that wrote it restored
+        /// it: both null for every body, remains included.
+        /// </summary>
+        [Fact]
+        public void AVersionTwentyStreamIsReadWithNoExposureAndNoUp()
+        {
+            RunConfig config = ContactEatingTests.RemainsStage(window: 60f);
+            config.LightByExposure = true;
+            config.LightSilhouetteCap = true;
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Fixtures.ArmedBox(half: 0.3f), 1, -1f);
+            world.Living[0].PartExposure = new[] { 0.2f };
+            world.Living[0].UpInBody = new Float3(0.3f, 0.9f, 0.1f);
+            world.Step(0.5f);
+
+            Assert.Equal(21, World.StateVersion);
+            Assert.Equal(20, World.PreExposureStateVersion);
+            Assert.True(World.ReadsStateVersion(World.PreExposureStateVersion));
+
+            byte[] twenty = StateOf(world, World.PreExposureStateVersion);
+            Assert.True(twenty.Length < StateOf(world).Length);
+
+            World restored = Restored(config, 3, twenty);
+            Assert.Equal(World.PreExposureStateVersion, restored.StateVersionRead);
+            Assert.Equal(world.Living.Count, restored.Living.Count);
+
+            foreach (Organism creature in restored.Living)
+            {
+                Assert.Null(creature.PartExposure);
+                Assert.Equal(default(Float3), creature.UpInBody);
+            }
+
+            Assert.Equal(twenty, StateOf(restored, World.PreExposureStateVersion));
         }
 
         /// <summary>

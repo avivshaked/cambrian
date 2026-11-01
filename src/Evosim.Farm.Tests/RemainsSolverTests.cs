@@ -750,6 +750,71 @@ namespace Evosim.Farm.Tests
         }
 
         /// <summary>
+        /// With the light by exposure and the silhouette cap on, whole-body remains shade the living with the exposure
+        /// and the up vector of their last living step. The harness refreshes both for the living only, so the
+        /// checkpoint has to carry them: left out, a resumed world's remains cast the orientation average until they
+        /// closed, and the resumed worlds' <c>shading</c> read high from the first row (the probe of 2026-11-01).
+        /// </summary>
+        [Fact]
+        public void ARestoredRemainsKeepTheExposureAndUpOfItsLastLivingStepAndShadeTheLivingAsTheRunDid()
+        {
+            RunConfig config = RemainsFixtures.Config(true);
+            config.LightByExposure = true;
+            config.LightSilhouetteCap = true;
+
+            using (RemainsFixtures.Pair run = RemainsFixtures.StarvedArena(
+                config, RemainsFixtures.Fork(4), RemainsFixtures.Claw()))
+            {
+                Organism first = run.World.Living[0];
+                RemainsFixtures.Excite(BodyOf(run, first.Id));
+
+                // It lives a metabolic step (the harness fills its exposure before the world prices the light),
+                // starves into whole-body remains, and is not refreshed again.
+                for (int i = 0; i < 2000 && !first.IsRemains; i++) run.Sim.Step();
+                Assert.True(first.IsRemains, "the fixture never starved the body into remains");
+                Assert.NotNull(first.CurrentExposure);
+                Assert.NotEqual(default(Float3), first.UpInBody);
+
+                while (!run.Sim.Step()) { }
+
+                byte[] state = CheckpointOf(run);
+
+                using (RemainsFixtures.Pair resumed = Restore(config, state))
+                {
+                    Organism kept = resumed.World.Remains.Single(r => r.Id == first.Id);
+                    Assert.Equal(first.PartExposure, kept.PartExposure);
+                    Assert.Equal(first.UpInBody, kept.UpInBody);
+                    Assert.Equal(state, CheckpointOf(resumed));
+
+                    float height = first.HeightY;
+                    int metabolic = 0;
+
+                    for (int step = 1; step <= 500; step++)
+                    {
+                        bool a = run.Sim.Step();
+                        bool b = resumed.Sim.Step();
+                        Assert.Equal(a, b);
+
+                        if (!a) continue;
+                        metabolic++;
+
+                        for (int k = 0; k <= 40; k++)
+                        {
+                            float depth = height - 0.25f * k;
+                            Assert.True(
+                                run.World.Field.ShadingAt(depth) == resumed.World.Field.ShadingAt(depth),
+                                $"the resumed world's shading at {depth:0.##} m parted from the run's at metabolic step {metabolic}");
+                        }
+                    }
+
+                    Assert.True(metabolic >= 10, "the fixture stepped too few metabolic steps to compare shading");
+                    Assert.NotEmpty(resumed.World.Remains);
+                    Assert.Equal(CheckpointOf(run), CheckpointOf(resumed));
+                }
+            }
+        }
+
+        /// <summary>
         /// <c>--verify-checkpoint</c> on a dial-on world with remains standing: the file is restored, compared member
         /// by member, and the restored pair and a pair rebuilt from the file are stepped side by side.
         /// </summary>

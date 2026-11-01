@@ -224,7 +224,7 @@ namespace Evosim.Core.Tests
             Assert.True(world.CorpseSpoiledTotal > 0d);
 
             byte[] state = StateOf(world);
-            Assert.Equal(20, World.StateVersion);
+            Assert.Equal(21, World.StateVersion);
             World restored = Restored(config, 9, state);
             Assert.Equal(World.StateVersion, restored.StateVersionRead);
             Assert.Equal(world.CorpseSpoiledTotal, restored.CorpseSpoiledTotal);

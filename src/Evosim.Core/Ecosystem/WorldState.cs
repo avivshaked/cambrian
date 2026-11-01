@@ -174,7 +174,24 @@ namespace Evosim.Core
         /// layout 19 was: each reads the corpse killer as -1 (unknown), every count as 0, and sets the books'
         /// start to the checkpoint's own second, so a read can tell that the books cover part of the world.
         /// </remarks>
-        public const int StateVersion = 20;
+        /// <remarks>
+        /// 21 with the remains' exposure: each organism carries whether it holds an exposure array and an up
+        /// vector, and then their floats exactly. Whole-body remains keep both from their last living step and
+        /// shade the living with them while the light is by exposure (D110), and the harness refreshes them for
+        /// the living only, so a version-20 resume gave every uncut remains the orientation average until it
+        /// closed. The harness's half did not move. Version 20 is still read, as
+        /// <see cref="PreExposureStateVersion"/>.
+        /// </remarks>
+        public const int StateVersion = 21;
+
+        /// <summary>
+        /// Version 20, the intake's origin books' layout, which this build reads as exactly what that build
+        /// restored: every body's exposure array is null and its up vector zero, so a resumed world's whole-body
+        /// remains shade the living on the orientation average until they close, as the build that wrote it
+        /// resumed them. That is a labelled absence, and a resume from it is a cousin of the unbroken run in
+        /// <c>shading</c> while remains stand. It is also the first layout with D270's plume.
+        /// </summary>
+        public const int PreExposureStateVersion = 20;
 
         /// <summary>
         /// Version 19, D206's layout, which this build reads as exactly what it held, with the origin books
@@ -236,7 +253,8 @@ namespace Evosim.Core
 
         /// <summary>Whether this build reads a world state of the given layout.</summary>
         public static bool ReadsStateVersion(int version) =>
-            version == StateVersion || version == PreOriginStateVersion || version == PreHeldStateVersion ||
+            version == StateVersion || version == PreExposureStateVersion ||
+            version == PreOriginStateVersion || version == PreHeldStateVersion ||
             version == PreCardPairStateVersion || version == PreLeafStateVersion ||
             version == PreImmigrationStateVersion || version == LossyStateVersion;
 
@@ -286,7 +304,7 @@ namespace Evosim.Core
                 throw new ArgumentOutOfRangeException(
                     nameof(layout), layout,
                     "This build writes version " + StateVersion + " and, for a test, versions " +
-                    PreOriginStateVersion + ", " + PreHeldStateVersion + ", " + PreCardPairStateVersion + ", " + PreLeafStateVersion + ", " + PreImmigrationStateVersion + " and " + LossyStateVersion +
+                    PreExposureStateVersion + ", " + PreOriginStateVersion + ", " + PreHeldStateVersion + ", " + PreCardPairStateVersion + ", " + PreLeafStateVersion + ", " + PreImmigrationStateVersion + " and " + LossyStateVersion +
                     ". Version " + GriplessStateVersion + " is refused by name.");
             }
 
@@ -320,8 +338,8 @@ namespace Evosim.Core
                     " cannot record them.");
             }
 
-            // Nor has any older layout a place for D270's plume.
-            if (layout < StateVersion && LeafPlume != null)
+            // Nor has any layout before 20 a place for D270's plume.
+            if (layout < PreExposureStateVersion && LeafPlume != null)
             {
                 throw new InvalidOperationException(
                     "This world has the carried leaf smell (D270), and version " + layout + " cannot record it.");
@@ -681,7 +699,7 @@ namespace Evosim.Core
             {
                 throw new InvalidDataException(
                     "The checkpoint's world state is version " + version + " and this build " +
-                    "reads version " + StateVersion + " (version " + PreOriginStateVersion + ", without the intake's origin books; version " + PreHeldStateVersion + ", without D206's store; version " + PreCardPairStateVersion + ", without the card's pairs; versions " + PreLeafStateVersion + " and " +
+                    "reads version " + StateVersion + " (version " + PreExposureStateVersion + ", without the remains' exposure; version " + PreOriginStateVersion + ", without the intake's origin books; version " + PreHeldStateVersion + ", without D206's store; version " + PreCardPairStateVersion + ", without the card's pairs; versions " + PreLeafStateVersion + " and " +
                     PreImmigrationStateVersion + ", without round 59's additions, and version " +
                     LossyStateVersion + ", without the contact record). A checkpoint is refused " +
                     "rather than read with a field guessed at, under the rule the config reader follows.");
@@ -1081,7 +1099,7 @@ namespace Evosim.Core
             // is rebuilt from the stock.
             if (LeafPlume != null)
             {
-                if (version != StateVersion)
+                if (version < PreExposureStateVersion)
                 {
                     throw new InvalidDataException(
                         "This world has the carried leaf smell (D270), and a layout " + version +
@@ -1299,6 +1317,35 @@ namespace Evosim.Core
                 }
             }
 
+            // The exposure the body last held and the world's up in its frame, version 21. Whole-body remains keep both
+            // from their last living step and shade the living with them while the light is by exposure; the
+            // harness refreshes them for the living only, so nothing else can put them back. Raw, not through
+            // CurrentExposure: the stale-array refusal belongs to the reader of the number and not to the record.
+            if (layout >= 21)
+            {
+                float[] exposure = creature.PartExposure;
+                w.Write(exposure != null);
+
+                if (exposure != null)
+                {
+                    w.Write(exposure.Length);
+                    for (int i = 0; i < exposure.Length; i++) w.Write(exposure[i]);
+                }
+
+                Float3 up = creature.UpInBody;
+                bool holdsUp =
+                    (BitConverter.SingleToInt32Bits(up.X) | BitConverter.SingleToInt32Bits(up.Y) |
+                     BitConverter.SingleToInt32Bits(up.Z)) != 0;
+                w.Write(holdsUp);
+
+                if (holdsUp)
+                {
+                    w.Write(up.X);
+                    w.Write(up.Y);
+                    w.Write(up.Z);
+                }
+            }
+
             w.Write(GenomeJson.Write(creature.Genome, indent: false, id: creature.Id));
         }
 
@@ -1441,6 +1488,27 @@ namespace Evosim.Core
                 }
 
                 creature.RemainsMap = selection;
+            }
+
+            // Version 21's exposure and up (see WriteOrganism). A version-20 stream carries neither, and the body
+            // comes back with both null, which is what the build that wrote it restored. See PreExposureStateVersion.
+            if (version >= 21)
+            {
+                if (r.ReadBoolean())
+                {
+                    int exposureCount = r.ReadInt32();
+                    var exposure = new float[exposureCount];
+                    for (int i = 0; i < exposureCount; i++) exposure[i] = r.ReadSingle();
+                    creature.PartExposure = exposure;
+                }
+
+                if (r.ReadBoolean())
+                {
+                    float upX = r.ReadSingle();
+                    float upY = r.ReadSingle();
+                    float upZ = r.ReadSingle();
+                    creature.UpInBody = new Float3(upX, upY, upZ);
+                }
             }
 
             Genome genome = GenomeJson.Read(r.ReadString());
