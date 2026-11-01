@@ -131,7 +131,9 @@ The root file's rules still apply. The entries below were moved word for word, s
   code. A build also leaves Roslyn's compiler server resident as a `dotnet.exe`, and the card test refuses
   to start beside it as a busy machine. Build with `-c Release -p:UseSharedCompilation=false`, or run
   `dotnet build-server shutdown` after the build. Both stopped the D168 card window at its last step, before
-  it touched the card.
+  it touched the card. A theatre render step's Unity compile leaves one too, from Unity's own SDK, with no parent
+  left; it refused r65's identity group on 2026-11-01. A card launch beside a render waits for it to idle out
+  rather than stop another session's compiler.
 - **A card contact count from before D168 is about half the CPU's** (`logbook/specs/build-readings.md`).
   Single precision drops any move smaller than half the gap between neighbouring floats at the body's
   position, so resting bodies flickered out of touch. Since D168 the card sums each position with a

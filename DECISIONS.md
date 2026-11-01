@@ -294,6 +294,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D270](#d270) | The leaves' smell drifts with the water on a coarse grid, and every part feels which way the water runs over the ground | 2026-10-31 | ruled by the owner on 2026-10-31, on the six questions of `proposals/propose-smell-field.md` |
 | [D271](#d271) | Coincident bodies are pushed apart along X by id order, behind a contact form of their own | 2026-10-30 | agreed by the owner on 2026-10-30, on `proposals/propose-coincident-contact.md` (absorbed here), and on in G7's round once its smoke passes (below) |
 | [D272](#d272) | The film's round runs on true-shape contact (D228 level a) | 2026-11-01 | ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation after the true-shape screen `r64t` (`logbook/specs/r64t-read/README.md`) and the card's GJK fix (merged at… |
+| [D273](#d273) | A card world resumed from its checkpoint repeats its run, from the build that writes the remains' exposure | 2026-11-01 | decided by the coordinator on 2026-11-01, after the resume probe and its read |
+| [D274](#d274) | The smell screen runs under true-shape contact, as two groups of three, after a 6,000 s founding bench | 2026-11-01 | decided by the coordinator on 2026-11-01, at the owner's delegation of the grazer screens |
 
 ---
 
@@ -10255,3 +10257,32 @@ in any condition set for the world.
 **Rejected.** True shape with the smell build on, which would mix an unscreened change into the film's round. Level (b), never screened in a world and refused on the card with a family part. Staying on spheres, under which mouths bite open water on screen.
 
 **Built:** the card's GJK fix at `fe0548e7` and the family hulls under true shape at `a1e443af` (branch `ts-family`). On the card, G5's family world under true shape is identical at groups 32 and 64 over 600 s, with 41 of 1,571 bodies carrying superellipsoid parts. The merge commits list the tests.
+
+### D273
+**A card world resumed from its checkpoint repeats its run, from the build that writes the remains' exposure** · 2026-11-01
+
+**Status:** decided by the coordinator on 2026-11-01, after the resume probe and its read. It supersedes D226's last clause, that a stopped world of a screen is rerun from its start or read as a cousin, for every world stepped on a build at or after `e663768b`. For worlds of older builds that clause stands.
+
+**Decision.**
+- A world the heat stop, a driver event or a stop file ends is resumed from its last checkpoint and is the same world, read with its unbroken rows.
+- Each screen's identity sitting checks it: one world resumed mid-sitting from its own checkpoint, `compare-run-rows.py` finding no difference in any row and the lineage byte-equal.
+
+**Why.** The probe (`rounds/probe-r64t-resume.ps1`) resumed `r64t-t-6202` and `-6203` from 1,500 s on their own build and found both parting from the unbroken run at the first row, as `r62cs`'s window had on 2026-10-24. An Opus read of the code traced it: whole-body remains keep their exposure array and up vector from their last living step and shade the living with them while light is by exposure, and the checkpoint held neither, so after a resume every uncut remains cast the orientation average until it closed. The resumed worlds' shading stood higher by an amount that scaled with the standing remains, and their light, gestation and food followed. `World.StateVersion` 21 writes both (`resume-exposure`, merged at `e663768b`); the test that restores a remains and compares the shading the living see failed before the fix and passes after. Version 20 is still read, with both absent, as the build that wrote it restored them.
+
+**Rejected.** Recomputing a remains' exposure from its pose after a resume, which would change every unbroken run.
+
+### D274
+**The smell screen runs under true-shape contact, as two groups of three, after a 6,000 s founding bench** · 2026-11-01
+
+**Status:** decided by the coordinator on 2026-11-01, at the owner's delegation of the grazer screens. It amends the screen D270 designed (`logbook/specs/smell-plume-design.md`, "A screen of five worlds"); its pre-registration is `logbook/specs/r65-prereg/predictions.md`.
+
+**Decision.**
+- Every world runs under true-shape contact (D272), so the screen's answer is about the film's round. C, R and O run on seeds 6202 and 6203; no recorded world is the control, since `r64t`'s true-shape worlds ran before the card's GJK fix.
+- The two seeds run as two card groups of three, back to back, not one group of five or six.
+- The founding bench that sets the plume's half-scale founds R for 6,000 s on both seeds, not 1,200 s, and reads it with `scripts/reads/smell/plume-bench.py`, which takes downstream from the plume's own drift.
+- Mark 3, the gather lag, is read over 12,000 to 24,000 s, not the last window.
+
+**Why.** A smell screen run on spheres would answer for a world the film's round no longer is. A plume emitting steadily holds a third of its final strength at 1,200 s against its 3,000 s lifetime, and the water has carried it only 24 m, so a half-scale set there would be set on a plume still arriving. Two groups of three keep each world near the owner's aim of about twice real time, keep mark 4's comparison inside one group, and halve what a driver event costs. A bloom lasts 5,000 to 10,000 s, longer than one window. The ocean's current is not in the field dump and turns faster than the plume ages, so the bench cannot take downstream from it.
+
+**Rejected.** The design's five worlds with the recorded `r64-d-6202` as a control, which ran under spheres. One group of six, slower than real time at its end by the draft's estimate.
+
