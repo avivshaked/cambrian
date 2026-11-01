@@ -77,6 +77,15 @@ Windows are recorded by the round's own frozen farm, so G7's build must carry th
   eater as `by`, and the leaf is present one frame earlier. So a kill is measured at onset − 1: the eating part (`byPart`) against
   the kill row's victim. A wound, or a limb cut off when the row's `root` is 0, is measured at the onset frame. On screen, a leaf
   swallowed whole vanishes on the frame the pulse starts.
+- The bite line's `px X Y` is Unity's screen position, so `Y` counts from the bottom of the frame. A crop box from it centres at
+  `1080 − Y` in an image read from the top.
+- The bite pulse stays on in the film look: the owner liked the measured bite film, and the coordinator relayed on 2026-11-01 that
+  the pulse is kept.
+- A box world's film window draws a flat floor at `−depth`, while the world grows a bed with relief (`World.cs`, `BedShape.ForBox`)
+  and the coral and the bodies stand on it. In r64t-t-6203's window the bed lies within ±0.76 m of `−25`. Of the rows whose root is
+  within 1 m of the bed, 52% sit where the bed is more than 0.1 m below the drawn floor, and the body looks sunk into it. In 17%
+  the bed is more than 0.1 m above it, and the body looks afloat. The worst is about 0.58 m either way (a one-off probe of
+  every 30th pose frame against `BedShape.FloorY`, 2026-11-01).
 - The film look moved at `60676350` and moved back at `13eea6c1`. Between them the one skin capped every vertex's half thickness at
   its dominant bone's plain half extent. That changed about 2,000 skins in a window at NO_BOX 0, and the renders of phase70 and
   phase71 carry it. From `13eea6c1` the cap is `EVOSIM_THEATRE_SKIN_THICK_CAP`, default 0, the accepted look, until the owner has
