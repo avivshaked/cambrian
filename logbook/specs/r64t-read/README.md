@@ -74,7 +74,11 @@ hand-over of the true-shape census to the mouth shows no fault at this scale.
   `r64t-t-6203` from 22,500 s with a census dump (branch `card-dump`, `9b457e6c`; `scratch/card-dump/`) reproduced one
   of them, 66874 on 70081 at 22,500.5 s. The bookkeeping was clean, and the card's own true-shape test called the pair
   touching: its single-precision GJK ended "origin inside" at pass 3, where the host finds the cores 0.41 m apart. Both cores
-  are flat, zero along one axis. That a near-degenerate simplex fools the float sign tests is an inference, not yet
-  checked against the same inputs on the host.
+  are flat, zero along one axis. The same float inputs on the host give apart: the card contracts
+  multiply-adds, so its last bits differ and a near-flat tetrahedron reads as enclosing the origin. The fix (`gjk-fix`,
+  merged at `fe0548e7`) writes the GJK uncontracted and refuses "inside" from a flat tetrahedron. On the fixed card, resumes
+  at three far kills lose exactly those kills and keep every other kill of the run (3 of 3, 19 of 19, 10 of 10), and groups
+  32 and 64 are identical over 30 s (`scratch/gjk-fix/run/`). The read above ran on the unfixed card; the far kills were a
+  few in a hundred of the true-shape worlds' kills, so its ratios stand as an inference.
 - **Nothing has been seen in the theatre.** The worlds have not been drawn.
 - **6202's pace ratio crosses groups.** The spheres world on 6202 ran in a five-world group on the earlier build.
