@@ -170,6 +170,12 @@ namespace Evosim.Farm.Gpu.Sgl
         // D228's cores, by link row: each link's core half-extents and margin (ConvexCore.Of), packed with the
         // body and uploaded only when a pack changes them. A stub of one cell unless cfg.TrueShape.
         public ArrayView<Real> CoreHx, CoreHy, CoreHz, CoreM;
+
+        // D233's family under D228's true shape: CoreFam is 1 for a link row whose core is a hull of the family
+        // part's contact-core points (Creature.LinkCoreHull), else 0; Hull holds each such row's WholeStep.HullStride
+        // reals, row r at [r * HullStride, (r + 1) * HullStride), the host's points converted at the pack. CoreFam is a
+        // one-cell stub unless cfg.TrueShape; Hull a one-cell stub until a body with a hull is packed.
+        public ArrayView<Real> CoreFam, Hull;
         public ArrayView<int> NOver, OvSlot, OvId, OvPart, OvHeld, NHeld, HeldId, BedGlass;
         public ArrayView<long> Census, Overflow;
         // LinkPush: the contact force a link row hands its class kernel, three rows of Rows (x, y, z); under cfg.AtPoint
@@ -588,6 +594,8 @@ namespace Evosim.Farm.Gpu.Sgl
     public static partial class WholeStep
     {
         public const int LinkStride = 16;          // DevelopmentLimits.MaxParts: the global per-link stride
+        public const int HullPoints = 98;          // Superellipsoid.ContactCorePoints: the points of a family part's hull core (D233)
+        public const int HullStride = 3 * HullPoints;   // reals a hull core takes in SGlob.Hull
         public const int CandCap = 512;            // contact candidates a query keeps; past it, counted and dropped
         public const int Window = 10;              // EffectorDrive.SmoothWindow
         public const int TraceFrames = 3;          // Creature.TraceFrames
@@ -10491,13 +10499,14 @@ namespace Evosim.Farm.Gpu.Sgl
                     s.LRot3[row], s.LRot4[row], s.LRot5[row],
                     s.LRot6[row], s.LRot7[row], s.LRot8[row]);
                 Real tMargin = gl.CoreM[row];
+                int tHullAt = gl.CoreFam[row] != 0 ? row * HullStride : -1;
 
                 Real tBedStiffness = m * cfg.Omega * cfg.Omega;
                 Real tBedDamping = (Real)2.0 * cfg.Zeta * m * cfg.Omega;
 
                 Real tKept = 0, tnx = 0, tny = 0, tnz = 0, tpx = 0, tpy = 0, tpz = 0;
                 AgainstTheWorldTrue(cx, cy, cz, radius, ex, ey, ez, vx, vy, vz, m, tBedStiffness, tBedDamping,
-                                    tHalf, tRotation, tMargin, w, cfg,
+                                    tHalf, gl.Hull, tHullAt, tRotation, tMargin, w, cfg,
                                     ref fx, ref fy, ref fz, ref bedGlass, cfg.RockTouch,
                                     ref tKept, ref tnx, ref tny, ref tnz, ref tpx, ref tpy, ref tpz);
 
@@ -10781,6 +10790,37 @@ namespace Evosim.Farm.Gpu.Sgl
             return centre + GjkTimes(rotation, corner);
         }
 
+        /// <summary>
+        /// ConvexCore.Support with a hull (D233): the hull point of the largest dot product with the direction taken
+        /// in the core's frame, the first of the fixed order winning a tie, then turned and moved. <paramref name="at"/>
+        /// is the element where the link's HullStride reals begin in <paramref name="hull"/>.
+        /// </summary>
+        private static V3 GjkSupportHull(ArrayView<Real> hull, int at, M3 rotation, V3 centre, V3 direction)
+        {
+            V3 local = GjkTransposedTimes(rotation, direction);
+
+            int best = 0;
+            Real bestDot = GjkMul(local.X, hull[at]) + GjkMul(local.Y, hull[at + 1]) + GjkMul(local.Z, hull[at + 2]);
+            for (int k = 3; k + 2 < HullStride; k += 3)
+            {
+                Real dot = GjkMul(local.X, hull[at + k]) + GjkMul(local.Y, hull[at + k + 1]) + GjkMul(local.Z, hull[at + k + 2]);
+                if (dot > bestDot)
+                {
+                    bestDot = dot;
+                    best = k;
+                }
+            }
+
+            return centre + GjkTimes(rotation, new V3(hull[at + best], hull[at + best + 1], hull[at + best + 2]));
+        }
+
+        /// <summary>
+        /// ConvexCore.Support(half, hull, ...): the box overload, line for line, when <paramref name="at"/> is
+        /// negative (a core that is not a hull), the hull's otherwise.
+        /// </summary>
+        private static V3 GjkSupportOf(ArrayView<Real> hull, int at, V3 half, M3 rotation, V3 centre, V3 direction) =>
+            at < 0 ? GjkSupport(half, rotation, centre, direction) : GjkSupportHull(hull, at, rotation, centre, direction);
+
         private static V3 GjkVertex(Real[] s, int block, int k) =>
             new V3(s[block + 3 * k], s[block + 3 * k + 1], s[block + 3 * k + 2]);
 
@@ -10810,11 +10850,13 @@ namespace Evosim.Farm.Gpu.Sgl
 
         /// <summary>
         /// ConvexCore.Distance: the distance between two cores and the nearest point of each, or false when
-        /// they intersect or touch.
+        /// they intersect or touch. <paramref name="atA"/> and <paramref name="atB"/> are where a core's hull begins
+        /// in <paramref name="hull"/> (D233), or -1 for a box, segment or point core.
         /// </summary>
         private static bool GjkDistance(
             V3 halfA, M3 rotationA, V3 centreA,
             V3 halfB, M3 rotationB, V3 centreB,
+            ArrayView<Real> hull, int atA, int atB,
             Real[] s, out Real distance, out V3 pointA, out V3 pointB)
         {
             // Each core contains its own centre, so coincident centres are an intersection.
@@ -10829,8 +10871,8 @@ namespace Evosim.Farm.Gpu.Sgl
 
             int n = 0;
             GjkAddVertex(s, ref n,
-                GjkSupport(halfA, rotationA, centreA, first),
-                GjkSupport(halfB, rotationB, centreB, -first));
+                GjkSupportOf(hull, atA, halfA, rotationA, centreA, first),
+                GjkSupportOf(hull, atB, halfB, rotationB, centreB, -first));
 
             s[GjkL] = (Real)1.0;
             V3 v = GjkVertex(s, GjkW, 0);
@@ -10845,8 +10887,8 @@ namespace Evosim.Farm.Gpu.Sgl
                 if (vv <= GjkTouching * GjkTouching) break;
 
                 // The difference's support point along -v: A's along -v, B's along +v.
-                V3 wa = GjkSupport(halfA, rotationA, centreA, -v);
-                V3 wb = GjkSupport(halfB, rotationB, centreB, v);
+                V3 wa = GjkSupportOf(hull, atA, halfA, rotationA, centreA, -v);
+                V3 wb = GjkSupportOf(hull, atB, halfB, rotationB, centreB, v);
                 V3 w = wa - wb;
 
                 // No progress possible: the support point is a vertex already held, or the gap is closed.
@@ -11138,6 +11180,10 @@ namespace Evosim.Farm.Gpu.Sgl
             V3 halfB = new V3(gl.CoreHx[rowB], gl.CoreHy[rowB], gl.CoreHz[rowB]);
             Real marginA = gl.CoreM[rowA];
             Real marginB = gl.CoreM[rowB];
+
+            // D233: a family link's core is a hull of its points (gl.CoreFam); any other link's is the box above.
+            int atA = gl.CoreFam[rowA] != 0 ? rowA * HullStride : -1;
+            int atB = gl.CoreFam[rowB] != 0 ? rowB * HullStride : -1;
             M3 rotationA = new M3(
                 s.LRot0[rowA], s.LRot1[rowA], s.LRot2[rowA],
                 s.LRot3[rowA], s.LRot4[rowA], s.LRot5[rowA],
@@ -11152,7 +11198,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
             Real d;
             V3 pa, pb;
-            if (GjkDistance(halfA, rotationA, centreA, halfB, rotationB, centreB, simplex, out d, out pa, out pb))
+            if (GjkDistance(halfA, rotationA, centreA, halfB, rotationB, centreB, gl.Hull, atA, atB, simplex, out d, out pa, out pb))
             {
                 // Apart: along the closest points, from B toward A.
                 V3 gap = pa - pb;
@@ -11230,7 +11276,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
             Real d;
             V3 pa, pb;
-            if (GjkDistance(halfA, rotationA, centreA, halfB, rotationB, centreB, simplex, out d, out pa, out pb))
+            if (GjkDistance(halfA, rotationA, centreA, halfB, rotationB, centreB, gl.Hull, -1, -1, simplex, out d, out pa, out pb))
             {
                 // Apart: along the closest points, from B toward A.
                 V3 gap = pa - pb;
@@ -11273,10 +11319,10 @@ namespace Evosim.Farm.Gpu.Sgl
         /// (BedHeightNear, GlassOutsideNear) are written for.
         /// </summary>
         private static void SupportSphere(
-            V3 half, M3 rotation, Real cx, Real cy, Real cz, Real ex, Real ey, Real ez, V3 direction,
-            out Real sx, out Real sy, out Real sz, out Real sex, out Real sey, out Real sez)
+            V3 half, ArrayView<Real> hull, int hullAt, M3 rotation, Real cx, Real cy, Real cz, Real ex, Real ey, Real ez,
+            V3 direction, out Real sx, out Real sy, out Real sz, out Real sex, out Real sey, out Real sez)
         {
-            V3 at = GjkSupport(half, rotation, CarryBase ? V3.Zero : new V3(cx, cy, cz), direction);
+            V3 at = GjkSupportOf(hull, hullAt, half, rotation, CarryBase ? V3.Zero : new V3(cx, cy, cz), direction);
 
             if (CarryBase)
             {
@@ -11319,7 +11365,8 @@ namespace Evosim.Farm.Gpu.Sgl
         /// </summary>
         private static void AgainstTheWorldTrue(
             Real cx, Real cy, Real cz, Real r, Real ex, Real ey, Real ez, Real vx, Real vy, Real vz, Real m,
-            Real bedStiffness, Real bedDamping, V3 half, M3 rotation, Real margin, SWorld w, SCfg cfg,
+            Real bedStiffness, Real bedDamping, V3 half, ArrayView<Real> hull, int hullAt, M3 rotation, Real margin,
+            SWorld w, SCfg cfg,
             ref Real fx, ref Real fy, ref Real fz, ref int bedGlass,
             int noteRock, ref Real rockKept, ref Real rnx, ref Real rny, ref Real rnz,
             ref Real rpx, ref Real rpy, ref Real rpz)
@@ -11332,7 +11379,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 Real bounded = CarryBase ? ((-cfg.WorldDepth - cy) - ey) + r : -cfg.WorldDepth - (cy - r);
                 if (bounded > 0)
                 {
-                    SupportSphere(half, rotation, cx, cy, cz, ex, ey, ez, new V3(0, -1, 0),
+                    SupportSphere(half, hull, hullAt, rotation, cx, cy, cz, ex, ey, ez, new V3(0, -1, 0),
                                   out sx, out sy, out sz, out sex, out sey, out sez);
 
                     Real below = CarryBase ? ((-cfg.WorldDepth - sy) - sey) + margin : -cfg.WorldDepth - (sy - margin);
@@ -11384,7 +11431,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
                 if (rx != 0 || ry != 0 || rz != 0)
                 {
-                    SupportSphere(half, rotation, cx, cy, cz, ex, ey, ez, new V3(-nx, -ny, -nz),
+                    SupportSphere(half, hull, hullAt, rotation, cx, cy, cz, ex, ey, ez, new V3(-nx, -ny, -nz),
                                   out sx, out sy, out sz, out sex, out sey, out sez);
 
                     Real shgt, sgx, sgz, spen, sslope;
@@ -11464,7 +11511,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 {
                     Real magnitude = System.MathF.Sqrt(rx * rx + ry * ry + rz * rz);
                     Real unit = (Real)1.0 / magnitude;
-                    SupportSphere(half, rotation, cx, cy, cz, ex, ey, ez, new V3(-(rx * unit), -(ry * unit), -(rz * unit)),
+                    SupportSphere(half, hull, hullAt, rotation, cx, cy, cz, ex, ey, ez, new V3(-(rx * unit), -(ry * unit), -(rz * unit)),
                                   out sx, out sy, out sz, out sex, out sey, out sez);
 
                     SD sat;
@@ -11526,7 +11573,7 @@ namespace Evosim.Farm.Gpu.Sgl
                     if (radial > (Real)1e-9) { ox = x / radial; oz = z / radial; }
                     else { ox = -1; oz = 0; }
 
-                    SupportSphere(half, rotation, cx, cy, cz, ex, ey, ez, new V3(ox, 0, oz),
+                    SupportSphere(half, hull, hullAt, rotation, cx, cy, cz, ex, ey, ez, new V3(ox, 0, oz),
                                   out sx, out sy, out sz, out sex, out sey, out sez);
 
                     Real gsx = sx - cfg.AxisX;
@@ -13819,10 +13866,20 @@ namespace Evosim.Farm.Gpu.Sgl
         // How many of a sphere set's columns a block copies: all 29 at TrueShapeAtPoint, the first 26 otherwise.
         private readonly int _sphCopied;
 
-        // D228's cores by link row: the half-extents (3) and the margin, which a pack writes and a block
-        // uploads only after one (_coreUp). A cell each unless the world is on the true shape.
-        private readonly Col<Real>[] _core = new Col<Real>[4];
+        // D228's cores by link row: the half-extents (3), the margin and (D233) whether the core is a hull, which a
+        // pack writes and a block uploads only after one (_coreUp). A cell each unless the world is on the true shape.
+        private readonly Col<Real>[] _core = new Col<Real>[5];
         private bool _coreUp;
+
+        // D233's hull cores: each family link's points, WholeStep.HullStride reals a link row, converted from the host
+        // body's own at the pack. One cell until the first body with a hull is about to be packed (EnsureHull), and then
+        // the whole of the rows, so a true-shape world with no family part pays nothing. Uploaded after a pack that wrote it.
+        private readonly Col<Real> _hull;
+        private bool _hullLive, _hullUp;
+
+        // The slots packed this block that carry a hull core: the only rows of the hull column that need to go up
+        // once the column is whole on the card.
+        private readonly List<int> _hullPacked = new List<int>();
         private readonly Col<int>[] _active = new Col<int>[2];
         private int _committed;
 
@@ -13994,7 +14051,8 @@ namespace Evosim.Farm.Gpu.Sgl
             _overflow = new Col<long>(_acc, _stream, 1, 8);
             _guard = new Col<long>(_acc, _stream, 1, 1);
 
-            for (int k = 0; k < 4; k++) _core[k] = new Col<Real>(_acc, _stream, 1, world.TrueShape ? WholeStep.LinkStride * _gcap : 1);
+            for (int k = 0; k < _core.Length; k++) _core[k] = new Col<Real>(_acc, _stream, 1, world.TrueShape ? WholeStep.LinkStride * _gcap : 1);
+            _hull = new Col<Real>(_acc, _stream, 1, 1);
 
             _sphCopied = world.AtPoint ? 29 : 26;
 
@@ -14651,6 +14709,7 @@ namespace Evosim.Farm.Gpu.Sgl
             columns.AddRange(_gLink);
             columns.AddRange(_gStray);
             columns.AddRange(_core);
+            columns.Add(_hull);
             for (int set = 0; set < 2; set++)
             {
                 columns.AddRange(_sph[set]);
@@ -14887,12 +14946,22 @@ namespace Evosim.Farm.Gpu.Sgl
 
             PlaceBrains();
 
+            bool anyHull = false;
+            _hullPacked.Clear();
             foreach (int g in _slots.Packs)
             {
                 ClassSet set = _classes[_slots.ClassOf[g]];
                 set.NotePack(_slots.LocalOf[g]);
                 set.WidenPanels(_slots.Body[g].PanelStart[_slots.Body[g].Links]);
+                if (_w.TrueShape && HasHullCore(_slots.Body[g]))
+                {
+                    anyHull = true;
+                    _hullPacked.Add(g);
+                }
             }
+
+            // D233: the hull cores' columns are made before the parallel pack writes into them.
+            if (anyHull) EnsureHull();
 
             Parallel.For(0, _slots.Packs.Count, parallel, p => Pack(_slots.Packs[p]));
             if (_w.TrueShape && _slots.Packs.Count > 0) _coreUp = true;
@@ -15048,6 +15117,33 @@ namespace Evosim.Farm.Gpu.Sgl
                 // D228's cores change only in a pack (a birth, a growth resize), so they go up after one.
                 foreach (Col<Real> c in _core) c.UpUsedQueued(UsedUnits(c, upUsed));
                 _coreUp = false;
+            }
+            if (_hullUp || _hull.Whole)
+            {
+                // The column was just made or resized: the card holds none of it yet.
+                _hull.UpUsedQueued(UsedUnits(_hull, upUsed));
+                _hullUp = false;
+            }
+            else if (_hullPacked.Count > 0)
+            {
+                // D233's hull cores change only in a pack that wrote them, as the cores above do, so only those slots'
+                // rows go up. A slot's LinkStride links' points are one run; neighbouring slots join into one copy.
+                if (2 * _hullPacked.Count >= upUsed)
+                {
+                    _hull.UpUsedQueued(UsedUnits(_hull, upUsed));
+                }
+                else
+                {
+                    _hullPacked.Sort();
+                    int run = WholeStep.LinkStride * WholeStep.HullStride;
+                    int from = _hullPacked[0], count = 1;
+                    for (int k = 1; k <= _hullPacked.Count; k++)
+                    {
+                        if (k < _hullPacked.Count && _hullPacked[k] == from + count) { count++; continue; }
+                        _hull.UpRangeQueued(from * run, count * run);
+                        if (k < _hullPacked.Count) { from = _hullPacked[k]; count = 1; }
+                    }
+                }
             }
             for (int k = 0; k < _classes.Length; k++) _classes[k].Upload(_slots.Classes[k].Used);
             _stock.UpQueued();
@@ -15508,9 +15604,66 @@ namespace Evosim.Farm.Gpu.Sgl
             {
                 foreach (Col<Real> c in _core) c.Resize(WholeStep.LinkStride * cap);
                 _coreUp = true;
+
+                if (_hullLive)
+                {
+                    _hull.Resize(HullElements(cap));
+                    _hullUp = true;
+                }
             }
 
             _gcap = cap;
+        }
+
+        /// <summary>Whether the body has a link with a hull core (D233): a family part under the true shape.</summary>
+        private static bool HasHullCore(Creature c)
+        {
+            if (c.LinkCoreHull == null) return false;
+            foreach (double[] hull in c.LinkCoreHull) if (hull != null) return true;
+            return false;
+        }
+
+        private static int HullElements(int globalCap)
+        {
+            long n = (long)WholeStep.HullStride * WholeStep.LinkStride * globalCap;
+            if (n > int.MaxValue / 2)
+            {
+                throw new NotSupportedException(
+                    "The hull cores of " + globalCap + " body slots take " + n + " reals; the gpu engine holds a column of " +
+                    "at most " + (int.MaxValue / 2) + ".");
+            }
+
+            return (int)n;
+        }
+
+        /// <summary>
+        /// D233 under D228's true shape: makes the hull cores' column its full size, once, before a pack writes a family
+        /// link's points into it. Level (b) (<c>TrueShapeAtPoint</c>) touches a hull at its eight corner points, which the
+        /// kernel does not carry, so a world at that level refuses the body here, before anything steps.
+        /// </summary>
+        private void EnsureHull()
+        {
+            if (_w.AtPoint)
+            {
+                throw new NotSupportedException(
+                    "The gpu engine has no family shape (D233) under the true shape at the contact point " +
+                    "(EVOSIM_CONTACT_SHAPE trueshapeatpoint): the host touches a hull core at its corner points and the card " +
+                    "does not carry that. Use trueshape, or the cpu engine.");
+            }
+
+            if (Superellipsoid.ContactCorePoints != WholeStep.HullPoints)
+            {
+                throw new InvalidOperationException(
+                    "A family part's contact core holds " + Superellipsoid.ContactCorePoints + " points and the kernel reads " +
+                    WholeStep.HullPoints + "; WholeStep.HullPoints is changed in the kernel template with it.");
+            }
+
+            if (!_hullLive)
+            {
+                _hull.Resize(HullElements(_gcap));
+                _hullLive = true;
+                _hullUp = true;
+            }
         }
 
         private SGlob Glob => new SGlob
@@ -15519,6 +15672,7 @@ namespace Evosim.Farm.Gpu.Sgl
             Remains = _gRemains.View,
             RankToSlot = _rankToSlot.View, TotalMass = _gTotalMass.View, LinkMass = _linkMass.View,
             CoreHx = _core[0].View, CoreHy = _core[1].View, CoreHz = _core[2].View, CoreM = _core[3].View,
+            CoreFam = _core[4].View, Hull = _hull.View,
             NOver = _nOver.View, OvSlot = _ovSlot.View, OvId = _ovId.View, OvPart = _ovPart.View,
             OvHeld = _ovHeld.View, NHeld = _nHeld.View, HeldId = _heldId.View, BedGlass = _bedGlass.View,
             Census = _census.View, Overflow = _overflow.View,
@@ -16231,7 +16385,20 @@ namespace Evosim.Farm.Gpu.Sgl
                     for (int k = 0; k < 9; k++) sph[17 + k].Host[row + l] = (Real)c.LinkContactRotation[9 * l + k];
                     for (int k = 0; k < 3; k++) _core[k].Host[row + l] = (Real)c.LinkCoreHalf[3 * l + k];
                     _core[3].Host[row + l] = (Real)c.LinkMargin[l];
+
+                    // D233: a family link's core is the hull of its points; its half-extents above are zero and its margin
+                    // is the hull's. Every other link of the world has 0 here and takes the box path.
+                    double[] hullCore = c.LinkCoreHull == null ? null : c.LinkCoreHull[l];
+                    _core[4].Host[row + l] = hullCore != null ? (Real)1 : (Real)0;
+                    if (hullCore != null)
+                    {
+                        long hullAt = (long)(row + l) * WholeStep.HullStride;
+                        for (int k = 0; k < WholeStep.HullStride; k++) _hull.Host[hullAt + k] = (Real)hullCore[k];
+                    }
                 }
+
+                // The slot's earlier body may have had more links.
+                for (int l = links; l < WholeStep.LinkStride; l++) _core[4].Host[row + l] = 0;
             }
 
             // D228 level (b): each link's committed spin with its sphere. Only a world at TrueShapeAtPoint has the array.
@@ -16815,6 +16982,7 @@ namespace Evosim.Farm.Gpu.Sgl
             foreach (IColumn c in _gLink) c.Dispose();
             _rankToSlot.Dispose();
             foreach (Col<Real> c in _core) c.Dispose();
+            _hull.Dispose();
             _census.Dispose();
             _overflow.Dispose();
             _guard.Dispose();

@@ -144,6 +144,14 @@ The root file's rules still apply. The entries below were moved word for word, s
   the solver and the kernel alike. Each link's core and margin sit by link row in `SGlob` (`CoreHx` to `CoreM`), because a
   link reads other classes' cores, and go up only after a pack; the turns are nine more columns in each sphere set. All of
   it is a one-cell stub when the switch is off.
+  A family part (D233) touches as a hull of 98 core points under `trueshape`, and the card carries the points themselves,
+  not the form: `SGlob.Hull` holds `WholeStep.HullStride` (294) reals a link row, converted at the pack from
+  `Creature.LinkCoreHull`, and `SGlob.CoreFam` marks the rows that are hulls (the fifth column of the runner's `_core`).
+  `GjkSupportHull` transcribes `ConvexCore.Support(half, hull, ...)` and `GjkSupportOf` takes the box path for a core that
+  is not a hull, so a change to either is made in the other in the same change. `Hull` is a one-cell stub until the
+  first body with a hull is about to be packed (`EnsureHull`), then 294 x 16 reals a body slot, and is uploaded after a
+  pack that wrote it. `trueshapeatpoint` with a family part is refused, in the farm's opening of the card and again at the
+  runner's first pack: there the host touches a hull at its eight corner points (`HullVertices`) and the card has no copy.
   `trueshapeatpoint` (`cfg.AtPoint`) adds the force at the contact point. Each sphere set carries each link's world-frame
   spin in three more columns (`LSp0` to `LSp2`, a link row wide at that value only, and not copied by a block at the
   others). `ContactLinks` writes the touches' torque in three more rows of `LinkPush`, which `ContactsPerPartStaged` adds

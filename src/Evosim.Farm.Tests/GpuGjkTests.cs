@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using ILGPU;
+using ILGPU.Runtime;
+using ILGPU.Runtime.CPU;
 using Xunit;
 using SM3 = Evosim.Farm.Gpu.Sgl.M3;
 using SV3 = Evosim.Farm.Gpu.Sgl.V3;
@@ -45,11 +48,63 @@ namespace Evosim.Farm.Tests
         public void TheDumpedPairIsApartOnTheHostAtTheHostsDistance()
         {
             var s = new float[C("GjkSimplex")];
-            object[] args = { HalfA, RotA, CentreA, HalfB, RotB, CentreB, s, 0f, null, null };
+            object[] args = { HalfA, RotA, CentreA, HalfB, RotB, CentreB, default(ArrayView<float>), -1, -1, s, 0f, null, null };
             bool apart = (bool)M("GjkDistance").Invoke(null, args);
 
             Assert.True(apart, "the cores are 0.41 m apart; the dump's card ended 'inside' with distance 0");
-            Assert.InRange((float)args[7], HostDistance - 1e-7f, HostDistance + 1e-7f);
+            Assert.InRange((float)args[10], HostDistance - 1e-7f, HostDistance + 1e-7f);
+        }
+
+        /// <summary>
+        /// A hull core (D233) written as the dump's flat core A: its eight corners, the first repeated to fill the
+        /// hull's HullPoints. Its support point must be the box core's to the bit along any direction (the hull support's
+        /// products are written GjkMul, as the box's are), and the pair, hull against box, is apart at the host's
+        /// distance and never "inside": the near-flat case the fix was made for, through the hull's support.
+        /// </summary>
+        [Fact]
+        public void AHullCoreAgainstABoxCoreOnTheNearFlatPairIsApartAndSupportsAsTheBoxDoes()
+        {
+            int stride = C("HullStride");
+            var hull = new float[stride];
+            int point = 0;
+            for (int pattern = 0; pattern < 8; pattern++)
+            {
+                hull[3 * point] = (pattern & 1) != 0 ? -HalfA.X : HalfA.X;
+                hull[3 * point + 1] = (pattern & 2) != 0 ? -HalfA.Y : HalfA.Y;
+                hull[3 * point + 2] = (pattern & 4) != 0 ? -HalfA.Z : HalfA.Z;
+                point++;
+            }
+
+            for (; 3 * point < stride; point++)
+            {
+                hull[3 * point] = hull[0];
+                hull[3 * point + 1] = hull[1];
+                hull[3 * point + 2] = hull[2];
+            }
+
+            using Context context = Context.Create(b => b.CPU(new CPUDevice(4, 1, 1)).EnableAlgorithms());
+            using Accelerator acc = context.GetCPUDevice(0).CreateCPUAccelerator(context, CPUAcceleratorMode.Parallel);
+            using var buffer = acc.Allocate1D(hull);
+            ArrayView<float> view = buffer.View;
+
+            MethodInfo of = M("GjkSupportOf");
+            var rng = new Random(7);
+            for (int k = 0; k < 200; k++)
+            {
+                var d = new SV3((float)(rng.NextDouble() - 0.5), (float)(rng.NextDouble() - 0.5), (float)(rng.NextDouble() - 0.5));
+                SV3 box = (SV3)of.Invoke(null, new object[] { default(ArrayView<float>), -1, HalfA, RotA, CentreA, d });
+                SV3 fromHull = (SV3)of.Invoke(null, new object[] { view, 0, HalfA, RotA, CentreA, d });
+                Assert.Equal(box.X, fromHull.X);
+                Assert.Equal(box.Y, fromHull.Y);
+                Assert.Equal(box.Z, fromHull.Z);
+            }
+
+            var s = new float[C("GjkSimplex")];
+            object[] args = { HalfA, RotA, CentreA, HalfB, RotB, CentreB, view, 0, -1, s, 0f, null, null };
+            bool apart = (bool)M("GjkDistance").Invoke(null, args);
+
+            Assert.True(apart, "a hull core and a box core 0.41 m apart were called 'inside'");
+            Assert.InRange((float)args[10], HostDistance - 1e-6f, HostDistance + 1e-6f);
         }
 
         /// <summary>

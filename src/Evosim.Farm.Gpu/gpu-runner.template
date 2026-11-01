@@ -671,10 +671,20 @@ namespace __NS__
         // How many of a sphere set's columns a block copies: all 29 at TrueShapeAtPoint, the first 26 otherwise.
         private readonly int _sphCopied;
 
-        // D228's cores by link row: the half-extents (3) and the margin, which a pack writes and a block
-        // uploads only after one (_coreUp). A cell each unless the world is on the true shape.
-        private readonly Col<Real>[] _core = new Col<Real>[4];
+        // D228's cores by link row: the half-extents (3), the margin and (D233) whether the core is a hull, which a
+        // pack writes and a block uploads only after one (_coreUp). A cell each unless the world is on the true shape.
+        private readonly Col<Real>[] _core = new Col<Real>[5];
         private bool _coreUp;
+
+        // D233's hull cores: each family link's points, WholeStep.HullStride reals a link row, converted from the host
+        // body's own at the pack. One cell until the first body with a hull is about to be packed (EnsureHull), and then
+        // the whole of the rows, so a true-shape world with no family part pays nothing. Uploaded after a pack that wrote it.
+        private readonly Col<Real> _hull;
+        private bool _hullLive, _hullUp;
+
+        // The slots packed this block that carry a hull core: the only rows of the hull column that need to go up
+        // once the column is whole on the card.
+        private readonly List<int> _hullPacked = new List<int>();
         private readonly Col<int>[] _active = new Col<int>[2];
         private int _committed;
 
@@ -846,7 +856,8 @@ namespace __NS__
             _overflow = new Col<long>(_acc, _stream, 1, 8);
             _guard = new Col<long>(_acc, _stream, 1, 1);
 
-            for (int k = 0; k < 4; k++) _core[k] = new Col<Real>(_acc, _stream, 1, world.TrueShape ? WholeStep.LinkStride * _gcap : 1);
+            for (int k = 0; k < _core.Length; k++) _core[k] = new Col<Real>(_acc, _stream, 1, world.TrueShape ? WholeStep.LinkStride * _gcap : 1);
+            _hull = new Col<Real>(_acc, _stream, 1, 1);
 
             _sphCopied = world.AtPoint ? 29 : 26;
 
@@ -1463,6 +1474,7 @@ namespace __NS__
             columns.AddRange(_gLink);
             columns.AddRange(_gStray);
             columns.AddRange(_core);
+            columns.Add(_hull);
             for (int set = 0; set < 2; set++)
             {
                 columns.AddRange(_sph[set]);
@@ -1699,12 +1711,22 @@ namespace __NS__
 
             PlaceBrains();
 
+            bool anyHull = false;
+            _hullPacked.Clear();
             foreach (int g in _slots.Packs)
             {
                 ClassSet set = _classes[_slots.ClassOf[g]];
                 set.NotePack(_slots.LocalOf[g]);
                 set.WidenPanels(_slots.Body[g].PanelStart[_slots.Body[g].Links]);
+                if (_w.TrueShape && HasHullCore(_slots.Body[g]))
+                {
+                    anyHull = true;
+                    _hullPacked.Add(g);
+                }
             }
+
+            // D233: the hull cores' columns are made before the parallel pack writes into them.
+            if (anyHull) EnsureHull();
 
             Parallel.For(0, _slots.Packs.Count, parallel, p => Pack(_slots.Packs[p]));
             if (_w.TrueShape && _slots.Packs.Count > 0) _coreUp = true;
@@ -1860,6 +1882,33 @@ namespace __NS__
                 // D228's cores change only in a pack (a birth, a growth resize), so they go up after one.
                 foreach (Col<Real> c in _core) c.UpUsedQueued(UsedUnits(c, upUsed));
                 _coreUp = false;
+            }
+            if (_hullUp || _hull.Whole)
+            {
+                // The column was just made or resized: the card holds none of it yet.
+                _hull.UpUsedQueued(UsedUnits(_hull, upUsed));
+                _hullUp = false;
+            }
+            else if (_hullPacked.Count > 0)
+            {
+                // D233's hull cores change only in a pack that wrote them, as the cores above do, so only those slots'
+                // rows go up. A slot's LinkStride links' points are one run; neighbouring slots join into one copy.
+                if (2 * _hullPacked.Count >= upUsed)
+                {
+                    _hull.UpUsedQueued(UsedUnits(_hull, upUsed));
+                }
+                else
+                {
+                    _hullPacked.Sort();
+                    int run = WholeStep.LinkStride * WholeStep.HullStride;
+                    int from = _hullPacked[0], count = 1;
+                    for (int k = 1; k <= _hullPacked.Count; k++)
+                    {
+                        if (k < _hullPacked.Count && _hullPacked[k] == from + count) { count++; continue; }
+                        _hull.UpRangeQueued(from * run, count * run);
+                        if (k < _hullPacked.Count) { from = _hullPacked[k]; count = 1; }
+                    }
+                }
             }
             for (int k = 0; k < _classes.Length; k++) _classes[k].Upload(_slots.Classes[k].Used);
             _stock.UpQueued();
@@ -2320,9 +2369,66 @@ namespace __NS__
             {
                 foreach (Col<Real> c in _core) c.Resize(WholeStep.LinkStride * cap);
                 _coreUp = true;
+
+                if (_hullLive)
+                {
+                    _hull.Resize(HullElements(cap));
+                    _hullUp = true;
+                }
             }
 
             _gcap = cap;
+        }
+
+        /// <summary>Whether the body has a link with a hull core (D233): a family part under the true shape.</summary>
+        private static bool HasHullCore(Creature c)
+        {
+            if (c.LinkCoreHull == null) return false;
+            foreach (double[] hull in c.LinkCoreHull) if (hull != null) return true;
+            return false;
+        }
+
+        private static int HullElements(int globalCap)
+        {
+            long n = (long)WholeStep.HullStride * WholeStep.LinkStride * globalCap;
+            if (n > int.MaxValue / 2)
+            {
+                throw new NotSupportedException(
+                    "The hull cores of " + globalCap + " body slots take " + n + " reals; the gpu engine holds a column of " +
+                    "at most " + (int.MaxValue / 2) + ".");
+            }
+
+            return (int)n;
+        }
+
+        /// <summary>
+        /// D233 under D228's true shape: makes the hull cores' column its full size, once, before a pack writes a family
+        /// link's points into it. Level (b) (<c>TrueShapeAtPoint</c>) touches a hull at its eight corner points, which the
+        /// kernel does not carry, so a world at that level refuses the body here, before anything steps.
+        /// </summary>
+        private void EnsureHull()
+        {
+            if (_w.AtPoint)
+            {
+                throw new NotSupportedException(
+                    "The gpu engine has no family shape (D233) under the true shape at the contact point " +
+                    "(EVOSIM_CONTACT_SHAPE trueshapeatpoint): the host touches a hull core at its corner points and the card " +
+                    "does not carry that. Use trueshape, or the cpu engine.");
+            }
+
+            if (Superellipsoid.ContactCorePoints != WholeStep.HullPoints)
+            {
+                throw new InvalidOperationException(
+                    "A family part's contact core holds " + Superellipsoid.ContactCorePoints + " points and the kernel reads " +
+                    WholeStep.HullPoints + "; WholeStep.HullPoints is changed in the kernel template with it.");
+            }
+
+            if (!_hullLive)
+            {
+                _hull.Resize(HullElements(_gcap));
+                _hullLive = true;
+                _hullUp = true;
+            }
         }
 
         private SGlob Glob => new SGlob
@@ -2331,6 +2437,7 @@ namespace __NS__
             Remains = _gRemains.View,
             RankToSlot = _rankToSlot.View, TotalMass = _gTotalMass.View, LinkMass = _linkMass.View,
             CoreHx = _core[0].View, CoreHy = _core[1].View, CoreHz = _core[2].View, CoreM = _core[3].View,
+            CoreFam = _core[4].View, Hull = _hull.View,
             NOver = _nOver.View, OvSlot = _ovSlot.View, OvId = _ovId.View, OvPart = _ovPart.View,
             OvHeld = _ovHeld.View, NHeld = _nHeld.View, HeldId = _heldId.View, BedGlass = _bedGlass.View,
             Census = _census.View, Overflow = _overflow.View,
@@ -3043,7 +3150,20 @@ namespace __NS__
                     for (int k = 0; k < 9; k++) sph[17 + k].Host[row + l] = (Real)c.LinkContactRotation[9 * l + k];
                     for (int k = 0; k < 3; k++) _core[k].Host[row + l] = (Real)c.LinkCoreHalf[3 * l + k];
                     _core[3].Host[row + l] = (Real)c.LinkMargin[l];
+
+                    // D233: a family link's core is the hull of its points; its half-extents above are zero and its margin
+                    // is the hull's. Every other link of the world has 0 here and takes the box path.
+                    double[] hullCore = c.LinkCoreHull == null ? null : c.LinkCoreHull[l];
+                    _core[4].Host[row + l] = hullCore != null ? (Real)1 : (Real)0;
+                    if (hullCore != null)
+                    {
+                        long hullAt = (long)(row + l) * WholeStep.HullStride;
+                        for (int k = 0; k < WholeStep.HullStride; k++) _hull.Host[hullAt + k] = (Real)hullCore[k];
+                    }
                 }
+
+                // The slot's earlier body may have had more links.
+                for (int l = links; l < WholeStep.LinkStride; l++) _core[4].Host[row + l] = 0;
             }
 
             // D228 level (b): each link's committed spin with its sphere. Only a world at TrueShapeAtPoint has the array.
@@ -3627,6 +3747,7 @@ namespace __NS__
             foreach (IColumn c in _gLink) c.Dispose();
             _rankToSlot.Dispose();
             foreach (Col<Real> c in _core) c.Dispose();
+            _hull.Dispose();
             _census.Dispose();
             _overflow.Dispose();
             _guard.Dispose();
