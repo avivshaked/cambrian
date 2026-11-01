@@ -56,7 +56,7 @@ Windows are recorded by the round's own frozen farm, so G7's build must carry th
 - A step letter in `slot-r62kg.ps1` must be new: `-cmatch` fires every step with that letter. Search the script for the
   letter before using it, since hold48's round-producer step already held `Ж`.
 - Growth: `LiveWorldView.Resize` rescales the parts in place, and the one skin's bones take the growth as a scale. That matches Core's uniform growth, but no render of a growing body has checked it yet.
-- A bite shown on film must be a mouth touch, not only a part touch. The `ate contact` line's true-shape verdict says whether the
+- A bite shown on film must be a mouth touch. The `ate contact` line's true-shape verdict says whether the
   eater's part touches the prey's part. The drawn mouth can still be far from the prey: in r64t-t-6203's window, 63971's part touched
   64897 at every onset while its mouth point sat 0.75 m from 64897's surface, about 8 mouth radii. A bite counts as a mouth touch
   when the verdict is `touch` and the line's mouth-to-surface is within one mouth radius (`gap/radius` at most 1). G8's shot list
