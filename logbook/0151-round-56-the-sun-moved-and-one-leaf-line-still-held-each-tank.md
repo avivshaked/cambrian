@@ -4,20 +4,22 @@
 2026-10-05. The pre-registration is logbook/0135. The read is `logbook/specs/r56-read/read-30000.txt`, beside round 54's reader and the picture notes in the same folder. Every figure is measured unless it
 says otherwise.*
 
-Round 56 gave the sun a day and a year for the first time in a farm round, and the year bit less than predicted. The
-living fell 7% to 22% from the first half of a year to its second. The pre-registration asked for 20% in both years,
-so the seasons clause failed on every seed. The crowd ended larger than round 55's on every seed, and one leaf lineage
-still held almost all of each tank. The leaves did not come to keep more in reserve; on two seeds of three they kept
-much less. Bodies that only eat nearly vanished, and bodies that both eat and catch light took their place.
+This entry goes back four weeks, before rounds 62 to 64, to fill a gap in the logbook. Round 56 gave the sun a day and
+a year for the first time in a farm round, and the year bit less than predicted. The living fell 7% to 22% from the
+first half of a year to its second. The pre-registration asked for 20% in both years, so the seasons clause failed on
+every seed. The crowd ended larger than round 55's on every seed, and one leaf lineage still held almost all of each
+tank. The leaves did not come to keep more in reserve; on two seeds of three they kept much less. Bodies that only eat
+nearly vanished, and bodies that both eat and catch light took their place.
 
 ## What the round asked
 
 Every round before this one had a sun that never moved. In that steady light one leaf lineage took each tank and held
 it. By 10,000 s the largest lineage held 57% of round 54 seed 2's living, and 98% of round 55 seed 3's. Round 56 asked
 whether a light that changes would loosen that hold. Its world was round 55's with the light cycled. A day of 1,000 s
-at amplitude 0.5 was multiplied by a season of 10,000 s at amplitude 0.5, so a run held three years. The light at a
-season's peak was 1.5 times the mean, and at its trough half. The three seeds kept round 55's roles, seed 1 without
-the nursery's genomes and seeds 2 and 3 with them. So each seed could be read against round 55's same seed.
+at amplitude 0.5 was multiplied by a year of 10,000 s at amplitude 0.5, so a run held three years. The year's own
+factor ran from half the mean light in winter to 1.5 times it in summer, and each day's cycle multiplied it again. The
+three seeds kept round 55's roles, seed 1 without the nursery's genomes and seeds 2 and 3 with them. So each seed
+could be read against round 55's same seed.
 
 ## What the read found
 
@@ -26,9 +28,9 @@ result.
 
 | # | asked | result |
 |---|---|---|
-| G | seed 2's living at 10,000 s at least a quarter of round 55 seed 2's 2,031 | held: 2,407 |
-| S1 | in years 2 and 3, the fewest living in a year's second half at least 20% below the most in its first half, in both years, in 3 of 3 seeds | failed in 0 of 3 |
-| S2 | the jointed share at 30,000 s at least twice round 55's same seed, in 2 of 3 | failed in 0 of 3 |
+| G | a guard that the cycled light does not starve the world: seed 2's living at 10,000 s at least a quarter of round 55 seed 2's 2,031 | held: 2,407 |
+| S1 | in years 2 and 3, the fewest living in a year's second half at least 20% below the most in its first half, in both years, in 3 of 3 seeds | failed: held in 0 of 3 |
+| S2 | the jointed share at 30,000 s at least twice round 55's same seed, in 2 of 3 | failed: held in 0 of 3 |
 | S3 | the leaves' median breeding margin at 30,000 s above round 55's same seed, in 3 of 3 | failed: held in 1 of 3 |
 | B1 | the books balance, nothing diverges, every seed ends on budget, in 3 of 3 | held in 3 of 3 |
 
@@ -42,14 +44,16 @@ and the fewest in its second. Look at the drop: S1 needed at least 20% in every 
 | 3 | 8,076, 6,619, 18% | 9,306, 7,518, 19% |
 
 Under the cycle the crowd grew. Seed 1 ended with 8,112 living against round 55's 4,477, seed 2 with 7,537 against
-4,957, and seed 3 with 8,415 against 7,493. And the hold of one lineage did not loosen. At 30,000 s the largest leaf
-lineage held 0.999, 0.998 and 0.998 of the living in seeds 1 to 3. In round 55 the same seconds read 0.929, 0.959 and
-0.911.
+4,957, and seed 3 with 8,415 against 7,493. And the hold of one lineage did not loosen. At 30,000 s the descendants of
+one founding leaf held 0.999, 0.998 and 0.998 of the living in seeds 1 to 3. That share is above the leaves' own, so
+the eaters must descend from the same founder (inference from the counts). In round 55 the same seconds read 0.929,
+0.959 and 0.911.
 
-S3 asked whether the leaves would keep more reserve, their breeding margin, to carry them through a night. In seeds 1
-and 2 they kept far less: a median of 43 s against round 55's 328 s, and 116 s against 422 s. Only seed 3 kept more,
-167 s against 131 s. My reading is that the winning lineage in a cycled world breeds on a thin margin and lets the
-trough take its losses (inference).
+S3 asked whether the leaves would keep more reserve to carry them through a night. That reserve is their breeding
+margin: what a leaf keeps after giving birth, counted in seconds of its own upkeep. In seeds 1 and 2 they kept far
+less: a median of 43 s against round 55's 328 s, and 116 s against 422 s. Only seed 3 kept more, 167 s against 131 s.
+My reading is that the winning lineage in a cycled world breeds on a thin margin and lets the trough take its losses
+(inference).
 
 The joints lost ground too. Seed 1's jointed share was 0.053 against 0.050, seed 2's 0.0033 against 0.0038, and seed
 3's 0.0005 against 0.0011.
@@ -81,16 +85,17 @@ The theatre drew seed 2 at the summer peak, 22,500 s, and at the winter trough, 
 
 At the trough the tank looks much as it does at the peak. The leaves, small green marks, hold the upper water over the
 deep end, in and around the reef's flat-topped pillars. Over the long slope of the bed there is only a thin scatter of
-bodies, and almost nothing sits on the bed. The picture joins 5,967 bodies; the summer frame joined 5,631. The crowd
-did not fall in this winter. It grew through the whole cycle, and fastest as the light came back after the trough,
-from 5,970 at 27,500 s to 7,537 at 30,000 s.
+bodies, and almost nothing sits on the bed. The picture joins 5,967 bodies; the summer frame joined 5,631. Between the
+two frames the count did not fall, though over that whole year seed 2's living fell 10% from its peak (the table
+above). Near the end it grew fastest, as the light came back after the trough, from 5,970 at 27,500 s to 7,537 at
+30,000 s.
 
 ## What it changes
 
-The owner's next round, 57, gave the year a harder shape (D151, logbook/0136). A year held three summer days at 1.6
-and three winter days at 0.4, a weather factor changed each day, and nothing was planted. Its pre-registration opens
-on this round's result: a year that bit less than predicted, in a light whose every day of a season was the same.
-Round 57's read is logbook/0137.
+The owner's next round, 57, gave the year a harder shape (D151, logbook/0136). Its year was 6,000 s, three summer days
+at 1.6 of the mean light and three winter days at 0.4. A weather factor changed each day, and nothing was planted. Its
+pre-registration opens on this round's result: a year that bit less than predicted, in a light whose every day of a
+season was the same. Round 57's read is logbook/0137.
 
 What struck me, reading this round's numbers beside round 55's, is how little the moving sun changed the shape of the
 world. The crowd grew and the stomachs went. By the end a single leaf lineage held each tank, as one had without the

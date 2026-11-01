@@ -5,12 +5,14 @@ pre-registration is logbook/0134. The read is `logbook/specs/r55-read/read-30000
 control still ran in `logbook/specs/r55-read/interim-2026-10-04.md`. Every figure is measured unless it says
 otherwise.*
 
-Round 55 planted the nursery's best swimmers into the world, and the world kept almost none of them. The nursery is a
-separate small tank where bodies and their brains are evolved for one skill, here swimming to food. In half the
-founders of two seeds, its two-part swimmers were drawn in among the usual random genomes. By 30,000 s their
-descendants were 4.0% of the living in one seed and 0.1% in the other, against a bar of 5% in both. The one nursery
-line that held, in seed 2, held because its descendants had lost their joints. Every jointed swimmer of nursery stock
-starved young. All three pre-registered clauses failed, and the books balanced.
+This entry goes back four weeks, to a round run before rounds 62 to 64, to fill a gap in the logbook. Round 55 planted
+the nursery's best swimmers into the world, and the world kept almost none of them. The nursery is a separate small
+tank where bodies and their brains are evolved for one skill, here swimming to food. In half the founders of two
+seeds, its two-part swimmers were drawn in among the usual random genomes. By 30,000 s their descendants were 4.0% of
+the living in one seed and 0.1% in the other, against a bar of 5% in both. The one nursery line that held, in seed 2,
+held because its descendants had lost their joints. Every jointed swimmer of nursery stock starved young. Two of the
+three pre-registered clauses failed and the third was not read. The world's accounts of matter and energy balanced
+throughout.
 
 ## What the round asked
 
@@ -29,7 +31,7 @@ seed.
 
 ## What the read found
 
-The three seeds ran on the farm on 2026-10-04 and all reached 30,000 s on budget.
+The three seeds ran on the farm, the project's own simulator, on 2026-10-04 and all reached 30,000 s on budget.
 
 The table gives each clause as the pre-registration set it, with the result at 30,000 s.
 
@@ -38,7 +40,7 @@ The table gives each clause as the pre-registration set it, with the result at 3
 | I1 | at least 5% of the living descend from a nursery founder, in 2 of 2 planted seeds | failed: 4.0% in seed 2, 0.1% in seed 3 |
 | I2 | the most numerous nursery run is the same in both planted seeds (read only if I1 holds) | not read; the most numerous were `pilot-deep-brain2` in seed 2 and `brain2-rep2` in seed 3 |
 | I3 | the jointed share at least twice the control's, in each planted seed | failed: 0.004 and 0.001, against the control's 0.050 |
-| B1 | the books balance, by round 54's reader | held in 3 of 3 |
+| B1 | the world's energy audit and matter residual stay near zero at every sample, by round 54's reading script | held in 3 of 3 |
 
 In seed 2, 196 of 4,957 living bodies had nursery roots, and 178 of them came from one founder. It was body 10 of the
 run `pilot-deep-brain2`, a trickle founder born at 3,152 s. Its first rigid descendant was born at 4,263 s. The line
@@ -57,7 +59,8 @@ random founders, and with one seed a side the read cannot tell a difference made
 The interim read took every body born by 21,000 s and asked how each died. The pattern is plain.
 
 The table gives, for each group, the share that died starving and the children each body left. A group that leaves
-about one child a body is holding its own.
+about one child a body is holding its own. The interim read reported these eight groups only, and gives no row for the
+others.
 
 | Group | Seed | Died starving | Median age at death | Children per body |
 |---|---|---|---|---|
@@ -75,8 +78,8 @@ interim read's reading, which is inference, is that matter was short for every b
 and the joint found it no more food. The nursery's swimmers could swim, and they did not steer to food in this world.
 The line that held in seed 2 held by dropping its joints.
 
-The leaves told a story of their own. One leaf lineage held 98.8% of seed 2's living and 97.7% of seed 3's at 22,000
-s. That is the hold round 56 would try to loosen.
+The leaves told a story of their own. One leaf lineage held 98.8% of seed 2's living bodies and 97.7% of seed 3's at
+22,000 s, eight thousand seconds before the nursery count above. That is the hold round 56 would try to loosen.
 
 ## The pictures
 

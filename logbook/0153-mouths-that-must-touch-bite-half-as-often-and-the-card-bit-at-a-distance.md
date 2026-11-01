@@ -13,8 +13,8 @@ that the film's round runs on true-shape contact (D272).
 ## Why mouths had to touch
 
 Contact in this world has long been cheap. Each part is treated as a ball whose radius is its reach, the half-diagonal
-from its centre to a corner (D196, D252). Two parts touch when their balls do. For a thin blade that ball stands up to
-0.55 m past its flat faces.
+from its centre to a corner (D196, D252). Two parts touch when their balls do. In the kills measured below, a thin
+part's ball stood up to 0.55 m past its flat faces.
 
 On 31 October the theatre lane measured eleven recorded kills from two round 63 worlds, on film windows a fraction of
 a second before each kill. The table is `ball-table.md` beside this entry. At every kill the two balls had just
@@ -30,13 +30,14 @@ what that costs a grazer world.
 ## The screen
 
 The coordinator pre-registered r64t before any world of it ran (`logbook/specs/r64t-prereg/predictions.md`). It took
-round 64's arm D, the world where grazers had boomed, and ran it to 24,000 s on seeds 6202 and 6203. True shape ran on
-both seeds. Sphere contact ran on 6203, and on 6202 the recorded run of arm D stood as its control. The three new
-worlds ran as one group on the card, and a sitting first showed the spheres world on 6202 matching the recorded run
-row for row.
+round 64's arm D, the world where grazers had boomed, and ran it to 24,000 s on seeds 6202 and 6203. Three new worlds
+ran: true shape on seed 6202, true shape on 6203, and sphere contact on 6203. On 6202 the recorded run of arm D stood
+as the sphere-contact control. The three ran as one group on the card. A short identity run first showed that a sphere
+world on 6202 matched the recorded run row for row, so the old run could stand in.
 
-The table sets each prediction beside what was measured, as true shape over spheres on the same seed. A blow, here, is
-one bite by any mouth, and a grazer-second is one grazer alive for one second.
+The table sets each prediction beside what was measured, as true shape over spheres on the same seed. Where a row
+gives two values, they are true shape against spheres. Pace is simulated seconds per real second. A blow, here, is one
+bite by any mouth, and a grazer-second is one grazer alive for one second.
 
 | Readout | Predicted | 6202 | 6203 |
 |---|---|---|---|
@@ -59,14 +60,15 @@ group of five, so its ratio of 1.10 crosses groups and says little.
 
 The pre-registration expected grazers to fall to between a fifth and three-fifths of their number under spheres. They
 rose instead, to 1.2 and 2.2 times. The pre-registration named grazers above 0.8 of spheres' as a result that shows
-the prediction wrong, and both seeds cleared it. Both held the floor of 30 in every window from 12,000 s, and neither
-died out, though 6202's fewest in one window dipped to 24.
+the prediction wrong, and both seeds cleared it. Both held the floor of 30 grazers, judged by each 3,000 s window's
+mean, in every window from 12,000 s. Neither died out, though 6202's count at its lowest moment in one window dipped
+to 24.
 
-What changed was who got bitten. Grazers kept biting grazers at about the same rate, 1,104 kill rows against 1,110 on
-6202 and 1,754 against 1,916 on 6203. Under true shape most of those bites wounded and few killed: 87 lethal against
-432, and 102 against 821. The share of grazer deaths that were kills by a mouth fell four- and tenfold. Starvation's
-share did not rise as predicted. Leaves stood two to 2.6 times as many and supplied three-quarters of a grazer's
-income or more.
+What changed was who got bitten. Grazers kept biting grazers at about the same rate. The lineage logs every wounding
+bite as a kill row, and there were 1,104 against 1,110 on 6202 and 1,754 against 1,916 on 6203. Under true shape most
+of those bites wounded and few killed: 87 lethal against 432, and 102 against 821. The share of grazer deaths that
+were kills by a mouth fell four- and tenfold. Starvation's share did not rise as predicted. Leaves stood two to 2.6
+times as many and supplied three-quarters of a grazer's income or more.
 
 The read's own reading, which it marks as inference, is that a grazer's ball reached a neighbour's parts before its
 surface did. Most lethal grazer-on-grazer kills came from that reach. Take the reach away and grazers lose some leaf
@@ -101,9 +103,10 @@ The pre-registration's last falsifier asked the narrowest question. A kill whose
 apart would mean the card's list of touching pairs was not following its own true-shape test. The card was then to be
 checked against the host.
 
-The theatre lane, c8, measured it, with a Sonnet builder it briefed and reviewed. Each true-shape world was replayed
-on the host from its checkpoints, every 1,500 s, for ten seconds each. Each kill the run recorded in those seconds was
-then found in the host's state and its gap measured. The table is `kill-gaps.md` beside this entry.
+The theatre lane, the session that draws the films (c8), measured it, with a helper model it briefed and reviewed.
+Each true-shape world was replayed on the host from its checkpoints, every 1,500 s, for ten seconds each. Each kill
+the run recorded in those seconds was then found in the host's state and its gap measured. The table is `kill-gaps.md`
+beside this entry.
 
 | Kills in the replayed seconds | Count | Above 0.05 m | Largest gap |
 |---|---|---|---|
@@ -118,11 +121,11 @@ touching pairs could have gone stale, and read the card code that ruled it out.
 
 ## The card's arithmetic
 
-To see the card's own numbers, a Sonnet builder added a census dump to the farm, from the coordinator's brief on c8's
-plan. The coordinator then resumed the 6203 world on the card from 22,500 s. Half a second later it reproduced one far
-kill, animal 66874 on leaf 70081. The dump is `census-dump-t6203.json` beside this entry, its five rows unchanged. The
-bookkeeping was clean. The card's GJK had ended "origin inside" at its third pass, calling the two parts touching,
-where the host found their cores 0.41 m apart. Both cores were flat, zero along one axis.
+To see the card's own numbers, a helper model added a census dump to the farm, from the coordinator's brief on the
+theatre lane's plan. The coordinator then resumed the 6203 world on the card from 22,500 s. Half a second later it
+reproduced one far kill, animal 66874 on leaf 70081. The dump is `census-dump-t6203.json` beside this entry, its five
+rows unchanged. The bookkeeping was clean. The card's GJK had ended "origin inside" at its third pass, calling the two
+parts touching, where the host found their cores 0.41 m apart. Both cores were flat, zero along one axis.
 
 The cause was a multiply and an add fused into one operation. The card's compiler does this unless told not to, and
 the fused result differs from the processor's in its last bits. The card's notes had said so since 26 September, with
@@ -134,18 +137,19 @@ held, so an exact test for a repeat missed it. The routine added a near-duplicat
 almost without volume. Its sign tests then read the origin as enclosed, and two parts 0.1 to 0.56 m apart were called
 touching.
 
-The fix, built by a Sonnet builder from the coordinator's brief and merged at `fe0548e7`, writes every product in the
+The fix, built by a helper model from the coordinator's brief and merged at `fe0548e7`, writes every product in the
 GJK unfused. It also refuses "inside" from a tetrahedron whose volume is under 2^-18 of its longest edge cubed, and
 takes its nearest face instead. On the fixed card three resumes at far kills lost those kills and kept every other
-kill of their stretch, 3 of 3, 19 of 19 and 10 of 10. Groups of 32 and 64 were identical over 30 s.
+kill of their stretch, 3 of 3, 19 of 19 and 10 of 10. The card gave identical results at its two launch sizes, 32 and
+64, over 30 s.
 
 ## The ruling, and what it leaves
 
 On 1 November the owner ruled that the film's round runs on true-shape contact (D272), on the coordinator's
-recommendation. The smell build stays off in that round until its own screen has run. Level (b) of D228 is not used.
-The card's support for the shape family's rounded parts under true shape was merged the same morning (`a1e443af`), its
-products also written unfused. On the card, a family world under true shape was identical at groups 32 and 64 over
-600 s.
+recommendation. The smell build stays off in that round until its own screen has run. D228's finer level (b), never
+screened in a world, is not used. The card's support for the shape family's rounded parts under true shape was merged
+the same morning (`a1e443af`), its products also written unfused. On the card, a family world under true shape was
+identical at both launch sizes over 600 s.
 
 The ruling leaves three things open. The screen's ratios were measured on the unfixed card. The far kills were a few
 in a hundred of its kills, so the ratios stand, but that they stand unchanged is an inference. Nothing of the screen
