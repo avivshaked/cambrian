@@ -416,6 +416,27 @@ namespace Evosim.Farm.Tests
                 }
             }
 
+            // One side measured alone first (which also compiles the routine, so the run below does not time that), with the two forks laid over each other so that few pairs are
+            // screened: the cost of a call at its worst for a body of seven parts.
+            using (RemainsFixtures.Pair p = RemainsFixtures.Arena(Config(needsMouth: true), EatingFork(), RemainsFixtures.Fork()))
+            {
+                long eater = p.World.Living.Single(c => c.HasIntake).Id;
+                long victim = p.World.Living.Single(c => !c.HasIntake).Id;
+                p.Sim.TryPose(eater, out Creature mouths);
+                p.Sim.TryPose(victim, out Creature target);
+                mouths.PlaceAt(PlateAt, QuatD.Identity);
+                target.PlaceAt(PlateAt, QuatD.Identity);
+
+                const int calls = 4000;
+                float ratio = 0f;
+                long started = System.Diagnostics.Stopwatch.GetTimestamp();
+                for (int i = 0; i < calls; i++) ratio = MouthTouch.Reach(mouths, target, p.Sim.Solver, out _, out _);
+                double seconds = (System.Diagnostics.Stopwatch.GetTimestamp() - started) / (double)System.Diagnostics.Stopwatch.Frequency;
+
+                _out.WriteLine($"one side, seven eaters against seven parts, laid over each other: {seconds / calls * 1e6:0.##} us a call (ratio {ratio})");
+                Assert.False(float.IsNaN(ratio));
+            }
+
             double offSeconds = Run(needsMouth: false, out long offSides, out int offSteps);
             Assert.Equal(0L, offSides);
             Assert.Equal(0d, offSeconds);
