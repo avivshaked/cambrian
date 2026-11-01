@@ -296,6 +296,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D272](#d272) | The film's round runs on true-shape contact (D228 level a) | 2026-11-01 | ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation after the true-shape screen `r64t` (`logbook/specs/r64t-read/README.md`) and the card's GJK fix (merged at… |
 | [D273](#d273) | A card world resumed from its checkpoint repeats its run, from the build that writes the remains' exposure | 2026-11-01 | decided by the coordinator on 2026-11-01, after the resume probe and its read |
 | [D274](#d274) | The smell screen runs under true-shape contact, as two groups of three, after a 6,000 s founding bench | 2026-11-01 | decided by the coordinator on 2026-11-01, at the owner's delegation of the grazer screens |
+| [D275](#d275) | A bite needs the mouth: a mouth's blow wounds and feeds only where its mouth point touches | 2026-11-01 | ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation (option A of three) |
 
 ---
 
@@ -10286,3 +10287,30 @@ in any condition set for the world.
 
 **Rejected.** The design's five worlds with the recorded `r64-d-6202` as a control, which ran under spheres. One group of six, slower than real time at its end by the draft's estimate.
 
+### D275
+**A bite needs the mouth: a mouth's blow wounds and feeds only where its mouth point touches** · 2026-11-01
+
+**Status:** ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation (option A of three). It
+amends D219 for a mouth's blow: D219 judged contact on the parts' whole contact shapes, the same as a kill's.
+
+**Decision.**
+- A mouth's blow (D226: its attacking part carries intake and its attacker is not remains) wounds and feeds only when the
+  mouth point (D213, the middle of the eating part's free end) lies within one mouth radius of the bitten part's
+  true-shape surface. A claw's blow and every blow from remains are unchanged.
+- The rule is built behind a switch, off by default, so that with it off every recorded world is unchanged to the bit,
+  on the farm's host and on the card. The mouth radius is the one the theatre's mouth-touch measure uses, so that a
+  filmed bite and a counted bite agree.
+- It enters overpowered (D262): its first screen pairs it with a richer bite, then dials back.
+- It is screened before the film's round takes it. The screen's design and pre-registration are the coordinator's, under
+  the owner's delegation of the grazer screens.
+
+**Why.** In round r64t's measured film window, 17 of 67 leaf kills (25%) and 63 of 154 wounds on animals (41%) had the
+mouth within one radius of the food. The rest were the eating part's side or far end brushing it.
+A film shows that as food vanishing short of the mouth, as in the r65 leaf preview of 75154 on 2026-11-01. Requiring the mouth makes eating look and
+work like eating, and gives evolution a reason to steer and turn the mouth onto food.
+
+**Rejected.** Keeping the rule and filming only the bites where the mouth touches: the film would show a minority as if
+typical. Keeping the rule and filming every bite: food would vanish beside mouths.
+
+**Risk.** Grazers lose most of their bites at first, and they already fail D222's second test in every recent world. The
+richer bite of the first screen answers for that until the dial-back.
