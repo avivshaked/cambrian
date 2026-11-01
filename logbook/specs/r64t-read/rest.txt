@@ -1,0 +1,45 @@
+### income-split
+2026-10-30-202411-11de0613  t=24000
+  whole run     leaves 0.71  others 0.19  remains 0.11  (bite kept 1.06 MJ, swallowed 0.03 MJ)
+  21000-24000  leaves 0.59  others 0.32  remains 0.09  (bite kept 0.21 MJ, swallowed 0.01 MJ)
+2026-10-31-235754-2991f19e  t=24000
+  whole run     leaves 0.78  others 0.09  remains 0.13  (bite kept 0.80 MJ, swallowed 0.02 MJ)
+  21000-24000  leaves 0.75  others 0.14  remains 0.11  (bite kept 0.22 MJ, swallowed 0.01 MJ)
+2026-10-31-235754-6ef3732d  t=24000
+  whole run     leaves 0.76  others 0.16  remains 0.08  (bite kept 1.27 MJ, swallowed 0.03 MJ)
+  21000-24000  leaves 0.62  others 0.31  remains 0.08  (bite kept 0.21 MJ, swallowed 0.00 MJ)
+2026-10-31-235754-2991f19e  t=24000
+  whole run     leaves 0.85  others 0.09  remains 0.06  (bite kept 1.60 MJ, swallowed 0.01 MJ)
+  21000-24000  leaves 0.80  others 0.15  remains 0.05  (bite kept 0.40 MJ, swallowed 0.00 MJ)
+### overshoot 6202
+world   runs/r64t-t-6202/2026-10-31-235754-2991f19e
+control runs/r64-d-6202/2026-10-30-202411-11de0613
+bins of 3000 s to 24000 s
+ bin end  leaves  control  ratio  <0.5 | leaf deaths by grazer  share    largest cause  lead | cohort  kids   repl  >=1
+    3000    2541     2506  1.014    no |        2887         0  0.000          starved    no |      0     0    nan   no
+    6000    1912     1126  1.698    no |        3708        69  0.019             aged    no |      0     0    nan   no
+    9000    3380     2990  1.130    no |        4107        48  0.012             aged    no |     88    58  0.659   no
+   12000    2072     1070  1.936    no |        4736       227  0.048             aged    no |     84    49  0.583   no
+   15000    4350     2867  1.517    no |        6873       771  0.112             aged    no |    211   165  0.782   no
+   18000    3433     1727  1.988    no |        6673      1107  0.166             aged    no |    536   730  1.362  yes
+   21000    5612     3116  1.801    no |       12062      4453  0.369             aged    no |    905  1046  1.156  yes
+   24000    4716     2430  1.941    no |        8317      2514  0.302             aged    no |   3200  3834  1.198  yes
+### overshoot 6203
+world   runs/r64t-t-6203/2026-10-31-235754-2991f19e
+control runs/r64t-s-6203/2026-10-31-235754-6ef3732d
+bins of 3000 s to 24000 s
+ bin end  leaves  control  ratio  <0.5 | leaf deaths by grazer  share    largest cause  lead | cohort  kids   repl  >=1
+    3000    3246     3255  0.997    no |        2705         0  0.000          starved    no |      0     0    nan   no
+    6000    2462     1538  1.601    no |        3838        38  0.010             aged    no |      0     0    nan   no
+    9000    5590     2449  2.283    no |        6489      2152  0.332             aged    no |     92    63  0.685   no
+   12000    2197      841  2.612    no |        6862      2273  0.331             aged    no |   1385  1947  1.406  yes
+   15000    5920     2330  2.541    no |        6294      2670  0.424      grazer kill   yes |   1222   843  0.690   no
+   18000    3661     1519  2.410    no |        8574      4037  0.471      grazer kill   yes |   1744  2497  1.432  yes
+   21000    8814     3614  2.439    no |       10693      5332  0.499      grazer kill   yes |   2318  2020  0.871   no
+   24000    5703     2169  2.629    no |       12950      6765  0.522      grazer kill   yes |   3167  3974  1.255  yes
+### pace
+arm                engine    status           rows t         alive        stepped step wall   pace   whole start-up compile
+r64t-t-6202        gpu       ended (budget)       10-24000      40-5535     23990   9062.6s  2.647 9074.4s    11.7s    0.0s
+r64t-t-6203        gpu       ended (budget)       10-24000      40-7866     23990   9827.7s  2.441 9839.4s    11.6s    0.0s
+r64t-s-6203        gpu       ended (budget)       10-24000      40-2811     23990   8567.5s  2.800 8579.1s    11.5s   14.7s
+r64-d-6202         gpu       ended (budget)       10-24000      40-3024     23990   9998.4s  2.399 10012.9s    14.5s    0.0s

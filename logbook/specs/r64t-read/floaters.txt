@@ -1,0 +1,66 @@
+== runs/r64-d-6202/2026-10-30-202411-11de0613
+   snapshots 240 (100 s apart), births 48840, remains founded 1245, diverged records 12
+   diverged by kind: {'remains': 12}
+   diverged by kind, root shape, parts, root cell:
+       10  remains  box             parts 1  photosynthetic
+        2  remains  sphere          parts 2  buoyancy
+   root upward speed at the guard, m/s: min 0.39, median 0.57, max 5.25
+   records sharing a second with the one before: 6 of 12
+   living bodies, exposure in body-snapshots (x 100 s) and diverged per million body-seconds, by root shape:
+     box             all: exposure    363784, diverged    0, rate    0.000   one-part at birth: exposure    36151, diverged one-part    0, rate    0.000
+     capsule         all: exposure    136948, diverged    0, rate    0.000   one-part at birth: exposure     1903, diverged one-part    0, rate    0.000
+     sphere          all: exposure    139280, diverged    0, rate    0.000   one-part at birth: exposure     4005, diverged one-part    0, rate    0.000
+   remains (proxy: the source body's root shape), founded and diverged:
+     ?               founded      38, diverged    0, per founded 0.00000
+     box             founded     834, diverged   12, per founded 0.01439
+     capsule         founded     106, diverged    0, per founded 0.00000
+     sphere          founded     267, diverged    0, per founded 0.00000
+
+== runs/r64t-t-6202/2026-10-31-235754-2991f19e
+   snapshots 240 (100 s apart), births 61171, remains founded 1168, diverged records 0
+   diverged by kind: {}
+   diverged by kind, root shape, parts, root cell:
+   records sharing a second with the one before: 0 of 0
+   living bodies, exposure in body-snapshots (x 100 s) and diverged per million body-seconds, by root shape:
+     box             all: exposure    550155, diverged    0, rate    0.000   one-part at birth: exposure    64844, diverged one-part    0, rate    0.000
+     capsule         all: exposure    132903, diverged    0, rate    0.000   one-part at birth: exposure     2088, diverged one-part    0, rate    0.000
+     sphere          all: exposure    224899, diverged    0, rate    0.000   one-part at birth: exposure     6530, diverged one-part    0, rate    0.000
+   remains (proxy: the source body's root shape), founded and diverged:
+     ?               founded      16, diverged    0, per founded 0.00000
+     box             founded    1058, diverged    0, per founded 0.00000
+     capsule         founded      28, diverged    0, per founded 0.00000
+     sphere          founded      66, diverged    0, per founded 0.00000
+
+== runs/r64t-s-6203/2026-10-31-235754-6ef3732d
+   snapshots 240 (100 s apart), births 51038, remains founded 1494, diverged records 4
+   diverged by kind: {'remains': 4}
+   diverged by kind, root shape, parts, root cell:
+        2  remains  box             parts 2  photosynthetic
+        2  remains  box             parts 3  photosynthetic
+   root upward speed at the guard, m/s: min 2.55, median 2.90, max 2.90
+   records sharing a second with the one before: 2 of 4
+   living bodies, exposure in body-snapshots (x 100 s) and diverged per million body-seconds, by root shape:
+     box             all: exposure    421021, diverged    0, rate    0.000   one-part at birth: exposure    32245, diverged one-part    0, rate    0.000
+     capsule         all: exposure     67596, diverged    0, rate    0.000   one-part at birth: exposure     2012, diverged one-part    0, rate    0.000
+     sphere          all: exposure    181859, diverged    0, rate    0.000   one-part at birth: exposure    13334, diverged one-part    0, rate    0.000
+   remains (proxy: the source body's root shape), founded and diverged:
+     ?               founded      18, diverged    0, per founded 0.00000
+     box             founded     897, diverged    4, per founded 0.00446
+     capsule         founded      33, diverged    0, per founded 0.00000
+     sphere          founded     546, diverged    0, per founded 0.00000
+
+== runs/r64t-t-6203/2026-10-31-235754-2991f19e
+   snapshots 240 (100 s apart), births 77567, remains founded 380, diverged records 0
+   diverged by kind: {}
+   diverged by kind, root shape, parts, root cell:
+   records sharing a second with the one before: 0 of 0
+   living bodies, exposure in body-snapshots (x 100 s) and diverged per million body-seconds, by root shape:
+     box             all: exposure    808742, diverged    0, rate    0.000   one-part at birth: exposure    37631, diverged one-part    0, rate    0.000
+     capsule         all: exposure     72840, diverged    0, rate    0.000   one-part at birth: exposure     2444, diverged one-part    0, rate    0.000
+     sphere          all: exposure    402459, diverged    0, rate    0.000   one-part at birth: exposure    26436, diverged one-part    0, rate    0.000
+   remains (proxy: the source body's root shape), founded and diverged:
+     ?               founded       2, diverged    0, per founded 0.00000
+     box             founded     272, diverged    0, per founded 0.00000
+     capsule         founded       8, diverged    0, per founded 0.00000
+     sphere          founded      98, diverged    0, per founded 0.00000
+
