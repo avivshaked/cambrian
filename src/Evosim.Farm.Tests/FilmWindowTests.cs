@@ -572,6 +572,40 @@ namespace Evosim.Farm.Tests
         // ------------------------------------------------------------------ read back (B2)
 
         /// <summary>
+        /// A window of this build records the ate mask (stream version 5) and the theatre's reader exposes it per
+        /// body per frame. The small world has no mouth that bites, so every mask reads 0; what the test holds is that
+        /// the field is there, is read as recorded, and a body's frame answers for it.
+        /// </summary>
+        [Fact]
+        public void AWindowRecordsTheAteMaskAndTheReaderExposesIt()
+        {
+            string outDirectory = Out("ate-mask");
+            Film(2d, 6d, outDirectory);
+
+            using (FilmWindowReader window = FilmWindowReader.Open(outDirectory))
+            {
+                Assert.True(window.RecordsBites);
+                Assert.Equal(PoseStream.Version, window.Stream.Header.Version);
+
+                int asked = 0;
+
+                for (int f = 0; f < window.FrameCount && asked < 40; f++)
+                {
+                    foreach (PoseBody body in window.ReadFrame(f).Bodies)
+                    {
+                        Assert.True(window.TryAteMask(f, body.Id, out uint mask));
+                        Assert.Equal(body.AteMask, mask);
+                        asked++;
+                    }
+                }
+
+                Assert.True(asked > 0, "no body was framed, so nothing was asked");
+                Assert.False(window.TryAteMask(0, -12345L, out uint none));
+                Assert.Equal(0u, none);
+            }
+        }
+
+        /// <summary>
         /// A window reads back whole through <see cref="FilmWindowReader"/>, the theatre's reader:
         /// the verdict and its word, the run's full path, a genome for every framed body, the plans
         /// and the events, and a frame's bodies are exactly those the events say were alive. The

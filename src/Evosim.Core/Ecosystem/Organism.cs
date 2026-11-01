@@ -517,6 +517,20 @@ namespace Evosim.Core
         public int MouthPointCount { get; internal set; }
 
         /// <summary>
+        /// Which of this body's eating parts took matter in the last metabolic step: bit <c>k</c> is the <c>k</c>-th
+        /// eating part in part order (<see cref="MouthPoint.EatingOrdinal"/>), set where the intake is credited (a bite
+        /// settled on a body, a leaf or remains; a meal of a corpse) and zeroed at the top of the next step's mouth
+        /// pass. A recording of what happened, read by the farm's pose recorder and the theatre's live mode; no rule of
+        /// the world reads it, it moves no number and draws no random value.
+        /// </summary>
+        /// <remarks>
+        /// <b>Not checkpointed.</b> A restored body holds 0 until the next step, and <c>CheckpointFidelity</c> lists it
+        /// with the members a step fills before it reads. A plan change re-indexes the eating parts, so a step's
+        /// mask names the plan the step ran on. At most <see cref="MouthPoint.MaxMaskedEatingParts"/> parts are named.
+        /// </remarks>
+        public uint TookMatterMask { get; internal set; }
+
+        /// <summary>
         /// The world's up in this body's own frame (the developer's), at the last metabolic step —
         /// what the hull's shadow in the pose is taken against, D110. Set by the harness beside
         /// <see cref="PartExposure"/> and read only while that is set.

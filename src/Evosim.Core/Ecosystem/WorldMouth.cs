@@ -196,6 +196,9 @@ namespace Evosim.Core
         {
             _lastAttacker.Clear();
 
+            // The last step's record of which eating parts took matter is this step's to rewrite.
+            ForgetWhatWasEaten();
+
             // D123. The two records the senses read are this step's and no older one's, so the
             // last step's are forgotten before the damage pass writes this one's.
             ForgetWhatWasFelt();
@@ -226,6 +229,74 @@ namespace Evosim.Core
             }
 
             return killed;
+        }
+
+        // The bodies whose TookMatterMask is not 0 this step, in the order the intake credited them. A reader walks this
+        // short list and not the living; the top of the next mouth pass zeroes exactly these and clears it, so nothing
+        // is allocated once the list has reached its working size.
+        private readonly List<Organism> _tookMatter = new List<Organism>();
+
+        /// <summary>
+        /// The bodies one of whose eating parts took matter in the last metabolic step, each with its
+        /// <see cref="Organism.TookMatterMask"/>; empty before the first step and after a restore. Valid until the next
+        /// step's mouth pass, which zeroes it. A body that died in the step may be listed. One answer for the farm's
+        /// pose recorder and the theatre's live mode.
+        /// </summary>
+        public IReadOnlyList<Organism> TookMatterThisStep => _tookMatter;
+
+        private void ForgetWhatWasEaten()
+        {
+            for (int i = 0; i < _tookMatter.Count; i++) _tookMatter[i].TookMatterMask = 0u;
+            _tookMatter.Clear();
+        }
+
+        /// <summary>Marks eating parts of a body as having taken matter this step. The only writer of the mask.</summary>
+        private void NoteTookMatter(Organism creature, uint bits)
+        {
+            if (bits == 0u) return;
+            if (creature.TookMatterMask == 0u) _tookMatter.Add(creature);
+            creature.TookMatterMask |= bits;
+        }
+
+        /// <summary>
+        /// Marks the eating part at <paramref name="partIndex"/> of the body's current plan, if it is one and its place
+        /// among the eating parts fits the mask.
+        /// </summary>
+        private void NoteTookMatterAtPart(Organism creature, int partIndex)
+        {
+            int ordinal = MouthPoint.EatingOrdinal(creature.Phenotype, partIndex);
+            if (ordinal < 0 || ordinal >= MouthPoint.MaxMaskedEatingParts) return;
+            NoteTookMatter(creature, 1u << ordinal);
+        }
+
+        /// <summary>
+        /// Which of a body's mouths a corpse meal was taken by: with D214's mouth points, each eating part whose point
+        /// lies within the corpse's reach; without them (or if none does) every eating part, since the body was
+        /// measured from its centre. Read before the meal lowers the corpse's reach.
+        /// </summary>
+        private uint MouthsThatReach(Organism creature, Corpse corpse, float tissueDensity)
+        {
+            if (Config.IntakeReachFromMouth && creature.MouthPointCount > 0 && creature.MouthPoints != null)
+            {
+                double reach = CorpseReach(corpse, tissueDensity);
+                Float3 at = corpse.Position;
+                float[] p = creature.MouthPoints;
+                int count = Math.Min(creature.MouthPointCount, MouthPoint.MaxMaskedEatingParts);
+                uint mask = 0u;
+
+                for (int k = 0; k < count; k++)
+                {
+                    double dy = (double)p[3 * k + 1] - at.Y;
+                    double dx = Separation(p[3 * k], at.X, Nutrients.LengthMetres);
+                    double dz = Separation(p[3 * k + 2], at.Z, Nutrients.WidthMetres);
+
+                    if (dx * dx + dy * dy + dz * dz <= reach * reach) mask |= 1u << k;
+                }
+
+                if (mask != 0u) return mask;
+            }
+
+            return MouthPoint.AllEatingPartsMask(creature.Phenotype);
         }
 
         /// <summary>
@@ -674,6 +745,9 @@ namespace Evosim.Core
 
             double joules = units * perUnit;
             if (joules > corpse.Joules) joules = corpse.Joules;
+
+            // A recording only: which mouths took this meal, read while the corpse still has its reach.
+            NoteTookMatter(creature, MouthsThatReach(creature, corpse, tissueDensity));
 
             corpse.Joules -= joules;
 

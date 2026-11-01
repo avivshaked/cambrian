@@ -193,6 +193,34 @@ run recorded on an older build can read faithful, with the differing source hash
 same line. A window under another config is refused, or reads cousin when the launcher overrides
 the refusal.
 
+## Version 5
+
+Version 5 adds one field to each body: a mask of the eating parts that took matter since the
+previous frame. The theatre animates a mouth's bite by it. Nothing around the body changes. The
+header, frame magic, raw prefix, deflate, trailer and index are as in version 2. The header's
+version field says 5.
+
+The field is a uint32 at byte offset 49 of the inflated body, after the reserve in joules and
+before the degree-of-freedom count. A body costs 54 bytes before its joints, where version 4
+cost 50. The joint coordinates start at offset 54.
+
+| Offset | Bytes | Type | Field |
+|---|---|---|---|
+| 0 to 48 | 49 | | as version 4: id, position, quaternion, body fraction, flags, reserve in seconds, breeding funds, reserve in joules |
+| 49 | 4 | uint32 | ate mask |
+| 53 | 1 | uint8 | degrees of freedom, *d* |
+| 54 | 4 × *d* | float32 | joint coordinates, the solver's own order |
+
+Bit *k* of the mask is set when the body's *k*-th eating part took matter at any simulation step
+since the previous frame. Parts count in part order, and only eating parts count. A mouth's
+ordinal is its place among the body's eating parts alone. The mask is an OR
+over the steps, so a bite shorter than the frame interval is not lost. The mask holds at most 32
+parts. Remains write 0, and so does a body with no eating part.
+
+A stream of version 1 to 4 has no such field. A reader gives those bodies a mask of 0, which
+reads as no bite seen. An older stream is never refused for lacking it. `scripts/poses-read.py`
+hands the mask over as `ate`. A reader that meets version 6 or above refuses it.
+
 ## What it costs
 
 A body with three degrees of freedom is 49 bytes, so a thousand of them make a frame of about
