@@ -4,7 +4,8 @@
 piece is about something the world itself never sees. The theatre is the program that draws a recorded world for the
 films, kept apart from the simulation ([D008](../DECISIONS.md#d008)). It now paints each animal's skin from numbers it
 reads off that animal's genome. A child's skin then sits close to its parent's, and an animal from another family
-wears something else.
+wears something else. Not every branch obeys yet. In the family drawn near the end, one child and its own child look
+like strangers to the rest.
 
 The wish is old in this project, and the build is new. The owner asked for inherited skins in September, and the
 theatre's working session built the map on 29 October 2026. One number was checked: how far apart two skins are,
@@ -245,6 +246,21 @@ with a dark-red oral disc. Others are deep indigo, and violet with cyan bands. T
 olive in every column. In its family sheet, five members are dark maroon with a coral maze. The sixth, 40020, is a
 glassy pale lilac, and the family no longer reads as one.
 
+![The family of r62-h6202 in the accepted look, each animal drawn from its genome alone: 36766, 38847, 40020, 42495,
+43308 and 43309](../logbook/images/r62/r62-h6202-family-v7e5-mix-strip.png)
+
+The strip above draws the same family in the look carried forward on 31 October. The theatre's working session calls
+that look v7e5-mix, and drew it on theatre build fda50b9c. Each animal is drawn from its genome alone, outside the
+world. Each is framed to its own body, so their sizes do not compare. The run's lineage file, which is not tracked,
+gives the tree. The grandparent 36766 had two children, 38847 and 40020. 38847 had twins, 43308 and 43309, and 40020
+had 42495.
+
+Four of the six read plainly as kin. The grandparent, 38847 and the twins are flat, dark maroon bodies under a coral
+maze. Each has a small knob above and below. 40020 is glossy pale lilac with almost no maze. Its child 42495 is
+salmon pink with a maze and a pale blue ring, under a tall purple stalk with a blue maze. The lineage file marks it as
+the only one of the six born with a joint, and I take the stalk to be that jointed part. So the family looks alike
+along one branch and not the other. The look's own notes record the fault on 40020.
+
 ## What is still open
 
 The family's split has a cause in the notes. One reading of the genome feeds two pattern switches at once, and 40020
@@ -274,7 +290,9 @@ mouths come next, and each animal's mouth will take a kind from its main eating 
   `scratch/owner/genome-to-skin-family-sheet/`, a working folder. So do the pattern switches' agreement figures.
 - **The family's split, and its cause in one reading feeding two switches**, come from the same notes.
 - **What the sheets show**, including the best-so-far frame's description, is the author's own look at pictures in
-  that working folder.
+  that working folder. What the family strip shows is the author's own look at the committed picture.
+- **That 42495's stalk is its jointed part** is the author's reading of the lineage file's joint flag beside the strip.
+- **The family's tree** comes from the lineage file of the run r62-h6202, which is not tracked.
 
 ## Where it is
 
@@ -283,6 +301,7 @@ mouths come next, and each animal's mouth will take a kind from its main eating 
 | [`theatre-skin-plan.md`](../logbook/specs/theatre-skin-plan.md), section 5 | the design: the ten numbers, the features, the projection, the check and its bars |
 | [`skin-map-build/README.md`](../logbook/specs/skin-map-build/README.md) | what was built, the three fits, the jumps, the hue rework, what is open |
 | [`skin-map-sheet-6d.png`](../logbook/specs/skin-map-build/skin-map-sheet-6d.png), [`skin-map-sheet-6e.png`](../logbook/specs/skin-map-build/skin-map-sheet-6e.png) | the second and third sheets, kept beside the build record |
+| [`r62-h6202-family-v7e5-mix-strip.png`](../logbook/images/r62/r62-h6202-family-v7e5-mix-strip.png) | the family in the accepted look, drawn from each genome alone on theatre build fda50b9c |
 | [`skin_features.py`](../scripts/skin-map/skin_features.py), [`test_skin_features.py`](../scripts/skin-map/test_skin_features.py) | the feature reader, the projection and the check, with its test |
 | [`gen_constants.py`](../scripts/skin-map/gen_constants.py) | writes the fit's numbers into the theatre's code |
 | [`SpeciesDistance.cs`](../src/Evosim.Core/Genome/SpeciesDistance.cs) | the species distance the check compares against |
