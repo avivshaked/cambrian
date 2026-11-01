@@ -50,12 +50,27 @@ My reading, an inference: under spheres a grazer's ball reached a neighbour's pa
 lethal grazer-on-grazer kills came from that reach. True shape takes the reach away. Grazers lose some leaf bites, but they
 stop eating each other, and the leaves they no longer reach stand and feed more of them.
 
+## The host agrees on the slow start
+
+A probe ran the 6202 world on the host engine under both contact forms to 5,400 s, from `scratch/wt-r64t`'s Release farm
+(`scratch/r64t-prereg/host-probe.ps1`, runs in `scratch/r64t-probe/`, not kept). Its configs differ only in `contactShape`.
+Each host world is its own realisation, so only ratios are compared. Over 0 to 5,400 s, by `contact-share.py --from 0`:
+
+| Engine and seed | Blows per grazer-second, true over spheres | Grazer-seconds, true over spheres |
+|---|---|---|
+| Host, 6202 | 0.56 | 0.25 |
+| Card, 6202 | 0.48 | 0.18 |
+| Card, 6203 | 0.32 | 0.06 |
+
+The host shows the same slow start and the same halving of bites. So the slow start is the world's, and the card's
+hand-over of the true-shape census to the mouth shows no fault at this scale.
+
 ## What it does not say yet
 
-- **The touch at the kill is not measured.** The pre-registration's last falsifier needs the part-surface gap at measured
-  kills under true shape. A gap above 0.05 m would mean the card's census does not follow its narrowphase. It waits on
-  the theatre lane's measurement.
-- **The host has not been asked.** A probe runs the 6202 world on the host engine under both contact forms to 5,400 s
-  (`scratch/r64t-prereg/host-probe.ps1`). It says whether the slow start on 6202 is the world's or the card's.
+- **The touch at the kill is being measured.** The pre-registration's last falsifier needs the part-surface gap at
+  measured kills under true shape: a gap above 0.05 m would mean the card's census does not follow its narrowphase. A host
+  replay of a card run parts from it within seconds of a checkpoint, so c8 measures the card's own kill rows on the
+  host's state in the first seconds after each checkpoint. Its first window, at 19,500 s on 6202, found 23 of 26 card kills
+  touching and 3 the host did not make, one of them 0.555 m apart. That is a lead and not yet a reading.
 - **Nothing has been seen in the theatre.** The worlds have not been drawn.
 - **6202's pace ratio crosses groups.** The spheres world on 6202 ran in a five-world group on the earlier build.
