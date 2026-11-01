@@ -36,6 +36,16 @@ namespace Evosim.Core.Tests
     [Trait("Category", "Slow")]
     public class SnapshotReadbackTests
     {
+        // Two round 59 smoke runs (2026-10-13) wrote the anchoring cell type's table before the type gained
+        // brainHold, releaseBelow and releaseJoulesPerNewton. Their genomes use a type their config does
+        // register, but this build refuses to read that table (loading refuses rather than defaults), so
+        // the run's own table cannot be rebuilt and the default table lacks the type. They are old-format
+        // records, skipped by name and counted in the output; a run not listed here gets no such pass.
+        private static readonly string[] OldAnchoringTables = { "r59smoke-grip-t1", "r59smoke-grip-t16" };
+
+        private static bool IsOldAnchoringRun(string runDir) =>
+            Array.IndexOf(OldAnchoringTables, Path.GetFileName(Path.GetDirectoryName(runDir))) >= 0;
+
         private readonly ITestOutputHelper _output;
 
         public SnapshotReadbackTests(ITestOutputHelper output) => _output = output;
@@ -63,6 +73,8 @@ namespace Evosim.Core.Tests
 
             int files = 0, genomes = 0, parts = 0, neurons = 0, stale = 0, empty = 0, ownTable = 0, ownTableGenomes = 0;
             var tables = new Dictionary<string, CellTypeRegistry>();
+            var unreadableTables = new HashSet<string>();
+            int tableSkipped = 0;
             var cellTypes = new HashSet<string>();
             var failures = new List<string>();
 
@@ -134,10 +146,18 @@ namespace Evosim.Core.Tests
                         CellTypeRegistry own = CellTypeJson.ReadRegistry(Json.Parse(File.ReadAllText(Path.Combine(runDir, "config.json")))["cellTypes"]);
                         if (own.HashContribution() != CellTypeRegistry.Standard.HashContribution()) table = own;
                     }
-                    catch (Exception) { }
+                    catch (Exception)
+                    {
+                        // Named, never a tolerance: only the runs in OldAnchoringTables may land here and
+                        // be skipped; any other run whose table cannot be read still falls to the default
+                        // table and fails there, as before.
+                        if (IsOldAnchoringRun(runDir)) unreadableTables.Add(runDir);
+                    }
                     tables[runDir] = table;
                     if (table != null) ownTable++;
                 }
+
+                if (unreadableTables.Contains(runDir)) { tableSkipped++; continue; }
 
                 for (int i = 0; i < rows.Length; i++)
                 {
@@ -183,6 +203,12 @@ namespace Evosim.Core.Tests
                     $"{GenomeJson.FormatVersion} and correctly unreadable by this build.");
             }
             if (empty > 0) _output.WriteLine($"{empty} snapshot(s) held no rows at all.");
+            if (tableSkipped > 0)
+            {
+                _output.WriteLine(
+                    $"{tableSkipped} snapshot(s) skipped: their run's cell-type table is on a format this build refuses " +
+                    "(see OldAnchoringTables).");
+            }
             if (ownTable > 0)
             {
                 _output.WriteLine(
@@ -196,7 +222,7 @@ namespace Evosim.Core.Tests
                 Environment.NewLine + string.Join(Environment.NewLine, failures.GetRange(0, Math.Min(5, failures.Count))));
 
             Assert.True(
-                genomes > 0 || stale + empty == files,
+                genomes > 0 || stale + empty + tableSkipped == files,
                 "snapshots existed but held no genomes");
         }
 
