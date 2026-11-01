@@ -1,8 +1,7 @@
 # Round 56's read: the sun moved, and one leaf line still held each tank
 
 *2026-10-31, written by the writing lane from the committed read, four weeks after round 56 ran on 2026-10-04 and
-2026-10-05. The pre-registration is logbook/0135. The read is `logbook/specs/r56-read/read-30000.txt`, beside round
-54's reader in `r54-reader-30000.txt` and the picture notes in `pictures-seed2.md`. Every figure is measured unless it
+2026-10-05. The pre-registration is logbook/0135. The read is `logbook/specs/r56-read/read-30000.txt`, beside round 54's reader and the picture notes in the same folder. Every figure is measured unless it
 says otherwise.*
 
 Round 56 gave the sun a day and a year for the first time in a farm round, and the year bit less than predicted. The

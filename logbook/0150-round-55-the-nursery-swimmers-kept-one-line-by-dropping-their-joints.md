@@ -100,7 +100,7 @@ indistinguishable by colour from the other absorptive bodies.
 ## What it changes
 
 The nursery's swimmers did not carry their skill into the world. Where matter is short and a joint costs upkeep, a
-swimmer that does not steer to food pays for its joint and earns nothing by it (inference, from the table above). The
+swimmer that does not steer to food pays for its joint. It earns nothing by it (inference, from the table above). The
 owner's next step went another way. Round 56 gave the sun a day and a year, to see whether a light that changes would
 loosen one leaf lineage's hold on each tank (logbook/0135). Later the nursery's work turned to swimmers that find food
 by smell (logbook/0140, logbook/0146).

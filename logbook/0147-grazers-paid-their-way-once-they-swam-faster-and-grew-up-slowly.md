@@ -55,11 +55,11 @@ of 500 s, and the other had corpses that never spoil. The pre-registration is
 While the round ran, the owner set a bar for a healthy grazer guild (D215), and then a rule for reading its third test
 across worlds (D216). A guild passes when three things hold.
 
-1. It keeps itself going. At least 80% of living grazers were born in the world rather than brought in as
+1. The guild keeps itself going: at least 80% of living grazers were born in the world rather than brought in as
    founders. One birth cohort replaces itself. A chain of mouthed parent to mouthed child reaches ten generations.
 2. Grazers are alive at every season's end, and in the windows at the start of each summer they meet at least 0.9
    of their upkeep.
-3. Grazers live by grazing. The share of their intake from bodies they killed themselves rises over the run.
+3. Grazers live by grazing, so the share of their intake from bodies they killed themselves rises over the run.
 
 At 24,000 s the first test held in four worlds of six and the second in four, but both together in only two. The third
 failed everywhere, because the share of grazer intake from their own kills fell in all six worlds. In the seed 6202
@@ -107,11 +107,11 @@ column: a guild that pays its way needs 1.
 | `r62bd` | the wound at 2, 4 and 16 times its depth (D226, D227) | 61-77 | 0.57-0.68 | `r62bd-read/README.md` |
 | `r62kg` | a killer swallows what is left of its kill into a gut (D232) | 79-80 | 0.54-0.57 | `r62kg-read/24000/README.md` |
 
-None passed D222. Nothing overshot, so nothing was rolled back (D225, D230). The deeper wound raised income through
-more kills a second, 1.1 to 1.7 times as many, while the joules a kill stayed where they were. The gut was the most
-telling. In its check run, two-thirds of kills came on the bite that took the victim's last tissue and reserve, so a
-dead body held almost nothing to swallow. The gut changed where about 30 J went, and not how much. I find that one
-oddly satisfying: a screen that was forecast to fail, for a stated reason, and failed for that reason.
+None of these screens passed D222. Nothing overshot, so nothing was rolled back (D225, D230). The deeper wound raised
+income through more kills a second, 1.1 to 1.7 times as many, while the joules a kill stayed where they were. The gut
+was the most telling. In its check run, two-thirds of kills came on the bite that took the victim's last tissue and
+reserve, so a dead body held almost nothing to swallow. The gut changed where about 30 J went, and not how much. I
+find that one oddly satisfying: a screen that was forecast to fail, for a stated reason, and failed for that reason.
 
 ## A meal took 100 s to find, and the budget allowed 41
 
@@ -155,17 +155,18 @@ gene's starting value: 60 s to adulthood, and a threshold starting at 30 s of th
 median of 60 to 64 s instead of 26.5 s. The share that never ate fell from about half to about a third.
 
 The second pace group asked whether the thrust arm won through speed or through cheap swimming
-(`logbook/specs/r62p2-read/24000-a/README.md`). Speed carried it. One world kept the ordinary push and cut its price
-ninefold. It failed D222 as badly as any world in the round, at 0.72 of upkeep, and its grazers swam at the base
-world's 0.07 m a world second. The other pushed sixteen times harder at a sixteenth of the price. It passed at 1.86, with grazers swimming 0.18 to 0.26 m a world second.
+(`logbook/specs/r62p2-read/24000-a/README.md`). The answer was speed. One world kept the ordinary push and cut its
+price ninefold. It failed D222 as badly as any world in the round, at 0.72 of upkeep, and its grazers swam at the base
+world's 0.07 m a world second. The other pushed sixteen times harder at a sixteenth of the price. It passed at 1.86,
+with grazers swimming 0.18 to 0.26 m a world second.
 
 ![A grazer of r62p-t16-6201 at 24,003.4 s and 2 s later, an unverified host replay of a card run](images/r62/r62p-t16-6201-t24003-unverified-grazer-pair.png)
 
-The pictures show that world, `r62p-t16-6201`, at 24,003.4 s and two seconds later. The theatre lane replayed the
-card run on the processor with build 7bdbfcc7, and the replay was not checked against the run, so each frame says
-UNVERIFIED. The look also predates the skins the owner accepted. The grazer is the pale-blue block with a purple
-stalk in the middle. In the second frame it has come in from the centre and is closer, among flat green leaves.
-Dark, spiny bodies drift around it, and the water above is thick with more leaves.
+The pictures show that world, `r62p-t16-6201`, at 24,003.4 s and two seconds later. The theatre lane replayed the card
+run on the processor with build 7bdbfcc7, and the replay was not checked against the run, so each frame says
+UNVERIFIED. The look also predates the skins the owner accepted. The grazer is the pale-blue block with a purple stalk
+in the middle. In the second frame it has come in from the centre and is closer, among flat green leaves. Dark, spiny
+bodies drift around it, and the water above is thick with more leaves.
 
 Two more questions about the newborns came back empty. A screen of the rate of structural mutation, the changes to a
 body plan between parent and child, found no rate that cut the share of slow newborns enough
