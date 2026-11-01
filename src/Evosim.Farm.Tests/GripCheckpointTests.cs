@@ -292,7 +292,7 @@ namespace Evosim.Farm.Tests
                 }
 
                 Assert.Equal(World.StateVersion, BitConverter.ToInt32(world, 4));
-                Assert.Equal(20, World.StateVersion);
+                Assert.Equal(21, World.StateVersion);
                 Assert.False(World.ReadsStateVersion(World.GriplessStateVersion));
 
                 byte[] sixteen = (byte[])world.Clone();

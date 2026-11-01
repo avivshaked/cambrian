@@ -746,7 +746,7 @@ namespace Evosim.Core.Tests
         /// EVOSIM_CE_DIGEST_RECORD naming a file, the test writes the digests there instead of comparing.
         /// </summary>
         private const string BitingWorldDigests =
-            "on 03ba92ab45bc204a7c899b977c904edfe3b63b49df84328ed9206e7ea7322ce0 off f3c0cde918f4e572461dea7dadf026496c5855132b29c39973a2e3ff0daf75b0";
+            "on b46939c3932a1c10b75507b2696d0f222fc40c7f9853e70bf3ac3c1fe86a48ef off b1965431ce1a4588f767dc2c79bf906a41a10bea8923279ef58370256185ffed";
 
         [Fact]
         public void ABitingWorldStepsToTheStatesItSteppedToBeforeTheLeafFoodCounter()
@@ -2366,7 +2366,7 @@ namespace Evosim.Core.Tests
             Assert.Equal(PinnedDialOffDigest, digest);
         }
 
-        private const string PinnedDialOffDigest = "EOxfRGP4KCEMErOdqsb5lYm3EWC4ujTP2Xr8y8L2Qu4=";
+        private const string PinnedDialOffDigest = "jgCrS8ZnrM4Q7stgYQChMK9uUb1iIA9wp/Fb2tZB8wc=";
 
         // ------------------------------------------------------------------------ Organism.FoodFromLeavesJoules (the nursery's "eaten" under contact eating)
 
@@ -2508,7 +2508,10 @@ namespace Evosim.Core.Tests
         /// <remarks>
         /// Pinned from this same scenario run on <c>main</c> at <c>1e9b2aca</c>, before D232's kill gut, in a worktree of
         /// that commit. The gut off writes nothing to the state, so the bytes must be the same on every later build. A
-        /// format bump of the world's state re-pins it, as it would any recording.
+        /// format bump of the world's state re-pins it, as it would any recording. Re-pinned at StateVersion 21 (the
+        /// remains' exposure, two flags and no floats more in a world without light by exposure): every digest in this
+        /// class and in <c>KillGutTests</c> held at StateVersion 20 on the same build with the writer alone changed, so
+        /// the unbroken run steps as it did.
         /// </remarks>
         [Fact]
         public void TheDialOnBitingWorldsStateStreamIsTheBytesPinnedBeforeTheKillGut()
@@ -2542,7 +2545,7 @@ namespace Evosim.Core.Tests
             Assert.Equal(PinnedStoreDigest, digest);
         }
 
-        private const string PinnedDialOnDigest = "jfWBue/6sF+VBgPFECfn13fxaxrAkb3i6MwvfE2ZnwI=";
-        private const string PinnedStoreDigest = "LWDBiKrM/c9n8VAMfuOXMA1ICHEJiXm/T4/kzL6Npfk=";
+        private const string PinnedDialOnDigest = "FQgq3WLCNjd+NyNOYlx1jKnL1fP3+v3neqU3Yj7IOik=";
+        private const string PinnedStoreDigest = "wEE4e2R4IhOZL7k+ZR3MbUxuPeOBFubsobP7yzDwgGs=";
     }
 }

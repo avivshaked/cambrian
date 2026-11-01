@@ -306,7 +306,7 @@ namespace Evosim.Core.Tests
         [Fact]
         public void AVersionFourteenStreamIsReadExactly()
         {
-            Assert.Equal(20, World.StateVersion);
+            Assert.Equal(21, World.StateVersion);
             Assert.Equal(19, World.PreOriginStateVersion);
             Assert.Equal(18, World.PreHeldStateVersion);
             Assert.Equal(17, World.PreCardPairStateVersion);

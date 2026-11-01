@@ -280,7 +280,7 @@ namespace Evosim.Core.Tests
         [Fact]
         public void VersionEighteenIsReadAsAWorldThatHeldNothingAndIsNotWrittenWithTheRuleOn()
         {
-            Assert.Equal(20, World.StateVersion);
+            Assert.Equal(21, World.StateVersion);
             Assert.Equal(18, World.PreHeldStateVersion);
             Assert.Equal(18, World.CardPairStateVersion);
 

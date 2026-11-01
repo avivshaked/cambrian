@@ -451,7 +451,7 @@ namespace Evosim.Core.Tests
             Assert.Equal(PinnedGutDigest, digest);
         }
 
-        private const string PinnedGutDigest = "AxMZD2FlL+3lrF1DrjF+MAjIX/NrlBatm/VfFvWbpgU=";
+        private const string PinnedGutDigest = "kdzi9T6X8/boPWVCiNumwGLotdsFw4FznIKvXuYpHlg=";
 
         [Fact]
         public void ACheckpointWithGutsHeldRoundTripsAndTheResumeEqualsTheUnbrokenRun()

@@ -483,9 +483,11 @@ namespace Evosim.Core
         /// to set for that reason, as nothing inside Core ever writes it.
         /// </para>
         /// <para>
-        /// <b>Not checkpointed.</b> The solver's rotations are, and the harness fills this before
-        /// the world reads it, so a restored world rebuilds it exactly; it is on
-        /// <c>CheckpointFidelity</c>'s list of members a step fills before it reads.
+        /// <b>Checkpointed from <c>World.StateVersion</c> 21, and on <c>CheckpointFidelity</c>'s list of members a
+        /// step fills before it reads.</b> The harness refreshes it for the living only, so a living body's
+        /// restored copy is overwritten before the world reads it, but whole-body remains keep the array of their
+        /// last living step and shade the living with it; a checkpoint that left it out gave every restored
+        /// remains the orientation average. A version-20 checkpoint carries none and restores it null.
         /// </para>
         /// <para>
         /// <b>A stale array is refused rather than read.</b> A plan change inside the step (a bite,
@@ -533,7 +535,7 @@ namespace Evosim.Core
         /// <summary>
         /// The world's up in this body's own frame (the developer's), at the last metabolic step —
         /// what the hull's shadow in the pose is taken against, D110. Set by the harness beside
-        /// <see cref="PartExposure"/> and read only while that is set.
+        /// <see cref="PartExposure"/> and read only while that is set. Checkpointed beside it.
         /// </summary>
         public Float3 UpInBody { get; set; }
 

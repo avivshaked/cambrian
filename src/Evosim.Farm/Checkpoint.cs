@@ -101,6 +101,10 @@ namespace Evosim.Farm
         /// the corpse killers unknown (-1), the origin books 0 and <c>World.IntakeOriginBooksFromSeconds</c>
         /// set to the checkpoint's second.
         /// </remarks>
+        /// <remarks>
+        /// Still 6 at <c>World.StateVersion</c> 21, the remains' exposure: each organism's exposure array and up vector
+        /// are the world's half, and the harness's half did not move. Layout 20 is still read, with both null.
+        /// </remarks>
         public const int Version = 6;
 
         /// <summary>

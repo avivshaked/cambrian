@@ -385,7 +385,7 @@ namespace Evosim.Core.Tests
             World restored = Restored(world.Config, 3, state);
 
             Assert.Equal(World.StateVersion, restored.StateVersionRead);
-            Assert.Equal(20, World.StateVersion);
+            Assert.Equal(21, World.StateVersion);
             Assert.Equal(state, StateOf(restored));
 
             Corpse back = restored.Corpses.First(c => c.CreatureId == corpse.CreatureId);
