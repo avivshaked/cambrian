@@ -472,16 +472,78 @@ namespace Evosim.Farm
 
             System.Collections.Generic.IReadOnlyList<OverlapPair> overlaps = Dynamics.Overlaps;
 
+            // D275: read once. Off, the loop below is the one every recorded world ran and nothing is measured.
+            bool needsMouth = Config.BiteNeedsMouth;
+
             for (int i = 0; i < overlaps.Count; i++)
             {
                 OverlapPair pair = overlaps[i];
                 if (!Dynamics.NearestParts(pair, out int partA, out int partB)) continue;
+
+                if (needsMouth)
+                {
+                    _contacts.Add(MeasuredContact(pair, partA, partB));
+                    continue;
+                }
 
                 _contacts.Add(new CreatureContact(pair.A, partA, pair.B, partB));
             }
 
             World.SetContacts(_contacts);
         }
+
+        /// <summary>Host seconds spent measuring mouths (<see cref="MeasuredContact"/>), summed over the run so far. A diagnostic: in no row and no checkpoint.</summary>
+        public double MouthMeasureSeconds => (double)_mouthMeasureTicks / System.Diagnostics.Stopwatch.Frequency;
+
+        /// <summary>Sides of contacts whose mouths were measured so far (D275). A diagnostic: in no row and no checkpoint.</summary>
+        public long MouthSidesMeasured { get; private set; }
+
+        private long _mouthMeasureTicks;
+
+        /// <summary>
+        /// D275: a contact with each side's mouth measured against the other body's parts, only with
+        /// <c>BiteNeedsMouth</c> on. The census names one pair of links; a mouth that touches behind an earlier link
+        /// would never bite on it, so each side's eating parts are measured against every part of the other body
+        /// (<see cref="MouthTouch.Reach"/>) and Core rules on the nearest.
+        /// </summary>
+        /// <remarks>
+        /// <b>Serial, in the overlap list's order.</b> A side is measured only if its body is living, has an eating
+        /// part and holds the plan Core holds (the guard <see cref="ObserveMouths"/> uses); anything else is left at
+        /// "not measured", which Core reads as out of reach for a mouth and never reads for a claw.
+        /// </remarks>
+        private CreatureContact MeasuredContact(OverlapPair pair, int partA, int partB)
+        {
+            float ratioA = float.NaN, ratioB = float.NaN;
+            int linkA = -1, targetA = -1, linkB = -1, targetB = -1;
+
+            if (_bodies.TryGetValue(pair.A, out Body a) && _bodies.TryGetValue(pair.B, out Body b))
+            {
+                long started = Now();
+
+                if (CanMeasure(a))
+                {
+                    ratioA = MouthTouch.Reach(a.Solver, b.Solver, Solver, out linkA, out targetA);
+                    MouthSidesMeasured++;
+                }
+
+                if (CanMeasure(b))
+                {
+                    ratioB = MouthTouch.Reach(b.Solver, a.Solver, Solver, out linkB, out targetB);
+                    MouthSidesMeasured++;
+                }
+
+                _mouthMeasureTicks += Now() - started;
+            }
+
+            return new CreatureContact(pair.A, partA, pair.B, partB, ratioA, linkA, targetA, ratioB, linkB, targetB);
+        }
+
+        // A body whose mouths can be measured: living (remains never bite), an eating part, and the solver on the plan Core holds.
+        private static bool CanMeasure(Body body) =>
+            !body.Creature.IsRemains &&
+            body.Creature.HasIntake &&
+            body.Solver.Links == body.Creature.Phenotype.PartCount &&
+            body.Creature.PlanRevision == body.Solver.AppliedPlanRevision;
 
         /// <summary>
         /// Puts each body's contact and damage record onto its own senses — D106 item 5's two

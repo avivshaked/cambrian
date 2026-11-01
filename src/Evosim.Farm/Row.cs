@@ -1066,6 +1066,13 @@ namespace Evosim.Farm
                     w.Field("mouthBlows", world.MouthBlows)
                         .Field("mouthBlowsFinishing", world.MouthBlowsFinishing);
 
+                    // D275. Only with a bite needing the mouth: the mouth's blows refused for want of a mouth at the part,
+                    // cumulative.
+                    if (world.Config.BiteNeedsMouth)
+                    {
+                        w.Field("mouthBlowsRefused", world.MouthBlowsRefused);
+                    }
+
                     // D232. Only with the kill swallowed into a gut: the joules the living hold in guts now (as they
                     // stand), then cumulative: the kills swallowed and the joules swallowed, the joules digested and
                     // the intake waste of them, what the bites offered above the per-step cap, and the cap's hold on

@@ -486,6 +486,8 @@ namespace Evosim.Farm
                 (config.AnimalHealthScale != 1f ? " · animal health ×" + config.AnimalHealthScale.ToString("0.###", Inv) : "") +
                 (config.PlantHealthScale != 1f ? " · plant health ×" + config.PlantHealthScale.ToString("0.###", Inv) : "") +
                 (config.DeathRowIncome ? " · death rows carry income" : "") +
+                // D275, only when on (and so only with contact eating), so every recorded header reads as it did.
+                (config.BiteNeedsMouth ? " · a bite needs the mouth" : "") +
 
                 // The ruling of 2026-09-24, at the end before the hash and rendered either way.
                 // The floor is the `overhead` token above, which is unchanged; this says whether
