@@ -177,6 +177,54 @@ namespace Evosim.Core
             return new Float3(0f, 0f, d.Z < 0f ? -Math.Abs(h.Z) : Math.Abs(h.Z));
         }
 
+        /// <summary>The mouth radius as a share of the mouth's face: half of the smaller of the face's two half-extents.</summary>
+        public const float RadiusShare = 0.5f;
+
+        /// <summary>
+        /// D275: the radius of part <paramref name="partIndex"/>'s mouth, metres: the reach of a bite round the
+        /// mouth point (<see cref="Local"/>). It is the opening the theatre draws (<c>TheatreMouth2.Measure</c>), so a
+        /// filmed bite and a counted bite agree: <see cref="RadiusShare"/> of the face's smaller half-extent.
+        /// </summary>
+        /// <returns>
+        /// The radius, or 0 when the part has no usable mouth: it is not an eating part, or its face or its mouth
+        /// point's distance from the centre is not above 1e-6 m.
+        /// </returns>
+        /// <remarks>
+        /// The face is the one the point is the centre of, perpendicular to the axis the point lies on (the axis of the
+        /// point's largest component, x before y before z on a tie). A sphere's point is along any direction, so its face
+        /// is its smallest half-extent. Float arithmetic in a fixed order, bit-identical wherever it is asked.
+        /// </remarks>
+        public static float Radius(Phenotype phenotype, int partIndex)
+        {
+            if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
+            if (partIndex < 0 || partIndex >= phenotype.PartCount) return 0f;
+
+            PhenotypePart part = phenotype.Parts[partIndex];
+            if (!IsEatingPart(part)) return 0f;
+
+            float hx = Math.Abs(part.HalfExtents.X), hy = Math.Abs(part.HalfExtents.Y), hz = Math.Abs(part.HalfExtents.Z);
+
+            Float3 point = Local(phenotype, partIndex);
+            float length = point.Magnitude;
+
+            float face;
+            if (part.ShapeId == ShapeIds.Sphere)
+            {
+                face = Math.Min(hx, Math.Min(hy, hz));
+            }
+            else
+            {
+                float ax = Math.Abs(point.X), ay = Math.Abs(point.Y), az = Math.Abs(point.Z);
+                if (ax >= ay && ax >= az) face = Math.Min(hy, hz);
+                else if (ay >= az) face = Math.Min(hx, hz);
+                else face = Math.Min(hx, hy);
+            }
+
+            if (!(face > 1e-6f) || !(length > 1e-6f)) return 0f;
+
+            return RadiusShare * face;
+        }
+
         /// <summary>
         /// <paramref name="local"/>, a point in a part's own frame, in the frame the part's pose
         /// is given in: <c>position + rotation * local</c>.

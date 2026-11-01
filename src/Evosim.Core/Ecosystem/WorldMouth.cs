@@ -379,6 +379,10 @@ namespace Evosim.Core
             // D226: the dial on a mouth's blow, read once a pass. It is 1 unless contact eating is on.
             float biteScale = Config.BiteDamageScale;
 
+            // D275: a mouth's blow lands only where its mouth point touches. Read once a pass; off, the loop below is
+            // the one every recorded world ran and the contact's mouth fields are never read.
+            bool needsMouth = Config.BiteNeedsMouth;
+
             // D220: a contact's ids are looked up in the living and the remains together. A remains part is wounded
             // and bitten exactly as a living part is.
             if (bitesFeed) for (int i = 0; i < _remains.Count; i++) _byId[_remains[i].Id] = _remains[i];
@@ -405,6 +409,20 @@ namespace Evosim.Core
                 // Remains feel nothing: they have no brain to read the record.
                 if (!a.IsRemains) NoteContact(a, touch.PartA);
                 if (!b.IsRemains) NoteContact(b, touch.PartB);
+
+                // D275: the same two directions, with a mouth's blow ruled on the farm's measure.
+                if (needsMouth)
+                {
+                    StrikeNeedingMouth(
+                        a, touch.PartA, b, touch.PartB, touch.MouthRatioA, touch.MouthLinkA, touch.MouthTargetA,
+                        seconds, biteScale, bitesFeed);
+
+                    StrikeNeedingMouth(
+                        b, touch.PartB, a, touch.PartA, touch.MouthRatioB, touch.MouthLinkB, touch.MouthTargetB,
+                        seconds, biteScale, bitesFeed);
+
+                    continue;
+                }
 
                 // D226: with the dial at 1 the damage handed to Wound is DamageOf's own expression, as it always was.
                 float blowOnB = DamageOf(hittingA, hittingB, seconds);
@@ -440,6 +458,83 @@ namespace Evosim.Core
 
             // D219: every offer of the pass, settled in the order the wounds were made.
             if (bitesFeed) SettleBites();
+        }
+
+        /// <summary>
+        /// D275: one direction of a contact with <see cref="RunConfig.BiteNeedsMouth"/> on, <paramref name="attacker"/>'s
+        /// blows on <paramref name="victim"/>. Two kinds of blow can come out of one side.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The mouth's blow</b> lands when the farm measured one of the attacker's mouths within one radius of one of
+        /// the victim's parts (<paramref name="mouthRatio"/> at most 1, a finite measure; a NaN is not measured and is
+        /// out of reach): then it is that mouth's blow on that part, not the census pair's, whatever part the census
+        /// named. Otherwise, if the census pair's attacking part is an eating part, its blow is refused: nothing is
+        /// wounded, offered or recorded, and one refusal is counted if it would have done damage. Remains never bite.
+        /// </para>
+        /// <para>
+        /// <b>Any other blow</b> (a claw's, the census part carrying no intake, or a remains part's) is the census
+        /// pair's and lands as it always has.
+        /// </para>
+        /// </remarks>
+        private void StrikeNeedingMouth(
+            Organism attacker, int censusPartA, Organism victim, int censusPartV, float mouthRatio, int mouthLink,
+            int mouthTarget, float seconds, float biteScale, bool bitesFeed)
+        {
+            IReadOnlyList<PhenotypePart> partsX = attacker.Phenotype.Parts;
+            IReadOnlyList<PhenotypePart> partsY = victim.Phenotype.Parts;
+
+            PhenotypePart census = partsX[censusPartA];
+            bool censusIsMouth = census.Intake > 0f && !attacker.IsRemains;
+
+            // The ratio is tested as "not at most 1" so that a NaN refuses.
+            bool reaches =
+                !attacker.IsRemains &&
+                mouthLink >= 0 && mouthLink < partsX.Count &&
+                mouthTarget >= 0 && mouthTarget < partsY.Count &&
+                mouthRatio <= 1f &&
+                partsX[mouthLink].Intake > 0f;
+
+            if (!censusIsMouth)
+            {
+                // A claw's blow, or a remains part's: the census pair's, as it has always been.
+                Blow(attacker, censusPartA, census, victim, censusPartV, partsY[censusPartV], seconds, biteScale, bitesFeed);
+            }
+
+            if (reaches)
+            {
+                Blow(
+                    attacker, mouthLink, partsX[mouthLink], victim, mouthTarget, partsY[mouthTarget],
+                    seconds, biteScale, bitesFeed);
+            }
+            else if (censusIsMouth)
+            {
+                float refused = DamageOf(census, partsY[censusPartV], seconds);
+                if (biteScale != 1f) refused *= biteScale;
+                if (refused > 0f) MouthBlowsRefused++;
+            }
+        }
+
+        /// <summary>
+        /// One blow of <paramref name="attacker"/>'s part <paramref name="partX"/> on <paramref name="victim"/>'s part
+        /// <paramref name="partY"/>: damage, wound, the mouth's count and the bite it offers. The expressions of
+        /// <see cref="ApplyDamage"/>'s own pair of blows, for a pair the rule of D275 chose.
+        /// </summary>
+        private void Blow(
+            Organism attacker, int partX, PhenotypePart hitting, Organism victim, int partY, PhenotypePart struck,
+            float seconds, float biteScale, bool bitesFeed)
+        {
+            float blow = DamageOf(hitting, struck, seconds);
+            if (biteScale != 1f && hitting.Intake > 0f && !attacker.IsRemains) blow *= biteScale;
+
+            bool mouth = blow > 0f && hitting.Intake > 0f && !attacker.IsRemains;
+            float health0 = mouth ? HealthOf(victim, partY) : 0f;
+
+            float took = Wound(victim, partY, struck, blow, attacker.Id, partX);
+
+            if (mouth) CountMouthBlow(health0, victim, partY);
+
+            if (bitesFeed) OfferBite(attacker, partX, hitting, victim, partY, took, seconds);
         }
 
         /// <summary>A part's health as <see cref="Wound"/> will find it: a body with no health array is whole.</summary>

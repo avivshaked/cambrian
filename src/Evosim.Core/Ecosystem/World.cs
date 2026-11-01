@@ -3176,6 +3176,26 @@ namespace Evosim.Core
                     nameof(config));
             }
 
+            if (config.BiteNeedsMouth && !config.ContactEating)
+            {
+                throw new ArgumentException(
+                    "BiteNeedsMouth is on and ContactEating is off. The rule gates a mouth's blow where bites wound " +
+                    "and feed by contact, so without contact eating there is no bite for it to gate; a header " +
+                    "naming it would describe a world the run did not have (D275).",
+                    nameof(config));
+            }
+
+            // D275: the gap is measured on the true shape's cores, which the solver builds only on the true shapes.
+            if (config.BiteNeedsMouth &&
+                config.ContactShape != ContactShapeForm.TrueShape && config.ContactShape != ContactShapeForm.TrueShapeAtPoint)
+            {
+                throw new ArgumentException(
+                    "BiteNeedsMouth is on and ContactShape is " + config.ContactShape + ". The mouth's reach is the " +
+                    "gap from its point to the bitten part's true-shape core, and the solver builds no cores below " +
+                    "the true shape; a header naming it would describe a world the run did not have (D275).",
+                    nameof(config));
+            }
+
             // D129 adds the corpses to D116's lottery as a mouth's food, so it has no lottery to
             // join without D116, no corpse to read unless corpses are objects, and no mouth that
             // could eat one without a reach. Each refused rather than ignored, for the same reason.

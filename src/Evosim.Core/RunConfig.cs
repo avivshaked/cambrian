@@ -1784,6 +1784,20 @@ namespace Evosim.Core
         public bool DeathRowIncome { get; set; }
 
         /// <summary>
+        /// D275: a bite needs the mouth. A mouth's blow (its attacking part carries intake and its attacker is not
+        /// remains) wounds and feeds only where the mouth point (D213, the middle of the eating part's free end) lies
+        /// within one mouth radius of the bitten part's true-shape surface (<c>MouthPoint.Radius</c>). With the switch
+        /// on, the farm measures each eating part's mouth against every part of the other body, and the side's blow is
+        /// the nearest mouth's on the nearest part, not the census pair's; a side whose nearest mouth is out of reach
+        /// has its blow refused and counted in <see cref="World.MouthBlowsRefused"/>. A claw's blow and every blow
+        /// from remains are unchanged. Off, the default, nothing here is computed or read and every recorded world is
+        /// the bytes it was. Refused on without <see cref="ContactEating"/> and unless <see cref="ContactShape"/> is
+        /// a true shape. <c>EVOSIM_BITE_NEEDS_MOUTH</c>.
+        /// </summary>
+        [Tunable("mouth")]
+        public bool BiteNeedsMouth { get; set; }
+
+        /// <summary>
         /// Upkeep per unit of <see cref="MorphNode.Protection"/> per square metre, watts — rule 7.
         /// See <see cref="AttackWattsPerUnit"/>; the ledger screen asks that a cuticle at a leaf's
         /// cap cost more than a tenth of the leaf's income, so leaves do not armour for free.
