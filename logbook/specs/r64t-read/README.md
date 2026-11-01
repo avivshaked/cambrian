@@ -67,10 +67,14 @@ hand-over of the true-shape census to the mouth shows no fault at this scale.
 
 ## What it does not say yet
 
-- **The touch at the kill is being measured.** The pre-registration's last falsifier needs the part-surface gap at
-  measured kills under true shape: a gap above 0.05 m would mean the card's census does not follow its narrowphase. A host
-  replay of a card run parts from it within seconds of a checkpoint, so c8 measures the card's own kill rows on the
-  host's state in the first seconds after each checkpoint. Its first window, at 19,500 s on 6202, found 23 of 26 card kills
-  touching and 3 the host did not make, one of them 0.555 m apart. That is a lead and not yet a reading.
+- **The card bites at a distance under true shape, rarely, and the cause is found.** The pre-registration's last
+  falsifier fired. Measured on host replays in the first seconds after each checkpoint (`scratch/killgap/`), 220 of the
+  232 recorded kills that could be measured touch, the largest gap 0.0002 m. Of the 12 kills only the card made, six were
+  0.10 to 0.56 m apart. A card resume of
+  `r64t-t-6203` from 22,500 s with a census dump (branch `card-dump`, `9b457e6c`; `scratch/card-dump/`) reproduced one
+  of them, 66874 on 70081 at 22,500.5 s. The bookkeeping was clean, and the card's own true-shape test called the pair
+  touching: its single-precision GJK ended "origin inside" at pass 3, where the host finds the cores 0.41 m apart. Both cores
+  are flat, zero along one axis. That a near-degenerate simplex fools the float sign tests is an inference, not yet
+  checked against the same inputs on the host.
 - **Nothing has been seen in the theatre.** The worlds have not been drawn.
 - **6202's pace ratio crosses groups.** The spheres world on 6202 ran in a five-world group on the earlier build.
