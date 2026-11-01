@@ -83,7 +83,11 @@ The root file's rules still apply. The entries below were moved word for word, s
   the checkpoint on: `gpu-accept` compares from line 1, and the stats' `harnessBodySteps` and `fluidLinkSteps`
   count from the process's start, so both differ in a resume that matches. It runs at group 4 whatever `-Group` says, so the group of 32 is checked in the card run.
   A resume's pass is
-  not a founding's. The card engine also refuses a still current (speed 0), whose stream tables are never
+  not a founding's. **A resume repeats a card run only on the card.** A film window (`--film-window`) steps on
+  the host, and on 2026-11-01 a host window of `r65-c-6202`, from its 22,500 s checkpoint on the run's own
+  build (no source hash differing), parted from the card's run at the first report row, 22,510 s, and the
+  bites the lineage records at 22,819 s did not happen in it. So a film of a card run is a cousin, and an
+  exact moment from a card run cannot be filmed until the card can record a window. The card engine also refuses a still current (speed 0), whose stream tables are never
   built.
 - **A card run cut by its wall ends at the end of a block** (`077e61c2` on `r58-runner`, 2026-10-10). The
   card steps a whole solver block on a block's first step, so the wall nearly always falls inside one. Before
