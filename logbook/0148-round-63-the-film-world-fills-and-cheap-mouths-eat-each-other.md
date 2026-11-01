@@ -34,11 +34,12 @@ The bloom screen, r63b, ran eight worlds on 2026-10-28: four arms on two seeds, 
 the blooms alone, C the blooms and the far smell, and D added fat, tissue that lets a body store more reserve (D247).
 Islands drew periods of 2,500 to 6,000 s.
 
-No arm passed all three gates on both seeds. Most survival failures were one dip in grazer numbers between 9,000 s and
-12,000 s, after which grazers grew to 75 to 130. The bloom barely reached the food. The leaves on an island were meant
-to follow its influx at a correlation of at least 0.5, and they followed it at 0.1 to 0.4. Fat's arm never held 30
-grazers in either world. Arm A's dip, the coordinator found, came from the energy sense, an input that tells a brain
-how full its body's reserve is (D245). It cut births there by about a third.
+The screen had three gates: grazers survive, the bloom reaches their food, and grazers evolve. No arm passed all three
+on both seeds. Most survival failures were one dip in grazer numbers between 9,000 s and 12,000 s, after which grazers
+grew to 75 to 130. The bloom barely reached the food. The leaves on an island were meant to follow its influx at a
+correlation of at least 0.5, and they followed it at 0.1 to 0.4. Fat's arm never held 30 grazers in either world. Arm
+A's dip, the coordinator found, came from the energy sense, an input that tells a brain how full its body's reserve is
+(D245). It cut births there by about a third. It was kept anyway, because fat had been built for it to read (D256).
 
 The owner ruled the next day that the rerun would judge survival from 12,000 s, drop fat, and keep the energy sense
 (D256). The rerun, `r63c`, slowed the blooms to periods of 5,000 to 10,000 s and ran B and C again on 2026-10-29
@@ -67,10 +68,10 @@ and the shape genes had barely moved from where they entered. Mutation alone cou
 ![r63s on seed 6203 at 24,000 s, from the side](images/r63s/r63s-on-6203-t24000-recon-side.png)
 
 The side view shows the whole square at 24,000 s, reconstructed from the run's saved poses. Green markers are bodies
-with photosynthetic tissue, the leaves, and orange markers bodies with absorptive tissue. The life of the world is a
-thin slab from the surface down to about 12 m, over the islands, with nothing near the bed. The centre island carries
-a dense orange crowd. Between the crowds the water thins but does not empty, a point the read makes too: from 12,000 s
-to 24,000 s each crowd grows and spreads.
+with photosynthetic tissue, the leaves, and orange markers bodies with absorptive tissue, the eaters. The life of the
+world is a thin slab from the surface down to about 12 m, over the islands, with nothing near the bed. The centre
+island carries a dense orange crowd. Between the crowds the water thins but does not empty, a point the read makes
+too: from 12,000 s to 24,000 s each crowd grows and spreads.
 
 ## The film's world ran on, and filled until it stopped
 
@@ -103,9 +104,10 @@ not match to a genome or a position.
 
 The other gates passed: grazers survived in all three worlds, and they evolved. By the end, grazers' body mass in two
 worlds had roughly doubled from the founders' mean, and in all three their number of parts had shifted by more than
-one. Grazer crowds followed their island's bloom even where the leaf totals did not, on 6 or 7 of 11 islands, lagging
-it by about 550 to 2,300 s. Crossings between islands came to 250 to 551 a world, rising in the later windows. In seed
-6202 the grazers fell to a third or a half of their peak six times, and recovered each time.
+one. Grazer crowds followed their island's bloom even where the leaf totals did not. They did so on 6 or 7 of the 11
+islands this read counts, where the leaf figures above count eight. The crowds lagged the bloom by about 550 to 2,300
+s. Crossings between islands came to 250 to 551 a world, rising in the later windows. In seed 6202 the grazers fell to
+a third or a half of their peak six times, and recovered each time.
 
 The crowd also slowed the machine. The step time grows in a straight line with the number of bodies
 (`logbook/specs/slowdown/`). With three worlds in a group, the card falls below real time at about 16,000 bodies. From
@@ -140,8 +142,9 @@ of one. What killed a newborn was its upkeep, and a cheap mouth stretched its ru
 Cheap mouths had a second effect. In B, 57% of grazer deaths were kills by other grazers, against 21% in the control.
 Close kin made up 16% of those kills. A parent ate its child in 7.8% of them, a sibling a sibling in 6.2%, and a child
 its parent in 2.1%. A mouth reads only the type of tissue it touches, its joules, and whether it is alive. Nothing in
-the world tells kin from stranger. And the source of a grazer's bite income moved. Leaves gave 0.68 of it in the
-control and 0.45 in B, and other living bodies gave 0.22 and 0.49. Cheap mouths had made B's grazers half predators.
+the world tells kin from stranger. And the source of a grazer's bite income moved. By r63g's read at 24,000 s, leaves
+gave 0.68 of it in the control and 0.45 in B. Other living bodies gave 0.22 and 0.49. Cheap mouths had made B's
+grazers half predators.
 
 ![A flat yellow eater from r63g-b-6202, drawn two ways](images/r63/r63g-b-6202-t22518-skin-pair.png)
 
@@ -166,8 +169,9 @@ three dense crowds, with clear water between the first and the second. In D the 
 places. Pale bodies and small fragments fall through D's water and lie on the bed, where the control shows almost
 none. The drawing holds 9,052 bodies in the control and 3,771 in D.
 
-The table shows where grazers' bite income came from over the last 3,000 s. Look at the first column: under 0.5, a
-grazer lives more on animals than on leaves.
+The table shows where grazers' bite income came from over the last 3,000 s alone, by the later read, so its shares
+differ a little from those above. Look at the Living leaves column: under 0.5, a grazer lives more on animals than on
+leaves.
 
 | World | Living leaves | Other living bodies | Remains |
 |---|---|---|---|

@@ -73,7 +73,7 @@ half-lives of 30 s and 120 s. The killers' share still fell, in five worlds of s
 0.090, was no higher than the controls' at 500 s. A pair of worlds given half as much matter again at the islands ran
 into the population ceiling of 25,000 bodies before 24,000 s, which ends a run.
 
-## Eating by contact cut a grazer's income tenfold
+## Eating by contact cut a kill's kept joules tenfold
 
 That evening the owner ruled the change that shapes everything since (D219 to D222). A mouth eats only what it
 touches. A biting cell feeds on the body it wounds as it wounds it, at most at the biting part's intake rate. No
@@ -81,9 +81,9 @@ corpse is made. A body that dies uneaten stays as limp remains, which can be eat
 closes. D222 kept D215's three tests and changed the third to ask that most of a grazer's intake be living food.
 
 The screen of that rule, `r62ce`, ran on 2026-10-24 (`logbook/specs/r62ce-read/README.md`). Its grazers killed leaves
-about as often as the round's had. A kill now came with 24 to 31 J kept, against 398 to 434 J under the corpse rule.
-Grazers kept 0.12 to 0.39 W against an upkeep of 0.908 W. In three worlds over 24,000 s, 1 to 5 grazers were bred,
-against 711 to 4,727 in the controls. The leaves, with nothing cropping them, more than doubled.
+about as often as the round's had. Over the whole run a kill now came with 24 to 31 J kept, against 398 to 434 J under
+the corpse rule. Grazers kept 0.12 to 0.39 W against an upkeep of 0.908 W. In three worlds over 24,000 s, 1 to 5
+grazers were bred, against 711 to 4,727 in the controls. The leaves, with nothing cropping them, more than doubled.
 
 ![r62ce-6202 against r62-h6202 at 22,500 s](images/r62/r62ce-6202-vs-r62-h6202-t22500.png)
 
@@ -96,8 +96,9 @@ their first instant and close cousins after it, because the theatre replays the 
 The owner's direction was to push the eating dials until grazers were overpowered, then roll back, and the owner
 delegated those steps to the coordinator (D223, D224). Three screens followed in two days, each a bigger lever.
 
-The table shows what each did to the kept joules a kill and to a grazer's intake over its upkeep. Look at the last
-column: a guild that pays its way needs 1.
+The table shows what each did to the kept joules a kill and to a grazer's intake over its upkeep. Its figures come
+from the later screens' reads, which measured all five in their own way, so they differ a little from the whole-run
+figures above. A guild that pays its way needs an intake over upkeep of 1.
 
 | Screen | What it changed | Kept joules a kill | Intake over upkeep | Read |
 |---|---|---|---|---|
@@ -122,10 +123,11 @@ that fed several grazers through the 3 m reach, all of it charged to the kill.
 
 The budget (`logbook/specs/grazer-breeding-budget.md`) counted in the owner's terms of a pace of life. A meal takes
 the time to find it plus the time to eat it, and a grazer has to earn two or three breedings in its life. A meal took
-about 100 s, nearly all of it travel, against about 41 s allowed. Eating was some 2,000 times faster than it needed to
-be. A bred grazer was born with 13.5 J and starved at a median of 15.5 s. The owner ruled that night that a mouth must
-touch to graze, and that this would not change (D237). The next day the kill rule was kept as it was, and the 420 J
-bar was retired (D238).
+about 100 s, nearly all of it travel, against about 41 s allowed. A mouth could take in food at about 2,300 W, some
+two thousand times what a grazer needs, so eating was never the slow part. In the world the budget read, a bred grazer
+was born with 13.5 J and starved at a median of 15.5 s. The owner ruled that night that a mouth must touch to graze,
+and that this would not change (D237). The next day the kill rule was kept as it was. The corpse rule's 420 J a kill,
+which the screens had been measured against, was dropped as a target (D238).
 
 The pace-of-life read (`logbook/specs/pace-of-life-read.md`) then compared ways to give a grazer more time. Its
 recommendation was a pace factor k: the number of physics seconds that pass in one world second. At k = 3 a body
@@ -152,7 +154,8 @@ The owner ruled growth a climb (D241). A body grows over time toward adulthood, 
 that reserve is above a threshold the body inherits as a gene. Two growth screens chose the climb's length and the
 gene's starting value: 60 s to adulthood, and a threshold starting at 30 s of the body's own upkeep
 (`logbook/specs/r62gr-read/24000/README.md`, `logbook/specs/r62gr2-read/24000/README.md`). Bred grazers then died at a
-median of 60 to 64 s instead of 26.5 s. The share that never ate fell from about half to about a third.
+median of 60 to 64 s, against 26.5 s in the fast-swimming world without the climb (r62p-t3). The share that never ate
+fell from about half to about a third.
 
 The second pace group asked whether the thrust arm won through speed or through cheap swimming
 (`logbook/specs/r62p2-read/24000-a/README.md`). The answer was speed. One world kept the ordinary push and cut its
@@ -177,10 +180,11 @@ The owner ruled on 2026-10-27 that newborns that stand still are left to selecti
 ## The settings held on three new seeds, and the grazers stayed home
 
 The confirmation round, `r62cf`, ran on 2026-10-27 from 18:04 to 21:01 (`logbook/specs/r62cf-read/24000/README.md`).
-It put the screens' choices on three new seeds. Those were the sixteen-fold push, growth as a 60 s climb, the
-threshold gene starting at 30 s and today's mutation rate. That evening the owner amended D222 for runs aimed at
-grazers (D244). A world must first hold 30 grazers, and a window with fewer is not judged. Every world passed, the
-screen's seed included, at 30 grazers and at 40, and the three new seeds passed on the strict reading too.
+It put the screens' choices, found on seed 6201, on three more seeds, 6202 to 6204. Those were the sixteen-fold push,
+growth as a 60 s climb, the threshold gene starting at 30 s and today's mutation rate. That evening the owner amended
+D222 for runs aimed at grazers (D244). A world must first hold 30 grazers, and a window with fewer is not judged.
+Every world passed at 30 grazers and at 40, the screen's world on 6201 included, so four seeds in all. The three new
+worlds passed on the strict reading too.
 
 | World | Grazers at most | Born share | Best cohort | Chain | Intake over upkeep |
 |---|---|---|---|---|---|

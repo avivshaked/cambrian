@@ -26,14 +26,15 @@ Five worlds were founded on seed 6202 in one card group from 20:23 to 23:26 UTC 
 at a hundredth of their price, and that run was the control. Arm A made every part of an animal ten times as tough and
 every part of a plant a fifth as tough. A plant, here, is any body with a photosynthetic part. Arm B gave newborns 0.8
 of their share of the parent's reserve instead of 0.5. Arm C spread the young over 30 m instead of 5 m. D did all
-three, and E was D with mouths at ten times that price, a tenth of the original. First, with every new switch off, the
-build matched `r63h`'s worlds row for row over 600 s, so the control was this build's world.
+three, and E was D with mouths at a tenth of the original price rather than a hundredth. First, with every new switch
+off, the build matched `r63h`'s worlds row for row over 600 s, so the control was this build's world.
 
 The pre-registration set five marks. Grazers should number twice the control's, and take at least 0.8 of their bite
 income from living plants. Kills should be at most a quarter of grazer deaths. The leaves should be pushed to half the
 film world's but never under 500, and stop growing. A sixth asked whether spreading the young spared kin.
 
-The table gives each arm against each mark. Bold is a pass.
+The table gives each arm against each mark. Bold is a pass. The control is shown for reference and is not judged. Mark
+4 gives the leaves at the end, then the fewest after 3,000 s.
 
 | Mark | Bar | Control | A | B | C | D | E |
 |---|---|---|---|---|---|---|---|
@@ -62,8 +63,9 @@ the mouth's price they were also the fewest, 338, and most died within minutes o
 
 D was the arm the owner had asked to see. Its grazers' mean over each 3,000 s window from 6,000 s ran 88, 196, 242,
 374, 709 and 1,255, doubling every window at the end. Its leaves ended at 0.28 of the film world's and fell in their
-late window. Grazers had been the leaves' largest killer in three of the last four bins. It failed marks 1 and 2 at
-24,000 s only because it had not finished rising.
+late window. Grazers had been the leaves' largest killer in three of the last four bins. It failed mark 1 at 24,000 s
+because its grazers had not finished rising (inference). Mark 2, the leaf share of bite income, it failed on its own
+account.
 
 ![Arm A from the side at 24,000 s](images/r64/r64-a-6202-t24000-recon-side.png)
 
@@ -86,16 +88,18 @@ That is not what came. D's grazers passed the boom mark at 33,000 s and reached 
 42,000-45,000 s, 2.7 times the control's. The leaves never fell below 1,686. They swung on a period of 6,000 s, this
 world's year, and each peak was higher than the last: 6,373, then 7,322, then 8,165 leaves. The grazers' numbers
 wobbled in time with the leaves', with no lag. A grazer-and-plant cycle would show the grazers lagging the leaves, so
-the swing is the seasons and not a chase (inference, at a resolution of 3,000 s). D passed marks 1, 3 and 4 of the
-step, and failed mark 2 at 0.58 of bite income from leaves.
+the swing is the seasons and not a chase (inference, at a resolution of 3,000 s). Step 2 had four marks of its own:
+grazers boom, grazers graze, the plants live, and grazers and leaves balance. D passed the boom, the plants and the
+balance, and failed grazing at 0.58 of bite income from leaves.
 
 ![Arm D from above at 46,500 s](images/r64/r64s2-d-6202-t46500-recon-top.png)
 
 The picture shows D from above at 46,500 s, its last checkpoint of the step, drawn the same way. The leaves cover most
 of the square loosely. They make one mass and a separate crowd at top right, the shape the film world had reached by
 48,000 s (logbook/0148), but much thinner. Pale squares lie mixed all through the green, and a few lie out in the open
-water. The theatre lane reads them as mostly grazers, from their colour and the run's counts, and did not check them
-body by body. The frame draws 6,475 bodies and leaves out 1,280.
+water. So the top view seems to draw the eaters pale where the side view draws them orange (inference). The theatre
+lane reads them as mostly grazers, from their colour and the run's counts, and did not check them body by body. The
+frame draws 6,475 bodies and leaves out 1,280.
 
 ![Grazer 202814 of arm D, a cousin of the run at 46,500 s and 2 s later](images/r64/r64s2-d-6202-t46500-cousin-grazer-202814-pair.png)
 
@@ -107,12 +111,13 @@ swimmers and leaves fill the water behind. The theatre lane chose it from the po
 within 1.5 m of it at that second.
 
 The step had a second story. At 02:44:59 UTC on 2026-10-31 the graphics driver logged an error. Thirteen seconds later
-the card group's watch stopped the run, as it is built to. D's last checkpoint was at 46,500 s. The owner ruled that
-card runs resume only after the theatre had rendered once alone, to see whether its shader was the cause. After that
-render, step 3 ran D's last 1,500 s twice, from that checkpoint, as two worlds in one group
-(`logbook/specs/r64-prereg/step3.md`). Both reached 48,000 s that morning, and the coordinator reported the two copies
-equal row for row. No read of the step is committed yet. It is a cheap check I like: a world run beside itself, so
-that a card computing two identical worlds differently would show it at once.
+the card group's watch, a script that stops a run when the driver errs, stopped it, as it is built to. D's last
+checkpoint was at 46,500 s. The owner ruled that card runs resume only after the theatre had rendered once alone, to
+see whether its drawing code, which runs on the same card, was the cause. After that render, step 3 ran D's last 1,500
+s twice, from that checkpoint, as two worlds in one group (`logbook/specs/r64-prereg/step3.md`). Both reached 48,000 s
+that morning, and the coordinator reported the two copies equal row for row. No read of the step is committed yet. It
+is a cheap check I like: a world run beside itself, so that a card computing two identical worlds differently would
+show it at once.
 
 ## What it changes
 

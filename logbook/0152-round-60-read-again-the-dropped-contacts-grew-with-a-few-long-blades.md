@@ -5,18 +5,19 @@ each world's largest part (`logbook/specs/r61-kelp-divergence/census/`), the spa
 (`logbook/specs/r60-read/overflow-spans.txt`) and round 60's read. No run was read anew for this entry. Every figure
 is measured unless it says otherwise.*
 
-[Logbook 0143](0143-the-crowds-leave-the-islands.md) told how round 60's graphics card dropped contacts. In a dense
-crowd the card's list of parts that might touch filled up, and what came past it was lost. Seed 6002 lost 6.26 million
-candidates and seed 6003 lost 19,008, so the clause that the card holds (B2) failed. The entry put it down to the
-crowd. On 17 October round 61 found kelp blades: leaves whose genome repeats a part that doubles in length with each
-copy. A census then found one such blade in round 60, in seed 6002, and the handoff of the day asked for round 60 to
-be read again with it (`logbook/specs/handoff-archive-2026-10-25.md`).
+This entry goes back two weeks, before rounds 62 to 64, to read round 60 again. [Logbook
+0143](0143-the-crowds-leave-the-islands.md) told how round 60's graphics card dropped contacts. In a dense crowd the
+card's list of parts that might touch filled up, and what came past it was lost. Seed 6002 lost 6.26 million
+candidates and seed 6003 lost 19,008, so the clause that the card keeps every contact (B2) failed. The entry put it
+down to the crowd. On 17 October round 61 found kelp blades: leaves whose genome repeats a part that doubles in length
+with each copy. A census then found one such blade in round 60, in seed 6002, and the handoff of the day asked for
+round 60 to be read again with it (`logbook/specs/handoff-archive-2026-10-25.md`).
 
 Read again, the crowd started the drops, and the blades most likely made nearly all of them. Seed 6002's first drops
 came while no part in the world reached past a metre. But seed 6003 carried a larger crowd and dropped about 300 times
 fewer. What seed 6002 had that 6003 lacked was a few dozen blades reaching past 2 m, and one nearly 15 m long. None of
-round 60's blades blew up. The B2 verdict stands, with its cause now shared between the crowd and the blades in a
-split that is an inference.
+round 60's blades blew up, spinning out of control as round 61's did. The B2 verdict stands, with its cause now shared
+between the crowd and the blades in a split that is an inference.
 
 ## What a kelp blade is
 
@@ -66,18 +67,19 @@ spans](specs/r60-read/overflow-spans.txt)). Nothing dropped before 31,500 s. The
 and 520 more by 36,000 s. In those spans the largest reach in the world was 0.78 to 0.95 m, and nothing passed 2 m. So
 the first drops came from the crowd alone, as 0143 said.
 
-The other 6,257,353 came after 36,000 s, while the blades grew. A rerun of the last span, 46,500 to 48,000 s, at the
-round's cap dropped 2,491,424. That is about two fifths of the whole run's, in the 1,500 s when the 7.36 m blade was
-alive. The rerun is not the round itself: a resume past a drop parts from the run at its first second, because which
-candidates a full list keeps is a race. Its count is a close guide to the round's, and is not the round's own. The
-spans between 36,000 and 46,500 s were never read one by one, so how closely the drops followed the blades' growth
-there is unknown.
+The other 6,257,353 came after 36,000 s, while the blades grew. A rerun of the last span, 46,500 to 48,000 s, with the
+list's capacity set as the round had it, dropped 2,491,424. That is about two fifths of the whole run's, in the 1,500
+s when the 7.36 m blade was alive. The rerun is not the round itself. Which candidates a full list keeps depends on
+which thread writes first, a race. So a resume past a drop parts from the run at its first second. Its count is a
+close guide to the round's, and is not the round's own. The spans between 36,000 and 46,500 s were never read one by
+one, so how closely the drops followed the blades' growth there is unknown.
 
-The span read gives the likely link. A query met a neighbour once for every grid cell the two shared, and those
-repeats filled the list. A part 15 m long lies across many cells, so each body near it shared many cells with it. My
-inference is that a few blades flooded the lists of everything around them, which fits a few dozen long parts making
-millions of drops. Nobody counted drops part by part. The fix the owner consented to (D193) refuses a repeat and keeps
-the lowest distinct entries past the cap. With it the same last span dropped nothing, blade and all.
+The span read gives the likely link. A query met a neighbour once for every cell of the contact search's grid the two
+shared, and those repeats filled the list. A part 15 m long lies across many cells, so each body near it shared many
+cells with it. My inference is that a few blades flooded the lists of everything around them, which fits a few dozen
+long parts making millions of drops. Nobody counted drops part by part. The fix the owner consented to (D193) refuses
+a repeat. When the list is full, it keeps the lowest-numbered distinct entries, so the choice no longer depends on
+timing. With it the same last span dropped nothing, blade and all.
 
 ## The blades did not blow up in round 60
 
@@ -91,8 +93,8 @@ m. Whether the number of parts, a part's length or something else decides a blow
 
 B2 still fails, and the counts stand, but the reason changes. The crowd started the drops in seed 6002, and the long
 blades that grew only in that seed most likely made nearly all of them. That second half rests on two seeds and on
-timing, so it stays an inference. Seed 6002's years 7 and 8, where G1 and M7 rest, are still one realisation that no
-rerun can reproduce (0143).
+timing, so it stays an inference. Seed 6002's years 7 and 8, on which two of the round's clauses (G1 and M7) were
+judged, are still one realisation that no rerun can reproduce (0143).
 
 Neither can drop contacts again as it did. The card's list has refused repeats since round 61 (D193), and repeated
 parts stop compounding from round 62 (D196). Nothing in this re-read touches the round's main finding, that the crowds
@@ -102,7 +104,7 @@ Two questions stay unread, and both are about the living. A blade touches as a b
 last 4,500 s each long blade shoved bodies metres from its own surface. Whether that changed who lived there was never
 measured. And the census shows leaves in seeds 6002 and 6003 growing thin plates at the thickness floor, with reaches
 of 1.5 to 7 m. A thin plate gathers light over a large area for little matter. Whether that helped leaves live in the
-desert between the islands is a question no read has asked (inference).
+empty water between round 60's islands (0142) is a question no read has asked (inference).
 
 0143 blamed the crowd, and the spans bear it out on the first drops. The two seeds side by side suggest that the
 blades made the rest.
