@@ -1398,7 +1398,13 @@ namespace Evosim.Farm.Tests
         /// <b>And again with the intake's origin books (state version 20), and neither trajectory did.</b>
         /// Each corpse writes its killer and the world six totals and a second. The same build writing
         /// version 19 gives the version-19 hashes above exactly, so only the new fields moved them. The
-        /// folded hashes moved to the ones pinned here.
+        /// folded hashes moved to <c>e378635f9aaa3bc0db1183467fd670b0</c> and <c>2a1747785fe170a7bb2f8cb85a1ac505</c>.
+        /// </para>
+        /// <para>
+        /// <b>And again with the remains' exposure (state version 21), and neither trajectory did.</b>
+        /// Each organism writes whether it holds an exposure array and an up vector, and then their floats.
+        /// The same build writing version 20 gives the version-20 hashes above exactly. The folded hashes
+        /// moved to the ones pinned here.
         /// </para>
         /// </remarks>
         /// <param name="world">
@@ -1410,8 +1416,8 @@ namespace Evosim.Farm.Tests
         /// <param name="pinned">The solver's digests folded with the world's states.</param>
         /// <param name="trajectory">The solver's digests alone.</param>
         [Theory]
-        [InlineData("touching", "e378635f9aaa3bc0db1183467fd670b0", "1de02f3f7ab7cd2fd2b5b4b83922d153")]
-        [InlineData("modules", "2a1747785fe170a7bb2f8cb85a1ac505", "c2072f14f54654181d54d218124c4dd3")]
+        [InlineData("touching", "3fb6fc316662bbf7001df03a67349c78", "1de02f3f7ab7cd2fd2b5b4b83922d153")]
+        [InlineData("modules", "e12ab0ba2709c478f3de43a136d9a46f", "c2072f14f54654181d54d218124c4dd3")]
         public void AWorldWithNoBiteStepsAsItDidBefore(string world, string pinned, string trajectory)
         {
             bool modules = world == "modules";

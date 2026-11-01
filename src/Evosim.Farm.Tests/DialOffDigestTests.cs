@@ -31,6 +31,11 @@ namespace Evosim.Farm.Tests
     /// frames, body by body; the checkpoint payload (world, then harness) at metabolic steps 60 and 150; and the
     /// solver's own state digest at the end. It is a function of the world and nothing about the machine.
     /// </para>
+    /// <para>
+    /// <b>Moved with the remains' exposure (state version 21).</b> The checkpoint payload gained each organism's
+    /// exposure array and up vector. The same build writing version 20 gives the earlier digest,
+    /// <c>wGvQhSUBzyNyWXwcse328i9SdnA2cR1y0UX9uIEir9Q=</c>, exactly, so only those fields moved it.
+    /// </para>
     /// </remarks>
     [Collection(FarmProcessCollection.Name)]
     public class DialOffDigestTests
@@ -40,7 +45,7 @@ namespace Evosim.Farm.Tests
         public DialOffDigestTests(ITestOutputHelper output) => _out = output;
 
         /// <summary>The digest taken on the tree before this build (see the remarks).</summary>
-        private const string PinnedDigest = "wGvQhSUBzyNyWXwcse328i9SdnA2cR1y0UX9uIEir9Q=";
+        private const string PinnedDigest = "AD5GFVtdNiGfBXn3C35q4fuRDxT2GFAM5WnZfsb6NJ8=";
 
         private static byte[] CheckpointOf(World world, Simulation sim)
         {
