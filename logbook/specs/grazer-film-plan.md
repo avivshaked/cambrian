@@ -119,6 +119,10 @@ blooms several times. It is pre-registered and committed before launch.
 ### G8, the film
 
 - The story-video flow runs from its shot list to its edit, on G7's best seed.
+- A bite can only be seen where the mouth faces the camera, and a close shot looks along a fixed world direction, so a body turned
+  the other way hides its mouth for the whole shot. The shot list chooses seats where the eating mouths face the lens. With
+  `EVOSIM_THEATRE_MOUTH2_BITE` and `EVOSIM_THEATRE_FILM_SUBJECT` set, each frame's `[Theatre] bite frame` line gives the subject's
+  mouth facing, and the close shot's `EVOSIM_THEATRE_FILM_CLOSE_LOOK=mouth` looks into it.
 - Each test render is checked against the last accepted film before the owner sees it.
 - The owner approves the cut.
 
