@@ -75,6 +75,12 @@ namespace Evosim.Farm.Gpu
         internal static double SinR(double a) => Math.Sin(Reduced(a));
         internal static double CosR(double a) => Math.Cos(Reduced(a));
         internal static float TanhF(float a) => a > TanhGuard ? 1f : a < -TanhGuard ? -1f : (float)Math.Tanh(a);
+
+        // The GJK's product (GjkMul) and the volume a tetrahedron needs, as a fraction of its longest edge cubed, to be
+        // believed when it holds the origin (GjkFlat). Double is the solver's arithmetic as it stands: a plain product,
+        // and no tetrahedron is ever too flat to trust.
+        private static Real GjkMul(Real a, Real b) => a * b;
+        private const Real GjkFlat = 0.0;
 ";
 
         private const string SingleHelpers = @"
@@ -97,6 +103,27 @@ namespace Evosim.Farm.Gpu
 
         // Single reduces no angle; the bed counts its angles past the double's guard all the same.
         private const double AngleGuard = 1e9;
+
+        // The GJK's product: an explicitly rounded multiply, never contracted by the card's PTX compiler into a fused
+        // multiply-add with the sum beside it (GpuTransport.MF, logbook/specs/fma-probe), and the plain product on the
+        // CPU accelerator and the host, which .NET never fuses. The support point and the simplex tests then round the
+        // way the host's do, so the held-vertex test (exact equality) sees the vertex it already holds.
+        private static Real GjkMul(Real a, Real b)
+        {
+            if (ILGPU.Runtime.Cuda.CudaAsm.IsSupported)
+            {
+                ILGPU.Runtime.Cuda.CudaAsm.Emit(""mul.rn.f32 %0, %1, %2;"", out float r, a, b);
+                return r;
+            }
+
+            return a * b;
+        }
+
+        // A tetrahedron whose volume is below this fraction of its longest edge cubed is flat to within what a float
+        // triple product can resolve. The triple product (6 V) sums three products of differences that each carry
+        // 2^-24 of relative error, so its noise is some few times 2^-23 of the cube of the longest edge; 2^-18 is 32
+        // times that unit, clear of the noise and far below any tetrahedron that really encloses a point.
+        private const Real GjkFlat = 3.8146973e-6f;
 ";
 
         /// <summary>One precision's source from the two templates' text.</summary>
