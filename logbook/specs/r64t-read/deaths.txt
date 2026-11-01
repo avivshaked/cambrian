@@ -1,0 +1,40 @@
+##### runs/r64-d-6202/2026-10-30-202411-11de0613
+grazers born 7010 grazer deaths 6419
+  starved     3853 0.600  median age 333 s
+  aged        2134 0.332  median age 2353 s
+  eaten        432 0.067  median age 678 s
+kill rows with a grazer victim: {('by grazer', 'part'): 678, ('by grazer', 'root'): 432}
+bodies born 48840 grazers born 7010 kill rows 15713
+kills by grazers 15713 {'other': 14603, 'grazer': 1110}
+grazer-on-grazer kills 1110
+  unrelated             1072 0.966
+##### runs/r64t-t-6202/2026-10-31-235754-2991f19e
+grazers born 6809 grazer deaths 5991
+  starved     3366 0.562  median age 240 s
+  aged        2538 0.424  median age 2326 s
+  eaten         87 0.015  median age 584 s
+kill rows with a grazer victim: {('by grazer', 'part'): 1017, ('by grazer', 'root'): 87}
+bodies born 61171 grazers born 6809 kill rows 10959
+kills by grazers 10959 {'other': 9855, 'grazer': 1104}
+grazer-on-grazer kills 1104
+  unrelated             1086 0.984
+##### runs/r64t-s-6203/2026-10-31-235754-6ef3732d
+grazers born 9685 grazer deaths 9047
+  starved     5245 0.580  median age 206 s
+  aged        2981 0.330  median age 2299 s
+  eaten        821 0.091  median age 524 s
+kill rows with a grazer victim: {('by grazer', 'part'): 1095, ('by grazer', 'root'): 821}
+bodies born 51038 grazers born 9685 kill rows 18200
+kills by grazers 18200 {'other': 16284, 'grazer': 1916}
+grazer-on-grazer kills 1916
+  unrelated             1824 0.952
+##### runs/r64t-t-6203/2026-10-31-235754-2991f19e
+grazers born 13202 grazer deaths 11047
+  starved     6175 0.559  median age 336 s
+  aged        4770 0.432  median age 2662 s
+  eaten        102 0.009  median age 749 s
+kill rows with a grazer victim: {('by grazer', 'part'): 1652, ('by grazer', 'root'): 102}
+bodies born 77567 grazers born 13202 kill rows 25335
+kills by grazers 25335 {'other': 23581, 'grazer': 1754}
+grazer-on-grazer kills 1754
+  unrelated             1728 0.985

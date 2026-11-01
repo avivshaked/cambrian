@@ -24,6 +24,13 @@ The root file's rules still apply. The entries below were moved word for word, s
   changes nothing; a product written as inline `mul.rn.f64` (`CudaAsm.Emit`) is never contracted,
   and with it every pattern tried matched the CPU bit for bit (`logbook/specs/fma-probe/`,
   2026-09-26). A card kernel that must reproduce a CPU number writes every product that way.
+  **The true-shape GJK is written that way** (`GjkMul`, `GjkDot`, `GjkCross`, `GjkTimes` and the other `Gjk*` helpers in
+  `gpu-kernel.template`). `GjkMul` is a `mul.rn.f32` in the single kernel and the plain product in the double one. A fused
+  support point differs from the vertex the simplex holds in its last bits. `GjkHeld`'s exact test then misses it, and the loop
+  adds a near-duplicate fourth vertex. The sign tests of that flat tetrahedron read "origin enclosed", and the census named
+  parts 0.1 to 0.56 m apart as touching. In single, a tetrahedron under `GjkFlat` (2^-18) of its longest edge cubed is never
+  taken as enclosing the origin (`GjkSliver`); the nearest of its four faces is taken. A product added to a `Gjk*` routine goes
+  through `GjkMul`. The callers' arithmetic after the GJK (normal, penetration, contact point) is not written that way.
   **The snow's transport has a second copy on the card** (`EVOSIM_GPU_TRANSPORT`, 2026-09-26).
   `src/Evosim.Farm.Gpu/GpuTransport.cs` transcribes `GridField`'s edge sampling, face assembly,
   outflow bound and three passes, and `CurrentField`'s hoisted potential, in their order and

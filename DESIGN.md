@@ -343,6 +343,46 @@ weather sits at or below the low end of [FDT11]'s range, so the review's inferen
 not the weather, should raise the reserve. None of the ten papers modelled this world, and two disagree
 on which way the weather's run of dull days should move the reserve ([MK07] against [WTV18]).
 
+## 0z. Changelog: review round 8, lifespan and senescence (searched 2026-09-29, filed 2026-10-31)
+
+This round changes no mechanism. Round 8 of the literature review (research §0, Q13) checked
+the sources D128 rests on, which D128 and D130 asked for before the gene's numbers were fixed.
+The owner ruled the values on 2026-09-29 from the round's first pass (logbook/0127). They are a
+repair exponent of 0.5, a mutation chance of 0.08 and founders drawn from 0.5 to 1.5. The
+second pass found the hazard's doubling at a fifth of the base defensible [JON14]. It found two
+mismatches. Between species and within primate genera, longer life comes from later onset and
+lower early mortality rather than a slower rate [PER19 p.3; COL21 p.1, p.3], and D128 stretches
+the rate. One doubling per parent-sized child is also 3 to 25 times the cost measured in birds
+[BBV20 p.6; WIN25 p.3]. No source gives the repair exponent. D132 held the values through rounds
+53 and 54 and records both findings.
+§5A.6c, which still described D038's wear alone, is brought up to D128 as ruled in the same
+change.
+
+## 0z2. Changelog: review round 9, the nursery's curriculum and slow steering brains (searched 2026-09-29, filed 2026-10-31)
+
+This round changes no mechanism. Round 9 of the literature review (research §0, Q14) read the
+twenty papers behind D134's fast nursery, which breeds brains in an easier world under D133's
+score. The literature names the move, environmental complexification, as a scheme apart from
+fitness shaping, and records it working where direct evolution failed. It also records a single
+hand-built ramp failing at the hardest levels, and every embodied success shaping its score as
+well as its world. No paper moved an evolved sensing-and-steering brain from an easier tank to a
+harder one. The papers were read at the passages cited and none in full, so under D134 none is
+cited here. The review's Q14 row carries the citations, and the round's readings went to the
+coordinator as input.
+
+## 0z3. Changelog: review round 10, a second-generation brain (2026-10-31)
+
+This round changes no mechanism. Round 10 of the literature review (research §0, Q15) is the
+round D146 left open on growing networks and on central controllers. It also checks the sources
+D147 named for its founders. When body and brain co-evolve, controllers shared across modules
+beat one central network, which converged early [KGV22 HTML, Results; Discussion; MEC23 abstract].
+D146 copies a parent joint's wiring once, at birth, which this review reads as the per-module rule,
+the one that did not beat central control. A body's own curvature feedback can make a swimming gait near resonance without a
+central oscillator [GAM15 HTML], so D146's fourth ruling has precedent. Evolved klinotaxis circuits
+take the change in concentration from their sensory cells, not from network memory [IL10 HTML], and
+the brain reads scent as a level. NEAT [SM02] and FS-NEAT [WSSMK05] were read at the abstract only,
+and LeCun's initialisation was not read at source.
+
 ## 0w. Changelog — the aquarium, the streams, and water that stays uniform (2026-09-11 and 12, D089, D090, the Astra review)
 
 The container is a setting (`RunConfig.WorldShape`, `EVOSIM_SHAPE`, default `Box`). A `Tank`
@@ -2010,14 +2050,44 @@ population strips the larder exactly as fast while feeding itself worse, and the
 the world through the transfer loss §5A.3 already accounts for. Scaling the draw instead would make
 ageing a form of restraint — a world of the old would deplete *less* than a world of the young.
 
-**Linear, and not heritable.** Linear so the doubling time means something plain. Not heritable
+~~**Linear, and not heritable.** Linear so the doubling time means something plain. Not heritable
 because nothing here costs anything to repair, so an evolvable senescence rate would go straight to
 zero and buy immortality free — a §11.2 free lunch arriving through the ledger. Making it evolvable
 needs the disposable-soma trade-off, where repair competes with reproduction for the same joules,
-and that is a larger design than a knob.
+and that is a larger design than a knob.~~ ↻ **Superseded while D128's hazard is on, 2026-09-27.**
+The disposable-soma trade-off this paragraph asked for is D128's repair price, and the lifespan
+became heritable from round 52 (D130). The wear above is still built. A world that runs both is
+refused, since the two are rival accounts of ageing and the wear burns the reserve a corpse keeps.
 
 ⚠ **Unmeasured (§5A.10), and default 0.** Zero is bit-identical to the world every earlier number
 was measured in — the property D031 lost and D035 and D037 both kept deliberately.
+
+**Since round 51 death by age is a rising hazard instead (D128).** A body's chance of dying in a
+step rises with its age as Gompertz's law has it. The hazard doubles over a fixed fraction of the
+body's own base, `AgeHazardDoublingFraction`, 0.2. So every body's curve has one shape, stretched
+by its base, `AgeHazardBaseSeconds`. With a base of 3,000 s, deaths by age spread from about 1,500
+to 4,600 s, 10% to 99%. While the hazard is on, the wear above is off. An old body stays productive
+and dies holding its reserve, which goes to its corpse.
+
+**Births and wounds age a body (D128, the owner's additions).** Each birth advances the parent's
+clock by `AgeingPerBirth` doublings for a child the parent's size, scaled by the child's tissue
+over the parent's. Each destroyed part advances its body's clock by `AgeingPerWound` doublings,
+scaled by the part's share of the body. Under Gompertz's law an advance of the clock multiplies
+the hazard.
+
+**The base is a gene, and a longer life costs repair (D128, D130).** From round 52 the base is
+scaled by each body's lifespan gene. A child's gene changes with a chance of 0.08, and founders
+draw it evenly from 0.5 to 1.5 (logbook/0127). Upkeep is multiplied by the gene to the power
+`AgeRepairExponent`, 0.5, so a body at 2 pays 1.41 times what a body at 1 pays. This is Kirkwood's
+disposable soma: repair competes with offspring for the same joules, and a free gene would
+evolve to immortality. Round 64 still runs these values: a base of 3,000 s, a doubling fraction
+of 0.2, one doubling per birth and per wound, and an exponent of 0.5.
+
+⚠ **Two mismatches with the evidence are held, not ruled (D132).** Review round 8 found that the
+gene stretches the rate, where the evidence puts lifespan variation in onset and early mortality
+[PER19 p.3; COL21 p.1, p.3]. It found the birth push 3 to 25 times the cost measured in birds
+[BBV20 p.6; WIN25 p.3]. No source gives the repair exponent. Every value here is a knob, off at
+its default.
 
 ### 5A.6d Margin, not break-even — what makes a trade viable
 

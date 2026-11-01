@@ -97,6 +97,15 @@ of the square loosely. They make one mass and a separate crowd at top right, the
 water. The theatre lane reads them as mostly grazers, from their colour and the run's counts, and did not check them
 body by body. The frame draws 6,475 bodies and leaves out 1,280.
 
+![Grazer 202814 of arm D, a cousin of the run at 46,500 s and 2 s later](images/r64/r64s2-d-6202-t46500-cousin-grazer-202814-pair.png)
+
+The theatre lane also restored D's world from that checkpoint, stepped it on and filmed one grazer close, two seconds
+apart. The pair is therefore a cousin of the run. Grazer 202814 is 1.07 m long, banded red and yellow under a maze
+pattern, with a rounded mouth part at its front, on the right. In the two seconds it moves a little to the left and
+turns slightly. Leaves float below and in front of it, a branching rock of the reef stands to the left, and other
+swimmers and leaves fill the water behind. The theatre lane chose it from the positions file, which put two leaves
+within 1.5 m of it at that second.
+
 The step had a second story. At 02:44:59 UTC on 2026-10-31 the graphics driver logged an error. Thirteen seconds later
 the card group's watch stopped the run, as it is built to. D's last checkpoint was at 46,500 s. The owner ruled that
 card runs resume only after the theatre had rendered once alone, to see whether its shader was the cause. After that

@@ -293,6 +293,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D269](#d269) | The nursery runs only under the world's current rules, and old nursery runs are not re-stepped | 2026-10-30 | ruled by the owner late on 2026-10-30, on the room's question of how to re-step old nursery runs (`logbook/specs/nursery-room-unloadable-recipes.md` on `nursery-room`) |
 | [D270](#d270) | The leaves' smell drifts with the water on a coarse grid, and every part feels which way the water runs over the ground | 2026-10-31 | ruled by the owner on 2026-10-31, on the six questions of `proposals/propose-smell-field.md` |
 | [D271](#d271) | Coincident bodies are pushed apart along X by id order, behind a contact form of their own | 2026-10-30 | agreed by the owner on 2026-10-30, on `proposals/propose-coincident-contact.md` (absorbed here), and on in G7's round once its smoke passes (below) |
+| [D272](#d272) | The film's round runs on true-shape contact (D228 level a) | 2026-11-01 | ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation after the true-shape screen `r64t` (`logbook/specs/r64t-read/README.md`) and the card's GJK fix (merged at… |
 
 ---
 
@@ -10220,6 +10221,8 @@ in any condition set for the world.
 - a separate nose range in plume worlds;
 - porting the far grid to the card, which would save under 1 ms a step.
 
+**Built:** branch `smell-plume` from `logbook/specs/smell-plume-build.md`, merged into main at `c98ce0ea` on 2026-10-31, off by default. With both switches off, r64's arms D and E founded on the card for 600 s equal their recorded runs row for row. With them on, arms R and O (`rounds/env-d270-r.ps1`, `-o.ps1`) are identical at groups 32 and 64, and the plume emits in both. The merge's commit message lists the suites. The far grid stays on the host, as decided above, and the card carries the held far readings.
+
 ### D271
 **Coincident bodies are pushed apart along X by id order, behind a contact form of their own** · 2026-10-30
 
@@ -10236,3 +10239,17 @@ in any condition set for the world.
 **Rejected.** Pushing the pair along the vertical by id order, as true-shape contact does, which would kick one piece up at up to 1 m/s. An axis that varies with the pair, which costs one more branch on the card for little gain. Applying the rule to remains only, which would read a flag in the innermost loop and leave the living case on the old law. Applying it unconditionally, which would end the replay of every recorded world at its first twin. A new `RunConfig` bool, for the reason above.
 
 **Built:** branch `coincident-contact`, merged into main at `2d7bd0d1`. Its tests and the card's check are listed in that merge's commit message. With the switch off, the merged farm steps row for row with main's own build. With it on, groups 32 and 64 agree. The card's new branch is exercised only by a test on the processor's stand-in for the card. A 600 s world forms no coincident pair, and a resumed world cannot change its contact form, so no world has yet run the fix's path. Before any round turns it on, a smoke must run where coincident remains really form. It founds a world on r63s's settings with the switch on, runs it past r63s's first launched twins (7,912 s and 10,636 s), and reads it against r63s's own runs. Its launcher is `rounds/coincident-smoke.ps1` and its read `scripts/reads/coincident-smoke-read.ps1`.
+
+### D272
+**The film's round runs on true-shape contact (D228 level a)** · 2026-11-01
+
+**Status:** ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation after the true-shape screen `r64t` (`logbook/specs/r64t-read/README.md`) and the card's GJK fix (merged at `fe0548e7`). It sets the contact form of the film's round of D254 and D259. It supersedes nothing. It makes D271's coincident form moot for that round, since true-shape contact already orders every pair, so the coincident smoke runs only if a round goes back to spheres.
+
+**Decision.**
+- The film's round sets `ContactShape` to `TrueShape` (D228's level (a)): a pair broad-phased by its spheres touches only when its cores and margins do, by GJK.
+- The smell build (D270) stays off in that round until its own screen has run. Level (b), `TrueShapeAtPoint`, is not used.
+- A round that also lists G5's shape family needs the card's family hulls under true shape (branch `ts-family`). That branch is brought onto main, reviewed and checked on the card before such a round launches.
+
+**Why.** The owner ruled on 2026-10-31 that no mouth video goes out until mouths really touch. Under spheres, kills landed at the first touch of two balls, with the surfaces 0.32 to 0.97 m apart. In `r64t`, true shape about halved bites per grazer-second (0.47 and 0.67 of spheres'), and lethal grazer-on-grazer kills fell five- to eightfold. Grazers still ended 1.2 and 2.2 times more numerous, with twice the leaves standing, and the floor of 30 held on both seeds. Pace fell to 0.87 of spheres' on the seed with a clean comparison. The card had let a few kills in a hundred land at a distance through its single-precision GJK. That is fixed and checked on the card: the far kills vanish, every other kill matches, and groups 32 and 64 agree.
+
+**Rejected.** True shape with the smell build on, which would mix an unscreened change into the film's round. Level (b), never screened in a world and refused on the card with a family part. Staying on spheres, under which mouths bite open water on screen.
