@@ -110,7 +110,9 @@ build (D270) on, or (c) at level (b), `TrueShapeAtPoint`. Per D262, no dial is t
 ## Rules chosen cheap under spheres, re-asked here
 
 - The bite is a ball overlap: the finding itself.
-- The 3 m `EVOSIM_INTAKE_REACH` reads corpses only; contact eating makes none, so it binds nothing in D's world.
+- ~~The 3 m `EVOSIM_INTAKE_REACH` reads corpses only; contact eating makes none, so it binds nothing in D's world.~~
+  Corrected on 2026-11-01: with contact eating on, the reach settings are read by nothing at all (`RunConfig.cs`
+  about line 1715; `ApplyIntake` returns early in `WorldMouth.cs`). So the conclusion stands for a different reason.
 - Grip forming: `RockTouched` and the bed touch follow the true shape; round 59's founders never gripped under spheres.
 - D271 does not apply under true shape.
 - Level (a) pushes at the link centre with no torque; level (b) touches the bed at every vertex.
