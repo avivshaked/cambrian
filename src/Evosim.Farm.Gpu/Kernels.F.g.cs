@@ -10797,13 +10797,13 @@ namespace Evosim.Farm.Gpu.Sgl
         /// </summary>
         private static V3 GjkSupportHull(ArrayView<Real> hull, int at, M3 rotation, V3 centre, V3 direction)
         {
-            V3 local = rotation.TransposedTimes(direction);
+            V3 local = GjkTransposedTimes(rotation, direction);
 
             int best = 0;
-            Real bestDot = local.X * hull[at] + local.Y * hull[at + 1] + local.Z * hull[at + 2];
+            Real bestDot = GjkMul(local.X, hull[at]) + GjkMul(local.Y, hull[at + 1]) + GjkMul(local.Z, hull[at + 2]);
             for (int k = 3; k + 2 < HullStride; k += 3)
             {
-                Real dot = local.X * hull[at + k] + local.Y * hull[at + k + 1] + local.Z * hull[at + k + 2];
+                Real dot = GjkMul(local.X, hull[at + k]) + GjkMul(local.Y, hull[at + k + 1]) + GjkMul(local.Z, hull[at + k + 2]);
                 if (dot > bestDot)
                 {
                     bestDot = dot;
@@ -10811,7 +10811,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 }
             }
 
-            return centre + rotation * new V3(hull[at + best], hull[at + best + 1], hull[at + best + 2]);
+            return centre + GjkTimes(rotation, new V3(hull[at + best], hull[at + best + 1], hull[at + best + 2]));
         }
 
         /// <summary>
