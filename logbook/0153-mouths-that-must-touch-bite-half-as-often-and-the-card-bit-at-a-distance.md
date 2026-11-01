@@ -101,9 +101,9 @@ The pre-registration's last falsifier asked the narrowest question. A kill whose
 apart would mean the card's list of touching pairs was not following its own true-shape test. The card was then to be
 checked against the host.
 
-To measure it, each true-shape world was replayed on the host from its checkpoints, every 1,500 s, for ten seconds
-each. Each kill the run recorded in those seconds was then found in the host's state and its gap measured. The table
-is `kill-gaps.md` beside this entry.
+The theatre lane, c8, measured it, with a Sonnet builder it briefed and reviewed. Each true-shape world was replayed
+on the host from its checkpoints, every 1,500 s, for ten seconds each. Each kill the run recorded in those seconds was
+then found in the host's state and its gap measured. The table is `kill-gaps.md` beside this entry.
 
 | Kills in the replayed seconds | Count | Above 0.05 m | Largest gap |
 |---|---|---|---|
@@ -111,17 +111,18 @@ is `kill-gaps.md` beside this entry.
 | Named only by the card | 12 | 6 | 0.56 m |
 
 The 220 kills both engines agreed on all touched. Of the 12 only the card made, six were 0.10 to 0.56 m apart, so the
-falsifier fired. They were few, a handful against hundreds. A second pass then ran the card's own GJK routine on the
-host, with the host's numbers, and every pair it could test came out apart (`card-gjk-on-host.md`). So the routine's
-logic was sound, and the fault lay in how the card computed it.
+falsifier fired. They were few, a handful against hundreds. A further pass ran the card's own GJK routine on the host,
+with the host's numbers, and every pair it could test came out apart (`card-gjk-on-host.md`). So the routine's logic
+was sound, and the fault lay in how the card computed it. c8 also asked whether the card's list of touching pairs
+could have gone stale, and read the card code that ruled it out.
 
 ## The card's arithmetic
 
-To see the card's own numbers, a farm branch added a census dump, and the 6203 world was resumed on the card from
-22,500 s. Half a second later it reproduced one far kill, animal 66874 on leaf 70081. The dump stays untracked in its
-working folder, as every run file does, and the read cites it. The bookkeeping was clean. The card's GJK had ended
-"origin inside" at its third pass, calling the two parts touching, where the host found their cores 0.41 m apart. Both
-cores were flat, zero along one axis.
+To see the card's own numbers, a Sonnet builder added a census dump to the farm, from the coordinator's brief on c8's
+plan. The coordinator then resumed the 6203 world on the card from 22,500 s. Half a second later it reproduced one far
+kill, animal 66874 on leaf 70081. The dump is `census-dump-t6203.json` beside this entry, its five rows unchanged. The
+bookkeeping was clean. The card's GJK had ended "origin inside" at its third pass, calling the two parts touching,
+where the host found their cores 0.41 m apart. Both cores were flat, zero along one axis.
 
 The cause was a multiply and an add fused into one operation. The card's compiler does this unless told not to, and
 the fused result differs from the processor's in its last bits. The card's notes had said so since 26 September, with
@@ -133,10 +134,10 @@ held, so an exact test for a repeat missed it. The routine added a near-duplicat
 almost without volume. Its sign tests then read the origin as enclosed, and two parts 0.1 to 0.56 m apart were called
 touching.
 
-The fix, merged at `fe0548e7`, writes every product in the GJK unfused. It also refuses "inside" from a tetrahedron
-whose volume is under 2^-18 of its longest edge cubed, and takes its nearest face instead. On the fixed card three
-resumes at far kills lost those kills and kept every other kill of their stretch, 3 of 3, 19 of 19 and 10 of 10.
-Groups of 32 and 64 were identical over 30 s.
+The fix, built by a Sonnet builder from the coordinator's brief and merged at `fe0548e7`, writes every product in the
+GJK unfused. It also refuses "inside" from a tetrahedron whose volume is under 2^-18 of its longest edge cubed, and
+takes its nearest face instead. On the fixed card three resumes at far kills lost those kills and kept every other
+kill of their stretch, 3 of 3, 19 of 19 and 10 of 10. Groups of 32 and 64 were identical over 30 s.
 
 ## The ruling, and what it leaves
 
@@ -161,7 +162,7 @@ weeks before, with its cure. A rule in a notes file binds only the code written 
 |---|---|
 | [`r64t-prereg/predictions.md`](specs/r64t-prereg/predictions.md) | the screen's design, predictions and falsifiers, committed before launch |
 | [`r64t-read/README.md`](specs/r64t-read/README.md) | the read, the host probe, the kill gaps and the fix |
-| [`true-shape-kill-gaps/`](specs/true-shape-kill-gaps/) | the ball table under spheres, the kill gaps, and the card's GJK on the host's numbers |
+| [`true-shape-kill-gaps/`](specs/true-shape-kill-gaps/) | the ball table under spheres, the kill gaps, the card's GJK on the host's numbers, and the census dump |
 | [`DECISIONS.md`](../DECISIONS.md) D196, D228, D252, D272 | the reach, the two levels of true shape, sphere contact, and the ruling |
 | [`src/Evosim.Farm.Gpu/CLAUDE.md`](../src/Evosim.Farm.Gpu/CLAUDE.md) | the card's rule on fused products, and the GJK written to it |
 | commits `fe0548e7`, `15396c3f`, `a1e443af` | the GJK fix, its tests, and the family hulls under true shape |
