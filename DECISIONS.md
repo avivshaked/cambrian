@@ -298,6 +298,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D274](#d274) | The smell screen runs under true-shape contact, as two groups of three, after a 6,000 s founding bench | 2026-11-01 | decided by the coordinator on 2026-11-01, at the owner's delegation of the grazer screens |
 | [D275](#d275) | A bite needs the mouth: a mouth's blow wounds and feeds only where its mouth point touches | 2026-11-01 | ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation (option A of three) |
 | [D276](#d276) | The theatre's normal view draws no hunger, and leans toward realism | 2026-11-01 | ruled by the owner on 2026-11-01 |
+| [D277](#d277) | In the film a meal flashes once, a newborn grows from a speck, and dead tissue crumbles into snow | 2026-11-01 | ruled by the owner on 2026-11-01, by question, on the coordinator's recommendations |
 
 ---
 
@@ -10335,3 +10336,27 @@ eaters went from under 0.1 to over 0.3 at one meal. No animal in the sea changes
 
 **Rejected.** Repainting a body at once when its tint jumps, which the coordinator had chosen as a fix of the lag: it
 keeps hunger in the normal view. Easing the tint over a second: the same.
+
+### D277
+**In the film a meal flashes once, a newborn grows from a speck, and dead tissue crumbles into snow** · 2026-11-01
+
+**Status:** ruled by the owner on 2026-11-01, by question, on the coordinator's recommendations, after D276. The owner
+turned down dropping the fades outright, since a body that pops in or out is less realistic than a fade, and asked for a
+better option.
+
+**Decision.**
+- **A meal flashes once.** The farm writes a bite at every 0.5 s metabolic step, so a mouth that stays on its food made
+  the bite pulse strobe at 2 Hz. Successive half-second bites by one mouth now count as one meal, and the pulse fires once
+  at its start. A single leaf bite still flashes.
+- **A newborn grows from a speck.** It is drawn solid from its first frame, at its own place, starting as a speck and
+  swelling to its birth size over about two seconds. It does not fade in from transparent.
+- **Dead tissue crumbles into snow.** Over its last stretch, remains or a corpse dull, shrink and shed flakes that drift
+  off as marine snow, until nothing is left. It does not fade out with transparency.
+
+**Why.** These follow D276's realism rule. In the sea, small life becomes visible by growing, and dead tissue breaks up
+into detritus. Neither turns see-through.
+
+**Rejected.** For births: emerging from the parent, which draws the body where the physics does not have it for about a
+second, and keeping the fade with a speck. For deaths: sinking to the bed, which moves remains away from where the physics
+keeps them in mid-water, and a shorter fade. For the flash: keeping the strobe, and turning the pulse off until the mouths
+move.
