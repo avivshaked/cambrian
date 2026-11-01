@@ -383,6 +383,19 @@ take the change in concentration from their sensory cells, not from network memo
 the brain reads scent as a level. NEAT [SM02] and FS-NEAT [WSSMK05] were read at the abstract only,
 and LeCun's initialisation was not read at source.
 
+## 0z4. Changelog: review round 11, memory and learning within a life (2026-11-01)
+
+This round changes no mechanism. Round 11 of the literature review (research §0, Q16) asked what
+state kept within a life, and learning within a life, buy an evolved forager. It follows the
+owner's question of the same day, whether the creatures are stateless reactive machines. Evolved
+networks without plasticity held a bit through a self-exciting loop or a unit near 0 or 1 [SBM03
+p.5–6; BF03 p.6–7]. No source tested a graded trace held without a time constant. Animals that
+compare a smell over time weigh about a second against the few before it [SBB86 p.1; AS18 p.12].
+Fixed recurrence evolved faster than plasticity on a switch within a trial [SBM03 p.6–7]. Plasticity won when a fact had to be kept across tens of trials [SOL08 p.5]. Learning pays when
+experience is reliable and the best action changes between generations [DS09 HTML, §4], and it
+has costs [MER03 p.36; MK04 p.1]. The review's Q16 row carries the rest, and the round's reading
+of what this means for the brain went to the coordinator as input.
+
 ## 0w. Changelog — the aquarium, the streams, and water that stays uniform (2026-09-11 and 12, D089, D090, the Astra review)
 
 The container is a setting (`RunConfig.WorldShape`, `EVOSIM_SHAPE`, default `Box`). A `Tank`

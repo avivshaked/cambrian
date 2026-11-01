@@ -38,11 +38,17 @@
 > rounds 8 and 9 are cited outside it. Ten are read in full, as before, and round 9 read its
 > papers at the passages cited. Eighty-one of the eighty-eight have their PDF on disk. Round
 > 9's twenty carry an extraction manifest, so twenty-eight packages now do (§7.2).~~
-> ↻ **After round 10, eighty-eight are still held**, because round 10 kept no copy of
+> ~~↻ **After round 10, eighty-eight are still held**, because round 10 kept no copy of
 > anything it read. It added eight papers to the synthesis matrix, so ninety-two
 > inform it, and eight more are cited outside it. None of round 10's sixteen was read in full
 > from text the reviewer saw: its ten full texts were read through the fetch tool's summariser,
-> and six were read at the abstract.
+> and six were read at the abstract.~~
+> ↻ **After round 11, one hundred and two are held**, with thirteen PDFs and one article page
+> added on 2026-11-01. One hundred and five papers inform the synthesis matrix, thirteen of them
+> from round 11, and forty-seven supporting sources are cited outside it. Sixteen are read in
+> full: the ten before, and six from round 11's extracted PDF text. Ninety-four of the one hundred
+> and two have their PDF on disk. Round 11's PDF packages carry the extraction tool, its version and
+> the PDF's hash in each `source.md` header, but no `manifest.json` (§7.2).
 >
 > ~~Round 2 opened a seventh question (endogenous selection, `DESIGN.md` §5A) that **has
 > never been searched for at all**~~ **Round 3 (2026-08-29)** searched it. §5A is no longer
@@ -77,6 +83,7 @@ files call it round 7 and its question Q12, numbers that went to the seasonal-li
 | **8** | 2026-09-29 (searched and appraised); filed 2026-10-31 | `DECISIONS.md` D128 ruled death by age as a Gompertz hazard on a heritable base that costs repair upkeep, with each birth and each destroyed part advancing the body's clock, and asked for a review round on its sources before its numbers were fixed. D130 put the heritable gene into experiment round 52 with its values unruled | Two passes on 2026-09-29. Pass 1 logged no queries. Pass 2 logged 63 attempts in `logbook/specs/r52-literature/search-log.tsv`: 42 OpenAlex keyword or filter queries, 5 OpenAlex forward snowballs, 3 Semantic Scholar keyword and 6 bulk queries returned results, and 7 Semantic Scholar attempts failed with HTTP 429. Metadata lookups for 50 candidate DOIs in each service, and CrossRef retraction checks on 42. **The §3.2 strings were not re-run**, logged in §3.11 | **14 PDFs retrieved and kept** (`papers/` 85 to 98). **39 sources appraised:** 14 core into the synthesis matrix ([PER19] [COL21] [JON14] [KR91] [MC19] [LEM15] [BBV20] [WIN25] [SADK00] [ZBH95] [LC85] [MR87] [CAR92] [KK16]) and 25 supporting, cited outside it. By read level: 14 PDFs at the passages cited, 9 PubMed Central article pages without page numbers, 16 abstracts. None read in full. Pass 1's 42 sources enter only where pass 2 re-read them | **Q13 opened and answered in part; no mechanism changed.** The owner ruled the gene's values on 2026-09-29 from pass 1 (logbook/0127): repair exponent 0.5, mutation chance 0.08, founders 0.5 to 1.5. D128's doubling at a fifth of the base and its birth and wound pushes stood. Pass 2 found f = 0.2 defensible [JON14; FPW90]. It found the gene acting on the rate, where the evidence puts lifespan variation in onset and early mortality [PER19 p.3; COL21 p.1, p.3]. The birth push is 3 to 25 times the cost measured in birds [BBV20 p.6; WIN25 p.3], and no source gives the repair exponent [KR91]. D132 held the values through rounds 53 and 54 and cites pass 2. `DESIGN.md` §0z records the round |
 | **9** | 2026-09-29 (searched); 2026-09-30 (fetched); 2026-10-31 (appraised and filed) | `DECISIONS.md` D134 ruled the fast nursery, which breeds brains in an easier world under D133's score, and the owner asked whether academic justification could be found. A first report answered at abstract level. The round's working files call it round 7 and its question Q12; this review files it as round 9, question Q14 | First report: queries not logged. Pass 1: 60 web search and fetch calls, first page only. **The §3.2 strings were not re-run** and no forward snowball was done, logged in §3.12 | **20 PDFs retrieved and kept** (`papers/` 175 to 192, 194 and 195), ten through institutional access; Soros & Stanley 2014 not obtained. **20 appraised:** 15 core into the synthesis matrix ([MD08] [MD09] [GM97] [JAK97] [PJ10] [CA16] [LOPA03] [CLWO13] [KNA07] [WLCS19] [LST11] [GEOP08] [BB72] [SHLF21] [BEJ25]) and 5 supporting ([LFM13] [WS11] [LM14] [TEN26] [AB14]). All were read at the passages cited, none in full, with no database check | **Q14 opened and answered in part; no mechanism changed.** The literature names D134's move, environmental complexification, as a scheme apart from fitness shaping [MD08 p.2–3]. Direct evolution failed where a staged world succeeded [GM97 p.13–14; PJ10 p.5; CA16 p.15]. A single hand-built ramp failed at the hardest levels [WLCS19 p.14], and every embodied success shaped its score as well as its world [CA16 p.11; PJ10 p.4; GEOP08 p.4]. No paper moved an evolved sensing-and-steering brain from an easier tank to a harder one. `DESIGN.md` §0z2 records the round |
 | **10** | 2026-10-01 (pass 1); 2026-10-31 (pass 2) | `DECISIONS.md` D146 ruled one brain per creature on 2026-10-01 and left open a review round on growing networks (NEAT) and on central against distributed controllers. D147 named LeCun's initialisation and LSUV without a source, to be confirmed here. Pass 1 (`research/brain-v2/pass1-candidates.md`) opened nothing | Pass 1: 17 web searches on 2026-10-01, each naming a work or topic. Pass 2: 14 web searches on 2026-10-31, nine naming a work and five framed by the question, plus 10 OpenAlex, Semantic Scholar and CrossRef lookups (§3.13). **The §3.2 strings were not re-run** and no forward snowball was done | **16 sources appraised, no copy kept:** 8 core into the synthesis matrix ([KGV22] [MEC23] [SM02] [WSSMK05] [HFMT23] [GAM15] [IL10] [IB13]) and 8 supporting. By read level: 10 HTML full texts, every one read through the fetch tool's summariser, and 6 abstracts. Locators are "HTML" with a section name, since no PDF was read | **Q15 opened and answered in part; no mechanism changed.** When bodies change, controllers shared across modules beat one central network, which converged early [KGV22 HTML, Results; Discussion; MEC23 abstract]. D146's copy of a parent joint's wiring at birth resembles the per-module rule, which did not beat central control at 500 generations (inference). A body's own feedback near resonance can make a swimming gait without a central oscillator [GAM15 HTML], which is precedent for D146's fourth ruling. Evolved worm circuits read a change in concentration from their sensory cells' short windows, not from network memory [IL10 HTML; IB13 HTML]. Brain v2 reads scent as a level with one step of memory. NEAT's case for minimal starts and FS-NEAT's for learned inputs were read at the abstract only [SM02; WSSMK05]. `DESIGN.md` §0z3 records the round |
+| **11** | 2026-11-01 | The owner asked on 2026-11-01 whether the creatures are stateless reactive machines. Since D146, each creature's one brain is a discrete-time tanh network stepped every 0.01 s, with no time constant, no plasticity and nothing carried to offspring; only its unit-to-unit links carry state between steps. Round 10's gaps list had left the dynamics of small CTRNNs unsearched. The coordinator's brief (`scratch/writing/lit-rounds/round11-memory-brief.md`) set seven sub-questions | 30 web searches, 27 naming a work and 3 framed by the question; 27 CrossRef and 29 OpenAlex lookups; 7 Europe PMC calls; DBLP refused with a bot check and Semantic Scholar with HTTP 429 (§3.14). **The §3.2 strings were not re-run** and no forward snowball was done | **13 PDFs and 1 article page kept** (`papers/` 196 to 209), all from open copies. **22 sources appraised:** 13 core into the synthesis matrix ([BF03] [SBM03] [SOL08] [SSR18] [GB99] [BS02] [AS18] [MIC20] [HN87] [FS17] [MK04] [MER03] [DS09]) and 9 supporting. By read level: 6 read in full from extracted PDF text, 7 at the passages cited (one as an article page without pages), 1 supporting PDF at passages and 8 abstracts. Locators are PDF pages, except [DS09]'s section names | **Q16 opened and answered in part; no mechanism changed.** Evolved networks without plasticity held a bit for a trial or across trials, through a self-exciting loop or a unit near 0 or 1 [SBM03 p.5–6; BF03 p.6–7]. No paper tested a graded trace held by a self-link without a time constant. Animals that compare a smell over time weigh about a second against the few before it [SBB86 p.1; AS18 p.12]. Fixed recurrent networks evolved faster than plastic ones on a switch within a trial [SBM03 p.6–7], and plastic ones won when the reward moved across tens of trials [SOL08 p.5]. Learning pays when experience is reliable and the best action changes between generations [DS09 HTML, §4], and it costs [MER03 p.36; MK04 p.1]. Learning can guide evolution but can also hide genes from it [FS17 p.3–4; MER03 p.63]. `DESIGN.md` §0z4 records the round |
 
 Round 2 searched nothing and retrieved nothing. It re-read papers already in
 `research/papers/` against a question that had not been asked in round 1. The answer changed
@@ -187,7 +194,8 @@ result did not reach statistical significance and is reported here as suggestive
 | Q12 | *(opened round 7)* When a population's light varies by season and by unpredictable weather, and its bodies cannot sense the light, what do theory and experiment predict for stored reserves, for the timing of breeding and for the variance of breeding traits? | 🟡 **Answered in theory; the transfer to this world is inference, and the world's own answer is experiment round 57.** **(a) Storage.** In a stochastic dynamic programming model where environmental energy follows a log-normal AR(1) process (a series in which each step is correlated with the one before), storing is not optimal at low variability and low predictability. The stored fraction rises as either grows, and storage pays only at intermediate environmental energy with stores not yet full [FDT11 Results, Figs 1, 3–4]. That optimum is a reaction norm on the *sensed* current environment, the model has no minimum breeding investment, and its fitness is expected lifetime reproduction, so it carries no bet-hedging term [FDT11 model conditions; Discussion]. In a seasonal model, stores pay mainly by allowing breeding before the feeding season, when an egg is worth most [VJTF09 abstract]. **(b) Bet-hedging.** Bet-hedging is the trade that [SK12]'s title names, among the mean, the variance and the correlation of fitness. Dormancy evolved upward with the frequency of unpredictable bad years in *Neurospora*, as the geometric-mean model predicts: mean final dormancy was 0.16 with no bad years and 0.30 to 0.33 at 40–50% [GSS14 Results, Table 2, Fig. 1]. Rotifers under an unpredictable regime started sex earlier and hatched fewer diapausing eggs [TGC17 abstract]. A genotype's fitness variance splits into each individual's variance and the correlation among its individuals [SK12 abstract], and in finite populations the sign of selection on a bet hedger can reverse with population size [WYRW25 abstract; preprint Results]. Which response evolves (plasticity, bet-hedging or tracking) depends on the timescale and predictability of the variation [BWWR15 Results, Fig. 2]. **(c) Autocorrelation, direction disputed.** More positive autocorrelation at fixed variance always raised the evolutionarily stable allocation to survival [MK07 Results, Fig. 2c; Discussion]. Stress tolerance was disfavoured in redder environments, through a trade-off with reproduction [WTV18 abstract]. **(d) Trait variance.** Slower cycles kept more within-population life-history variance, periodicity mattered more than random timing, and variance fell over time in every regime [PW21 Results, Figs 4–5]. **(e) Artificial life.** No study was found of evolved storage or bet-hedging under seasonal plus stochastic resource input; it may be a gap in the field or in the search (§9). *The design reading, marked as this review's inference: the weather (coefficient of variation about 0.31, e-folding time about 1.4 days) lies at or beyond the low end of [FDT11]'s range, so the season and not the weather should raise the reserve; births should bunch at the turn to summer; and the reserve's spread should narrow over the run. These are clauses R, T and V of round 57's pre-registration.* |
 | Q13 | *(opened round 8)* How does mortality rise with age across species; what does a longer life cost; do reproduction and injury speed ageing; how heritable is lifespan and how fast does it respond to selection; and what do models in which lifespan evolves show? | 🟡 **Answered in part; most of the values D128 needs are judgement.** **(a) Shape.** Senescence is detected in the wild in 175 species [NUS13 HTML], but not everywhere: trajectories also stay flat, fall or hump, and terminal over mean adult mortality runs from above 20 to below 0.5 [JON14 HTML]. Across 96 mammals the rate of senescence does not slow with body size; longer lives come from later onset and lower prime-age mortality [PER19 p.3], which carry 47–62% of lifespan variance [PER19 p.6]. Within primate genera "variation in the rate of ageing … is orders of magnitude smaller than variation in pre-adult and age-independent mortality" [COL21 p.1, p.3]. A fitted Gompertz rate is confounded with initial mortality [RS02 abstract; KIR15 HTML]. **(b) The cost of a longer life.** The theory needs only that longer life "usually involves some cost" and gives no functional form [KR91 abstract]. Within species, 21 of 26 wild vertebrate studies support an early–late trade-off [LEM15 HTML], and direct selection for long life cut fecundity [ZBH95 abstract]. Others uncouple the two [MC19 p.1, p.4; COH20 abstract]. **(c) Reproduction.** Lifelong brood enlargement raised jackdaws' Gompertz slope from 0.16 to 0.25 a year, left the intercept unchanged and cut remaining life from 4.7 to 3.8 years [BBV20 p.6]. Across birds the cost is −0.05 log-odds of annual survival per egg [WIN25 p.3], with a "flat" landscape within species [WIN25 p.1]. A ten-year cricket study found no evidence of a trade-off with survival, and only weak evidence of one with senescence [RM19 p.1]. **(d) Injury.** Wing clipping shortened bumble-bee life [CAR92 abstract]. One sublethal head strike cut fly median life from 48.3 to 38.3 days, saturating at four strikes [KAT13 HTML]. No comparative source was found. **(e) Heritability and response.** Life-history heritability averages 0.262 in wild animals [MR87 p.6], and human longevity's is below 10% [RUBY18 HTML]. Late-reproduced flies rose from about 35 to over 70 days in 21 generations, at uncontrolled larval density only [LC85 p.1, p.5]. Mortality regimes diverged in 50 to 90 generations [SADK00 HTML]. **(f) Models.** Survival falling faster than exponentially emerges from inherited age-specific mutations [PEN95 p.3]. Local reproduction favours shorter lives [WER15 p.2; TRA04 abstract], and re-implementations traced such results to movement or a shorter generation time [KK16 p.13]. Ageing evolves stably and negative ageing does not [GT22 p.1]. **(g) Artificial life.** No evolvable-lifespan model from an artificial-life venue was found. *The design reading, marked as this review's inference: f = 0.2 is defensible on the measured doubling times; the gene's stretching of the doubling time runs against the within-lineage evidence; the repair exponent has no source; the birth push is 3 to 25 times the measured cost; the wound push has the right direction and a guessed size.* |
 | Q14 | *(opened round 9)* Does evolving in an easier world first, with the score fixed, have support, and when does it fail? Why are sensing-and-steering brains slow to evolve in artificial life, and under what conditions do they evolve? | 🟡 **Answered in part; the nursery's own form is untested in the literature.** **(a) The scheme.** Environmental complexification is one of four incremental schemes, beside staged evolution, fitness shaping and behavioural decomposition [MD08 p.2–3; MD09 p.2]. Direct evolution found no working controller where incremental schemes did [MD08 p.7; MD09 p.5]. Prey capture stalled after about 20 generations directly, and a sequence of harder prey solved it [GM97 p.13–14]. In Sims-style creatures, light following from scratch was "overall not satisfactory", and walkers later given vision mostly evolved it [PJ10 p.5]. Foraging in 3D articulated bodies evolved as noise on food placement rose stage by stage [CA16 p.1, p.15]. Direct optimisation scored 17.9, 39.6 and 13.6 against a solved 230 on POET's environments [WLCS19 p.10]. Varying goals that share structure sped evolution, up to a thousandfold in one model [KNA07 p.3]. **(b) When it fails.** A hand-built direct-path curriculum failed at the very and extremely challenging levels [WLCS19 p.14]. Raising noise too fast left most runs "wander about randomly" [CA16 p.15]. Random goals slowed evolution [KNA07 p.2, p.5]. Variation must not be "so large that reliably fit controllers fail to evolve at all" [JAK97 p.9]. The user must design the sequence [GM97 p.20], and a late switch over-specialises [MD08 p.3]. When only the hardest function paid, none of 50 populations evolved it, against 23 of 50 when simpler functions paid too [LOPA03 p.3, p.5]. Blocking deleterious mutations cut that from 28 of 50 to 16 or fewer [CLWO13 p.2]. **(c) The score.** No paper kept a pure intake score. Every embodied success shaped it: a locomotion term [CA16 p.11], speed toward the light [PJ10 p.4], a bonus for each step closer [GEOP08 p.4]. When all score equally poorly, behavioural diversity bootstraps search [MD09 p.1, p.5]. Novelty search solved a deceptive maze in 39 of 40 runs against fitness's 3 [LST11 p.16–17], but only 5 of 100 in an unenclosed one [LST11 p.19]. **(d) Why slow.** Objective search converged on reactive behaviour and solved under 20% of cognitive tasks [LM14 p.6]. "Turning appears harder to evolve than running" [CA16 p.16], and one target and sustained foraging are "two entirely different skills" [CA16 p.23]. Sims' light following was matched but not exceeded in 19 years [LFM13 p.1–2]. **(e) Conditions.** Dense food lowers the threshold for any perception, and its cost restricts it [SHLF21 p.1, p.8–9]. Long-range gathering was more consistent in larger worlds [BEJ25 p.6]. Taxis evolved within 1,000 to 2,000 updates under a per-step reward, and memory for it could evolve but did worse [GEOP08 p.5]. A bacterium with no spatial sense lengthens its runs going up a gradient [BB72 p.1–2], the temporal comparison Q11 found [MK72 p.1; SBB86 p.1]. **(f) The gap.** No paper moved an evolved sensing-and-steering brain from an easier tank to a harder one. *The design reading, marked as this review's inference: D134's move has a name and a record, and its claim must stay modest because the embodied record shaped its scores. A single ramp is the form most often seen to fail, and a varied world with transfer the form most often seen to work.* |
-| Q15 | *(opened round 10)* What should a second-generation brain for these creatures be: how a network should grow, whether one brain per body or one per limb, where the rhythm should live, what finding food by smell asks of a network, and how its founders and mutations should be scaled? | 🟡 **Answered in part; three key primaries unread at source.** **(a) Growth.** NEAT credits its efficiency to crossover aligned by structure, speciation that protects new structure, and growth from minimal structure, each shown necessary by ablation [SM02 abstract]. FS-NEAT learns a network's inputs with its topology and weights; it learned better and faster than NEAT in a racing simulation, with smaller networks and fewer inputs [WSSMK05 abstract]. The value of crossover in NEAT is questioned [SAO22 abstract], and a GA without crossover was competitive on large networks [SUCH17 HTML]. No source read gives an add-node or add-link rate. **(b) One brain or many.** When body and brain co-evolve, a controller reused across modules (two shared networks per robot, a new module taking its parent's) beat a central network, a per-module network and an open-loop sine at generation 500. The central network converged early [KGV22 HTML, Results; Discussion]. Morphological mutations cost less under modular controllers [MEC23 abstract]; body changes tend to hurt control [CB18]. Shared per-limb modules generalise to unseen bodies only with message passing; without it limbs "cannot learn anything meaningful" [HMP20 HTML, appendix]. **(c) Rhythm.** A swimmer whose muscles follow local curvature with a delay swims without a central pattern generator, but only near its resonance frequencies [GAM15 HTML]. In a lamprey model, rhythm is central and feedback restores it below a lesion [HFMT23 HTML]. An open-loop sine was not significantly worse than either CTRNN at 500 generations [KGV22 HTML, Results]; a phase-coupled oscillator beat a sine wave in 2D creatures [VSG23 abstract]. **(d) Smell.** Evolved minimal klinotaxis circuits read the change in concentration from their sensory cells' short windows (rise under 1.7 s), not from network memory [IL10 HTML, Methods; Discussion]. A connectome-constrained ensemble did the same, with 83 of 100 runs reaching a chemotaxis index of 0.5 and 27 reaching 0.75 [IB13 HTML, Results]. Trained plume trackers needed memory, short in steady wind and longer when the wind switched [SBRB23 HTML]. The bacterial differentiator of round 6 compares over 4 s [SBB86 p.1]. **(e) Founders and steps.** LeCun's scaling was not read at source. LSUV was tested on feedforward image networks only and converged more slowly with tanh [MM15 HTML]. **(f) Artificial life.** No comparison of one brain against per-part brains in a Sims-style rigid creature was found. *The design reading, marked as this review's inference: D146's copy of a parent joint's wiring at birth is [KGV22]'s per-module rule, not its winning shared rule; brain v2 reads scent as a level with one step of memory, which these circuits did not rely on; D147 wires every input from birth where FS-NEAT learns its inputs.* |
+| Q15 | *(opened round 10)* What should a second-generation brain for these creatures be: how a network should grow, whether one brain per body or one per limb, where the rhythm should live, what finding food by smell asks of a network, and how its founders and mutations should be scaled? | 🟡 **Answered in part; three key primaries unread at source.** **(a) Growth.** NEAT credits its efficiency to crossover aligned by structure, speciation that protects new structure, and growth from minimal structure, each shown necessary by ablation [SM02 abstract]. FS-NEAT learns a network's inputs with its topology and weights; it learned better and faster than NEAT in a racing simulation, with smaller networks and fewer inputs [WSSMK05 abstract]. The value of crossover in NEAT is questioned [SAO22 abstract], and a GA without crossover was competitive on large networks [SUCH17 HTML]. No source read gives an add-node or add-link rate. **(b) One brain or many.** When body and brain co-evolve, a controller reused across modules (two shared networks per robot, a new module taking its parent's) beat a central network, a per-module network and an open-loop sine at generation 500. The central network converged early [KGV22 HTML, Results; Discussion]. Morphological mutations cost less under modular controllers [MEC23 abstract]; body changes tend to hurt control [CB18]. Shared per-limb modules generalise to unseen bodies only with message passing; without it limbs "cannot learn anything meaningful" [HMP20 HTML, appendix]. **(c) Rhythm.** A swimmer whose muscles follow local curvature with a delay swims without a central pattern generator, but only near its resonance frequencies [GAM15 HTML]. In a lamprey model, rhythm is central and feedback restores it below a lesion [HFMT23 HTML]. An open-loop sine was not significantly worse than either CTRNN at 500 generations [KGV22 HTML, Results]; a phase-coupled oscillator beat a sine wave in 2D creatures [VSG23 abstract]. **(d) Smell.** Evolved minimal klinotaxis circuits read the change in concentration from their sensory cells' short windows (rise under 1.7 s), not from network memory [IL10 HTML, Methods; Discussion]. A connectome-constrained ensemble did the same, with 83 of 100 runs reaching a chemotaxis index of 0.5 and 27 reaching 0.75 [IB13 HTML, Results]. Trained plume trackers needed memory, short in steady wind and longer when the wind switched [SBRB23 HTML]. The bacterial differentiator of round 6 compares over 4 s [SBB86 p.1]. **(e) Founders and steps.** LeCun's scaling was not read at source. LSUV was tested on feedforward image networks only and converged more slowly with tanh [MM15 HTML]. **(f) Artificial life.** No comparison of one brain against per-part brains in a Sims-style rigid creature was found. *The design reading, marked as this review's inference: D146's copy of a parent joint's wiring at birth is [KGV22]'s per-module rule, not its winning shared rule; brain v2 reads scent as a level ~~with one step of memory~~, which these circuits did not rely on (↻ round 11: a self-feeding loop can hold state for many steps, Q16); D147 wires every input from birth where FS-NEAT learns its inputs.* |
+| Q16 | *(opened round 11)* What does internal state that persists within a life, and learning within a life, buy an evolved agent that finds food in a patchy, drifting world, and at what cost? Can a network without time constants or plasticity hold the state that gradient-following and patch-to-patch foraging need? | 🟡 **Answered in part; the direct test is missing.** **(a) Memory in small evolved networks.** Fixed-weight CTRNNs evolved to remember a reward's arm across T-maze trials, storing it in one hidden unit that settled near 0 or 1 [BF03 p.6–7]. A double maze with a moving reward was not solved [BF03 p.10–11]. Agents that had to catch an object after a brief look evolved in 2 of 3 runs, with errors of 165 and 223 against 1.4 to 12.7 for agents that could see throughout [GB99 p.3, p.6]. Both papers evolved a time constant for every unit [BF03 p.2; GB99 p.1–2]. NEAT networks with fixed weights solved a forage-until-poisoned task in 5 of 5 runs. Excitatory self-loops on the outputs carried it, and a 20-step pain signal switched them off for the rest of a 750-step trial [SBM03 p.5–6]. Beer's analysis of one- and two-unit circuits was read at the abstract only [B95 abstract]. **(b) Temporal comparison.** Bacteria weigh the last second against the three before [SBB86 p.1]. Walking flies compare a 0.62 s window with a 4.84 s one and adapt over about 10 s [AS18 p.10, p.12]. Evolved worm circuits take the change from sensory cells with rise times under 1.7 s [IL10 HTML], a figure still at round 10's summarised reading. **(c) Plasticity against fixed recurrence.** Fixed-weight recurrent networks evolved faster and more reliably than plastic ones on a switch within a trial [SBM03 p.6–7]. Plastic networks did far better than fixed ones when the reward moved after about 50 of 100 or 200 trials, and neuromodulated plasticity helped most in the larger maze [SOL08 p.4–5]. A review finds the early comparisons close, and plasticity helpful "under a variety of conditions" [SSR18 p.10]. **(d) When learning pays.** Learning is favoured when experience reliably predicts the best action and that action changes between generations. A fixed best action with unreliable experience selects against it, in a model and in 30 generations of flies [DS09 HTML, §2b, §4]. Persistence within a life matters most in theory [S91 abstract]. Flies selected to learn paid a constitutive cost in larval competition [MER03 p.31, p.36] and an operating cost in egg output when made to use it [MK04 p.1, p.7–8]. **(e) The Baldwin effect.** Learning made a 20-gene co-adaptation findable that evolution alone never found [HN87 p.3–4]. Run to fixation, learning raised the chance of fixing the innate solution from about 10⁻⁷ to 0.167, but easy learning flattened selection and lowered it again [FS17 p.3–4]. In flies, learning sped the innate preference that ran against the founders' bias and slowed the one that ran with it [MER03 p.63]. **(f) Plume tracking.** In turbulent flow a searcher needs only where it last met odour and how long ago, casting wider as that time grows [BS02 p.3–4]. Infotaxis instead keeps a belief about the source's position [VVS07 abstract]. A lobster model counted encounters over the previous 5 s; its bursting receptor cells encode intervals from hundreds of milliseconds to seconds, with no central memory [MIC20 p.2, p.4]. **(g) Time constants as genes.** Small evolved spiking networks solved more temporal tasks with evolvable delays and time constants than with weights alone [HEGB24 p.14]. No study compared one recurrent controller with and without evolvable time constants on a memory task. *The design reading, marked as this review's inference: a window of about 1 to 5 s is 100 to 500 of this brain's 0.01 s steps; a self-link can latch a bit without a time constant, but a graded trace that long needs a per-step retention within about 0.01 of 1; a per-unit time constant is the cheaper addition for a window of seconds, and plasticity is worth weighing only for facts kept across many encounters.* |
 
 **PICOC framing** sets the review's terms. *Population:* evolved virtual creatures with genetically encoded 3D morphology and control. *Intervention:* co-evolution of body and controller under
 evolutionary / quality-diversity search. *Comparison:* fixed-morphology controller
@@ -683,6 +691,77 @@ redirected [SAO22] to a login, which was not followed. The ar5iv conversion of a
 (Stanley & Miikkulainen 2004) had failed. ar5iv holds no HTML for 2306.09358 and redirected to its
 abstract. None was bypassed.
 
+### 3.14 Round 11 searches (2026-11-01)
+
+Round 11 was one Claude Opus 5.5 research subagent, working from the coordinator's brief of the
+same day. The brief named its leads from the coordinator's recall and called them unverified. Each
+was confirmed or dropped by this search.
+
+The §3.2 strings were not re-run. Q16 is a new question with its own vocabulary, so the skip is
+logged here per §3.5 rule 1. Forward snowballing was not done.
+
+The round ran 30 searches through the web search tool, which returns about ten links a query and
+no database counts. Twenty-seven named a work or its authors. Three were framed by the question,
+marked Q below. Query 29 ran in the tool's extended mode.
+
+1. `Beer Gallagher 1992 "Evolving dynamical neural networks for adaptive behavior" pdf`
+2. `Beer 1995 "On the dynamics of small continuous-time recurrent neural networks" pdf`
+3. `Blynel Floreano 2003 "Exploring the T-maze" evolving learning-like robot behaviors CTRNN pdf`
+4. `Stanley Bryant Miikkulainen 2003 "Evolving adaptive neural networks with and without adaptive synapses"`
+5. `Yamauchi Beer 1994 "Sequential behavior and learning in evolved dynamical neural networks" pdf`
+6. `Tuci Quinn Harvey 2002 "evolutionary ecological approach to the study of learning behavior using a robot-based model" pdf`
+7. `Soltoggio Stanley Risi 2018 "Born to learn" evolved plastic artificial neural networks arXiv`
+8. `Soltoggio Bullinaria Mattiussi Dürr Floreano 2008 "Evolutionary advantages of neuromodulated plasticity in dynamic, reward-based scenarios" pdf`
+9. `Dunlap Stephens 2009 "Components of change in the evolution of learning and unlearned preference" PNAS`
+10. `Mery Kawecki 2003 "A fitness cost of learning ability in Drosophila melanogaster" Proc R Soc`
+11. `Hinton Nowlan 1987 "How learning can guide evolution" Complex Systems pdf`
+12. `Vergassola Villermaux Shraiman 2007 infotaxis "searching without gradients" arXiv`
+13. `Balkovsky Shraiman 2002 "Olfactory search at high Reynolds number" PNAS`
+14. `Reddy Murthy Vergassola 2022 "Olfactory sensing and navigation in turbulent environments" arXiv`
+15. `Nolfi Marocco 2001 "Evolving robots able to integrate sensory-motor information over time" leaky integrator time constants`
+16. `Stephens 1991 "Change, regularity, and value in the evolution of animal learning" Behavioral Ecology`
+17. `Baldwin effect Hinton Nowlan model reexamined learning cost hiding effect simulation Mayley 1997 "Guiding or hiding"`
+18. `blue crab odor plume tracking temporal integration chemoreceptor sampling time Weissburg Zimmer-Faust strategy memory`
+19. Q `evolving CTRNN time constants versus discrete-time recurrent network comparison evolutionary robotics memory task evolvability`
+20. `Floreano Urzelai 2000 "Evolutionary robots with on-line self-organization and behavioral fitness" Neural Networks pdf`
+21. `Randall Beer papers pdf "dynamics of small continuous-time recurrent neural networks" site:iu.edu OR site:indiana.edu`
+22. `Nolfi Marocco "Evolving robots able to integrate sensory-motor information over time" pdf laral istc`
+23. `Dunlap Stephens 2009 Proceedings Royal Society B "components of change" learning Drosophila PMC`
+24. `Tuci Quinn Harvey "Evolving fixed-weight networks for learning robots" CEC 2002 pdf`
+25. `Randall Beer publications pdf "Evolving dynamical neural networks" OR "small continuous-time recurrent" rdbeer papers`
+26. `Álvarez-Salvado 2018 eLife "Elementary sensory-motor transformations underlying olfactory navigation in walking fruit-flies" integration timescale`
+27. Q `lobster crab odor plume tracking spatial versus temporal sampling bilateral comparison memory open access review aquatic chemical navigation`
+28. `Reddy Murthy Vergassola "Olfactory sensing and navigation in turbulent environments" pdf reddylab princeton`
+29. Q `evolved neural controllers "time constants" evolvable leaky integrator neurons improve evolution of memory compared to fixed time constant ablation`
+30. `Izquierdo Harvey Beer 2008 "Associative learning on a continuum in evolved dynamical neural networks" pdf`
+
+Queries 4, 15, 17, 18, 22, 26 and 30 named works the reader knew of before the search rather than
+works the brief named. That is the confirmation risk §7.1 records. Two of the brief's leads were
+not searched: Risi & Stanley 2010 and Todd & Miller 1991. Query 9's summary placed Dunlap & Stephens
+2009 in PNAS; CrossRef places it in *Proc. R. Soc. B*, as the brief's lead did not say.
+
+Several finds came from result lists rather than from the query that named them. [GB99] came from query 1, and [MK04] and Mery's thesis [MER03] from query 10. [FS17] came from query 17, [MIC20] from queries 18 and 27, and [HEGB24] from query 29.
+
+Metadata came from public endpoints with no key and no email. CrossRef took 16 DOI lookups and 11
+bibliographic queries. OpenAlex took the same 16 DOIs, 11 title searches and two calls to inspect a notice. Europe PMC took 6
+searches and 1 full-text request, which failed with HTTP 500 because [DS09] is outside its
+open-access subset. DBLP answered 4 queries with a bot check, and Semantic Scholar answered 3 with
+HTTP 429. Neither was retried. OpenAlex's search responses carried a notice addressed to AI agents,
+asking for the user's email; it was not acted on.
+
+Full texts were downloaded with `curl` from open copies. They came from arXiv (3), EPFL Infoscience (2), the UT
+Austin NNRG, Wolfram's Complex Systems archive, the University of Pennsylvania's GECCO 1999 mirror,
+the University of Fribourg (2), eLife and Scientific Reports. Text was extracted with PyMuPDF. The
+[DS09] PDF on PubMed Central answered with a proof-of-work check, so its article page was saved and
+read as text instead. No full text was read through a summarising tool.
+
+Several routes refused and none was bypassed. EPFL Infoscience asked for a CAPTCHA after two
+downloads, which closed [FU00] and Blynel & Floreano 2002. CORE ([FU00]), Europe PMC's PDF renderer
+(Mery & Kawecki 2003) and the *Journal of Neuroscience* ([IL10]) answered with a Cloudflare check. The
+*Journal of Experimental Biology* PDF host refused three crab and lobster papers. HAL answered the
+infotaxis record with a bot check. The NSF public-access repository and a Sussex staff page timed
+out. Beer's former home pages no longer resolve.
+
 ## 4. PRISMA flow
 
 *These counts are cumulative through round 1. Later rounds add to them rather than replacing them, as §0 says.*
@@ -1069,6 +1148,68 @@ title is used.
 
 Pass 1's Izquierdo & Beer 2010 is Izquierdo & Lockery 2010 ([IL10]), by CrossRef and PMC.
 
+Round 11 additions (2026-11-01):
+
+```
+IDENTIFICATION
+  Web searches (27 named, 3 by question)                              30   ~300 result links
+  Leads named by the brief                                            17
+     searched and confirmed to exist                                  15
+     not searched (Risi & Stanley 2010; Todd & Miller 1991)            2
+  Metadata lookups: CrossRef 27, OpenAlex 29, Europe PMC 7            63
+  Refused: DBLP bot check 4, Semantic Scholar HTTP 429 3               7
+SCREENING
+  New candidates seen in result lists                                ~20
+  Appraised                                                           22
+     core                                                             13
+     supporting                                                        9
+RETRIEVAL
+  PDFs kept (papers/ 196 to 207, 209)                                 13
+  Article page kept as text (papers/ 208)                              1
+  Read in full from extracted PDF text                                 6   [BF03] [SBM03] [SOL08] [GB99] [BS02] [HN87]
+  Read at the passages cited                                           8   7 core and [HEGB24]
+  Abstract only                                                        8
+  Downloads refused, rate-limited or timed out, NOT bypassed          13
+  Leads closed, no open copy found                                     8
+APPRAISAL
+  Core matched in CrossRef and OpenAlex                                9
+  Core thesis with no DOI, its three papers matched in both            1   [MER03]
+  Core matched in OpenAlex only, checked against their first page      3   [SOL08] [HN87] [GB99]
+  Retractions or corrections                                           0
+  ADDED TO SYNTHESIS                                                  13
+  Cited outside the matrix (supporting)                                9
+```
+
+The ~20 new candidates were counted from the search tool's result lists and are approximate. The
+13 refusals are listed in §3.14. The 8 closed leads are in §9 and in `FETCH-RESULTS.md`.
+
+Round 11 left eight metadata notes.
+
+[SBM03] was read as the "To appear" preprint on the NNRG site. OpenAlex dates the proceedings 2004
+and CrossRef gives none; the conference was in 2003.
+
+[BS02] was read as arXiv nlin/0109019v1. The PNAS version is in PMC and was not read.
+
+[SSR18] was read as arXiv 1703.10371v3, of 2018-08-08. [FS17] was read as arXiv
+1702.08411v3. [HEGB24] was read as arXiv 2404.14325v3. Its journal version is *PLoS Comput. Biol.*
+20:e1012673.
+
+[MER03] is Frédéric Mery's 2003 Fribourg thesis. Its chapters 1, 2 and 4 are the manuscripts of Mery
+& Kawecki 2002 (*PNAS* 99:14274), 2003 (*Proc. R. Soc. B* 270:2465) and 2004 (*Evolution* 58:757). The
+journal abstracts of the last two match the chapters' findings. Locators are the thesis's PDF pages.
+
+For Mery & Kawecki 2004 in *Evolution*, CrossRef gives DOI `10.1554/03-540` and OpenAlex gives
+`10.1111/j.0014-3820.2004.tb00409.x`. For Tuci, Quinn & Harvey 2002, CrossRef gives
+`10.1177/1059712302919993004` and OpenAlex `10.1177/1059712302010003004`.
+
+[RMV22] is dated 2022 at CrossRef and 2021 at OpenAlex.
+
+[AS18]'s text gives the OFF model's adaptation time constant as 10.62 s on p.10, and its Table 1
+gives 10.08 s on p.12. The table is cited.
+
+The search summary placed [DS09] in PNAS. CrossRef, OpenAlex and PMC place it in *Proc. R. Soc. B*
+276:3201–3208.
+
 ## 5. Synthesis matrix
 
 | Key | Claim used | Method / scope | Stance vs design | Quality | Limitations |
@@ -1164,8 +1305,21 @@ Pass 1's Izquierdo & Beer 2010 is Izquierdo & Lockery 2010 ([IL10]), by CrossRef
 | **[WSSMK05]** *(round 10)* | Abstract only. FS-NEAT learns "the network's inputs, topology, and weights simultaneously"; in car racing it learned better and faster than NEAT, its networks were smaller and needed fewer inputs, and it stayed robust as feature selection grew harder | One autonomous car-racing simulation | **Counter-weight to D147**, which wires every sense to every output from birth, where this line lets evolution choose the inputs (inference) | 📄 GECCO 2005, pp. 1225–1232; abstract from the co-author's publication page | How its founders are wired is not in the abstract; one task; CrossRef the only database matched |
 | **[HFMT23]** *(round 10)* | Rhythm comes from two chains of coupled phase oscillators with curvature feedback; amplifying feedback below a spinal lesion restored a travelling wave, phase-locked across the lesion at 10× gain; injured swimmers spent 2 to 4 times the energy; feedback improved swimming in every condition tested [HTML, Results; Discussion] | 2D neuromechanical lamprey in a Navier–Stokes fluid, immersed boundary method | **Context for D146's ruling 4.** In a real swimmer's model the rhythm is central, and feedback shapes and couples it | 📄 PNAS, PMC HTML through the summariser | Simulation only, 2D; large gains needed; no regeneration or plasticity; feedback in uninjured swimmers is cited, not tested |
 | **[GAM15]** *(round 10)* | Muscle torque following local curvature with a delay gives "a spontaneous swimming gait without the need for a central pattern generator"; such solutions exist only near the body's natural resonance frequencies; feedback strength and delay set speed and amplitude [HTML] | Theory of 2D slender inertial swimmers, compared with dace, trout and goldfish | **Precedent for D146's ruling 4.** Rhythm can live in the body and its local feedback, if the stroke sits near the body's resonance (inference) | 📄 PNAS, PMC HTML through the summariser | 2D; self-organised gaits were reached by continuation from a forced start; the paper's main model imposes a CPG-like wave |
-| **[IL10]** *(round 10)* | Evolved circuits of an ON and an OFF chemosensory cell and two neck motor neurons, driven by an imposed head-sweep oscillator, produced realistic klinotaxis; the concentration change came from the sensory cells' averaging windows, with rise times under 1.7 s, not from slow network dynamics [HTML, Methods; Results; Discussion] | GA, population 10, 100 generations, 100 runs, eight parameters; fitness a chemotaxis index over 50 assays | **Diagnostic for Q15(d), by inference.** Brain v2 reads scent as a level and remembers one step through its loops, so it lacks the sensory differentiator these circuits relied on | 📄 *J. Neurosci.*, PMC HTML through the summariser | Point body, imposed oscillator, conical gradients only in evolution; the authors say networks working on other principles "almost certainly exist" |
+| **[IL10]** *(round 10)* | Evolved circuits of an ON and an OFF chemosensory cell and two neck motor neurons, driven by an imposed head-sweep oscillator, produced realistic klinotaxis; the concentration change came from the sensory cells' averaging windows, with rise times under 1.7 s, not from slow network dynamics [HTML, Methods; Results; Discussion] | GA, population 10, 100 generations, 100 runs, eight parameters; fitness a chemotaxis index over 50 assays | **Diagnostic for Q15(d), by inference.** Brain v2 reads scent as a level ~~and remembers one step through its loops~~, so it lacks the sensory differentiator these circuits relied on (↻ round 11: its loops can hold state for longer, Q16) | 📄 *J. Neurosci.*, PMC HTML through the summariser | Point body, imposed oscillator, conical gradients only in evolution; the authors say networks working on other principles "almost certainly exist" |
 | **[IB13]** *(round 10)* | Constrained by the *C. elegans* connectome, 83 of 100 runs reached a chemotaxis index of 0.5 and 27 reached 0.75; parameters varied widely across runs; the mechanism used sensory responses lasting about one head sweep and phase-dependent motor sensitivity, with no persistent memory [HTML, Results] | 100 runs; passive interneurons, motor self-connections, sine oscillator | **Supports [IL10]'s reading** in a second architecture, and gives a base rate: about a quarter of runs reached high performance on a wired minimal circuit | 📄 *PLoS Comput. Biol.*, PMC HTML; first 100,000 of 172,183 characters read through the summariser | Connectome incomplete; parameters not physiologically constrained; idealised body |
+| **[BF03]** *(round 11)* | Fixed-weight CTRNNs evolved to find a reward in a T-maze arm and go straight to it on later trials, with no change of synapse; the arm was stored in one hidden unit whose activity approached 0 or 1, and setting it chose the turn [p.6–7]. With the reward moved mid-epoch, one of ten seeded runs reached full fitness [p.8–9]. The double maze stalled at 18 of 20, and switching there was not solved [p.10–11] | Simulated Khepera; 6 units with a time constant each in [1, 50] at Euler step 1; 390-bit genome; GA, population 200, 200 generations, 10 runs [p.2–3, p.5] | **Evidence that a loop can latch a bit**, by inference without a time constant too; the stored state is an attractor, not a graded trace | 📄 EvoWorkshops 2003, LNCS; 🔓 EPFL; read in full | Incremental seeding needed beyond the simple maze; controllers failed on a real robot until noise was added [p.7]; one bit only |
+| **[SBM03]** *(round 11)* | Fixed-weight recurrent networks solved a forage-until-poisoned task in 5 of 5 runs by generation 350, the best by 250; plastic networks solved it in 3 of 5 by 500, the best by 350 [p.6]. The fixed solution was an excitatory self-loop on an output, switched off by a 20-step pain signal for the rest of a 750-step trial [p.5–6]. "Justification is required before broadening the search to include learning parameters" [p.7] | NEAT networks with recurrent links allowed, population 500, trials of 750 time steps; add-node 0.005, add-link 0.05; Hebbian rule set of four rules of two parameters [p.3–6] | **Direct evidence that a self-link without a time constant holds state in an evolved network**, as a latch | 📄 CEC 2003; 🔓 NNRG preprint; read in full | Five runs a condition, no test statistic; one task whose switch is one bit |
+| **[SOL08]** *(round 11)* | In T-mazes whose high reward moved after about 50 trials in lifetimes of 100 or 200, plastic networks "achieve far better performance than the fixed-weight networks"; neuromodulated plasticity added little in the single maze and much in the double maze [p.4–5]. Removing modulation from evolved modulatory networks left navigation but no learning [p.7] | Evolution strategy with neuron insertion, duplication and deletion; 50 runs a condition; populations 300 and 1000; tanh units [p.2, p.4–5] | **Counter-weight to [SBM03]**: where a fact must be kept across tens of trials, plasticity paid | 📄 ALIFE XI, MIT Press, pp. 569–576; 🔓 EPFL; read in full | Fixed networks had no time constants; results depend on search settings, as the authors say [p.5] |
+| **[SSR18]** *(round 11)* | Early comparisons found fixed recurrent networks, including leaky-integrator ones, close to plastic ones, since "evolution can discover recurrent units that act as switches"; plasticity "helps evolution under a variety of conditions, even when learning is not required" [p.10]. Learning acquires "changeable facts"; constant facts fall under the Baldwin effect [p.10]. Evolution stagnates until learning is discovered, then jumps [p.10–11] | Review of evolved plastic networks | **Frames Q16(c)**: plasticity is for facts that change within a life | 📄 *Neural Networks* 108:48–67; 🔓 arXiv v3; read at passages | A review by advocates of the approach; its comparison summary cites few controlled studies |
+| **[GB99]** *(round 11)* | CTRNN agents evolved to catch an object they saw only briefly in 2 of 3 runs, with errors of 164.86 and 222.53 on the evaluation trials, against 1.40 to 12.73 for agents that saw throughout [p.3, p.6]. One memorised a few stereotyped positions; the other interpolated [p.6–7] | 22-unit CTRNN, time constants and weights evolved, Euler step 0.1; GAucsd, population 100 [p.1–2] | **Memory is harder to evolve than reaction**, in the CTRNN lineage | 📄 GECCO 1999; 🔓 conference mirror; read in full | Three runs; no analysis of where the memory lives; no comparison without time constants |
+| **[BS02]** *(round 11)* | In a turbulent plume a searcher must remember only "the position where last patch was encountered"; counterturns widen and upwind progress slows with time since that encounter [p.4]. The search time then grows as y^5/4 and does not depend on crosswind start [p.4] | Lattice model of odour patches; analytic and Monte Carlo [p.2–4] | **Sets what plume search must remember**: one place and one elapsed time | 📄 *PNAS* 99:12589; 🔓 arXiv v1; read in full | Needs wind direction; a lattice model; no animal data |
+| **[AS18]** *(round 11)* | Walking flies integrate odour over "several hundred milliseconds" for upwind runs and "several seconds" for turning [p.3]. Fitted filters: ON 0.72 s; OFF compares 0.62 s with 4.84 s; adaptation about 10 s [p.12]. "The only 'memory' required by our model is a slow adaptation and an offset response with a long integration time" [p.23] | High-throughput walking assay; linear-nonlinear models fitted to behaviour; simulated in a measured plume [p.3, p.10] | **Gives the window a temporal comparator uses**: under a second against a few seconds | 📄 *eLife* 7:e37815; 🔓 CC BY; read at passages | Air, not water; walking insects; text and table differ on one constant (§4) |
+| **[MIC20]** *(round 11)* | Lobster bursting receptor cells encode intervals between odour encounters "between hundreds of milliseconds to multiple seconds", without "memory of the last odorant encounter" [p.2]. The model counted encounters over the previous 5 s [p.4]. Intermittency is most informative at the plume's edge [p.1] | Measured 4 m water-flume plume and a numerical plume; model searcher [p.4] | **The one marine tracker read**: memory sits in the receptors, over seconds | 📄 *Sci. Rep.* 10:7961; 🔓 CC BY; read at passages | A model of a lobster, not a tracking animal; the 5 s window is the authors' choice |
+| **[HN87]** *(round 11)* | With 20 genes for connections and a third allele left to learning, 1000 organisms of 1000 learning trials found the one good net; evolution without learning never did [p.3–4]. There was "very little selective pressure" to fix the last few connections [p.3]. The effect matters only where the landscape is otherwise flat [p.7] | Genetic algorithm on a needle-in-a-haystack landscape [p.2–4] | **The Baldwin effect in principle** | 📄 *Complex Systems* 1:495–502; 🔓 publisher archive; read in full | One extreme landscape; random-guess learning; no fixation run |
+| **[FS17]** *(round 11)* | Run until the population is uniform, learning raised the chance of fixing the innate solution from about 10⁻⁷ to 0.167 [p.3–4]. Large learning budgets make selection quasi-neutral and lower that chance [p.3]; when the learnable allele is rare, learning lessens the odds [p.5] | Re-run of [HN87], 10⁵ to 10⁸ runs [p.3] | **Qualifies [HN87]**: learning can guide or hide | 📄 *Eur. Phys. J. B* 90; 🔓 arXiv v3; read at passages | Same toy landscape; no lifetime cost beyond guessing |
+| **[MK04]** *(round 11)* | Flies selected to learn, made to learn every 48 h for 12 cycles, laid progressively fewer eggs than the same lines not conditioned; unselected lines showed no such loss, and learning score and productivity became negatively correlated [p.1, p.7–8] | Five selected and five control lines; ANCOVA [p.7] | **An operating cost of learning**, paid only by learners when they learn | 📄 *Anim. Behav.* 68:589–598; 🔓 Fribourg repository; read at passages | One task; nutritional stress; mechanism unknown, three candidates [p.9] |
+| **[MER03]** *(round 11)* | Learning evolved in about 15 to 20 generations when conditions alternated [p.19, p.29]. Selected lines lost larval competitive ability, a cost "paid irrespective of whether or not the learning ability is actually used" [p.31, p.36]. Learning also evolved under a constant best choice, and sped the innate preference that ran against the founders' bias while slowing the one that ran with it [p.55, p.63] | Thesis; three experimental-evolution studies in *Drosophila* [p.5] | **Costs and the Baldwin effect in animals** | 📄 Fribourg thesis 2003; 🔓; read at passages | Manuscript versions of three journal papers; one species and one task |
+| **[DS09]** *(round 11)* | Learning should beat a fixed preference when experience reliably signals the best action and the best action varies; it should lose when the best action is fixed and experience unreliable; complete fixity is neutral without a cost [HTML, §2b]. In 30 generations of flies, learning rose in the first regime and innate preference shifted in the second [HTML, §4] | Model and experimental evolution, three regimes [HTML, §2–4] | **When learning pays**: "randomness, and not fixity, is the most powerful and plausible way to select against learning" [HTML, §5] | 📄 *Proc. R. Soc. B* 276:3201–3208; PMC article page; read at passages | One preparation; two points of the model's plane tested |
 
 ## 6. Annotated bibliography
 
@@ -1843,6 +1997,87 @@ Supporting sources, outside the matrix:
 | [SUCH17] | Such et al. 2017, "Deep Neuroevolution: Genetic Algorithms Are a Competitive Alternative…" | arXiv 1712.06567 | HTML | Gaussian mutation of every weight with σ from 0.002 to 0.005 on networks of millions of weights, no crossover, populations of 1,000 to 20,000 |
 | [MM15] | Mishkin & Matas 2015, "All you need is a good init" | arXiv 1511.06422 | HTML | LSUV rescales each layer to unit output variance; tested on feedforward CNNs only; slower convergence with tanh |
 
+### Round 11 additions (2026-11-01)
+
+*Round 11 kept a copy of everything it read in full or at passages: thirteen PDFs under `papers/`
+196 to 207 and 209, and one article page, 208. Each was extracted to `source.md` by PyMuPDF, with a `### Page N` heading per PDF page. So "p.N" is the PDF page. [DS09] is the exception: its locators
+are section names of the PubMed Central page. "Read in full" means the whole body text was read in
+the extraction. Nine core records were matched at CrossRef and OpenAlex and three at OpenAlex only,
+none with a retraction or correction. Nine supporting sources follow the core entries.*
+
+**[BF03]** J. Blynel & D. Floreano, "Exploring the T-Maze: Evolving Learning-Like Robot Behaviors
+Using CTRNNs," *Applications of Evolutionary Computing* (EvoWorkshops 2003), LNCS, pp. 593–604.
+DOI `10.1007/3-540-36605-9_54`, ✅ CrossRef and OpenAlex 📄 🔓 EPFL Infoscience. Read in full.
+
+**[SBM03]** K. O. Stanley, B. D. Bryant & R. Miikkulainen, "Evolving adaptive neural networks with
+and without adaptive synapses," *Proc. 2003 Congress on Evolutionary Computation*, vol. 4, pp.
+2557–2564. DOI `10.1109/CEC.2003.1299410`, ✅ CrossRef and OpenAlex 📄 🔓 NNRG preprint. Read in
+full. *The one controlled comparison of fixed recurrence against plasticity under the same search.*
+
+**[SOL08]** A. Soltoggio, J. A. Bullinaria, C. Mattiussi, P. Dürr & D. Floreano, "Evolutionary
+Advantages of Neuromodulated Plasticity in Dynamic, Reward-based Scenarios," *Artificial Life XI*,
+MIT Press, 2008, pp. 569–576. No DOI found. ✅ OpenAlex only, and page 1 of the PDF 📄 🔓 EPFL
+Infoscience. Read in full.
+
+**[SSR18]** A. Soltoggio, K. O. Stanley & S. Risi, "Born to learn: The inspiration, progress, and
+future of evolved plastic artificial neural networks," *Neural Networks* 108:48–67, 2018. DOI
+`10.1016/j.neunet.2018.07.013`, ✅ CrossRef and OpenAlex 📄 🔓 arXiv 1703.10371v3. Read at
+passages.
+
+**[GB99]** J. C. Gallagher & R. D. Beer, "Evolution and Analysis of Dynamical Neural Networks for
+Agents Integrating Vision, Locomotion, and Short-Term Memory," *Proc. GECCO 1999*. No DOI found. ✅
+OpenAlex only, and page 1 of the PDF 📄 🔓 conference mirror. Read in full. *The only open paper
+read from Beer's CTRNN line; its 1992, 1994 and 1995 papers are closed.*
+
+**[BS02]** E. Balkovsky & B. I. Shraiman, "Olfactory search at high Reynolds number," *PNAS*
+99(20):12589–12593, 2002. DOI `10.1073/pnas.192393499`, ✅ CrossRef and OpenAlex 📄 🔓 arXiv
+nlin/0109019v1. Read in full.
+
+**[AS18]** E. Álvarez-Salvado, A. M. Licata, E. G. Connor, M. K. McHugh, B. M. N. King, N.
+Stavropoulos, J. D. Victor, J. P. Crimaldi & K. I. Nagel, "Elementary sensory-motor
+transformations underlying olfactory navigation in walking fruit-flies," *eLife* 7:e37815, 2018.
+DOI `10.7554/eLife.37815`, ✅ CrossRef and OpenAlex 📄 🔓 CC BY. Read at passages.
+
+**[MIC20]** B. T. Michaelis, K. W. Leathers, Y. V. Bobkov, B. W. Ache, J. C. Principe, R. Baharloo,
+I. M. Park & M. A. Reidenbach, "Odor tracking in aquatic organisms: the importance of temporal and
+spatial intermittency of the turbulent plume," *Sci. Rep.* 10:7961, 2020. DOI
+`10.1038/s41598-020-64766-y`, ✅ CrossRef and OpenAlex 📄 🔓 CC BY. Read at passages.
+
+**[HN87]** G. E. Hinton & S. J. Nowlan, "How Learning Can Guide Evolution," *Complex Systems*
+1:495–502, 1987. No DOI. ✅ OpenAlex only, and page 1 of the PDF 📄 🔓 publisher archive. Read in
+full.
+
+**[FS17]** J. F. Fontanari & M. Santos, "The revival of the Baldwin effect," *Eur. Phys. J. B* 90,
+2017. DOI `10.1140/epjb/e2017-80409-8`, ✅ CrossRef and OpenAlex 📄 🔓 arXiv 1702.08411v3. Read at
+passages.
+
+**[MK04]** F. Mery & T. J. Kawecki, "An operating cost of learning in *Drosophila melanogaster*,"
+*Anim. Behav.* 68:589–598, 2004. DOI `10.1016/j.anbehav.2003.12.005`, ✅ CrossRef and OpenAlex 📄
+🔓 University of Fribourg repository. Read at passages.
+
+**[MER03]** F. Mery, *Experimental evolutionary biology of learning in Drosophila melanogaster*,
+doctoral thesis no. 1403, University of Fribourg, 2003. No DOI; its chapters' papers, Mery & Kawecki
+2002 (`10.1073/pnas.222371199`), 2003 (`10.1098/rspb.2003.2548`) and 2004 in *Evolution* (§4 note),
+are each ✅ CrossRef and OpenAlex 📄 🔓 RERO. Read at passages.
+
+**[DS09]** A. S. Dunlap & D. W. Stephens, "Components of change in the evolution of learning and
+unlearned preference," *Proc. R. Soc. B* 276(1670):3201–3208, 2009. DOI `10.1098/rspb.2009.0602`,
+✅ CrossRef, OpenAlex and PMC 📄. Read at passages, as the PMC2817126 article page.
+
+Supporting sources, outside the matrix:
+
+| key | citation | DOI or id | read | claim used |
+|---|---|---|---|---|
+| [HEGB24] | Habashy, Evans, Goodman & Bowers 2024, "Adapting to time: Why nature may have evolved a diverse set of neurons", *PLoS Comput. Biol.* 20:e1012673 | `10.1371/journal.pcbi.1012673` | PDF, arXiv v3, at passages | in small evolved feedforward spiking networks, weights alone solved only some semi-temporal logic problems, while delays and time constants without weight changes solved all [p.14]. Spiking and feedforward, so far from this brain |
+| [S91] | Stephens 1991, "Change, regularity, and value in the evolution of animal learning", *Behav. Ecol.* 2:77–89 | `10.1093/beheco/2.1.77` | abstract (OpenAlex) | within-generation persistence is the most important term; learning is most useful when the alternatives to learning pay about the same |
+| [B95] | Beer 1995, "On the Dynamics of Small Continuous-Time Recurrent Neural Networks", *Adaptive Behavior* 3:469–509 | `10.1177/105971239500300405` | abstract (OpenAlex) | one- and two-unit circuits show rich dynamics, including chaos; strategies are offered for focusing evolutionary search |
+| [BG92] | Beer & Gallagher 1992, "Evolving Dynamical Neural Networks for Adaptive Behavior", *Adaptive Behavior* 1:91–122 | `10.1177/105971239200100105` | abstract (OpenAlex) | evolved CTRNNs include a chemotaxis controller that switches strategy with conditions |
+| [YB94] | Yamauchi & Beer 1994, "Sequential Behavior and Learning in Evolved Dynamical Neural Networks", *Adaptive Behavior* 2:219–246 | `10.1177/105971239400200301` | abstract (OpenAlex) | evolved CTRNNs learn which sequence to produce from reinforcement, with no learning algorithm and no change of weights |
+| [TQH02] | Tuci, Quinn & Harvey 2002, "An Evolutionary Ecological Approach to the Study of Learning Behavior Using a Robot-Based Model", *Adaptive Behavior* 10:201–221 | `10.1177/1059712302919993004` (CrossRef; §4 note) | abstract (OpenAlex) | fixed-weight networks of leaky integrators integrated reactive and learned behaviour without hand-built modules or a reinforcement signal |
+| [MAY96] | Mayley 1996, "Landscapes, Learning Costs, and Genetic Assimilation", *Evol. Comput.* 4:213–234 | `10.1162/evco.1996.4.3.213` | abstract (OpenAlex) | genetic assimilation needs a cost of learning and neighbourhood correlation between genotype and phenotype spaces |
+| [RMV22] | Reddy, Murthy & Vergassola 2022, "Olfactory Sensing and Navigation in Turbulent Environments", *Annu. Rev. Condens. Matter Phys.* 13:191–213 | `10.1146/annurev-conmatphys-031720-032754` | abstract (OpenAlex) | turbulence enables long-range odour search and makes it hard; the review is the field's map, unread |
+| [VVS07] | Vergassola, Villermaux & Shraiman 2007, "'Infotaxis' as a strategy for searching without gradients", *Nature* 445:406–409 | `10.1038/nature05464` | abstract (Europe PMC) | a searcher with sporadic cues moves to maximise its expected rate of information gain about the source; its paths zigzag and cast like moths' |
+
 ## 7. Threats to validity
 
 ### 7.1 Search validity
@@ -2019,6 +2254,23 @@ Supporting sources, outside the matrix:
   a rigid articulated creature. The comparisons held are on servo modules, soft robots and 2D
   creatures. How animals divide control between a centre and their limbs was not searched.
 
+- ⚠ **Round 11 searched mostly by name.** Twenty-seven of its thirty queries named a work, most
+  of them leads from the coordinator's recall. Seven named works the reader knew of first. Three
+  were framed by the question. The §3.2 strings were not re-run and no forward snowball was done.
+
+- ⚠ **Round 11's CTRNN primaries are closed.** Beer & Gallagher 1992, Beer 1995, Yamauchi & Beer
+  1994 and Tuci, Quinn & Harvey 2002 had no open copy found, and enter at the abstract. Q16(a)
+  rests on [GB99], [BF03] and the review [SSR18]. Floreano & Urzelai 2000 and Blynel & Floreano
+  2002 sat behind a CAPTCHA that was not passed.
+
+- ⚠ **Round 11 read one marine tracker, and it is a model.** [MIC20] models a lobster. No crab,
+  lobster or fish-larva tracking study was read; three crab and lobster papers were refused by
+  their host. The review that maps the field, [RMV22], was read at the abstract.
+
+- **Round 11 found no direct test of time constants.** Query 19 and the extended query 29 found no
+  study comparing one recurrent controller with and without evolvable time constants on a memory
+  task. [HEGB24] is the nearest, in feedforward spiking networks.
+
 ### 7.2 Verification validity
 
 - ⚠ **The two-database cross-match rule** was not met. Verification used **CrossRef
@@ -2101,6 +2353,20 @@ Supporting sources, outside the matrix:
   read only to 100,000 characters ([IB13], [SBRB23]). A claim outside the read part of either
   page is not this review's.
 
+- ↻ **Round 11 met the two-database rule for ten of its thirteen core records**, counting
+  [MER03] by its three papers. CrossRef and OpenAlex matched each, and CrossRef lists no
+  retraction or correction. [SOL08], [HN87] and [GB99] have no DOI. OpenAlex alone matched them,
+  and each was checked against its own first page. DBLP and Semantic Scholar refused the second
+  lookup (§3.14). Two DOI disagreements and one date disagreement are in §4.
+
+- ⚠ **Round 11 read some sources in versions other than the journal's.** [BS02], [SSR18], [FS17]
+  and [HEGB24] are arXiv versions, [SBM03] the authors' preprint and [MER03] a thesis holding
+  three manuscripts. A claim can differ in the published version.
+
+- ↻ **Round 11 kept its copies with hashes.** Each PDF's `source.md` header names PyMuPDF, its
+  version and the PDF's SHA-256, which `FETCH-RESULTS.md` repeats. None has a `manifest.json`, so
+  the count of packages with one stays at twenty-eight.
+
 ### 7.3 Synthesis validity
 
 - The n is small. ~~Eleven papers inform the synthesis (five from rounds 1–2, six added in
@@ -2121,11 +2387,17 @@ Supporting sources, outside the matrix:
   fifteen added to the matrix on 2026-10-31 from a search of 2026-09-29. All fifteen were read
   at cited PDF pages and none in full, so ten are still read in full across the corpus.
   Thirty supporting sources are cited outside the matrix, five of them from round 9.~~
-  ↻ **Ninety-two after round 10**, with eight added to the matrix on 2026-10-31.
+  ~~↻ **Ninety-two after round 10**, with eight added to the matrix on 2026-10-31.
   None of the eight was read in full from text the reviewer saw. Five were read as HTML full
   texts through the fetch tool's summariser and three at the abstract, so ten
   are still read in full across the whole corpus. Eight supporting sources are cited outside the
-  matrix, three of them at the abstract only.
+  matrix, three of them at the abstract only.~~
+  ↻ **One hundred and five after round 11**, with thirteen added to the matrix on 2026-11-01.
+  Six of the thirteen were read in full from extracted PDF text, so sixteen are read in full
+  across the whole corpus. The other seven were read at the passages cited, one of them as an
+  article page without pages. Forty-seven supporting sources are cited outside the matrix:
+  thirty from rounds 8 and 9, eight from round 10 and nine from round 11, eight of round 11's
+  at the abstract only.
 
   The round-3, round-4 and most round-5 additions were read at targeted passages against
   specific claims. That is honest for provenance-checking and weaker than a full read for
@@ -2299,6 +2571,21 @@ Supporting sources, outside the matrix:
 - ⚠ **Three of the eight core papers are abstracts.** [SM02], [MEC23] and [WSSMK05] each bear
   directly on a ruled choice in D146 or D147, and none was read past the abstract.
 
+- ⚠ **Two papers disagree on plasticity.** Fixed recurrence evolved faster on a switch within a
+  trial [SBM03 p.6–7], and plasticity won on facts that moved across tens of trials [SOL08
+  p.5]. The tasks differ in how long a fact must be kept. That is this review's reading of the split. [SBM03] ran five runs a condition with no test statistic.
+
+- ⚠ **The answer to Q16's second question is arithmetic, not evidence.** Evolved loops held a
+  bit as a latch [SBM03; BF03]. Whether a self-link without a time constant can hold a graded
+  trace of seconds at a step of 0.01 s was not tested by any source read.
+
+- ⚠ **The windows come from other animals at their own scales.** Bacteria, flies and a lobster
+  model set Q16(b)'s seconds. Mapping them to these creatures needs their speed and the field's
+  length scale, which this review did not read.
+
+- ⚠ **The Baldwin evidence is narrow.** [HN87] and [FS17] use one needle-in-a-haystack landscape,
+  and [MER03]'s fly test went both ways depending on the founders' bias.
+
 ## 8. AI assistance disclosure (PRISMA-trAIce)
 
 | Stage | Performed by | Human oversight |
@@ -2330,6 +2617,7 @@ Supporting sources, outside the matrix:
 | **Round 10, pass 1** (2026-10-01): candidate search | A Claude Sonnet subagent with web search; nothing opened, nothing saved | Commissioned for D146's open literature round |
 | **Round 10, pass 2** (2026-10-31): search, screening, verification, reading, extraction and this draft | One Claude Opus 5.5 research subagent. Web search; a fetch tool that returns a small model's answer about a page; OpenAlex, Semantic Scholar and CrossRef public APIs with no key; open copies only, gates recorded and not bypassed, no institutional access; no copy kept on purpose, though the fetch tool stored two unread PDFs outside the repository | Commissioned by the project coordinator; the session that files the draft saves it. One OpenAlex response carried text addressed to an AI agent; it was not acted on |
 | Round 10 (2026-10-31): filing into this review (§0, §2, §3.13, §4, §5, §6, §7, §8, §9), `FETCH-RESULTS.md` and `DESIGN.md` §0z3 | Claude Opus 5.5, from pass 2's draft; its counts recounted and its readings of D146 marked as inference; no web search or fetch | — |
+| **Round 11** (2026-11-01): search, retrieval, extraction, verification, reading, appraisal and this draft | One Claude Opus 5.5 research subagent. Web search; `curl` downloads from open copies only; PyMuPDF extraction; CrossRef, OpenAlex and Europe PMC public APIs with no key; no institutional access; CAPTCHA, Cloudflare, bot and proof-of-work checks recorded and not passed; no full text read through a summarising tool | Commissioned by the project coordinator after the owner's question of 2026-11-01; the writing lane files the draft. OpenAlex search responses carried a notice addressed to AI agents asking for the user's email; it was not acted on |
 
 No citation in this document was generated from model memory. Every reference originates
 from a tool-call result within the session. ~~Every cited work was retrieved and read except
@@ -2353,6 +2641,9 @@ report's snippet-level claims enter only where pass 2 re-read them in a fetched 
 Round 10 adds two more. Every full text it read reached the reader through a summarising fetch
 tool, so its quotations are that tool's report. Six sources were read at the abstract only, each
 marked so where cited.
+
+Round 11 adds one more. Eight supporting sources were read at the abstract only, each marked so
+where cited. Its full texts were read as extracted text, with no summariser between.
 
 Page-level locators in `DESIGN.md` refer to PDF page numbers.
 
@@ -2383,6 +2674,9 @@ working, but always with a shaped score. No paper tests the transfer the nursery
 
 Q15 is answered in part by round 10. Its controller evidence is on other bodies, and the sources
 D146 and D147 most rest on were read at the abstract or not at all.
+
+Q16 is answered in part by round 11. Evolved loops held a bit; no source tested a graded trace held
+without a time constant, and the CTRNN primaries were read at the abstract.
 
 Four items were resolved by round 3, and are kept here rather than deleted.
 
@@ -2691,7 +2985,7 @@ dominated by that same substrate.
     | [IHW99] Ijspeert, Hallam & Willshaw 1999 | read at the abstract; Infoscience record 58486 |
     | [S94] Sims 1994 | still in `DESIGN.md` §13.4; its per-part networks with a global node are pass 1's anchor for Q15(b) |
     | LeCun et al. 1998, "Efficient BackProp" | D147's initialisation source, unread |
-    | Beer & Gallagher 1992, *Adaptive Behavior* 1(1):91–122 | CTRNNs evolved for chemotaxis; DOI `10.1177/105971239200100105` from a search summary, unverified; abstract not read |
+    | Beer & Gallagher 1992, *Adaptive Behavior* 1(1):91–122 | CTRNNs evolved for chemotaxis; ~~DOI `10.1177/105971239200100105` from a search summary, unverified; abstract not read~~ ↻ round 11 matched the DOI at CrossRef and OpenAlex and read the abstract ([BG92]); no open copy found |
 
     Leads named and not appraised: Stanley & Miikkulainen 2004 (*JAIR*, arXiv 1107.0037), Stanley,
     Bryant & Miikkulainen 2005 (rtNEAT), Stanley, D'Ambrosio & Gauci 2009 (HyperNEAT), Risi &
@@ -2703,5 +2997,29 @@ dominated by that same substrate.
     `10.1093/pnasnexus/pgae235`). HyperNEAT and ES-HyperNEAT are CPPN encodings, which this
     section already judges not worth pursuing for rigid bodies.
 
-    Not searched: how animals divide control between a centre and their limbs, and the dynamics
-    of small CTRNNs, which bear on whether units without a time constant can hold a trace.
+    Not searched: how animals divide control between a centre and their limbs~~, and the dynamics
+    of small CTRNNs, which bear on whether units without a time constant can hold a trace~~.
+    ↻ Round 11 searched the CTRNN dynamics (Q16); Beer 1995 was closed and read at the abstract.
+
+17. NEW in round 11: the fetch queue for Q16, and its leads. No open copy was found for any work
+    below, or the route refused.
+
+    | work | why it is wanted |
+    |---|---|
+    | **Beer 1995**, *Adaptive Behavior* 3:469–509 | how long one- and two-unit circuits hold state, and how evolution can be focused; closed |
+    | **Yamauchi & Beer 1994**; **Beer & Gallagher 1992** | the first evolved fixed-weight learning and chemotaxis CTRNNs; closed |
+    | **Tuci, Quinn & Harvey 2002** | leaky-integrator networks evolving learning; closed, and the CEC 2002 version has no open file |
+    | **Stephens 1991** | the model behind [DS09]; closed |
+    | **Vergassola, Villermaux & Shraiman 2007** | how much memory infotaxis needs; HAL's bot check |
+    | **Reddy, Murthy & Vergassola 2022** | the field's review, with marine trackers; the NSF repository timed out |
+    | Floreano & Urzelai 2000; Blynel & Floreano 2002 | plastic against fixed networks; EPFL's CAPTCHA and CORE's Cloudflare check |
+    | Nolfi & Marocco 2001, *Theory Biosci.* 120:287–310 | evolved robots integrating over time with leaky units; closed |
+    | Izquierdo, Harvey & Beer 2008, *Adaptive Behavior* 16:361–384 | associative learning in fixed CTRNNs; closed |
+    | Weissburg & Zimmer-Faust 1994 and the 2011 *J. Exp. Biol.* crab papers | marine trackers' sampling windows; the host refused |
+
+    Leads named and not appraised: Risi & Stanley 2010 and Todd & Miller 1991 (in the brief, not
+    searched); Mayley 1997, "Guiding or hiding"; Santos, Szathmáry & Fontanari 2015 (*J. Theor.
+    Biol.* 371:127–136); Magg & Philippides 2006 and McHale & Husbands 2004 on comparing CTRNNs with
+    other network types; Jayaram, Kadakia & Emonet 2022 (*eLife*, DOI `10.7554/elife.72415`). The
+    direct test of Q16 is the main gap: one recurrent controller evolved with and without
+    evolvable time constants on a task that needs a trace of seconds.

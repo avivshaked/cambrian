@@ -6,10 +6,10 @@ Each entry also carries the SHA-256 of the PDF that was read (added 2026-09-07, 
 item 23, on the Astra review's point that a gitignored corpus needs a way to tell the file
 a rebuild fetches from the file the review cited). A rebuilt copy whose hash differs is a
 different version of the paper, and a page-anchored claim against it is unverified until
-the page is checked. Eighty-one of the eighty-eight have a PDF on disk (counted 2026-10-31,
-after round 9; it said sixty-one of sixty-eight after round 8, forty-seven of fifty-four from
-2026-09-12, and every one of thirty-seven before that); the seven without one, round 4's entries 50, 51, 52, 55, 57, 58
-and 59, are held as extracted text only.
+the page is checked. Ninety-four of the one hundred and two have a PDF on disk (counted 2026-11-01,
+after round 11; it said eighty-one of eighty-eight after round 9, sixty-one of sixty-eight after round 8, forty-seven of fifty-four from
+2026-09-12, and every one of thirty-seven before that); the eight without one, round 4's entries 50, 51, 52, 55, 57, 58
+and 59 and round 11's entry 208, are held as extracted text only, 208 beside the article page it came from.
 
 ### [14] Virtual Creature Morphology – A Review
 - Status: OBTAINED
@@ -1095,3 +1095,135 @@ recorded and not bypassed.
 - Ijspeert 2008: http://infoscience.epfl.ch/record/125126 returned HTTP 429; Semantic Scholar elides its abstract.
 - Stanley & Miikkulainen 2004: the ar5iv conversion of arXiv 1107.0037 had failed.
 - Sims 1994, Whiteson et al. 2005, Mertan & Cheney 2023, LeCun et al. 1998: open copies are PDFs, not read.
+
+## Round 11 (2026-11-01) asked Q16: memory and learning within a life
+
+A Claude Opus 5.5 research subagent downloaded these on 2026-11-01 with `curl`, from open copies
+only. Each PDF was extracted to `papers/<name>/source.md` by PyMuPDF 1.27.2.2, with a `### Page N`
+heading per PDF page and the PDF's SHA-256 in the header. Entry 208 is a PubMed Central article
+page saved as `page.html` and turned into `source.md` by a standard-library HTML parser, because the
+PMC PDF answered with a proof-of-work check. No `manifest.json` was written. Gates were recorded
+and not passed. Page 1 of every PDF matches the title and authors below.
+
+### [196] [BF03] Exploring the T-Maze: Evolving Learning-Like Robot Behaviors using CTRNNs (Blynel & Floreano 2003)
+- Status: OBTAINED
+- Saved as: `196-blynel-2003-exploring-t-maze-ctrnn.pdf`
+- SHA-256: `3d3e64e2bb92958458a7b996f93a963dac70e1046f7793241ff53836dc505586` (`196-blynel-2003-exploring-t-maze-ctrnn.pdf`, 622,209 bytes)
+- Source used: https://infoscience.epfl.ch/record/63956/files/blynel_evorob03.pdf
+- Route: open access: EPFL Infoscience
+- Notes: EvoWorkshops 2003, LNCS, pp. 593-604 (DOI 10.1007/3-540-36605-9_54). The author version, 12 pages.
+
+### [197] [SBM03] Evolving adaptive neural networks with and without adaptive synapses (Stanley, Bryant & Miikkulainen 2003)
+- Status: OBTAINED
+- Saved as: `197-stanley-2003-adaptive-networks-with-without-synapses.pdf`
+- SHA-256: `a3fc345727cb7159e45b27b3e42312b8959aeed8d8e94e0ae5e5c9ba2897dfd2` (`197-stanley-2003-adaptive-networks-with-without-synapses.pdf`, 304,167 bytes)
+- Source used: https://nn.cs.utexas.edu/downloads/papers/stanley.cec03.pdf
+- Route: open access: the UT Austin Neural Networks Research Group's own site
+- Notes: CEC 2003, vol. 4, pp. 2557-2564 (DOI 10.1109/CEC.2003.1299410). The "To appear" preprint.
+
+### [198] [SSR18] Born to learn: the inspiration, progress, and future of evolved plastic artificial neural networks (Soltoggio, Stanley & Risi 2018)
+- Status: OBTAINED
+- Saved as: `198-soltoggio-2018-born-to-learn.pdf`
+- SHA-256: `c7178fa2f51ce7260a363050fc5f18b27489700b835202f469ec889fa5d5d111` (`198-soltoggio-2018-born-to-learn.pdf`, 1,362,133 bytes)
+- Source used: https://arxiv.org/pdf/1703.10371v3
+- Route: open access: arXiv
+- Notes: Neural Networks 108:48-67 (DOI 10.1016/j.neunet.2018.07.013). arXiv v3 of 2018-08-08, 23 pages.
+
+### [199] [SOL08] Evolutionary Advantages of Neuromodulated Plasticity in Dynamic, Reward-based Scenarios (Soltoggio, Bullinaria, Mattiussi, Dürr & Floreano 2008)
+- Status: OBTAINED
+- Saved as: `199-soltoggio-2008-neuromodulated-plasticity.pdf`
+- SHA-256: `9b776eb020e4900f41296b2fd31932e20fe4dfb942dc6d7ecca743a1728f829e` (`199-soltoggio-2008-neuromodulated-plasticity.pdf`, 442,075 bytes)
+- Source used: https://infoscience.epfl.ch/record/121548/files/SoltoggioBullinariaMattiussiDuerrFloreano2008.pdf
+- Route: open access: EPFL Infoscience
+- Notes: Artificial Life XI, MIT Press, pp. 569-576. No DOI found. A Loughborough repository copy also exists.
+
+### [200] [BS02] Olfactory search at high Reynolds number (Balkovsky & Shraiman 2002)
+- Status: OBTAINED
+- Saved as: `200-balkovsky-2002-olfactory-search-high-reynolds.pdf`
+- SHA-256: `f6a7ac91106587448dc0cc23547c45306b08cb8501080de5618afe7a25ec3670` (`200-balkovsky-2002-olfactory-search-high-reynolds.pdf`, 218,460 bytes)
+- Source used: https://arxiv.org/pdf/nlin/0109019
+- Route: open access: arXiv (v1)
+- Notes: PNAS 99(20):12589-12593 (DOI 10.1073/pnas.192393499; PMC130504, not read).
+
+### [201] [HN87] How Learning Can Guide Evolution (Hinton & Nowlan 1987)
+- Status: OBTAINED
+- Saved as: `201-hinton-1987-learning-guide-evolution.pdf`
+- SHA-256: `ee30aba0be015a0fc4ec3f612f579b77838d9409b2641a6a75b52c3b921b5606` (`201-hinton-1987-learning-guide-evolution.pdf`, 1,407,295 bytes)
+- Source used: https://content.wolfram.com/sites/13/2018/02/01-3-6.pdf
+- Route: open access: the Complex Systems archive, linked from https://www.complex-systems.com/?p=1656
+- Notes: Complex Systems 1:495-502. A scan with rough OCR in places.
+
+### [202] [GB99] Evolution and Analysis of Dynamical Neural Networks for Agents Integrating Vision, Locomotion, and Short-Term Memory (Gallagher & Beer 1999)
+- Status: OBTAINED
+- Saved as: `202-gallagher-1999-vision-locomotion-short-term-memory.pdf`
+- SHA-256: `6701fe022705550547f01fd328141c17f56a232c4e4e6dc9087fb977fe4139f6` (`202-gallagher-1999-vision-locomotion-short-term-memory.pdf`, 259,249 bytes)
+- Source used: https://gpbib.pmacs.upenn.edu/gecco1999/AA-005.pdf
+- Route: open access: the GECCO 1999 proceedings mirror at the University of Pennsylvania
+- Notes: GECCO 1999. No DOI found.
+
+### [203] [MK04] An operating cost of learning in Drosophila melanogaster (Mery & Kawecki 2004)
+- Status: OBTAINED
+- Saved as: `203-mery-2004-operating-cost-learning.pdf`
+- SHA-256: `db0b83f9ad14cb281ef37b2ff9799380d7f81586d4268b457078ec1d8aeee467` (`203-mery-2004-operating-cost-learning.pdf`, 525,439 bytes)
+- Source used: https://folia.unifr.ch/documents/299634/files/1_kawecki_ocl.pdf
+- Route: open access: the University of Fribourg repository
+- Notes: Animal Behaviour 68:589-598 (DOI 10.1016/j.anbehav.2003.12.005). The published layout.
+
+### [204] [MER03] Experimental evolutionary biology of learning in Drosophila melanogaster (Mery 2003, thesis)
+- Status: OBTAINED
+- Saved as: `204-mery-2003-thesis-evolutionary-biology-learning.pdf`
+- SHA-256: `1e643600e83bb7c17ed67ffcfdca1dcf68ad43267e389233ec3dd8815cc8d315` (`204-mery-2003-thesis-evolutionary-biology-learning.pdf`, 738,099 bytes)
+- Source used: https://sonar.rero.ch/documents/299827/files/MeryF.pdf
+- Route: open access: RERO / SONAR, the Swiss repository for the University of Fribourg
+- Notes: Thesis no. 1403, 79 pages. Holds the manuscripts of Mery & Kawecki 2002 (PNAS), 2003 (Proc. R. Soc. B) and 2004 (Evolution). It was used because Europe PMC's PDF of the 2003 paper answered with a Cloudflare check.
+
+### [205] [AS18] Elementary sensory-motor transformations underlying olfactory navigation in walking fruit-flies (Álvarez-Salvado et al. 2018)
+- Status: OBTAINED
+- Saved as: `205-alvarez-salvado-2018-olfactory-navigation-walking-flies.pdf`
+- SHA-256: `023e9fc23abd1a7a7c959658284705e9476a3b1d0b545d1eb354a22545022c6f` (`205-alvarez-salvado-2018-olfactory-navigation-walking-flies.pdf`, 5,043,736 bytes)
+- Source used: https://elifesciences.org/articles/37815.pdf
+- Route: open access: eLife (publisher, CC BY)
+- Notes: eLife 7:e37815 (DOI 10.7554/eLife.37815). 38 pages.
+
+### [206] [FS17] The revival of the Baldwin effect (Fontanari & Santos 2017)
+- Status: OBTAINED
+- Saved as: `206-fontanari-2017-revival-baldwin-effect.pdf`
+- SHA-256: `7c67d8888d0bb301a5cadba75e635bfe63b97b2dfe14c9bec4b2d1c81e18232d` (`206-fontanari-2017-revival-baldwin-effect.pdf`, 346,701 bytes)
+- Source used: https://arxiv.org/pdf/1702.08411
+- Route: open access: arXiv (v3)
+- Notes: Eur. Phys. J. B 90 (DOI 10.1140/epjb/e2017-80409-8).
+
+### [207] [MIC20] Odor tracking in aquatic organisms: the importance of temporal and spatial intermittency of the turbulent plume (Michaelis et al. 2020)
+- Status: OBTAINED
+- Saved as: `207-michaelis-2020-odor-tracking-aquatic-intermittency.pdf`
+- SHA-256: `0d5ac64a4904451940156165de84e66c1f3fa4fd8e4a22d8fbba2ca24fe3c5e4` (`207-michaelis-2020-odor-tracking-aquatic-intermittency.pdf`, 4,291,788 bytes)
+- Source used: https://www.nature.com/articles/s41598-020-64766-y.pdf
+- Route: open access: Scientific Reports (publisher, CC BY)
+- Notes: Sci. Rep. 10:7961 (DOI 10.1038/s41598-020-64766-y).
+
+### [208] [DS09] Components of change in the evolution of learning and unlearned preference (Dunlap & Stephens 2009)
+- Status: OBTAINED AS AN ARTICLE PAGE, NO PDF
+- Saved as: `208-dunlap-2009-components-of-change-learning/page.html`
+- SHA-256: `4d723d3270050ee5cceb3437e890acac50df69d418cc7d0e96e63fccd0cfe6a0` (`page.html`, 153,723 bytes)
+- Source used: https://pmc.ncbi.nlm.nih.gov/articles/PMC2817126/
+- Route: open access: PubMed Central article page. Its PDF link answered with a proof-of-work check, which was not passed; Europe PMC's full-text service returned HTTP 500
+- Notes: Proc. R. Soc. B 276:3201-3208 (DOI 10.1098/rspb.2009.0602). Locators are section names.
+
+### [209] [HEGB24] Adapting to time: why nature may have evolved a diverse set of neurons (Habashy, Evans, Goodman & Bowers 2024)
+- Status: OBTAINED
+- Saved as: `209-habashy-2024-adapting-to-time-diverse-neurons.pdf`
+- SHA-256: `153615435f35890a3451eb1ade781baa7962fb70f1d5b6817d14d995e34b68c1` (`209-habashy-2024-adapting-to-time-diverse-neurons.pdf`, 2,563,953 bytes)
+- Source used: https://arxiv.org/pdf/2404.14325
+- Route: open access: arXiv (v3)
+- Notes: PLoS Comput. Biol. 20:e1012673 (DOI 10.1371/journal.pcbi.1012673). Supporting, read at passages.
+
+### Round 11: sought, NOT read (manual-fetch queue)
+- Beer & Gallagher 1992, Beer 1995, Yamauchi & Beer 1994, Tuci, Quinn & Harvey 2002, Stephens 1991, Nolfi & Marocco 2001, Mayley 1996 and Izquierdo, Harvey & Beer 2008: closed per OpenAlex, no open copy found; the first five and Mayley read at the abstract.
+- Vergassola, Villermaux & Shraiman 2007: https://hal.science/hal-00326807 answered with a bot check; abstract read through Europe PMC (PMID 17251974).
+- Reddy, Murthy & Vergassola 2022: https://par.nsf.gov/servlets/purl/10470619 timed out; abstract read through OpenAlex.
+- Floreano & Urzelai 2000: https://core.ac.uk/download/147909148.pdf answered with a Cloudflare check, and https://infoscience.epfl.ch/record/63912/files/nn3.pdf with a CAPTCHA.
+- Blynel & Floreano 2002: https://infoscience.epfl.ch/record/63942/files/blynel_sab02.pdf answered with a CAPTCHA.
+- Mery & Kawecki 2003: https://europepmc.org/articles/PMC1691529?pdf=render answered with a Cloudflare check; read instead as chapter 2 of [MER03].
+- Izquierdo & Lockery 2010 [IL10]: https://www.jneurosci.org/content/30/39/12908.full.pdf answered with a Cloudflare check; not re-read.
+- Three J. Exp. Biol. papers (214:1498, 214:1513, 214:3138) on crab and lobster tracking: https://cob.silverchair.com refused all three.
+- Michaelis et al. 2020's NSF copy and McHale & Husbands 2004 (users.sussex.ac.uk): connections timed out; [MIC20] was read from the publisher.
