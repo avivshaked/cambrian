@@ -157,8 +157,15 @@ median of 60 to 64 s instead of 26.5 s. The share that never ate fell from about
 The second pace group asked whether the thrust arm won through speed or through cheap swimming
 (`logbook/specs/r62p2-read/24000-a/README.md`). Speed carried it. One world kept the ordinary push and cut its price
 ninefold. It failed D222 as badly as any world in the round, at 0.72 of upkeep, and its grazers swam at the base
-world's 0.07 m a world second. The other pushed sixteen times harder at a sixteenth of the price. It passed at 1.86,
-with grazers swimming 0.18 to 0.26 m a world second.
+world's 0.07 m a world second. The other pushed sixteen times harder at a sixteenth of the price. It passed at 1.86, with grazers swimming 0.18 to 0.26 m a world second.
+
+![A grazer of r62p-t16-6201 at 24,003.4 s and 2 s later, an unverified host replay of a card run](images/r62/r62p-t16-6201-t24003-unverified-grazer-pair.png)
+
+The pictures show that world, `r62p-t16-6201`, at 24,003.4 s and two seconds later. The theatre lane replayed the
+card run on the processor with build 7bdbfcc7, and the replay was not checked against the run, so each frame says
+UNVERIFIED. The look also predates the skins the owner accepted. The grazer is the pale-blue block with a purple
+stalk in the middle. In the second frame it has come in from the centre and is closer, among flat green leaves.
+Dark, spiny bodies drift around it, and the water above is thick with more leaves.
 
 Two more questions about the newborns came back empty. A screen of the rate of structural mutation, the changes to a
 body plan between parent and child, found no rate that cut the share of slow newborns enough
