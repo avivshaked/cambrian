@@ -10425,10 +10425,10 @@ blow's reach becomes a dial, and D275's one mouth radius is where the dial is me
   design and pre-registration are the coordinator's.
 
 **Why.** The owner asked how a blind creature could aim. In r66-M's world it has three senses that bear on food, and none
-places the mouth. The leaf smell is a field on 2 m cells, so it points into a patch, not at a leaf's surface. The contact
-sense says a part is touched, not where. The light sense reads brightness, not objects. Under D275, a bite that lands and
-a bite refused felt the same, and both nursery arms of 2026-11-02 found the same result: selection raised contact, and the
+places the mouth. The leaf smell is a field on 2 m cells, so near a patch it points into the patch's middle. The contact
+sense says that a part is touched and gives no place on it. The light sense reads brightness alone. Under D275 a bite
+that lands and a bite refused felt the same. Both nursery arms of 2026-11-02 found selection raising contact while the
 landed share fell. Real small grazers bring the mouth onto food by touch and taste.
 
 **Rejected.** Touch with a direction on every part, which is harder for evolution to use than a signal at the mouth. A
-finer leaf smell near the leaves, which costs more and is still a field. Vision, a large build.
+finer leaf smell near the leaves, which costs more and is still a field. Vision, which is a large build.
