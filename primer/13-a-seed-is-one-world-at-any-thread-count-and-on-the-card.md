@@ -226,8 +226,8 @@ was cut a minute in by a Windows Update restart on 2026-10-29. It ran again that
 ## A resume has parted three times on the farm, and two causes are found
 
 Since the farm took over, a resume has parted from its run in three ways. In two the cause is on record: a checkpoint
-left out something the world reads, or a list on the card filled in an order that no rerun repeats. The third is still
-open. Each left a stretch of some world that can never be run again.
+left out something the world reads, or a list on the card filled in an order that no rerun repeats. The third has no
+cause on record, though a later build no longer shows it. Each left a stretch of some world that can never be run again.
 
 The first way began with the senses. The farm's checkpoint carried everything the solver reads, and at first not
 everything a sense reads. The health each part had lost went unwritten. A resume of round 45 seed 2 therefore parted
@@ -272,24 +272,34 @@ nearly 15 m long. The re-read found that a few dozen long blades most likely mad
 of the last span counted 2,491,424 drops at the round's cap. The entry calls that count a close guide to the round's.
 A resume past a drop parts from its run, so the round's own count cannot be read again.
 
-The third parting is still open. On 24 October the build that brought contact eating's store share
+The third parting is untraced. On 24 October the build that brought contact eating's store share
 ([D224](../DECISIONS.md#d224)) was resumed on the card from 6,000 s. It was resumed again from 1,500 s, while the
 share was idle ([its identity record](../logbook/specs/r62cs-prereg/identity.md)). Each resume parted from its run at
 the first row, in the seventh or eighth significant figure of the joules spent on gestation. Its lineage followed a
-few rows later. So the parting comes with contact eating, the remains or that build's checkpoint, and no file yet says
-which. Until it does, a stopped world of that build is rerun fresh or read as a cousin. I found no later fix in the
-logbook, the decisions or the handoff (inference).
+few rows later. So the parting comes with contact eating, the remains or that build's checkpoint, and no file says
+which.
+
+On 2 November one later build answered the question for itself. It was [D275](../DECISIONS.md#d275)'s, the build on
+which a bite needs the mouth. Its identity check ran a world with contact eating, the remains and the mouth rule all
+on. Resumed from 1,200 s at group 32, the world went on to 6,000 s. The same world ran unbroken at group 64. The two
+agreed on every world value of 480 rows on both seeds, and on their lineage row for row. Only the wall clocks and two
+counters of the process's own work differed ([r66's pre-registration](../logbook/specs/r66-prereg/predictions.md)).
+
+So on D275's build a card resume repeats its run. Whatever parted D224's resumes was gone by then, and no file says
+which change removed it (inference). No build between the two has been checked. A stopped world of one of them is
+still rerun fresh or read as a cousin.
 
 ## Replay costs speed and buys a cause for every difference
 
 The costs are written down. D078 added a fifth to a Unity run's wall-clock time at small crowds. The farm gave up a
 runtime optimisation, and the card writes some of its products the long way. Every build that lands spends a sitting
 on the card. And a few stretches of worlds stand as single realisations. They are the shared box before D078, the card
-resumes before round 60's build, seed 6002's last two years, and the resumed stretches of D224's build.
+resumes before round 60's build and seed 6002's last two years. With them go the resumed stretches of the builds from
+D224's up to D275's.
 
 What it buys, on my reading, is that every difference has a cause someone can find. When two runs part, the digest
-names the step and the body. When a resume has parted, a missing field or a loose order has so far been the cause, and
-the third parting is not yet traced. The project changes its realisation freely, for speed
+names the step and the body. When a resume has parted, a missing field or a loose order has so far been the cause. The
+third parting is not traced, though it no longer shows on D275's build. The project changes its realisation freely, for speed
 ([D153](../DECISIONS.md#d153)) or for single precision (D157). It has not given up replay inside an engine, and every
 failure above whose cause was found has been fixed (inference from the decisions read together).
 
@@ -309,8 +319,9 @@ failure above whose cause was found has been fixed (inference from the decisions
 - **That the project keeps replay inside an engine as a standing rule** is inferred from D078, D153, D157 and D193 read
   together. No decision states it in those words.
 - **That a build lands only after its sitting passes** generalises D243, D248 and D249, each of which names its own sitting.
-- **That the third parting is still open** rests on finding no later fix in the logbook, DECISIONS.md or HANDOFF on
-  2026-10-31.
+- **That the third parting's cause is untraced** rests on finding no fix named in the logbook, DECISIONS.md or HANDOFF
+  on 2026-11-02. **That it was gone by D275's build** is read from r66's check 3, which resumed one world on two seeds.
+  No source says which change removed it.
 - **Double precision as the wider of two formats**, PCG as a recipe of whole numbers, and the explicit multiply as
   "separately rounded" are the author's plain glosses. No project file states them in those words.
 
@@ -327,7 +338,9 @@ failure above whose cause was found has been fixed (inference from the decisions
 | [`DynamicsWorldDigest.cs`](../src/Evosim.Dynamics/DynamicsWorldDigest.cs), [`gpu-accept.py`](../scripts/reads/gpu-accept.py) | the solver's digest, and the card's identity check |
 | [`DECISIONS.md`](../DECISIONS.md) D078, D105, D153, D157, D168 | Unity on no worker threads; the card in single; speed-ups judged by trade-off; sound on its own terms; small moves kept |
 | [`DECISIONS.md`](../DECISIONS.md) D193, D224, D243, D248, D249 | the race fixed; the store-share build whose resumes part; switches off by default; integration branch 2's sitting; the general off-by-default rule |
-| [`r62cs-prereg/identity.md`](../logbook/specs/r62cs-prereg/identity.md) | the third parting, still open |
+| [`DECISIONS.md`](../DECISIONS.md) D275 | the mouth rule, whose build's resume repeated its run |
+| [`r62cs-prereg/identity.md`](../logbook/specs/r62cs-prereg/identity.md) | the third parting, on D224's build |
+| [`r66-prereg/predictions.md`](../logbook/specs/r66-prereg/predictions.md), check 3 | a resume on D275's build that repeated its unbroken run |
 | [logbook 0052](../logbook/0052-the-coarse-step.md), [0069](../logbook/0069-the-shared-world-does-not-replay.md) | the butterfly rule; the shared world that did not replay |
 | [logbook 0112](../logbook/0112-one-thread-a-creature.md), [0115](../logbook/0115-the-crowd-on-the-card.md) | the card's first spike and its group sizes; the not-a-number sign bits |
 | [`int2-identity`](../logbook/specs/int2-identity/README.md), [`nose-card-identity`](../logbook/specs/nose-card-identity/README.md) | two switch-off sittings |
