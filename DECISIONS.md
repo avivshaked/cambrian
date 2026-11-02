@@ -300,6 +300,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D276](#d276) | The theatre's normal view draws no hunger, and leans toward realism | 2026-11-01 | ruled by the owner on 2026-11-01 |
 | [D277](#d277) | In the film a meal flashes once, a newborn grows from a speck, and dead tissue crumbles into snow | 2026-11-01 | ruled by the owner on 2026-11-01, by question, on the coordinator's recommendations |
 | [D278](#d278) | Box-world films draw the true bed, and the skin's thickness cap is 2 | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendations, after `scratch/owner/floor-drawn-flat-over-a-sloped-bed/` and `scratch/owner/skin-tips-thickness-cap/` |
+| [D279](#d279) | A birth is shown as a spawn cloud that thins to reveal the newborn, and the speck is dropped | 2026-11-02 | ruled by the owner on 2026-11-02, by question, on the coordinator's recommendation |
 
 ---
 
@@ -10384,3 +10385,24 @@ against it until 2026-11-01.
 
 **Rejected.** For the floor: keeping it flat and accepting the occasional subject lost under it. For the cap: a cap of 1,
 which half-mends the tips, and no cap.
+
+### D279
+**A birth is shown as a spawn cloud that thins to reveal the newborn, and the speck is dropped** · 2026-11-02
+
+**Status:** ruled by the owner on 2026-11-02, by question, on the coordinator's recommendation. It supersedes D277's
+second point, that a newborn grows from a speck. D277's meal flash and its crumble stand.
+
+**Decision.**
+- **A birth is framed at the birth point**, since the world places a newborn at a random spot up to 30 m from its parent,
+  21 m at the median over 545 births in r65-c-6203's film window (`SharedVolume.cs`, `OffspringDispersalMetres`). A shot of
+  the parent shows the birth in about one case in ten.
+- **A small cloud of pale motes, like released eggs, thins over two or three seconds** and leaves the newborn at its true
+  size and place. The motes are particles that drift with the current, and the newborn is drawn solid from its first frame.
+- **The caption names the parent and the distance.**
+
+**Why.** The owner found the speck unreal: a body swelling to full size in two seconds has no biological equivalent.
+Spawn clouds are a real sight in the sea, nothing pops in, and nothing is drawn where the physics has no body.
+
+**Rejected.** A larva drifting from the parent to the birth point, which draws a path the farm never computes, squeezed into
+seconds. Keeping the speck. Placing newborns beside their parent, a world rule that would change how lineages spread and
+would need a screen.
