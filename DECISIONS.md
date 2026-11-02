@@ -307,8 +307,10 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D283](#d283) | Where a mouth sits is heritable | 2026-11-02 | ruled by the owner on 2026-11-02, who asked for it |
 | [D284](#d284) | The nursery trains grazers with the mouth's place evolving, so D280's retrain waits for D283 | 2026-11-02 | ruled by the owner on 2026-11-02 |
 | [D285](#d285) | A mouth is the size its cell's genes give it, wherever it sits | 2026-11-02 | ruled by the owner on 2026-11-02, who agreed with the coordinator's amendment to D283's build spec (`logbook/specs/mouth-gene-spec.md`, section 11) |
-| [D286](#d286) | Every hurt animal bleeds, and a kill bleeds more than a wound | 2026-11-02 | ruled by the owner on 2026-11-02 |
+| [D286](#d286) | Every hurt animal bleeds, and a kill bleeds more than a wound | 2026-11-02 | completed by D289 (a plant's cue); ruled by the owner on 2026-11-02 |
 | [D287](#d287) | The channel's opener and closer are remade from the grazer film's creatures, filmed in the theatre | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendation |
+| [D288](#d288) | The titles' look: the creatures in their own colours, glowing in a void, composed from separate layers | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendation for the colours, with the layers the owner's own |
+| [D289](#d289) | A bitten plant throws off its own fragments, more at a kill | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendation |
 
 ---
 
@@ -10576,3 +10578,40 @@ own brains rather than a choreography. Choosing from today's worlds would be red
 
 **Rejected.** Porting the current look into Blender, a second copy of the look that drifts each time the theatre changes.
 Choosing the creatures from round 66 now.
+
+### D288
+**The titles' look: the creatures in their own colours, glowing in a void, composed from separate layers** · 2026-11-02
+
+**Status:** ruled by the owner on 2026-11-02, on the coordinator's recommendation for the colours, with the layers the
+owner's own. It sets the look of D287's opener and closer, to be judged on a test before anything is filmed.
+
+**Decision.**
+- The opener and closer are set apart from the film by a title look: a void of dark water with sparse snow and no bed,
+  surface, shafts or caustics; a glowing rim and bloom on the bodies; and a shallow focus.
+- Each creature wears its own colours, from its genes, as in the film.
+- The frame is composed from layers: each creature filmed alone without its surroundings, with a transparent background,
+  and the void filmed without creatures. The layers are placed, focused and given their glow when composed, and the
+  words are drawn over the result.
+- The look is tested on today's creatures in a still beside a v1 frame, and judged by eye, before the film's creatures
+  are filmed.
+
+**Why.** The owner wants the titles clearly apart from the film, as v1's were. v1's separation came from its void, its
+glow, its shallow focus and its graphics, and not from Blender as such. The creatures keep their own colours so that the
+opener introduces the animals the film shows. Separate layers let the frame be composed as a title is, with each creature
+placed where it reads best.
+
+**Rejected.** A fixed brand palette of v1's mint and magenta. Filming the creatures together in one staged tank for the
+titles, which gives less control over where each sits.
+
+### D289
+**A bitten plant throws off its own fragments, more at a kill** · 2026-11-02
+
+**Status:** ruled by the owner on 2026-11-02, on the coordinator's recommendation. It completes D286, which left a plant's
+cue open.
+
+**Decision.** A plant has no blood. A bite on a plant throws off fragments of its tissue in its own colour, the bite's
+crumbs, and a bite that kills it throws off more.
+
+**Why.** Real seaweed and seagrass tear rather than bleed, and the owner already liked the crumbs.
+
+**Rejected.** Blood or a coloured plume for a plant.
