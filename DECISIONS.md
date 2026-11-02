@@ -305,6 +305,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D281](#d281) | A death drains the body to grey and releases a cloud, a wound bleeds into the water, and a bite no longer flashes | 2026-11-02 | ruled by the owner on 2026-11-02 after `scratch/owner/bite-crumbs-birth-cloud-death-caption/`, on the coordinator's recommendations, with the wound's cue the owner's own |
 | [D282](#d282) | A bite's reach applies only between bodies that touch | 2026-11-02 | ruled by the owner on 2026-11-02, confirming the coordinator's reading of D280 (`logbook/specs/mouth-feel-spec.md`, section 9) |
 | [D283](#d283) | Where a mouth sits is heritable | 2026-11-02 | ruled by the owner on 2026-11-02, who asked for it |
+| [D284](#d284) | The nursery trains grazers with the mouth's place evolving, so D280's retrain waits for D283 | 2026-11-02 | ruled by the owner on 2026-11-02 |
 
 ---
 
@@ -10502,3 +10503,19 @@ food is at the mouth, and this lets the body put the mouth where food is met.
 
 **Rejected.** A mouth that follows the body's direction of travel from moment to moment, which no animal has. A choice
 among the part's six faces alone, since the owner ruled that a mouth can sit anywhere on its part.
+
+### D284
+**The nursery trains grazers with the mouth's place evolving, so D280's retrain waits for D283** · 2026-11-02
+
+**Status:** ruled by the owner on 2026-11-02. It replaces the coordinator's plan to run D280's retrain first and add the
+mouth's place to the next one.
+
+**Decision.** The leaf tank's search evolves where a mouth sits together with the brain, every other body gene fixed as
+now. D280's retrain (`rounds/nursery/leaf-direction-mouth-feel.json`) does not run until D283's gene is built on the host
+and the tank can mutate it. D280's card port goes on meanwhile, since the world screens need it and the nursery does not.
+
+**Why.** A brain trained for a mouth fixed where the body plan puts it is trained for a different body from the one it
+will have once the mouth can move. Its aim would then have to be learned again.
+
+**Rejected.** Running the retrain on today's mouth first, which spends a nursery run on brains for a body that is about to
+change.
