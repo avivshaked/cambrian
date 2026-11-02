@@ -299,6 +299,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D275](#d275) | A bite needs the mouth: a mouth's blow wounds and feeds only where its mouth point touches | 2026-11-01 | ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation (option A of three) |
 | [D276](#d276) | The theatre's normal view draws no hunger, and leans toward realism | 2026-11-01 | ruled by the owner on 2026-11-01 |
 | [D277](#d277) | In the film a meal flashes once, a newborn grows from a speck, and dead tissue crumbles into snow | 2026-11-01 | ruled by the owner on 2026-11-01, by question, on the coordinator's recommendations |
+| [D278](#d278) | Box-world films draw the true bed, and the skin's thickness cap is 2 | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendations, after `scratch/owner/floor-drawn-flat-over-a-sloped-bed/` and `scratch/owner/skin-tips-thickness-cap/` |
 
 ---
 
@@ -10360,3 +10361,26 @@ into detritus. Neither turns see-through.
 second, and keeping the fade with a speck. For deaths: sinking to the bed, which moves remains away from where the physics
 keeps them in mid-water, and a shorter fade. For the flash: keeping the strobe, and turning the pulse off until the mouths
 move.
+
+### D278
+**Box-world films draw the true bed, and the skin's thickness cap is 2** · 2026-11-02
+
+**Status:** ruled by the owner on 2026-11-02, on the coordinator's recommendations, after
+`scratch/owner/floor-drawn-flat-over-a-sloped-bed/` and `scratch/owner/skin-tips-thickness-cap/`. The owner took the cap as
+the setting for now.
+
+**Decision.**
+- **The film draws the bed the farm stepped.** In a box world the farm's bed has about 1.5 m of relief, and the film drew
+  its floor flat at the box's depth. A body resting where the bed lies low was hidden under the drawn floor, and one
+  where it lies high looked to hover. The film now draws the bed from the heights the world grew (`BedShape.ForBox`),
+  cached as the coral's placement is, since building them takes minutes in the Editor.
+- **The one skin caps each vertex's half thickness at 2** (`EVOSIM_THEATRE_SKIN_THICK_CAP`), which mends the torn tail tips
+  and matches the uncarved outline. It also makes some sound flat rims crisper, which changes the accepted look on more
+  bodies than a cap of 1 would.
+
+**Why.** Both follow D276: the film shows the world as the farm has it. The flat floor was the theatre's own sand, made flat
+for a box, and the relief bed was built only to stand the coral on and then discarded. Nobody had checked a resting body
+against it until 2026-11-01.
+
+**Rejected.** For the floor: keeping it flat and accepting the occasional subject lost under it. For the cap: a cap of 1,
+which half-mends the tips, and no cap.
