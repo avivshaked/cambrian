@@ -298,10 +298,13 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D274](#d274) | The smell screen runs under true-shape contact, as two groups of three, after a 6,000 s founding bench | 2026-11-01 | decided by the coordinator on 2026-11-01, at the owner's delegation of the grazer screens |
 | [D275](#d275) | A bite needs the mouth: a mouth's blow wounds and feeds only where its mouth point touches | 2026-11-01 | amended by D280 (its reach becomes a dial, starting at 3 radii); ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation (option A of three) |
 | [D276](#d276) | The theatre's normal view draws no hunger, and leans toward realism | 2026-11-01 | ruled by the owner on 2026-11-01 |
-| [D277](#d277) | In the film a meal flashes once, a newborn grows from a speck, and dead tissue crumbles into snow | 2026-11-01 | ⚠ its speck superseded by D279; ruled by the owner on 2026-11-01, by question, on the coordinator's recommendations |
-| [D278](#d278) | Box-world films draw the true bed, and the skin's thickness cap is 2 | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendations, after `scratch/owner/floor-drawn-flat-over-a-sloped-bed/` and `scratch/owner/skin-tips-thickness-cap/` |
+| [D277](#d277) | In the film a meal flashes once, a newborn grows from a speck, and dead tissue crumbles into snow | 2026-11-01 | ⚠ its speck superseded by D279, its flash by D281; ruled by the owner on 2026-11-01, by question, on the coordinator's recommendations |
+| [D278](#d278) | Box-world films draw the true bed, and the skin's thickness cap is 2 | 2026-11-02 | amended by D281 (the cap shapes the outline only at the close look); ruled by the owner on 2026-11-02, on the coordinator's recommendations, after `scratch/owner/floor-drawn-flat-over-a-sloped-bed/` and `scratch/owner/skin-tips-thickness-cap/` |
 | [D279](#d279) | A birth is shown as a spawn cloud that thins to reveal the newborn, and the speck is dropped | 2026-11-02 | ruled by the owner on 2026-11-02, by question, on the coordinator's recommendation |
 | [D280](#d280) | A mouth feels what is near it, and a bite's reach starts wide and is dialled back | 2026-11-02 | ruled by the owner on 2026-11-02, who took options 1 and 4 of the coordinator's four |
+| [D281](#d281) | A death drains the body to grey and releases a cloud, a wound bleeds into the water, and a bite no longer flashes | 2026-11-02 | ruled by the owner on 2026-11-02 after `scratch/owner/bite-crumbs-birth-cloud-death-caption/`, on the coordinator's recommendations, with the wound's cue the owner's own |
+| [D282](#d282) | A bite's reach applies only between bodies that touch | 2026-11-02 | ruled by the owner on 2026-11-02, confirming the coordinator's reading of D280 (`logbook/specs/mouth-feel-spec.md`, section 9) |
+| [D283](#d283) | Where a mouth sits is heritable | 2026-11-02 | ruled by the owner on 2026-11-02, who asked for it |
 
 ---
 
@@ -10432,3 +10435,70 @@ landed share fell. Real small grazers bring the mouth onto food by touch and tas
 
 **Rejected.** Touch with a direction on every part, which is harder for evolution to use than a signal at the mouth. A
 finer leaf smell near the leaves, which costs more and is still a field. Vision, which is a large build.
+
+### D281
+**A death drains the body to grey and releases a cloud, a wound bleeds into the water, and a bite no longer flashes** · 2026-11-02
+
+**Status:** ruled by the owner on 2026-11-02 after `scratch/owner/bite-crumbs-birth-cloud-death-caption/`, on the
+coordinator's recommendations, with the wound's cue the owner's own. It supersedes D277's flash on a meal, and amends D278
+at the close look.
+
+**Decision.**
+- **A bite shows its crumbs and no flash.** The cloud of food crumbs thrown from the mouth marks a bite, and the white flare
+  is off in the film look.
+- **A death shows on the body.** At the moment of death the body's colour drains to grey over about a second and it
+  releases a dull cloud of matter, drawn as the bite's crumbs are. In previews the creature's number travels beside its
+  body, so the owner can tell which body died. The film leaves the number out.
+- **A wound shows as blood in the water.** A blow that hurts an animal releases a dark plume at the wound, which spreads
+  and drifts with the water. It is distinct from a leaf's dry crumbs, so that it is clear an attack happened. A blow that
+  kills bleeds too, and the body then shows its death (the coordinator's reading, since a kill is also an attack). A
+  death of old age or hunger shows no blood.
+- **D278's cap shapes the outline only.** At the close look, the shading of thin tissue reads the thickness from before
+  the cap, so the close look keeps the colour the owner knows.
+- Each new cue starts strong and is dialled back (D262), behind its own dial.
+
+**Why.** In the 1x death film the owner could not tell which creature died, and a caption naming its number did not help.
+The coordinator's frame sheet showed why: the dying body only dulled a little, while a live body nearby moved and drew
+the eye. With the flash gone, the crumbs mark a meal, but an attack on an animal needs a mark of its own. At the close
+look, cap 2 switched on a pale translucent margin at tips the old measure had read as thick.
+
+**Rejected.** A camera push onto the dying body, since other bodies still swim through the frame. The flash at a third of
+its strength. The translucent tip at the close look.
+
+### D282
+**A bite's reach applies only between bodies that touch** · 2026-11-02
+
+**Status:** ruled by the owner on 2026-11-02, confirming the coordinator's reading of D280
+(`logbook/specs/mouth-feel-spec.md`, section 9).
+
+**Decision.** D280's reach widens D275's gate on a blow that a contact makes. A body must touch the other with some part,
+and its mouth must lie within k mouth radii of the part it bites. No blow crosses open water.
+
+**Why.** A bite across a gap would need a tongue or a strike the world does not have, and the owner prefers a bite on
+contact.
+
+**Rejected.** A reach that lets a mouth bite a body it does not touch.
+
+### D283
+**Where a mouth sits is heritable** · 2026-11-02
+
+**Status:** ruled by the owner on 2026-11-02, who asked for it. It amends the mouth point of D213 and D275, which a rule
+derives from the body plan. The design read sets its form.
+
+**Decision.**
+- Every eating part's genome carries where its mouth sits, as a place anywhere on the part's surface. A founder's mouth can
+  be anywhere on its mouth cell, offspring inherit its place, and mutation moves it, so selection can bring the mouth to
+  the edge the body moves towards.
+- A random genome draws its place over the whole surface. A genome already stored keeps the mouth it has, with its place
+  written out, so that recorded worlds replay as they ran.
+- It is built behind a switch, off by default, with every recorded world unchanged to the bit. Its first instrument
+  measures how often a body's mouth leads its motion, in r66-M's worlds and in the nursery tank.
+
+**Why.** Today the mouth sits where the body plan puts it: at the end of a part away from its joint, and on the root on the
+side opposite its first limb. Evolution can move it only by changing the limbs. An animal's mouth evolves at its front
+because the animal moves forward. The owner asked that evolution place the mouth on the edge the body moves towards. Where
+it sits now, a mouth needs a far more elaborate approach to be brought onto food. D280's feel tells the brain that
+food is at the mouth, and this lets the body put the mouth where food is met.
+
+**Rejected.** A mouth that follows the body's direction of travel from moment to moment, which no animal has. A choice
+among the part's six faces alone, since the owner ruled that a mouth can sit anywhere on its part.
