@@ -298,7 +298,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D274](#d274) | The smell screen runs under true-shape contact, as two groups of three, after a 6,000 s founding bench | 2026-11-01 | decided by the coordinator on 2026-11-01, at the owner's delegation of the grazer screens |
 | [D275](#d275) | A bite needs the mouth: a mouth's blow wounds and feeds only where its mouth point touches | 2026-11-01 | ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation (option A of three) |
 | [D276](#d276) | The theatre's normal view draws no hunger, and leans toward realism | 2026-11-01 | ruled by the owner on 2026-11-01 |
-| [D277](#d277) | In the film a meal flashes once, a newborn grows from a speck, and dead tissue crumbles into snow | 2026-11-01 | ruled by the owner on 2026-11-01, by question, on the coordinator's recommendations |
+| [D277](#d277) | In the film a meal flashes once, a newborn grows from a speck, and dead tissue crumbles into snow | 2026-11-01 | ⚠ its speck superseded by D279; ruled by the owner on 2026-11-01, by question, on the coordinator's recommendations |
 | [D278](#d278) | Box-world films draw the true bed, and the skin's thickness cap is 2 | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendations, after `scratch/owner/floor-drawn-flat-over-a-sloped-bed/` and `scratch/owner/skin-tips-thickness-cap/` |
 | [D279](#d279) | A birth is shown as a spawn cloud that thins to reveal the newborn, and the speck is dropped | 2026-11-02 | ruled by the owner on 2026-11-02, by question, on the coordinator's recommendation |
 
