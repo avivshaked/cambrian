@@ -27,7 +27,7 @@ if ($Part -eq 'resume') {
     exit $LASTEXITCODE
 }
 if ($Part -eq 'g64') {
-    & pwsh -NoProfile -File "$b\scripts\card\card-group.ps1" -Name 'r66id-g64' -Arms 'r66id-m-6202,r66id-m-6203' `
+    & pwsh -NoProfile -File "$b\scripts\card\card-group.ps1" -Name 'r66id-g64' -Arms 'r66id-m64-6202,r66id-m64-6203' `
         -Launcher "$b\rounds\env-r66-m.ps1,$b\rounds\env-r66-m.ps1" -Seeds '6202,6203' -Seconds 6000 `
         -Group 64 -Transport -CheckpointEvery 1500 -Threads 10 -Mask 1072693248 -HeatStop -WallMinutes 90 `
         -WaitForManifestSeconds 600 -RunsRoot $root -Exe $exe
