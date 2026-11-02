@@ -308,6 +308,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D284](#d284) | The nursery trains grazers with the mouth's place evolving, so D280's retrain waits for D283 | 2026-11-02 | ruled by the owner on 2026-11-02 |
 | [D285](#d285) | A mouth is the size its cell's genes give it, wherever it sits | 2026-11-02 | ruled by the owner on 2026-11-02, who agreed with the coordinator's amendment to D283's build spec (`logbook/specs/mouth-gene-spec.md`, section 11) |
 | [D286](#d286) | Every hurt animal bleeds, and a kill bleeds more than a wound | 2026-11-02 | ruled by the owner on 2026-11-02 |
+| [D287](#d287) | The channel's opener and closer are remade from the grazer film's creatures, filmed in the theatre | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendation |
 
 ---
 
@@ -10554,3 +10555,24 @@ that a mouth's size should be genetic, derived from the size of its cell, and no
 **Why.** The owner asked for a sign that an attack happened, and a kill is the strongest attack.
 
 **Rejected.** Blood on a surviving wound only, with a kill shown by the death's cloud alone.
+
+### D287
+**The channel's opener and closer are remade from the grazer film's creatures, filmed in the theatre** · 2026-11-02
+
+**Status:** ruled by the owner on 2026-11-02, on the coordinator's recommendation. It replaces the Blender-drawn bodies of
+intro and outro v1 (`scripts/channel/README.md`) for the next versions.
+
+**Decision.**
+- The new opener and closer show creatures from the grazer film's world (D254), chosen once that round has run.
+- The creatures are filmed in the theatre in its film look: a staged nursery tank played back under the bodies' own
+  brains, a single body under its own brain, or a real moment of the film's world.
+- Blender keeps only what the theatre cannot draw: the sky and the dive through the surface, if the test still passes.
+  The words are drawn over the frames by the channel's overlay scripts, as in v1.
+
+**Why.** The owner saw that v1's creatures are no longer the world's. v1 draws bodies from rounds 50 and 51 with a copy of
+the theatre's look as it stood in September. The one skin, the colours from the genes and the mouths came later and exist
+only in the theatre. Filmed in the theatre, the opener looks like the film that follows, and its creatures swim under their
+own brains rather than a choreography. Choosing from today's worlds would be redone after the mouth's aim changes them.
+
+**Rejected.** Porting the current look into Blender, a second copy of the look that drifts each time the theatre changes.
+Choosing the creatures from round 66 now.

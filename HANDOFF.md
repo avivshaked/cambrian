@@ -88,6 +88,8 @@ The realism dials so far (`ORGANIC` 1 and 2, `BLEND`, `COUNTERSHADE`, `COLOUR_RA
 
 Another session builds the create-story-video skill. Its files are uncommitted in main's tree under `.claude/skills/create-story-video/` and `scripts/tests/story-video-check/`, and are left alone. The countdown film waits for the owner's approval of `prose-13.md` in `scratch/story-video/rounds-53-57-202610061945/`. The skill's publication step waits on the owner's verdict on round 57's YouTube copy. A story film for rounds 50 onward waits for a breakthrough worth telling (the owner, 2026-10-05).
 
+The channel's opener and closer are remade after the grazer film's round, from its creatures, filmed in the theatre (D287); v1 stays in `assets/cards/` until then. The owner's dive-in opening, from the sky down through the surface, starts with one Blender test still (`scripts/channel/sea_still.py`, being written), rendered in the coordinator's queue slot and checked before it goes to the owner.
+
 ## The agents and their lanes
 
 The owner launches every agent by hand. Ping the owner's phone when the next agent is wanted, when input is needed, or when there is something new to look at.
