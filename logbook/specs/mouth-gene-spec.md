@@ -131,7 +131,7 @@ A joint anchor's cube map is not used: it clamps a box anchor inside the box (`S
   exactly, so every switch-off world is unchanged. On the direction tops' box (half-extents 0.15, 0.075 and 0.15 m), the
   rule's mouth sits on the z face, whose smaller half-extent is the box's smallest. Both radii are 0.0375 m there, and
   section 8's third proof still holds bit for bit. On a body whose rule mouth sits on a broad face, the switch on with the
-  written-out places changes that mouth's radius, which is the amendment's intent. The owner is told and may overrule it.
+  written-out places changes that mouth's radius, which is the amendment's intent. The owner agreed on 2026-11-02 (D285).
   `RadiusConstantAcrossAFaceAndTodaysAtItsCentre` becomes `PlacedRadiusIsTheSmallestHalfExtentAnywhere` and
   `UnplacedRadiusIsTodays`.
 - **The build has its own branch.** `mouth-gene`, off `mouth-feel` at `5fdf4b12`, in `scratch/wt-mouth-gene`, because

@@ -296,16 +296,18 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D272](#d272) | The film's round runs on true-shape contact (D228 level a) | 2026-11-01 | ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation after the true-shape screen `r64t` (`logbook/specs/r64t-read/README.md`) and the card's GJK fix (merged at… |
 | [D273](#d273) | A card world resumed from its checkpoint repeats its run, from the build that writes the remains' exposure | 2026-11-01 | decided by the coordinator on 2026-11-01, after the resume probe and its read |
 | [D274](#d274) | The smell screen runs under true-shape contact, as two groups of three, after a 6,000 s founding bench | 2026-11-01 | decided by the coordinator on 2026-11-01, at the owner's delegation of the grazer screens |
-| [D275](#d275) | A bite needs the mouth: a mouth's blow wounds and feeds only where its mouth point touches | 2026-11-01 | amended by D280 (its reach becomes a dial, starting at 3 radii); ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation (option A of three) |
+| [D275](#d275) | A bite needs the mouth: a mouth's blow wounds and feeds only where its mouth point touches | 2026-11-01 | amended by D280 (its reach becomes a dial, starting at 3 radii) and D285 (a placed mouth's radius is its part's); ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation (option A of three) |
 | [D276](#d276) | The theatre's normal view draws no hunger, and leans toward realism | 2026-11-01 | ruled by the owner on 2026-11-01 |
 | [D277](#d277) | In the film a meal flashes once, a newborn grows from a speck, and dead tissue crumbles into snow | 2026-11-01 | ⚠ its speck superseded by D279, its flash by D281; ruled by the owner on 2026-11-01, by question, on the coordinator's recommendations |
 | [D278](#d278) | Box-world films draw the true bed, and the skin's thickness cap is 2 | 2026-11-02 | amended by D281 (the cap shapes the outline only at the close look); ruled by the owner on 2026-11-02, on the coordinator's recommendations, after `scratch/owner/floor-drawn-flat-over-a-sloped-bed/` and `scratch/owner/skin-tips-thickness-cap/` |
 | [D279](#d279) | A birth is shown as a spawn cloud that thins to reveal the newborn, and the speck is dropped | 2026-11-02 | ruled by the owner on 2026-11-02, by question, on the coordinator's recommendation |
 | [D280](#d280) | A mouth feels what is near it, and a bite's reach starts wide and is dialled back | 2026-11-02 | ruled by the owner on 2026-11-02, who took options 1 and 4 of the coordinator's four |
-| [D281](#d281) | A death drains the body to grey and releases a cloud, a wound bleeds into the water, and a bite no longer flashes | 2026-11-02 | ruled by the owner on 2026-11-02 after `scratch/owner/bite-crumbs-birth-cloud-death-caption/`, on the coordinator's recommendations, with the wound's cue the owner's own |
+| [D281](#d281) | A death drains the body to grey and releases a cloud, a wound bleeds into the water, and a bite no longer flashes | 2026-11-02 | amended by D286 (a kill bleeds more than a wound); ruled by the owner on 2026-11-02 after `scratch/owner/bite-crumbs-birth-cloud-death-caption/`, on the coordinator's recommendations, with the wound's cue the owner's own |
 | [D282](#d282) | A bite's reach applies only between bodies that touch | 2026-11-02 | ruled by the owner on 2026-11-02, confirming the coordinator's reading of D280 (`logbook/specs/mouth-feel-spec.md`, section 9) |
 | [D283](#d283) | Where a mouth sits is heritable | 2026-11-02 | ruled by the owner on 2026-11-02, who asked for it |
 | [D284](#d284) | The nursery trains grazers with the mouth's place evolving, so D280's retrain waits for D283 | 2026-11-02 | ruled by the owner on 2026-11-02 |
+| [D285](#d285) | A mouth is the size its cell's genes give it, wherever it sits | 2026-11-02 | ruled by the owner on 2026-11-02, who agreed with the coordinator's amendment to D283's build spec (`logbook/specs/mouth-gene-spec.md`, section 11) |
+| [D286](#d286) | Every hurt animal bleeds, and a kill bleeds more than a wound | 2026-11-02 | ruled by the owner on 2026-11-02 |
 
 ---
 
@@ -10519,3 +10521,36 @@ will have once the mouth can move. Its aim would then have to be learned again.
 
 **Rejected.** Running the retrain on today's mouth first, which spends a nursery run on brains for a body that is about to
 change.
+
+### D285
+**A mouth is the size its cell's genes give it, wherever it sits** · 2026-11-02
+
+**Status:** ruled by the owner on 2026-11-02, who agreed with the coordinator's amendment to D283's build spec
+(`logbook/specs/mouth-gene-spec.md`, section 11). It amends D275's mouth radius for a mouth placed under D283.
+
+**Decision.**
+- A placed mouth's radius is half the smallest half-extent of its part. Its size follows the part's own dimensions, which
+  the genome carries, and not the face the mouth sits on. A sphere's mouth is as now.
+- A mouth with no place keeps D275's radius, half the smaller half-extent of the face it lies on, so every world with
+  D283's switch off is unchanged.
+- The theatre draws a mouth where it sits, at that size.
+
+**Why.** Under D275's rule a mouth moved onto a broad face would double its radius and its reach. Selection could then move
+mouths for a bigger bite rather than to lead the body's motion, which would blur the question D283 asks. The owner said
+that a mouth's size should be genetic, derived from the size of its cell, and not an outcome of where it sits.
+
+**Rejected.** D275's face-dependent radius for a placed mouth.
+
+### D286
+**Every hurt animal bleeds, and a kill bleeds more than a wound** · 2026-11-02
+
+**Status:** ruled by the owner on 2026-11-02. It confirms D281's reading that a kill bleeds, and amends D281's plume.
+
+**Decision.**
+- Every blow that hurts an animal releases blood into the water, whether the animal survives it or dies of it.
+- A kill's plume is larger and denser than a wound's.
+- A plant has no blood. What a bitten plant shows instead was put to the owner the same day.
+
+**Why.** The owner asked for a sign that an attack happened, and a kill is the strongest attack.
+
+**Rejected.** Blood on a surviving wound only, with a kill shown by the death's cloud alone.
