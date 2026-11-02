@@ -1,0 +1,1 @@
+all: 4 worlds, world-s per wall-s 10.73, body-s per wall-s 42454   r65-c-6203 [18000-24000 s] pace 1.467 mean alive 8458 body-s/wall-s 12409   r66-m-6203 [18000-24000 s] pace 1.556 mean alive 11255 body-s/wall-s 17514   r66-mk-6203 [18000-24000 s] pace 2.313 mean alive 5354 body-s/wall-s 12384   r66-m4k-6203 [18000-24000 s] pace 5.393 mean alive 27 body-s/wall-s 146

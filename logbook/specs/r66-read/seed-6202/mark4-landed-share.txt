@@ -1,0 +1,12 @@
+runs/r66-m-6202/2026-11-02-004136-47e1fc9f/  (to 24000 s)
+    12000-15000  landed        32  refused       164  share 0.163
+    21000-24000  landed      2694  refused     12757  share 0.174
+        0-24000  landed      3973  refused     18832  share 0.174
+runs/r66-m4k-6202/2026-11-02-004136-32271204/  (to 24000 s)
+    12000-15000  landed         0  refused         0  share nan
+    21000-24000  landed         0  refused         0  share nan
+        0-24000  landed         0  refused         0  share nan
+runs/r66-mk-6202/2026-11-02-004136-a4cc926d/  (to 24000 s)
+    12000-15000  landed         5  refused        41  share 0.109
+    21000-24000  landed         8  refused        43  share 0.157
+        0-24000  landed        35  refused       192  share 0.154

@@ -1,0 +1,95 @@
+== r65-c-6202
+bodies born 55288 grazers born 6270 kill rows 11949
+kills by grazers 11949 {'other': 10891, 'grazer': 1058}
+grazer-on-grazer kills 1058
+  unrelated             1016 0.960
+  sibling                 26 0.025
+  killer is parent        10 0.009
+  killer is child          6 0.006
+  victim age <10s          2 0.002
+  victim age <30s         22 0.021
+  victim age <60s         29 0.027
+  victim age <120s        63 0.060
+  victim age <300s       214 0.202
+  victim age >=300s      728 0.688
+== r66-m-6202
+bodies born 54557 grazers born 2181 kill rows 2047
+kills by grazers 2047 {'other': 1885, 'grazer': 162}
+grazer-on-grazer kills 162
+  unrelated              159 0.981
+  sibling                  2 0.012
+  killer is child          1 0.006
+  victim age <10s          0 0.000
+  victim age <30s          3 0.019
+  victim age <60s          2 0.012
+  victim age <120s         6 0.037
+  victim age <300s        31 0.191
+  victim age >=300s      120 0.741
+== r66-mk-6202
+bodies born 19969 grazers born 344 kill rows 38
+kills by grazers 38 {'other': 38}
+grazer-on-grazer kills 0
+  victim age <10s          0 0.000
+  victim age <30s          0 0.000
+  victim age <60s          0 0.000
+  victim age <120s         0 0.000
+  victim age <300s         0 0.000
+  victim age >=300s        0 0.000
+== r66-m4k-6202
+bodies born 938 grazers born 305 kill rows 1
+kills by grazers 1 {'grazer': 1}
+grazer-on-grazer kills 1
+  unrelated                1 1.000
+  victim age <10s          0 0.000
+  victim age <30s          1 1.000
+  victim age <60s          0 0.000
+  victim age <120s         0 0.000
+  victim age <300s         0 0.000
+  victim age >=300s        0 0.000
+== r65-c-6203
+bodies born 89096 grazers born 13432 kill rows 36811
+kills by grazers 36808 {'other': 34168, 'grazer': 2640}
+grazer-on-grazer kills 2640
+  unrelated             2591 0.981
+  sibling                 23 0.009
+  killer is child         14 0.005
+  killer is parent        12 0.005
+  victim age <10s         13 0.005
+  victim age <30s         47 0.018
+  victim age <60s         78 0.030
+  victim age <120s       138 0.052
+  victim age <300s       375 0.142
+  victim age >=300s     1989 0.753
+== r66-m-6203
+bodies born 82721 grazers born 6203 kill rows 8866
+kills by grazers 8866 {'other': 8413, 'grazer': 453}
+grazer-on-grazer kills 453
+  unrelated              452 0.998
+  sibling                  1 0.002
+  victim age <10s          3 0.007
+  victim age <30s          3 0.007
+  victim age <60s         10 0.022
+  victim age <120s        22 0.049
+  victim age <300s        69 0.152
+  victim age >=300s      346 0.764
+== r66-mk-6203
+bodies born 24697 grazers born 1266 kill rows 974
+kills by grazers 974 {'other': 938, 'grazer': 36}
+grazer-on-grazer kills 36
+  unrelated               36 1.000
+  victim age <10s          1 0.028
+  victim age <30s          0 0.000
+  victim age <60s          3 0.083
+  victim age <120s         1 0.028
+  victim age <300s         9 0.250
+  victim age >=300s       22 0.611
+== r66-m4k-6203
+bodies born 841 grazers born 271 kill rows 0
+kills by grazers 0 {}
+grazer-on-grazer kills 0
+  victim age <10s          0 0.000
+  victim age <30s          0 0.000
+  victim age <60s          0 0.000
+  victim age <120s         0 0.000
+  victim age <300s         0 0.000
+  victim age >=300s        0 0.000

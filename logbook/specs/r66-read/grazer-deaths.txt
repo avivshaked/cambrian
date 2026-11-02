@@ -1,0 +1,43 @@
+== r65-c-6202
+grazers born 6270 grazer deaths 5482
+  starved     3531 0.644  median age 256 s
+  aged        1883 0.343  median age 2325 s
+  eaten         68 0.012  median age 639 s
+kill rows with a grazer victim: {('by grazer', 'part'): 990, ('by grazer', 'root'): 68}
+== r66-m-6202
+grazers born 2181 grazer deaths 1581
+  starved     1035 0.655  median age 261 s
+  aged         542 0.343  median age 2074 s
+  eaten          4 0.003  median age 436 s
+kill rows with a grazer victim: {('by grazer', 'part'): 158, ('by grazer', 'root'): 4}
+== r66-mk-6202
+grazers born 344 grazer deaths 338
+  starved      328 0.970  median age 100 s
+  aged          10 0.030  median age 2320 s
+kill rows with a grazer victim: {}
+== r66-m4k-6202
+grazers born 305 grazer deaths 301
+  starved      301 1.000  median age 95 s
+kill rows with a grazer victim: {('by grazer', 'part'): 1}
+== r65-c-6203
+grazers born 13432 grazer deaths 11169
+  aged        6029 0.540  median age 2482 s
+  starved     4936 0.442  median age 362 s
+  eaten        204 0.018  median age 784 s
+kill rows with a grazer victim: {('by grazer', 'part'): 2436, ('by grazer', 'root'): 204, ('by other', 'part'): 2}
+== r66-m-6203
+grazers born 6203 grazer deaths 4053
+  aged        2280 0.563  median age 2450 s
+  starved     1726 0.426  median age 320 s
+  eaten         47 0.012  median age 570 s
+kill rows with a grazer victim: {('by grazer', 'part'): 406, ('by grazer', 'root'): 47}
+== r66-mk-6203
+grazers born 1266 grazer deaths 861
+  starved      775 0.900  median age 110 s
+  aged          77 0.089  median age 888 s
+  eaten          9 0.010  median age 648 s
+kill rows with a grazer victim: {('by grazer', 'part'): 27, ('by grazer', 'root'): 9}
+== r66-m4k-6203
+grazers born 271 grazer deaths 269
+  starved      269 1.000  median age 95 s
+kill rows with a grazer victim: {}

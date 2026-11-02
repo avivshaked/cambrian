@@ -1,0 +1,1 @@
+r66-m4k-6203  21000-24000 s  0 bred grazers: 0 seen to bite, median nan s to first bite; 0 died first (nan of all); 0 alive and unbitten at the stream's end (24000 s)  (under 30 grazers: not judged, D244)

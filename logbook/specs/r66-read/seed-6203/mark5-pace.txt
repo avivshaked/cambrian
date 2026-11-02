@@ -1,0 +1,5 @@
+arm                engine    status           rows t         alive        stepped step wall   pace   whole start-up compile
+r65-c-6203         gpu       ended (budget)       10-24000      40-8099     23990  12035.2s  1.993 12058.0s    22.8s    0.0s
+r66-m-6203         gpu       ended (budget)       10-24000      40-12853    23990  11597.5s  2.069 11621.1s    23.5s    0.0s
+r66-mk-6203        gpu       ended (budget)       10-24000      40-6933     23990   7614.1s  3.151 7635.8s    21.8s   36.8s
+r66-m4k-6203       gpu       ended (budget)       10-24000      40-26       23990   4419.9s  5.428 4441.0s    21.0s    0.0s

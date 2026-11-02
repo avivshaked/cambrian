@@ -1,0 +1,12 @@
+world   runs/r66-m4k-6202/2026-11-02-004136-32271204
+control runs/r65-c-6202/2026-11-01-131455-2991f19e
+bins of 3000 s to 24000 s
+ bin end  leaves  control  ratio  <0.5 | leaf deaths by grazer  share    largest cause  lead | cohort  kids   repl  >=1
+    3000      52     2269  0.023   yes |          48         0  0.000             aged    no |      0     0    nan   no
+    6000      37     1755  0.021   yes |          54         0  0.000             aged    no |      0     0    nan   no
+    9000      20     3389  0.006   yes |          53         0  0.000             aged    no |     44     0  0.000   no
+   12000      23     2103  0.011   yes |          33         0  0.000             aged    no |     44     0  0.000   no
+   15000      37     3980  0.009   yes |          31         0  0.000             aged    no |     46     0  0.000   no
+   18000      22     2626  0.008   yes |          44         0  0.000             aged    no |     42     0  0.000   no
+   21000      26     5739  0.005   yes |          33         0  0.000             aged    no |     35     0  0.000   no
+   24000      26     4013  0.006   yes |          27         0  0.000             aged    no |     47     0  0.000   no
