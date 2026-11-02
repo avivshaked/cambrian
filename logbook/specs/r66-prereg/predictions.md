@@ -48,8 +48,8 @@ D's world under true-shape contact with the smell off, as r65's C (`rounds/env-r
 | Arm | `EVOSIM_BITE_NEEDS_MOUTH` | `EVOSIM_LEAF_TISSUE_ENERGY` |
 |---|---|---|
 | M | on | 1 |
-| Mk | on | k, the power of two nearest 1/s (4 if s is a quarter) |
-| M4k | on | 4k |
+| Mk | on | 4 (k, the power of two nearest 1/s) |
+| M4k | on | 16 (4k) |
 
 Each arm runs on seeds 6202 and 6203 for 24,000 s, as two card groups of three, 6202 first, as r65 ran. The control is
 r65's C, `runs/r65-c-6202/2026-11-01-131455-2991f19e` and `runs/r65-c-6203/2026-11-01-162827-2991f19e`, if check 2
@@ -84,6 +84,18 @@ The build is `bite-needs-mouth` in `scratch/wt-mouth`, its code that of `f28dbbc
   and 3,760 s on 6203, and M's 1,200 s at group 32 counted no blow at all. So the switch-on comparison runs to 6,000 s: M
   founded at group 64 to 6,000 s, against g32's M resumed from 1,200 s to 6,000 s. s is read over 3,000 to 6,000 s, in
   bodies that are no longer founders.
+- **Check 3 passes.** M founded at group 64 to 6,000 s (`r66id-m64-6202`, `-6203`) equals M at group 32 on every stats row
+  to 1,200 s, and equals g32's M resumed from its 1,200 s checkpoint to 6,000 s (`r66id-mr-*`) on every world value of all
+  480 rows on both seeds. Only the wall clocks and two counters of the process's own work, `harnessBodySteps` and
+  `fluidLinkSteps`, differ. Lineage is equal row for row (16,213 and 18,093 rows from 1,200 s), and the last digest rows
+  are equal. The gate acted within that span: 51 blows were refused and 12 landed, so the card's refusals repeat across
+  group sizes and across a resume.
+- **The hashes.** Core `ec7c6441`, Dynamics `52e8b307`, farm `1e50133b`. C's `configHash` on the new build is
+  `ebf2529e220278fa` and M's `47e1fc9f1a951e51`.
+- **Check 4: s is 0.19, so k is 4.** M resumed at group 32 from 1,200 to 6,000 s measured 63 mouth blows from 3,000 to
+  6,000 s: 5 of 14 landed on 6202, 7 of 49 on 6203, 12 of 63 over both (`scripts/reads/mouth/landed-share.py`). 1/s is 5.3,
+  whose nearest power of two in log scale is 4, so Mk runs at leaf energy 4 and M4k at 16. The sample is small. c8's 90 s
+  film window at 22,500 s, measured on the drawn surface, gave 16%, where the same rule gives 8.
 
 ## Readouts
 
