@@ -108,6 +108,10 @@ In YouTube Studio the element, the channel's avatar, is dragged into the ring, w
 it. Viewers who never see end screens still see the prompt; that is anyone on mobile web, or
 anyone who hides them. YouTube has no like element, so a LIKE chip is drawn under the ring.
 
+The next closer draws neither the ring nor the LIKE chip (the owner, 2026-11-02), since YouTube's end screen adds its own
+subscribe element. Its zones stay clear of creatures as before, and empty. The next opener and closer are filmed in the
+theatre from the grazer film's creatures (D287), so the steps below are v1's.
+
 An end screen must carry at least one video or playlist. The first video's left zone therefore
 takes a playlist tile. Later videos add a video tile on the right, and Studio's "Import from video"
 copies the layout. The outro's overlay script outlines the zones with `--guides` and shows a
