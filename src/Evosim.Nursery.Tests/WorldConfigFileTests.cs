@@ -15,11 +15,11 @@ namespace Evosim.Nursery.Tests
     {
         private static readonly string Configs = Path.Combine(Recipe.RepoRootAbove(AppContext.BaseDirectory), "rounds", "nursery", "configs");
 
-        /// <summary>Each new file and the file it was made from (D270's move of the health-scale files, kept beside it).</summary>
+        /// <summary>Each new file and the file it was made from (D275's move of D270's files, kept beside it).</summary>
         [Theory]
-        [InlineData("6d780d73f559b449", "783c998afb255a10")]
-        [InlineData("69079529880f93c5", "724b4228dfa910ec")]
-        [InlineData("d5b530d4ac640071", "b47485d9ce18b7ea")]
+        [InlineData("56752fbdf0627369", "6d780d73f559b449")]
+        [InlineData("e1bcb492f640cbe1", "69079529880f93c5")]
+        [InlineData("f18e3bf7f7265103", "d5b530d4ac640071")]
         public void ARound62ConfigLoadsAndIsNamedByItsHash(string name, string parent)
         {
             string text = File.ReadAllText(Path.Combine(Configs, name + ".json"));
@@ -55,6 +55,7 @@ namespace Evosim.Nursery.Tests
             Assert.False(c.DeathRowIncome);
             Assert.Equal(LeafPlumeForm.None, c.LeafPlume);
             Assert.False(c.CurrentSense);
+            Assert.False(c.BiteNeedsMouth);
         }
     }
 }

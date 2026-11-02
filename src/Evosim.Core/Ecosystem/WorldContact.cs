@@ -59,15 +59,22 @@ namespace Evosim.Core
         /// <summary>
         /// A mouth's blows that did damage, ever (D227): a blow whose attacking part carries intake and whose attacker
         /// is not remains, with damage above zero, counted whatever the value of <see cref="RunConfig.BiteDamageScale"/>.
-        /// Cumulative from the founding. Checkpointed only when the dial is not 1.
+        /// Cumulative from the founding. Checkpointed only when the dial is not 1 or D275's switch is on.
         /// </summary>
         public long MouthBlows { get; private set; }
 
         /// <summary>
         /// Those of <see cref="MouthBlows"/> that took the bitten part from above zero health to zero (D227). Cumulative;
-        /// checkpointed only when the dial is not 1.
+        /// checkpointed only when the dial is not 1 or D275's switch is on.
         /// </summary>
         public long MouthBlowsFinishing { get; private set; }
+
+        /// <summary>
+        /// A mouth's blows that would have done damage and were refused because the mouth was out of reach of the part
+        /// (D275, <see cref="RunConfig.BiteNeedsMouth"/>): the side's nearest mouth point was farther from the other
+        /// body than one mouth radius, or was not measured. Cumulative; 0 and not checkpointed unless the switch is on.
+        /// </summary>
+        public long MouthBlowsRefused { get; private set; }
 
         /// <summary>
         /// Bodies whose death was a kill that went into a killer's gut, ever (D232): a body a bite killed whose killer

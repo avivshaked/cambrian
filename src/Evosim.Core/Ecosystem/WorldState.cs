@@ -634,12 +634,16 @@ namespace Evosim.Core
                 // D224's total, only with the bite taking the store too, so a world without it writes the bytes it wrote.
                 if (Config.BiteTakesStore) w.Write(BiteStoreTakenJoules);
 
-                // D227's two, only with the damage dial off 1, so a world at 1 writes the bytes it wrote.
-                if (Config.BiteDamageScale != 1f)
+                // D227's two, only with the damage dial off 1, so a world at 1 writes the bytes it wrote. D275 also
+                // carries them, so that a resumed world's refusals are read against the blows the run counted.
+                if (Config.BiteDamageScale != 1f || Config.BiteNeedsMouth)
                 {
                     w.Write(MouthBlows);
                     w.Write(MouthBlowsFinishing);
                 }
+
+                // D275's one, only with the switch on, so a world without it writes the bytes it wrote.
+                if (Config.BiteNeedsMouth) w.Write(MouthBlowsRefused);
 
                 // D232's seven, only with the kill swallowed into a gut, so a world without it writes the bytes it wrote.
                 if (Config.KillSwallowsBody)
@@ -1022,7 +1026,7 @@ namespace Evosim.Core
                 BiteStoreTakenJoules = Config.BiteTakesStore ? r.ReadDouble() : 0d;
 
                 // D227's two, under the config the writer asked (see Write).
-                if (Config.BiteDamageScale != 1f)
+                if (Config.BiteDamageScale != 1f || Config.BiteNeedsMouth)
                 {
                     MouthBlows = r.ReadInt64();
                     MouthBlowsFinishing = r.ReadInt64();
@@ -1032,6 +1036,9 @@ namespace Evosim.Core
                     MouthBlows = 0L;
                     MouthBlowsFinishing = 0L;
                 }
+
+                // D275's one, under the config the writer asked (see Write).
+                MouthBlowsRefused = Config.BiteNeedsMouth ? r.ReadInt64() : 0L;
 
                 // D232's seven, under the config the writer asked (see Write).
                 if (Config.KillSwallowsBody)
@@ -1081,6 +1088,7 @@ namespace Evosim.Core
                 BiteStoreTakenJoules = 0d;
                 MouthBlows = 0L;
                 MouthBlowsFinishing = 0L;
+                MouthBlowsRefused = 0L;
                 KillsSwallowed = 0L;
                 SwallowedJoules = 0d;
                 GutDigestedJoules = 0d;

@@ -563,6 +563,8 @@ namespace Evosim.Farm
             Flag("EVOSIM_KILL_GUT", (s, v) => s.KillSwallowsBody = v),
             // D264: a death row carries the body's lifetime bite income by source. An instrument. Read only with contact eating on.
             Flag("EVOSIM_DEATH_ROW_INCOME", (s, v) => s.DeathRowIncome = v),
+            // D275: a mouth's blow wounds and feeds only where its mouth point touches. Read only with contact eating on and a true contact shape.
+            Flag("EVOSIM_BITE_NEEDS_MOUTH", (s, v) => s.BiteNeedsMouth = v),
 
             // D177: the consumer cell's upkeep, W/m3. The value already lives in every config's cell
             // table, so the knob adds no field; unset is ConsumerCell's own, the recorded world.
@@ -1207,6 +1209,7 @@ namespace Evosim.Farm
             config.BiteDamageScale = s.BiteDamageScale;
             config.KillSwallowsBody = s.KillSwallowsBody;
             config.DeathRowIncome = s.DeathRowIncome;
+            config.BiteNeedsMouth = s.BiteNeedsMouth;
             config.ProtectionWattsPerUnit = s.PriceProtection;
             config.ToughnessWattsPerUnit = s.PriceToughness;
             config.Mutation.AttributeMutationChance = s.AttributeMutation;
@@ -2233,6 +2236,9 @@ namespace Evosim.Farm
 
         /// <summary>D264: a death row carries the body's lifetime bite income by source (<c>EVOSIM_DEATH_ROW_INCOME</c>), read only with the contact-eating dial on.</summary>
         public bool DeathRowIncome;
+
+        /// <summary>D275: a mouth's blow lands only where its mouth point touches (<c>EVOSIM_BITE_NEEDS_MOUTH</c>), read only with contact eating on and a true contact shape.</summary>
+        public bool BiteNeedsMouth;
         public float PriceProtection;
         public float PriceToughness;
         public float AttributeMutation;

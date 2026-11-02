@@ -34,6 +34,35 @@ namespace Evosim.Core
             PartA = partA;
             BodyB = bodyB;
             PartB = partB;
+
+            MouthRatioA = float.NaN;
+            MouthLinkA = -1;
+            MouthTargetA = -1;
+            MouthRatioB = float.NaN;
+            MouthLinkB = -1;
+            MouthTargetB = -1;
+        }
+
+        /// <summary>
+        /// D275: the same contact with each side's mouth measured. Read only with
+        /// <see cref="RunConfig.BiteNeedsMouth"/> on; with it off the six fields are never read.
+        /// </summary>
+        public CreatureContact(
+            long bodyA, int partA, long bodyB, int partB,
+            float mouthRatioA, int mouthLinkA, int mouthTargetA,
+            float mouthRatioB, int mouthLinkB, int mouthTargetB)
+        {
+            BodyA = bodyA;
+            PartA = partA;
+            BodyB = bodyB;
+            PartB = partB;
+
+            MouthRatioA = mouthRatioA;
+            MouthLinkA = mouthLinkA;
+            MouthTargetA = mouthTargetA;
+            MouthRatioB = mouthRatioB;
+            MouthLinkB = mouthLinkB;
+            MouthTargetB = mouthTargetB;
         }
 
         /// <summary>One body's <see cref="Organism.Id"/>.</summary>
@@ -47,6 +76,28 @@ namespace Evosim.Core
 
         /// <summary>The part of <see cref="BodyB"/> nearest <see cref="BodyA"/>.</summary>
         public readonly int PartB;
+
+        /// <summary>
+        /// D275: how far <see cref="BodyA"/>'s nearest mouth is from <see cref="BodyB"/>'s nearest part, as a multiple
+        /// of that mouth's radius (<c>MouthPoint.Radius</c>): the gap from the mouth point to the part's core less its
+        /// margin, over the radius. At most 1 is a touch. NaN when not measured, which the rule reads as out of reach.
+        /// </summary>
+        public readonly float MouthRatioA;
+
+        /// <summary>D275: the eating part of <see cref="BodyA"/> that <see cref="MouthRatioA"/> is of, or -1.</summary>
+        public readonly int MouthLinkA;
+
+        /// <summary>D275: the part of <see cref="BodyB"/> that <see cref="MouthRatioA"/> is measured to, or -1.</summary>
+        public readonly int MouthTargetA;
+
+        /// <summary>D275: <see cref="MouthRatioA"/> for <see cref="BodyB"/>'s nearest mouth to <see cref="BodyA"/>'s parts.</summary>
+        public readonly float MouthRatioB;
+
+        /// <summary>D275: the eating part of <see cref="BodyB"/> that <see cref="MouthRatioB"/> is of, or -1.</summary>
+        public readonly int MouthLinkB;
+
+        /// <summary>D275: the part of <see cref="BodyA"/> that <see cref="MouthRatioB"/> is measured to, or -1.</summary>
+        public readonly int MouthTargetB;
 
         public override string ToString() =>
             System.FormattableString.Invariant($"{BodyA}[{PartA}] ~ {BodyB}[{PartB}]");

@@ -31,14 +31,14 @@ namespace Evosim.Nursery.Tests
         /// </summary>
         private string UnloadableRecipe()
         {
-            string config = File.ReadAllText(Path.Combine(Real, "configs", "6d780d73f559b449.json")).Replace("\r\n", "\n");
+            string config = File.ReadAllText(Path.Combine(Real, "configs", "56752fbdf0627369.json")).Replace("\r\n", "\n");
             string line = "    \"" + MissingKey + "\": 0,\n";
             Assert.Contains(line, config);
             string configPath = Path.Combine(_dir, "old-world.json");
             File.WriteAllText(configPath, config.Replace(line, ""));
             string rel = Path.GetRelativePath(Root, configPath).Replace("\\", "/");
             string recipe = File.ReadAllText(Path.Combine(Real, "brain2-w11.json")).Replace("\r\n", "\n");
-            string from = "\"config\": \"rounds/nursery/configs/6d780d73f559b449.json\"";
+            string from = "\"config\": \"rounds/nursery/configs/56752fbdf0627369.json\"";
             Assert.Contains(from, recipe);
             string path = Path.Combine(_dir, "old-world-recipe.json");
             File.WriteAllText(path, recipe.Replace(from, "\"config\": \"" + rel + "\"").Replace("\"name\": \"brain2-w11\"", "\"name\": \"old-world\""));
@@ -94,7 +94,7 @@ namespace Evosim.Nursery.Tests
             Recipe r = Recipe.Read(path);
             Assert.Equal("old-world", r.Name);
             Assert.Equal(18, r.Controls.Count);
-            Assert.Equal("6d780d73f559b449", r.ConfigHash);
+            Assert.Equal("56752fbdf0627369", r.ConfigHash);
             Assert.False(string.IsNullOrEmpty(r.Hash()));
             Assert.Contains("old-world.json", r.Canonical());   // the canonical text names the config's path, never its contents
 
