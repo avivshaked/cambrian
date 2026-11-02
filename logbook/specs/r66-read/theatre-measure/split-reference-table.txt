@@ -1,0 +1,56 @@
+onsets 1479
+  ('cut', 'animal', 'touch') 10
+  ('cut', 'leaf', 'touch') 5
+  ('kill', 'animal', 'far') 2
+  ('kill', 'animal', 'touch') 2
+  ('kill', 'leaf', 'far') 3
+  ('kill', 'leaf', 'touch') 324
+  ('mouth', 'cut', 'animal') 3
+  ('mouth', 'kill', 'leaf') 53
+  ('mouth', 'wound', 'animal') 131
+  ('mouth', 'wound', 'remains') 17
+  ('within',) 18
+  ('wound', 'animal', 'far') 28
+  ('wound', 'animal', 'touch') 999
+  ('wound', 'leaf', 'far') 10
+  ('wound', 'leaf', 'touch') 2
+  ('wound', 'remains', 'far') 6
+  ('wound', 'remains', 'touch') 88
+eaters with at least three leaf onsets (second, part, match, verdict, gap/radius, prey, mouth touch):
+  81708: 4 leaf onsets, 1 mouth touches
+     (22543.0, 0, 'kill', 'touch', -0.025, '75915', True)
+     (22554.0, 0, 'cut', 'touch', 5.075, '79096', False)
+     (22554.5, 0, 'kill', 'touch', 4.766, '79096', False)
+     (22563.5, 0, 'wound', 'far', 12.367, '76232', False)
+  66735: 3 leaf onsets, 0 mouth touches
+     (22504.5, 0, 'kill', 'touch', 1.926, '60517', False)
+     (22552.0, 0, 'kill', 'touch', 3.4, '78158', False)
+     (22580.0, 0, 'kill', 'touch', 3.678, '74462', False)
+  75932: 3 leaf onsets, 1 mouth touches
+     (22510.5, 0, 'kill', 'touch', 2.156, '80928', False)
+     (22525.5, 0, 'kill', 'touch', 2.636, '78699', False)
+     (22551.5, 0, 'kill', 'touch', 0.827, '79828', True)
+  71974: 3 leaf onsets, 0 mouth touches
+     (22516.5, 0, 'kill', 'touch', 1.28, '79231', False)
+     (22553.5, 0, 'kill', "touch within a frame's motion", 3.599, '75988', False)
+     (22560.0, 0, 'kill', 'touch', 3.901, '77797', False)
+  78025: 3 leaf onsets, 0 mouth touches
+     (22519.0, 0, 'kill', 'touch', 4.462, '80008', False)
+     (22548.0, 0, 'kill', 'touch', 4.485, '80910', False)
+     (22550.5, 0, 'kill', 'touch', 3.268, '78317', False)
+  81190: 3 leaf onsets, 2 mouth touches
+     (22520.0, 0, 'kill', 'touch', 1.957, '79036', False)
+     (22526.5, 0, 'kill', 'touch', 0.8, '68751', True)
+     (22576.5, 0, 'kill', 'touch', 0.641, '80119', True)
+  74657: 3 leaf onsets, 1 mouth touches
+     (22536.5, 0, 'kill', 'touch', 4.835, '77593', False)
+     (22553.0, 0, 'kill', 'touch', 1.505, '64687', False)
+     (22573.0, 0, 'kill', 'touch', -0.022, '68483', True)
+  74934: 3 leaf onsets, 0 mouth touches
+     (22540.0, 0, 'kill', 'touch', 4.288, '76411', False)
+     (22576.0, 0, 'kill', 'touch', 4.197, '74904', False)
+     (22581.0, 0, 'kill', 'touch', 4.857, '72780', False)
+  75903: 3 leaf onsets, 0 mouth touches
+     (22542.0, 0, 'cut', 'touch', 2.155, '81391', False)
+     (22544.0, 0, 'kill', 'touch', 1.528, '81391', False)
+     (22573.5, 0, 'kill', 'touch', 3.251, '80625', False)

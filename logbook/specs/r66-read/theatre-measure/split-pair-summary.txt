@@ -1,0 +1,6 @@
+rows 1479
+leaf kills          327 onsets: touch 324 (mouth touch 49, part only 275), far 3; part-only gap/radius median 3.21 p75 3.94 p90 5.00
+leaf cuts             5 onsets: touch 5 (mouth touch 0, part only 5), far 0; part-only gap/radius median 3.78 p75 3.90 p90 5.19
+wounds on animals  1027 onsets: touch 999 (mouth touch 109, part only 890), far 28; part-only gap/radius median 3.07 p75 4.26 p90 6.33
+animal kills          4 onsets: touch 2 (mouth touch 0, part only 2), far 2; part-only gap/radius median 2.50 p75 2.55 p90 2.55
+leaf wounds          12 onsets: touch 2 (mouth touch 0, part only 2), far 10; part-only gap/radius median 1.83 p75 2.71 p90 2.71

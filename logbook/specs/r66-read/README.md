@@ -59,6 +59,25 @@ nursery retrains the pool with D275 on before the film's round, rather than the 
   the mouth on the leaf, so the rule removes the misses and selection does not shift the rate. By inference, the founders
   from the pool, trained under the old rule, set an aim that 10 to 15 generations do not move.
 
+## The motivating shares on the farm's own measure
+
+D275 was argued from the theatre's measure of the drawn surface. On r65-c-6203's 90 s window at 22,500 s, 16% of leaf
+kills and 13% of wounds on animals had the mouth on the food. c8 re-rendered that window with
+`EVOSIM_THEATRE_MOUTH_TRUE` at 2 (theatre branch at `ac56c294`), which writes three measures on every contact line. The
+table is one row per onset, read at onset - 1, as the 16% was read.
+
+| Mouth on the food (gap/radius at most 1) | drawn surface | true surface, the row's own parts | the farm's measure, nearest pair |
+|---|---|---|---|
+| leaf kills, 327 onsets | 53 (16.2%) | 49 (15.0%) | 50 (15.3%) |
+| wounds on animals, 1,027 onsets | 131 (12.8%) | 109 (10.6%) | 110 (10.7%) |
+
+Leaf cuts, animal kills and leaf wounds (5, 4 and 12 onsets) had none in any measure. The drawn column from the new render
+reproduces the table of 2026-11-01 row for row, which checks the method. Almost all of the change comes from measuring
+the true core and its margin against the mouth's radius. Letting any eating part and any part of the prey win adds one
+touch to each row. So on the farm's measure the shares are 15% and 11%, and the argument for D275 stands as it was made.
+The tables and their scripts are in `theatre-measure/` beside this file. Per-frame contact lines from the same films give
+other shares, because one event writes several of them; the onset table is the one to quote.
+
 ## The predictions, scored
 
 | Prediction | Result |
