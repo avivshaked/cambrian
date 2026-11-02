@@ -125,7 +125,9 @@ The owner launches every agent by hand. Ping the owner's phone when the next age
 
 Each is set out in full, with the options and what each implies, in every message that asks for it.
 
-Two are open, and nothing waits on either. **The flat floor** (`scratch/owner/floor-drawn-flat-over-a-sloped-bed/`, sent 2026-11-01): a box-world film draws its floor flat at the box's bottom while the farm's bed has 1.5 m of relief, so a body resting where the bed is low hides under the drawn floor, and a close shot of it shows empty floor. The coordinator recommends drawing the true bed in box-world films, from cached bed heights; it changes every box film's floor. **The skin's thickness cap** (`EVOSIM_THEATRE_SKIN_THICK_CAP`, preview in `scratch/owner/skin-tips-thickness-cap/`, sent 2026-11-01): cap 2 mends torn tail tips and matches the uncarved outline; cap 1 half-mends them; both make sound flat rims crisper, which changes the accepted look, cap 1 on about 2,000 bodies a film window and cap 2 on more. The coordinator recommends cap 2. It stays at 0 until the owner rules.
+None is open. The owner ruled the flat floor and the skin's thickness cap on 2026-11-02 (D278). Box-world films draw the true bed, and the cap is 2; c8 brings both into the film look.
+
+**The owner's verdict on the D277 previews and the bite clips (2026-11-02).** The births and deaths are not yet good. In the death film the owner could not tell which creature died, after watching it twice. The bites read as a machine eating rather than a living creature, though the moment of a bite is well marked. Both get more work toward a biological look before anything of D277's speck or crumble enters the film look.
 
 Two things are owed to the owner and are not decisions until they arrive. One is the mirrored-twin film (D234): one mirrored body with the switch off and on, c8's to make. The owner accepted reflecting the drive and rules after watching it, so nothing about it goes to the owner before the film does (said 2026-10-30 and again 2026-10-31). The other is the mouths' pass before the film (under "Where the theatre stands").
 
