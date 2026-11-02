@@ -139,11 +139,16 @@ A joint anchor's cube map is not used: it clamps a box anchor inside the box (`S
   The theatre's readers (section 4) are c8's, after the farm side lands. The card needs only its identity sittings.
 - **The retrain founds from the written-out oasis tops**, with the feel grafted (`14db7dfca9a9d350`), `HeritableMouth` on and
   `evolveMouth` at a scatter of 0.5 (D284). Its predictions are rewritten before it runs.
-- **The nursery's laid leaves take written-out places.** A leaf is an inoculant. A world with the switch on refuses a
-  genome without places (section 2), so the leaf tank refused every leaf. Under the switch the tank now writes a leaf's
-  places out once from its own body's rule, as `--write-mouths` writes a pool. The stored genome stays unchanged
-  (`LeafPool.Leaf.For`, found and built at stage 2's compile). A leaf eats nothing, so no reader takes its place.
-  Exempting genomes without an eating part from the refusal was rejected. It would let placeless genomes into a placed
-  world, and the mutator and every reader would need a second rule for them.
+- **The nursery lays its leaves as stored.** A leaf is an inoculant. A world with the switch on refuses a genome without
+  places (section 2), so at first the leaf tank refused every leaf. Writing a leaf's places out from its rule did not
+  give every leaf its stored mouth. 16 of the 5,312 leaves in `leaves-4452a00019df0811` have an eating part. On one the
+  rule's mouth sits on a broad face, so a placed mouth's radius (the amendment above) is half the stored one. On two an
+  eating node grows at two rule directions, so a second part's mouth moves. Proof 3 failed on it from generation 0. So
+  a world with the switch on takes a genome without places only through `World.InoculateAt(genome, point, ruleMouths:
+  true)`, which the tank calls for its leaves (`LeafPool.Leaf.LayAt`). Their mouths are then the body plan's rule, as
+  with the switch off. Every other door refuses as before, and a world with the switch off still refuses a genome
+  holding places. The leaves never breed in a tank, and readers already take a missing place as the rule. A world
+  holding such a leaf is not resumed from a checkpoint, which the nursery never takes. Writing the places out and giving
+  up proof 3 was rejected, since the retrain's leaves would then differ from the oasis arm's.
 - **The instrument's tank read comes first and gates nothing.** The nursery already evolves the place (D284), so the
   instrument says how much room the gene has. The farm's resume read of r66-M is the coordinator's farm run, later.
