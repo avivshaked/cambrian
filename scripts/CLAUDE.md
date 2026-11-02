@@ -190,6 +190,18 @@ belongs to a run that has ended, so it can be stopped by its process id (2026-10
   `[int64]'0xFFFF0000'` are both -65,536, so an affinity mask written that way sets the wrong cores,
   or none. Write the efficiency-core mask in decimal (`4294901760`), as `launch-brain2.ps1` does, and
   check it with `'{0:X}' -f`. Caught in a dry run on 2026-10-04.
+- **Pin a job to cores by pinning the shell that starts it.** `cmd /c start /affinity FFFF
+  /belownormal pwsh -File …` hung before pwsh opened (2026-10-12). Setting the calling PowerShell's own
+  `ProcessorAffinity` and `PriorityClass` first works, because Unity and every other child inherit both.
+  Check the child with `Get-Process`.
+- **From Git Bash, `cmd //c start` reads two characters of its arguments as its own.** A `|` in
+  `dotnet test --filter "A|B"` is a pipe to cmd even inside the quotes, so the run filtered on `A`
+  and piped into a program named `B`; run one filter name a run, or write `^|`. Backslashes in a
+  path passed through it are lost; write the path with forward slashes (2026-11-02, D283's builds).
+- **A live run's files read 0 bytes in a directory listing.** Windows updates a file's size in the
+  directory entry lazily while a writer holds it open, so `ls` and `Get-ChildItem` showed round 58's
+  `genomes.jsonl.gz` at 0 bytes when it held 22 MB. Open the file with `FileShare.ReadWrite` and read its
+  `Length` before concluding that a run wrote nothing.
 - **A pinned test run sees only its pin.** In a process pinned to eight cores .NET reports
   `Environment.ProcessorCount` as 8, so a suite started under a pin fails
   `TheRealLauncherRefusesAMaskNamingAProcessorTheMachineLacks`: its mask names logical 8, which the machine has.
