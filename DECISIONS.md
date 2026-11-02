@@ -296,11 +296,12 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D272](#d272) | The film's round runs on true-shape contact (D228 level a) | 2026-11-01 | ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation after the true-shape screen `r64t` (`logbook/specs/r64t-read/README.md`) and the card's GJK fix (merged at… |
 | [D273](#d273) | A card world resumed from its checkpoint repeats its run, from the build that writes the remains' exposure | 2026-11-01 | decided by the coordinator on 2026-11-01, after the resume probe and its read |
 | [D274](#d274) | The smell screen runs under true-shape contact, as two groups of three, after a 6,000 s founding bench | 2026-11-01 | decided by the coordinator on 2026-11-01, at the owner's delegation of the grazer screens |
-| [D275](#d275) | A bite needs the mouth: a mouth's blow wounds and feeds only where its mouth point touches | 2026-11-01 | ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation (option A of three) |
+| [D275](#d275) | A bite needs the mouth: a mouth's blow wounds and feeds only where its mouth point touches | 2026-11-01 | amended by D280 (its reach becomes a dial, starting at 3 radii); ruled by the owner on 2026-11-01, by question, on the coordinator's recommendation (option A of three) |
 | [D276](#d276) | The theatre's normal view draws no hunger, and leans toward realism | 2026-11-01 | ruled by the owner on 2026-11-01 |
 | [D277](#d277) | In the film a meal flashes once, a newborn grows from a speck, and dead tissue crumbles into snow | 2026-11-01 | ⚠ its speck superseded by D279; ruled by the owner on 2026-11-01, by question, on the coordinator's recommendations |
 | [D278](#d278) | Box-world films draw the true bed, and the skin's thickness cap is 2 | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendations, after `scratch/owner/floor-drawn-flat-over-a-sloped-bed/` and `scratch/owner/skin-tips-thickness-cap/` |
 | [D279](#d279) | A birth is shown as a spawn cloud that thins to reveal the newborn, and the speck is dropped | 2026-11-02 | ruled by the owner on 2026-11-02, by question, on the coordinator's recommendation |
+| [D280](#d280) | A mouth feels what is near it, and a bite's reach starts wide and is dialled back | 2026-11-02 | ruled by the owner on 2026-11-02, who took options 1 and 4 of the coordinator's four |
 
 ---
 
@@ -10406,3 +10407,28 @@ Spawn clouds are a real sight in the sea, nothing pops in, and nothing is drawn 
 **Rejected.** A larva drifting from the parent to the birth point, which draws a path the farm never computes, squeezed into
 seconds. Keeping the speck. Placing newborns beside their parent, a world rule that would change how lineages spread and
 would need a screen.
+
+### D280
+**A mouth feels what is near it, and a bite's reach starts wide and is dialled back** · 2026-11-02
+
+**Status:** ruled by the owner on 2026-11-02, who took options 1 and 4 of the coordinator's four. It amends D275: a
+blow's reach becomes a dial, and D275's one mouth radius is where the dial is meant to end.
+
+**Decision.**
+- **A new sense, the mouth's feel.** Every eating part reads how near its mouth point lies to the nearest surface of
+  another body: 1 when the mouth touches, falling to 0 a few mouth radii away. It is a touch, not a smell, so every eating
+  part carries it in a nose world too. The design read sets its exact form and range.
+- **A bite's reach starts wide (D262).** A mouth's blow lands when the mouth point lies within k mouth radii of the bitten
+  part's true-shape surface. k starts at 3 and is dialled back towards D275's 1 as screens show aim evolving.
+- Both are built behind switches, off by default, so that with them off every recorded world is unchanged to the bit, on
+  the farm's host and on the card. They are screened on r66-M's world before the film's round takes them, and the screen's
+  design and pre-registration are the coordinator's.
+
+**Why.** The owner asked how a blind creature could aim. In r66-M's world it has three senses that bear on food, and none
+places the mouth. The leaf smell is a field on 2 m cells, so it points into a patch, not at a leaf's surface. The contact
+sense says a part is touched, not where. The light sense reads brightness, not objects. Under D275, a bite that lands and
+a bite refused felt the same, and both nursery arms of 2026-11-02 found the same result: selection raised contact, and the
+landed share fell. Real small grazers bring the mouth onto food by touch and taste.
+
+**Rejected.** Touch with a direction on every part, which is harder for evolution to use than a signal at the mouth. A
+finer leaf smell near the leaves, which costs more and is still a field. Vision, a large build.
