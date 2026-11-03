@@ -312,6 +312,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D288](#d288) | The titles' look: the creatures in their own colours, glowing in a void, composed from separate layers | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendation for the colours, with the layers the owner's own |
 | [D289](#d289) | A bitten plant throws off its own fragments, more at a kill | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendation |
 | [D290](#d290) | Every film takes the theatre's look; bubbles mark a birth and a bite, and a death's look is open to trial | 2026-11-03 | ruled by the owner on 2026-11-03, after the previews in `scratch/owner/birth-bubbles-first-take/`, `scratch/owner/growth-eased-off-and-on/` and `scratch/owner/plant-kill-fragments-off-and-on/`, on… |
+| [D291](#d291) | The coordinator develops and builds the forager kit, the hunger sense, a breeding gate and growing plants, under the owner's stance | 2026-11-03 | delegated by the owner on 2026-11-03, who set out their stance on each part and left the development and the build to the coordinator |
 
 ---
 
@@ -10641,3 +10642,26 @@ a fix made in the theatre reaches every film. The coordinator saw at full size t
 than dead tissue, which in real water goes pale and milky.
 
 **Rejected.** Story films with a look of their own.
+
+### D291
+**The coordinator develops and builds the forager kit, the hunger sense, a breeding gate and growing plants, under the owner's stance** · 2026-11-03
+
+**Status:** delegated by the owner on 2026-11-03, who set out their stance on each part and left the development and the
+build to the coordinator. Each world or brain rule settled under it is recorded in its own entry, with its reasons.
+
+**Decision.**
+- **The forager kit.** The creatures get what they need to bite well: a mouth judged by how near it sits to the body's
+  front along its motion, a body that can aim it, a sense of where the nearest leaf lies, and a memory.
+- **Hunger.** A hunger sense on a logarithmic scale, inverse to the reserve, so that a body near starvation reads far
+  hungrier than one only short of breeding. Creatures should be obsessed with eating, and a measure that shows otherwise
+  means the world is set up wrongly.
+- **Breeding.** A birth fired by the reserve crossing a line turns every joule above it into a child, which no animal
+  does. Breeding is reworked so that storing and breeding can both pay.
+- **Plants.** The world's plants grow as single leaves. They are made to grow as plants.
+- **How.** Each part is built behind a switch that is off by default, and screened before it enters a round. The
+  nursery serves as the bench for the forager kit, and the world's screens test hunger, breeding and plants. One
+  combined round then carries what passed (D254). The owner is asked about a fork that departs from this stance, and
+  about anything irreversible or outward-facing.
+
+**Why.** The owner judged that the grazers' failure to make a living from leaves comes from what the creatures and the
+world lack, and asked for it to be fixed rather than measured around.
