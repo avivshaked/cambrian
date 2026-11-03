@@ -331,6 +331,10 @@ actually verifying it.
   real footage of what it stands for, for whether it looks natural: the birth cloud of 2026-11-02 passed
   every check against the film before it, and reached the owner as a scatter of identical flat grey
   discs that the owner found dated.
+- **The films do what the safari does, unless the owner has ruled otherwise for that one thing** (the owner, 2026-11-03,
+  who had said it many times before it was written down). A look, a dial or an effect the safari uses goes into the
+  film look as well, without asking; the lineage hue was missing from the films until that day. The detail is in
+  `unity/Assets/Theatre/CLAUDE.md`.
 - **Say when a ruling blocks the work, and keep working on the rest** (owner, 2026-09-22
   evening, who wants to be told explicitly when the agent is blocked by a
   decision it needs from them, and wants it working all the time). A status that lists open
