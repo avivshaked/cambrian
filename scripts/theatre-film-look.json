@@ -400,6 +400,10 @@
       "value": "1",
       "ruling": "D290: bubbles in place of D279's motes"
     },
+    "EVOSIM_THEATRE_BIRTH_BUBBLES_COUNT": {
+      "value": "4",
+      "ruling": "the owner, 2026-11-03, relayed by the coordinator: four times the count, as in phase113's -bubbles-x4-81811 (D290 asked for more than take 1)"
+    },
     "EVOSIM_THEATRE_BIRTH_CLOUD_LEAD": {
       "value": "0.8",
       "ruling": "practice adopted by the coordinator under D290 on 2026-11-03: the answer to the owner's phase105 verdict that the cloud seemed to start partway through; with D290's bubbles it times their onset, the early bubbles leaving over the lead (TheatreBirthCloud.cs, Make)"
@@ -420,7 +424,6 @@
     "EVOSIM_THEATRE_BIRTH_BUBBLES_COVER": "the bubbles' cover and cluster; under A/B",
     "EVOSIM_THEATRE_BIRTH_BUBBLES_OBLATE": "under A/B",
     "EVOSIM_THEATRE_BIRTH_BUBBLES_RISE2": "under A/B",
-    "EVOSIM_THEATRE_BIRTH_BUBBLES_COUNT": "D290 asks for more than take 1; the count is under A/B",
     "EVOSIM_THEATRE_BITE_BUBBLES": "D290: a bite releases a few bubbles; first preview in phase112",
     "EVOSIM_THEATRE_PEARLING": "D290's other events: oxygen pearling; first preview in phase112",
     "EVOSIM_THEATRE_DEATH_LOOK": "D290: the death's look open to trial; milky (1) and blanched (2) beside the grey in phase112",
