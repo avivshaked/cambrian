@@ -314,13 +314,14 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D290](#d290) | Every film takes the theatre's look; bubbles mark a birth and a bite, and a death's look is open to trial | 2026-11-03 | ruled by the owner on 2026-11-03, after the previews in `scratch/owner/birth-bubbles-first-take/`, `scratch/owner/growth-eased-off-and-on/` and `scratch/owner/plant-kill-fragments-off-and-on/`, on… |
 | [D291](#d291) | The coordinator develops and builds the forager kit, the hunger sense, a breeding gate and growing plants, under the owner's stance | 2026-11-03 | delegated by the owner on 2026-11-03, who set out their stance on each part and left the development and the build to the coordinator |
 | [D292](#d292) | The mouth feels which way the nearest leaf and the nearest animal lie | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 2 of `logbook/specs/forager-kit/spec.md` |
-| [D293](#d293) | Every brain unit inherits how fast it forgets | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 3 of `logbook/specs/forager-kit/spec.md` |
+| [D293](#d293) | Every brain unit inherits how fast it forgets | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 3 of `logbook/specs/forager-kit/spec.md`; its recorded genomes keep their format by D300 |
 | [D294](#d294) | A hunger sense reads the reserve on a log scale, beside D245's | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, on the owner's own request of that day for a log-scale hunger, as rule 4 of `logbook/specs/forager-kit/spec.md` |
 | [D295](#d295) | The nursery evolves the body after the bearing and memory arm, and the reach steps back once aim shows | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 1 of `logbook/specs/forager-kit/spec.md` |
 | [D296](#d296) | Plants may hold the rock at the oases, and half the plant founders start anchored to island coral | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 1 of `logbook/specs/plants-hold/spec.md` |
 | [D297](#d297) | Each part of a body earns light and draws matter where it stands | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 2 of `logbook/specs/plants-hold/spec.md` |
 | [D298](#d298) | A bitten module frees its place, so a plant can grow it again | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 3 of `logbook/specs/plants-hold/spec.md` |
 | [D299](#d299) | A birth waits for the brain's urge to breed, read beside a sense of the reserve against the gate | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 1 in form (b) of `logbook/specs/breeding-urge/spec.md` |
+| [D300](#d300) | A recorded genome keeps its format under D293's time constants | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, in review of D293's first build |
 
 ---
 
@@ -10816,3 +10817,23 @@ reads 0.96 there and 0.93 at half of it.
 
 **Rejected.** The urge in place of the margin, which would let a random brain breed itself to starvation. A birth chance
 rising with the surplus, whose shape would be our constant. A gate on crowding, a rule that reads the world's state.
+
+### D300
+**A recorded genome keeps its format under D293's time constants** · 2026-11-03
+
+**Status:** settled by the coordinator on 2026-11-03 under D291, in review of D293's first build. It amends D293's
+sentence that every recorded genome is written out at 0.01 s.
+
+**Decision.** Genome formats 12, 14 and 16 stay readable, and are written as before, byte for byte. A unit read from one
+of them has a time constant of 0.01 s, the unit it always was. Three new formats, 17, 18 and 19, add the unit's `tau`
+to formats 12, 14 and 16. A genome is written in one of them only when some unit's constant differs from 0.01 s, and a
+unit of one without `tau` is refused.
+
+**Why.** The first build renumbered the formats, refused the old ones, and added a nursery verb to forward them. Until
+forwarded, 400 tracked inocula, 14 pools, the test fixtures and every recorded run of the one brain were unreadable.
+After the merge the theatre could not have drawn a recorded run's creatures. D146 met the same case: an old-model genome
+is still written as format 11, byte for byte. An old format never held a constant, so reading it as 0.01 s fills in
+nothing that was lost. The rule that loading refuses rather than defaults still holds.
+
+**Rejected.** Refusing formats 12, 14 and 16 and forwarding every stored genome with `--write-taus`. It rewrites 400
+tracked files to add a value they already have, and leaves the recorded runs unreadable.
