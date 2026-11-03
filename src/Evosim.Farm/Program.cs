@@ -95,6 +95,13 @@ namespace Evosim.Farm
                 return MirrorCensus.Run(args);
             }
 
+            // --gate-census <run dir> <seconds> <out file>: every living body's reserve against its
+            // breeding gate, one JSONL row a body (GateCensus).
+            if (args.Length >= 1 && args[0] == "--gate-census")
+            {
+                return GateCensus.Run(args);
+            }
+
             // --grazer-traits <run dir> <out tsv>: one row a grazer genome, built by Developer and its
             // brain run open-loop, for the bloom screen's evolution gate (GrazerTraits).
             if (args.Length >= 1 && args[0] == "--grazer-traits")
