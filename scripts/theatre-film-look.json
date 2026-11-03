@@ -339,6 +339,22 @@
     "EVOSIM_THEATRE_COUNTERSHADE": {
       "value": "1",
       "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_STORY_LOOK": {
+      "value": "0",
+      "ruling": "D290: every film uses the theatre's agreed look, the story films included; story films with a look of their own rejected. The story safari's StoryLook (deep water and ambient lifted, fog, reach, vignette, lamp, exposure meter) is that look; this one dial reverses it"
+    },
+    "EVOSIM_THEATRE_CARVE": {
+      "value": "0.35",
+      "ruling": "the owner's eye, carve 0.5 refused (logbook/specs/handoff-archive-2026-09-26.md, 0091's addendum); theatre-film.ps1's default since, and the safari's now (the owner, 2026-11-03: films and safari share a look)"
+    },
+    "EVOSIM_THEATRE_NO_BOX": {
+      "value": "2",
+      "ruling": "the owner, 2026-11-03, relayed by the coordinator, on the box audit's second stills: join 2 looks best (every box drawn as its ellipsoid, the skin exponent unchanged); the safari takes it too"
+    },
+    "EVOSIM_THEATRE_NO_BOX_JOIN": {
+      "value": "2",
+      "ruling": "the owner, 2026-11-03, as EVOSIM_THEATRE_NO_BOX: the lobes joined across each joint at the dial's top"
     }
   },
   "close": {
@@ -427,8 +443,7 @@
     "EVOSIM_THEATRE_BITE_BUBBLES": "D290: a bite releases a few bubbles; first preview in phase112",
     "EVOSIM_THEATRE_PEARLING": "D290's other events: oxygen pearling; first preview in phase112",
     "EVOSIM_THEATRE_DEATH_LOOK": "D290: the death's look open to trial; milky (1) and blanched (2) beside the grey in phase112",
-    "EVOSIM_THEATRE_DEATH_LOOK_HAZE": "D290: the pale haze beside the browns in phase112",
-    "EVOSIM_THEATRE_NO_BOX": "the no-box rule of 2026-10-31; the box audit's stills in phase111"
+    "EVOSIM_THEATRE_DEATH_LOOK_HAZE": "D290: the pale haze beside the browns in phase112"
   },
   "previewOnly": {
     "EVOSIM_THEATRE_DEATH_CAPTION": "D281: the film leaves the number out",
