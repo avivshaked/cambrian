@@ -340,6 +340,10 @@
       "value": "1",
       "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
     },
+    "EVOSIM_THEATRE_LINEAGE_HUE": {
+      "value": "0.06",
+      "ruling": "the owner, 2026-11-03: whatever the safari does, the films do too; every body painted by its clade as the safari paints it (the owner's leaf ruling of 2026-09-24), 0.06 of the wheel, the safari's own; the film path gives it LineageOf from the run's lineage (TheatreFilm.SetUp)"
+    },
     "EVOSIM_THEATRE_STORY_LOOK": {
       "value": "0",
       "ruling": "D290: every film uses the theatre's agreed look, the story films included; story films with a look of their own rejected. The story safari's StoryLook (deep water and ambient lifted, fog, reach, vignette, lamp, exposure meter) is that look; this one dial reverses it"
