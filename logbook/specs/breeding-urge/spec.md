@@ -62,7 +62,9 @@ are leads for its next round, and no rule here rests on them.
    `r65`, against the pool's 600 s. A rising margin means storing already pays, which favours rule 1. A falling one
    means breeding sooner pays here. The same rows give gestation's share of grazer births.
 
-Each takes an hour or two of agent work and minutes of machine time (inference).
+Each takes an hour or two of agent work and minutes of machine time (inference). Measures 2 and 3 were read on
+2026-11-03 (`logbook/specs/kit-reads/`): four fifths of starved grazers never bred, and the margin drifts down in one
+world and up in others. Measure 1 waits for a reader of the checkpoints.
 
 ## 3. Rule 1. A birth waits for the brain's urge
 

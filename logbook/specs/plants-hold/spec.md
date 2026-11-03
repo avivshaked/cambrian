@@ -91,7 +91,9 @@ with no crowd, current or grazer. It can test hypotheses 2, 3 and 4 before any w
    of plant kills that took the root, from the kill rows. The other is a probe resumed from a round 66 checkpoint that
    splits the shape refusals into their four causes; a cousin run is enough for a share of causes.
 
-Hypotheses 1, 2 and 6 are expected to carry most of it and 3 to carry none (inference until the numbers print).
+Hypotheses 1, 2 and 6 are expected to carry most of it and 3 to carry none (inference until the numbers print). Test 5
+and the kill rows of test 6 were read on 2026-11-03 (`logbook/specs/kit-reads/`). A child lands in a median tenth of
+its parent's matter, so hypothesis 5 fails. Bites are 4 to 12 % of plant deaths, so test 6's kill half carries little.
 
 ## 4. The rules
 
