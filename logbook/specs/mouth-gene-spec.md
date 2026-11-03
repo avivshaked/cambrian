@@ -148,7 +148,17 @@ A joint anchor's cube map is not used: it clamps a box anchor inside the box (`S
   with the switch off. Every other door refuses as before, and a world with the switch off still refuses a genome
   holding places. The leaves never breed in a tank, and readers already take a missing place as the rule. A world
   holding such a leaf is not resumed from a checkpoint, which the nursery never takes. Writing the places out was
-  rejected, since the retrain's leaves would then differ from the oasis arm's. Proof 3 failed before this change and
-  fails the same after it, in one tank of generation 0's four, so its cause is something else, not yet found.
+  rejected, since the retrain's leaves would then differ from the oasis arm's. Proof 3 failed the same before and after
+  this change, so the leaves were not its cause.
+- **A cut moves the rule's mouth, and not a place.** This is section 8's third proof's cause, and a third case beside the
+  broad face and the split node. `Tip` on a root reads the root's first child. A bite that cuts it off
+  (`Phenotype.WithoutSubtrees`, through `DevelopPlan`) moves a switch-off mouth: on the oasis tops, which have one limb,
+  the mouth goes to the face of the longest axis. A stored place is a gene of the node and stays. So proof 3 holds up to
+  the first such cut and not after it. It was shown with a probe build that held the switch-off mouth in place at every
+  cut (branch `probe/cut-rule-mouth`, never merged): with it, the switch-off run equals the switch-on run, 96 rows in 8
+  files, with 8 cuts over three generations and the exam. A founder bench's frame record parts half a second after a top
+  lost its limb, at a bite its moved mouth made. Every switch-off world keeps its rule as recorded.
 - **The instrument's tank read comes first and gates nothing.** The nursery already evolves the place (D284), so the
-  instrument says how much room the gene has. The farm's resume read of r66-M is the coordinator's farm run, later.
+  instrument says how much room the gene has. On the founder bench, *best* less *now* is 0.21, with *best* far above
+  *chance* (`logbook/specs/nursery-mouth/predictions.md` on `mouth-gene`). The farm's resume read of r66-M is the
+  coordinator's farm run, later.
