@@ -201,7 +201,9 @@ belongs to a run that has ended, so it can be stopped by its process id (2026-10
   `=` and `&` split it too, so `--filter "Category!=Slow"` broke; put such a command in a `.cmd` file and
   start the file. A started `.cmd` runs under `cmd /K` and stays open until its last line is `exit`. In a
   `.cmd` file a frame pattern's `%06d` must be written `%%06d`, or cmd reads `%0` as the script's own name
-  (2026-11-03, the forager kit's fixtures).
+  (2026-11-03, the forager kit's fixtures). And `cmd //c start /wait` hands back cmd's exit code, not the program's:
+  a `gpu-accept.py` run that way read exit 0 on two worlds it had found different. A check whose exit code is the
+  claim runs from the PowerShell tool, which sets its own affinity first and reads `$LASTEXITCODE` (2026-11-03).
 - **A live run's files read 0 bytes in a directory listing.** Windows updates a file's size in the
   directory entry lazily while a writer holds it open, so `ls` and `Get-ChildItem` showed round 58's
   `genomes.jsonl.gz` at 0 bytes when it held 22 MB. Open the file with `FileShare.ReadWrite` and read its

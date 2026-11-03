@@ -1,0 +1,7 @@
+stats: resumed rows after 1200 s: 480, of which in the recording: 480, 1210 to 6000 s
+  fields compared per row: 202, values compared: 96960
+  first difference: t 1210 field harnessBodySteps: recorded 102293350, resumed 2026000
+  only in the resumed rows: []
+  only in the recorded rows: []
+  only in the resumed rows, apart from NEW and D239's two mouth-blow columns: []
+lineage rows in (1200, 6000] s: recorded 19380, resumed 19380, equal apart from ['iak', 'ic', 'iok']: True

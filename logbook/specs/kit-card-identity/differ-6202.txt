@@ -1,0 +1,16 @@
+A: D:\Projects\experiments\evolution-simulator\scratch\card-kit\identity\g32\kitid-c-6202\2026-11-03-205411-2ba8bbfe
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.2178 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 30258f19ff dirty False dynamics ea225cdba87e farm 7e23ce6cc12b config 2ba8bbfe104d69dd
+  pace     1200 s of 1200 in 6.67418057 min, 2.9966225501747252 x real time, status ended (budget), diverged 0
+B: D:\Projects\experiments\evolution-simulator\scratch\card-kit\identity\g32\kitid-hu-6202\2026-11-03-205411-5c9378b4
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 101943.8866 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 30258f19ff dirty False dynamics ea225cdba87e farm 7e23ce6cc12b config 5c9378b4d4bac8c8
+  pace     1200 s of 1200 in 6.7092869 min, 2.9809427288017747 x real time, status ended (budget), diverged 0
+split A  physics 46%, world 49%, harness 3%, writers 1%
+split B  physics 49%, world 47%, harness 3%, writers 1%
+stats    identical through t=0; first difference at t=10 in 50 fields, e.g. auditResidual=0/2.2737367544323206e-13, bloomLeafArea=[0, 0.0527831818908453, 0, 0.029959581792354584, 0.16802651807665825, 0, 0.29630624409765005, 0, 0, 0.1828376166522503, 0.0971622634679079]/[0, 0.053074270486831665, 0, 0.029959581792354584, 0.1682344600558281, 0, 0.29861980490386486, 0, 0, 0.1961316429078579, 0.0971622634679079], burntTotal=0.07014367666895799/0.07010138650184684, burntWindow=0.07014367666895799/0.07010138650184684, depthJointed=-6.367682002484798/-6.380248865112662
+digest   identical through step 100; parts at step 200 (t=1.9999999552965164), bodies 6/6
+lineage  first differs at line 16
+positions not in both runs

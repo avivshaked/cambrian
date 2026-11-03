@@ -1,0 +1,16 @@
+A: D:\Projects\experiments\evolution-simulator\scratch\card-kit\identity\g32\kitid-c-6203\2026-11-03-205411-2ba8bbfe
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.8552 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 30258f19ff dirty False dynamics ea225cdba87e farm 7e23ce6cc12b config 2ba8bbfe104d69dd
+  pace     1200 s of 1200 in 6.67655015 min, 2.9955590163581713 x real time, status ended (budget), diverged 0
+B: D:\Projects\experiments\evolution-simulator\scratch\card-kit\identity\g32\kitid-hu-6203\2026-11-03-205411-5c9378b4
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.2109 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 30258f19ff dirty False dynamics ea225cdba87e farm 7e23ce6cc12b config 5c9378b4d4bac8c8
+  pace     1200 s of 1200 in 5.949891143333334 min, 3.361406035538881 x real time, status ended (budget), diverged 0
+split A  physics 47%, world 48%, harness 3%, writers 1%
+split B  physics 50%, world 46%, harness 2%, writers 1%
+stats    identical through t=0; first difference at t=10 in 45 fields, e.g. auditResidual=0/2.2737367544323206e-13, bloomLeafArea=[0.12738375924527645, 0.11662039533257484, 0, 0.039184343069791794, 0.061307208612561226, 0, 0.1934545524418354, 0, 0, 0.040473539382219315, 0.16336827725172043]/[0.12757333554327488, 0.11662039533257484, 0, 0.039184343069791794, 0.061307208612561226, 0, 0.19454895704984665, 0, 0, 0.0513891838490963, 0.16336827725172043], burntTotal=0.05831836333189725/0.058153839481978185, burntWindow=0.05831836333189725/0.058153839481978185, depthJointed=-5.44312209592146/-5.454501120483174
+digest   identical through step 1; parts at step 100 (t=0.9999999776482582), bodies 2/2
+lineage  first differs at line 17
+positions not in both runs

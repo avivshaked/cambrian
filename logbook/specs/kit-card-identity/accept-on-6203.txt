@@ -1,0 +1,16 @@
+A: D:\Projects\experiments\evolution-simulator\scratch\card-kit\identity\g32\kitid-hu-6203\2026-11-03-205411-5c9378b4
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.2109 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 30258f19ff dirty False dynamics ea225cdba87e farm 7e23ce6cc12b config 5c9378b4d4bac8c8
+  pace     1200 s of 1200 in 5.949891143333334 min, 3.361406035538881 x real time, status ended (budget), diverged 0
+B: D:\Projects\experiments\evolution-simulator\scratch\card-kit\identity\g64\kitid-hu64-6203\2026-11-03-210454-5c9378b4
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 64, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 101298.9685 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 30258f19ff dirty False dynamics ea225cdba87e farm 7e23ce6cc12b config 5c9378b4d4bac8c8
+  pace     6000 s of 6000 in 29.491986553333334 min, 3.3907515798964547 x real time, status ended (budget), diverged 0
+split A  physics 50%, world 46%, harness 2%, writers 1%
+split B  physics 50%, world 40%, harness 8%, writers 2%
+stats    identical on all 120 shared samples to t=1200 (wall clocks left out); 480 samples in one run only
+digest   identical on all 1201 shared rows to step 120000
+lineage  byte-equal on the shorter run's 2331 lines; the other goes on
+positions not in both runs

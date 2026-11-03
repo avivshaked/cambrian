@@ -1,0 +1,16 @@
+A: D:\Projects\experiments\evolution-simulator\runs\r65-c-6202\2026-11-01-131455-2991f19e
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.2173 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit effc6860c0 dirty False dynamics 7076166a1059 farm 289d0397d8fe config 2991f19e83d0a446
+  pace     24000 s of 24000 in 176.54711785 min, 2.2656841123843927 x real time, status ended (budget), diverged 0
+B: D:\Projects\experiments\evolution-simulator\scratch\card-kit\identity\g32\kitid-c-6202\2026-11-03-205411-2ba8bbfe
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.2178 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 30258f19ff dirty False dynamics ea225cdba87e farm 7e23ce6cc12b config 2ba8bbfe104d69dd
+  pace     1200 s of 1200 in 6.67418057 min, 2.9966225501747252 x real time, status ended (budget), diverged 0
+split A  physics 50%, world 37%, harness 11%, writers 2%
+split B  physics 46%, world 49%, harness 3%, writers 1%
+stats    identical on all 120 shared samples to t=1200 (wall clocks left out); 2280 samples in one run only
+digest   identical on all 1201 shared rows to step 120000
+lineage  byte-equal on the shorter run's 3114 lines; the other goes on
+positions not in both runs
