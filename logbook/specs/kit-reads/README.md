@@ -1,7 +1,8 @@
-# Four reads for the breeding and plants specifications (2026-11-03)
+# Five reads for the breeding and plants specifications (2026-11-03)
 
-These are measure 2 and measure 3 of `logbook/specs/breeding-urge/spec.md` section 2, and tests 5 and 6 (its first half)
-of `logbook/specs/plants-hold/spec.md` section 3. They read recorded rows only, and nothing was built. The scripts are
+Reads 1 to 4 are measure 2 and measure 3 of `logbook/specs/breeding-urge/spec.md` section 2, and tests 5 and 6 (its first
+half) of `logbook/specs/plants-hold/spec.md` section 3. They read recorded rows only, and nothing was built for them.
+Read 5, section 5 below, is the breeding spec's measure 1, read through a census built for it. The scripts are
 `scripts/reads/kit-reads/read1.py` to `read4.py`. Each takes run names, or reads its own list, and writes its table to
 `scratch/kit-reads/out/`. A Sonnet subagent wrote and ran them, and the coordinator checked the numbers below against
 the output files.
@@ -110,3 +111,39 @@ Bites are 4 to 12 % of plant deaths there, and 90 % of the kill rows fall in the
 What it means (inference): a root bite takes most of a branched plant, so hypothesis 6 points the right way. It cannot
 carry much of why plants stay single, because bites kill few plants in these worlds. The other half of test 6, a probe
 that splits the shape rule's refusals into their causes, is still owed.
+
+## 5. The reserve against the gate
+
+This is measure 1 of the breeding spec. `Evosim.Farm --gate-census <run> <seconds> <out>` restores a recorded world at
+each named second and steps nothing. It writes every living body's reserve, its gestation account and its gate, which
+is Core's own `Organism.BreedingGate`. Beside them go the two things `World.IsSolvent` asks first: that the body is
+grown, and that births are not held. `scripts/reads/kit-reads/read5.py` keeps the adult grazers and shares them out by reserve
+over gate, or account over gate for a gestating one. Main's build refuses these worlds' configs, so each ran on its
+own build with the census put onto it: `effc6860` for round 65's control and `632af648` for `r64s2-d`. Both checkouts
+are `scratch/wt-gate-<commit>`, and the output is in `scratch/gate-census/out/`.
+
+| world, second | adult lump grazers | below 0.5 | 0.5 to 0.9 | 0.9 to 1 | at or above 1 | median | adult gestating | median |
+|---|---|---|---|---|---|---|---|---|
+| r65-c-6202, 6,000 | 6 | 100 % | 0 | 0 | 0 | 0.19 | 1 | 0.07 |
+| r65-c-6202, 12,000 | 8 | 88 % | 13 % | 0 | 0 | 0.20 | 0 | |
+| r65-c-6202, 18,000 | 235 | 59 % | 38 % | 3.0 % | 0 | 0.41 | 37 | 0.26 |
+| r65-c-6202, 24,000 | 621 | 67 % | 29 % | 5.0 % | 0 | 0.37 | 75 | 0.39 |
+| r65-c-6203, 6,000 | 40 | 73 % | 25 % | 2.5 % | 0 | 0.27 | 8 | 0.23 |
+| r65-c-6203, 12,000 | 358 | 66 % | 28 % | 5.0 % | 0 | 0.34 | 59 | 0.26 |
+| r65-c-6203, 18,000 | 1,249 | 65 % | 31 % | 3.8 % | 0 | 0.37 | 151 | 0.26 |
+| r65-c-6203, 24,000 | 1,728 | 66 % | 31 % | 3.7 % | 0 | 0.36 | 221 | 0.27 |
+| r64s2-d-6202, 30,000 | 474 | 71 % | 26 % | 2.7 % | 0 | 0.33 | 68 | 0.30 |
+| r64s2-d-6202, 36,000 | 940 | 70 % | 27 % | 2.7 % | 0 | 0.31 | 133 | 0.35 |
+| r64s2-d-6202, 42,000 | 920 | 68 % | 29 % | 3.2 % | 0 | 0.33 | 135 | 0.34 |
+| r64s2-d-6202, 46,500 | 1,374 | 70 % | 26 % | 3.4 % | 0 | 0.31 | 178 | 0.38 |
+
+The share columns are of the adult lump grazers, by reserve over gate. The last column is account over gate.
+
+No adult grazer stood at or above its gate at any second, as the code says it cannot for more than a step. Once a
+world holds a few hundred of them, the shares settle and stay level. About two thirds hold less than half their gate
+and 3 to 5 % stand within a tenth of it. The median holds about a third.
+
+What it means (inference): the line holds almost no one. A lump breeder keeps its margin after a birth and climbs from
+there, so most of an adult grazer's life is spent refilling, far below the line. A birth gated by the brain's urge
+(D299) acts on the few who reach the gate. Until foraging lifts income, it can change little, which fits read 1:
+grazers are short of food, and a birth is not what drains them.

@@ -64,7 +64,8 @@ are leads for its next round, and no rule here rests on them.
 
 Each takes an hour or two of agent work and minutes of machine time (inference). Measures 2 and 3 were read on
 2026-11-03 (`logbook/specs/kit-reads/`): four fifths of starved grazers never bred, and the margin drifts down in one
-world and up in others. Measure 1 waits for a reader of the checkpoints.
+world and up in others. Measure 1 was read the same day with a census of the checkpoints (read 5 there): no adult
+grazer stood at its gate, two thirds held under half of it, and the median held about a third.
 
 ## 3. Rule 1. A birth waits for the brain's urge
 
