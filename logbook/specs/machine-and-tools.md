@@ -159,7 +159,14 @@ The root file's rules still apply. The entries below were moved word for word, s
     19:04 a four-thread film window started on 12-15, beside a Unity smoke on 16-19 and a read on 8-11. It started
     on one reading of 78 °C. Seven seconds later the CPU read 100 °C, and the render guard stopped the Unity
     processes. No hardware event followed. Theatre work since then runs one heavy job at a time, each started
-    on a minute of readings under 80 °C, not on one reading.
+    on a minute of readings under 80 °C, not on one reading. A film window goes on the efficiency cores, 16-19,
+    while no Unity holds them: the same night a four-thread window alone on the fast cores 12-15 peaked at 96 °C,
+    with 4 s at 95 °C or more.
+  - **A card world alone can hold the CPU near 80 °C, so a render waits for it to end.** On 2026-10-30 r64's
+    five card worlds ran on 8-15 from 20:23. A render's gate (a minute of readings under 80 °C, read every 10 s)
+    looked for 45 minutes and never launched. The readings ran from 73 to 93 °C, with a mean of 80.4, and no seven
+    in a row fell under 80. The coordinator ruled that the renders wait for the card world's end rather than
+    relax the gate.
   - **Nor beside a theatre render step.** `scratch/theatre-realism/batch-heat.ps1` stops a render batch at
     89 °C. On 2026-10-25 at 13:51 it read 90 °C and stopped batch b43. A Farm build at one MSBuild node and
     two threads on logical 2-15, given its slot by the coordinator, ran beside a Unity step, with small test
@@ -168,6 +175,13 @@ The root file's rules still apply. The entries below were moved word for word, s
     compile ignores the thread count and uses every core in its affinity mask, which is how 14-core masks
     reached 89 °C twice that day. Each job in a HOLD window runs on a mask of four cores (for example
     `0xF0000` or `0xF00000`), with at most two such lanes at once and their compiles staggered.
+  - **A HOLD window's jobs stay off the fast cores too, and the heat is read through the PowerShell tool.** On
+    2026-11-03 from 16:39 to 16:46 the CPU peaked at 97 °C. The coordinator had put two four-thread crowd fixtures
+    on logical 8-11 and 12-15, beside the window's two lanes on 16-23 and the gate census. That broke the rule that
+    heavy jobs stay off 0-15 while the machine runs warm. No limit was crossed and no run was lost. The coordinator's
+    heat look ran `powershell.exe scripts/temp-check.ps1` from Git Bash, which printed `cpu temp n/a` throughout, so
+    the look saw nothing. The PowerShell tool's own `scripts/temp-check.ps1` reads the sensor. A HOLD window holds at
+    most its two lanes, 16-19 and 20-23, and a third job waits for one of them to finish.
   - **Memory is committed by idle sessions, not only by runs.** On 2026-10-27 at 09:58 the machine had 63.7 GB of
     RAM with 17.7 GB free, and 90.8 of 103.7 GB committed. Growth group 2's farm process held 7.4 GB. Twenty
     `claude.exe` processes, from sessions opened between 2026-10-23 and 2026-10-25, held about 10 GB between them,

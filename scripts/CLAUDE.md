@@ -198,6 +198,10 @@ belongs to a run that has ended, so it can be stopped by its process id (2026-10
   `dotnet test --filter "A|B"` is a pipe to cmd even inside the quotes, so the run filtered on `A`
   and piped into a program named `B`; run one filter name a run, or write `^|`. Backslashes in a
   path passed through it are lost; write the path with forward slashes (2026-11-02, D283's builds).
+  `=` and `&` split it too, so `--filter "Category!=Slow"` broke; put such a command in a `.cmd` file and
+  start the file. A started `.cmd` runs under `cmd /K` and stays open until its last line is `exit`. In a
+  `.cmd` file a frame pattern's `%06d` must be written `%%06d`, or cmd reads `%0` as the script's own name
+  (2026-11-03, the forager kit's fixtures).
 - **A live run's files read 0 bytes in a directory listing.** Windows updates a file's size in the
   directory entry lazily while a writer holds it open, so `ls` and `Get-ChildItem` showed round 58's
   `genomes.jsonl.gz` at 0 bytes when it held 22 MB. Open the file with `FileShare.ReadWrite` and read its
