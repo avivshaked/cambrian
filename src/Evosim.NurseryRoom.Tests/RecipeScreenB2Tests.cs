@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Evosim.Nursery;
 using Evosim.NurseryRoom;
+using Evosim.TestSupport;
 using Xunit;
 
 namespace Evosim.NurseryRoom.Tests
@@ -459,7 +460,8 @@ namespace Evosim.NurseryRoom.Tests
             Assert.Equal(new[] { "search.zzNewField" }, unlabelled);
         }
 
-        [Fact]
+        // The recipes read their founders from the gitignored pools, so a tree without the two most recipes name skips this test.
+        [LocalDataTreeFact("rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz", "rounds/nursery/pools/410a70db44a4b20a.tsv")]
         public void EveryLeafOfEveryRecipeUnderRoundsNurseryIsLabelledAsTheScreenWouldShowIt()
         {
             int loaded = 0;
