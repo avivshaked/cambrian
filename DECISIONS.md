@@ -313,6 +313,10 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D289](#d289) | A bitten plant throws off its own fragments, more at a kill | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendation |
 | [D290](#d290) | Every film takes the theatre's look; bubbles mark a birth and a bite, and a death's look is open to trial | 2026-11-03 | ruled by the owner on 2026-11-03, after the previews in `scratch/owner/birth-bubbles-first-take/`, `scratch/owner/growth-eased-off-and-on/` and `scratch/owner/plant-kill-fragments-off-and-on/`, on… |
 | [D291](#d291) | The coordinator develops and builds the forager kit, the hunger sense, a breeding gate and growing plants, under the owner's stance | 2026-11-03 | delegated by the owner on 2026-11-03, who set out their stance on each part and left the development and the build to the coordinator |
+| [D292](#d292) | The mouth feels which way the nearest leaf and the nearest animal lie | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 2 of `logbook/specs/forager-kit/spec.md` |
+| [D293](#d293) | Every brain unit inherits how fast it forgets | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 3 of `logbook/specs/forager-kit/spec.md` |
+| [D294](#d294) | A hunger sense reads the reserve on a log scale, beside D245's | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, on the owner's own request of that day for a log-scale hunger, as rule 4 of `logbook/specs/forager-kit/spec.md` |
+| [D295](#d295) | The nursery evolves the body after the bearing and memory arm, and the reach steps back once aim shows | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 1 of `logbook/specs/forager-kit/spec.md` |
 
 ---
 
@@ -10665,3 +10669,72 @@ build to the coordinator. Each world or brain rule settled under it is recorded 
 
 **Why.** The owner judged that the grazers' failure to make a living from leaves comes from what the creatures and the
 world lack, and asked for it to be fixed rather than measured around.
+
+### D292
+**The mouth feels which way the nearest leaf and the nearest animal lie** · 2026-11-03
+
+**Status:** settled by the coordinator on 2026-11-03 under D291, as rule 2 of `logbook/specs/forager-kit/spec.md`. It
+amends D280's feel: its single number, its 0.5 s hold and its target of any body.
+
+**Decision.** Beside today's feel, each eating part reads the direction of the nearest leaf and of the nearest animal,
+three numbers each, in a frame whose first axis points out of the mouth, scaled by nearness. It is refreshed every
+brain step. It starts overpowered (D262), at a range of 1 m with no noise, and is dialled back towards noise, a hold and
+a range of 8 mouth radii. It ships behind a switch that is off by default, and its build times the per-step distance
+search before anything else.
+
+**Why.** Between the feel's 30 cm and the leaf smell's 2 m cells, nothing tells a grazer where the nearest leaf lies.
+The smell's direction points to a patch's middle. The retrain's grazers use the feel, whose knockout cost them 26 % of
+what they ate, and still barely improved their aim. The contacts' distance routine already returns the nearest point,
+and the feel throws it away, so the direction costs a subtraction and a rotation.
+
+**Rejected.** The nose (D235, D257), which reads the same 2 m field. A rate of change of the smell, which changes little
+across one body on cells of 2 m. A simple eye, the large build D280 set aside.
+
+### D293
+**Every brain unit inherits how fast it forgets** · 2026-11-03
+
+**Status:** settled by the coordinator on 2026-11-03 under D291, as rule 3 of `logbook/specs/forager-kit/spec.md`. It
+amends D146's unit and D147's founders, and bumps the genome format.
+
+**Decision.** Each unit carries a time constant τ, a gene from 0.01 s to 30 s, mutated on its logarithm. Each step the
+unit moves the share 0.01 s / τ of the way from its old value to its tanh. At 0.01 s it is today's unit, by today's
+arithmetic, and every recorded genome is written out at that value. The first arm's founders gain two units, at 1 s and
+5 s, linked from the feel, the smell and the energy sense to both outputs (D262). The exam's knockout sets every τ back
+to 0.01 s. It ships behind a switch that is off by default.
+
+**Why.** A unit forgets within one step of 0.01 s. Holding half a value for a second needs a self-loop weight within
+0.007 of 1, while a mutation moves a weight by 0.1. Evolved networks with a time constant per unit held a bit across
+trials [BF03 p.2, p.6–7] and caught an object seen only briefly [GB99 p.3, p.6].
+
+**Rejected.** A latch unit, which holds one bit. A sensed derivative over a fixed window, whose window and senses we
+would choose instead of evolution.
+
+### D294
+**A hunger sense reads the reserve on a log scale, beside D245's** · 2026-11-03
+
+**Status:** settled by the coordinator on 2026-11-03 under D291, on the owner's own request of that day for a log-scale
+hunger, as rule 4 of `logbook/specs/forager-kit/spec.md`. It amends D245 by adding a sense, and answers D020.
+
+**Decision.** A new sense reads h = log2(k / S) / log2(k / S_min), clipped to 0 to 1, where S is the reserve in seconds
+of standing cost, k = 60 s and S_min = 0.25 s, both tunables. It reads 0 above a minute and rises by an equal step for
+every halving of the time left. D245's sense stays. It ships behind a switch, as D249's did, with its card copy, and is
+screened in a world, where starvation costs. A nursery arm tests it only with a purse of about a minute.
+
+**Why.** Between 1 s and 0.25 s of reserve, D245's sense moves 0.024, so a brain cannot tell a body about to starve from
+one merely low. A tanh brain gains resolution from a log scale, not from a larger value, which only saturates it. The
+tank's purse of 3,830 s keeps D245's reading near 0.99 for a whole episode, so no tank body can feel hungry today.
+
+### D295
+**The nursery evolves the body after the bearing and memory arm, and the reach steps back once aim shows** · 2026-11-03
+
+**Status:** settled by the coordinator on 2026-11-03 under D291, as rule 1 of `logbook/specs/forager-kit/spec.md`. It
+amends D284, which held every body gene but the mouth fixed.
+
+**Decision.** After one nursery arm with D292 and D293 on, a body arm from its tops mutates limbs, joints, part sizes
+and D233's shape family beside the brain and the mouth, at several times the world's chance at first (D262), scored on
+D179's energy return. The bite's reach stays at three mouth radii until an arm's tight share doubles from 0.12, then
+steps towards one radius, one arm a step (D282).
+
+**Why.** The body turns at 0.125 rad/s, so a quarter turn takes 13 s, the plainest limit in the numbers. The energy
+return, not food eaten, keeps the search from growing ever larger eating parts (D178, D285). The body waits for the
+bearing and the memory, because a body shaped for a brain without a bearing would be reshaped once it has one.
