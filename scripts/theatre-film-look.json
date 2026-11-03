@@ -1,0 +1,434 @@
+{
+  "schema": "evosim/theatre-film-look/1",
+  "about": "The theatre's agreed film look (D290): every film, the story films included, sets these dials in its environment. A film departs only for a need of its own, such as a show filter, and says which dial it changes and why. 'wide' holds for every shot; 'close' is added for a portrait or a close shot; 'events' marks births, bites and deaths; 'trial' lists dials under A/B that no film takes until a ruling moves them up, and 'previewOnly' dials the theatre's previews take and films never do. Each entry's 'ruling' names its source. 'perWorld' dials take their value from the named table, with 'value' standing for a world with no row. Unity's dials not listed stay at their defaults, which are off.",
+  "wide": {
+    "EVOSIM_THEATRE_LOOK": {
+      "value": "4",
+      "ruling": "the water and light look (unity/Assets/Theatre/CLAUDE.md)"
+    },
+    "EVOSIM_THEATRE_GLASS": {
+      "value": "0",
+      "ruling": "the water and light look"
+    },
+    "EVOSIM_THEATRE_CAUSTIC_SCALE": {
+      "value": "0.75",
+      "ruling": "the water and light look"
+    },
+    "EVOSIM_THEATRE_MOTION_BLUR": {
+      "value": "0",
+      "ruling": "the water and light look"
+    },
+    "EVOSIM_THEATRE_ABSORB": {
+      "value": "0.6",
+      "ruling": "the owner's water absorption"
+    },
+    "EVOSIM_THEATRE_SNOW_LEAST": {
+      "value": "0",
+      "ruling": "the owner's snow for films, 2026-10-27 (the snow folder's fifth row)"
+    },
+    "EVOSIM_THEATRE_SHELL_GAIN": {
+      "value": "0.4",
+      "ruling": "the owner's snow for films, 2026-10-27"
+    },
+    "EVOSIM_THEATRE_SNOW_AMBIENT": {
+      "value": "1.6",
+      "ruling": "the owner's snow for films, 2026-10-27"
+    },
+    "EVOSIM_THEATRE_SNOW_QUANTITY": {
+      "value": "0.3",
+      "ruling": "the owner's snow for films, 2026-10-27"
+    },
+    "EVOSIM_THEATRE_TISSUE_LOOK": {
+      "value": "2",
+      "ruling": "the tissue look"
+    },
+    "EVOSIM_THEATRE_SSS": {
+      "value": "1",
+      "ruling": "the tissue look"
+    },
+    "EVOSIM_THEATRE_SOFT": {
+      "value": "1",
+      "ruling": "the tissue look"
+    },
+    "EVOSIM_THEATRE_SWAY": {
+      "value": "1",
+      "ruling": "the tissue look"
+    },
+    "EVOSIM_THEATRE_ORGANIC": {
+      "value": "2",
+      "ruling": "the tissue look"
+    },
+    "EVOSIM_THEATRE_MOTTLE_SOFT": {
+      "value": "1",
+      "ruling": "the tissue look"
+    },
+    "EVOSIM_THEATRE_PATTERN": {
+      "value": "1",
+      "ruling": "the tissue look"
+    },
+    "EVOSIM_THEATRE_PATTERN_AA": {
+      "value": "2",
+      "ruling": "the maze judged by its footprint's minor axis (the coordinator, after aa-t3)"
+    },
+    "EVOSIM_THEATRE_GROWTH_EASE": {
+      "value": "2",
+      "ruling": "D290: growth eased in a straight line across each metabolic step"
+    },
+    "EVOSIM_THEATRE_ONE_SKIN": {
+      "value": "3",
+      "ruling": "a wide shot's skin"
+    },
+    "EVOSIM_THEATRE_SKIN_JOIN": {
+      "value": "1",
+      "ruling": "the skin's join (the coordinator)"
+    },
+    "EVOSIM_THEATRE_SHEEN_CAP": {
+      "value": "2",
+      "ruling": "the capped sheen, every shot"
+    },
+    "EVOSIM_THEATRE_SKIN_SEAT": {
+      "value": "2",
+      "ruling": "the nose trio (the coordinator, after trio-t3)"
+    },
+    "EVOSIM_THEATRE_NOSE_SNOUT": {
+      "value": "1",
+      "ruling": "the nose trio"
+    },
+    "EVOSIM_THEATRE_ORGAN_SEAT": {
+      "value": "2",
+      "ruling": "the nose trio"
+    },
+    "EVOSIM_THEATRE_FAMILY_MESH": {
+      "value": "1",
+      "ruling": "G6's family drawing (logbook/specs/g6-theatre-look/family-drawing-plan.md, step 4)"
+    },
+    "EVOSIM_THEATRE_FAMILY_SKIN": {
+      "value": "1",
+      "ruling": "G6's family drawing"
+    },
+    "EVOSIM_THEATRE_BOX_BED": {
+      "value": "1",
+      "ruling": "D278: a box world's films draw the true bed"
+    },
+    "EVOSIM_THEATRE_SKIN_THICK_CAP": {
+      "value": "2",
+      "ruling": "D278: the skin's thickness cap is 2 (amended by D281: it shapes the outline only at the close look)"
+    },
+    "EVOSIM_THEATRE_FIXED_TINT": {
+      "value": "1",
+      "ruling": "D276 (the owner, 2026-11-01): the normal view, the film look included, draws no hunger; this covers the theatre CLAUDE.md's \"when the owner accepts look preview 20\", which only shows it in practice"
+    },
+    "EVOSIM_THEATRE_FIXED_TINT_PRODUCER": {
+      "value": "0.07",
+      "ruling": "D276; the value is look preview 20's, so the leaves keep the tint they were tuned at"
+    },
+    "EVOSIM_THEATRE_CORAL_SHAPE": {
+      "value": "3",
+      "ruling": "the reef"
+    },
+    "EVOSIM_THEATRE_CORAL_WARM": {
+      "value": "1",
+      "ruling": "the reef"
+    },
+    "EVOSIM_THEATRE_CORAL_LIVE": {
+      "value": "3",
+      "ruling": "the reef"
+    },
+    "EVOSIM_THEATRE_ALGA": {
+      "value": "1",
+      "ruling": "the marine producers"
+    },
+    "EVOSIM_THEATRE_ALGA_BLADE": {
+      "value": "2",
+      "ruling": "the marine producers"
+    },
+    "EVOSIM_THEATRE_ALGA_BEND": {
+      "value": "0.01",
+      "ruling": "the owner's blades, 2026-10-28 (logbook/specs/theatre-skin-plan.md)"
+    },
+    "EVOSIM_THEATRE_ALGA_ARC": {
+      "value": "2",
+      "ruling": "the owner's blades, 2026-10-28"
+    },
+    "EVOSIM_THEATRE_ALGA_ARC_ROOM": {
+      "value": "0.20",
+      "ruling": "the owner's blades, 2026-10-28"
+    },
+    "EVOSIM_THEATRE_ALGA_FLUTTER": {
+      "value": "0.4",
+      "ruling": "the owner's blades, 2026-10-28"
+    },
+    "EVOSIM_THEATRE_ALGA_FLUTTER_NOISE": {
+      "value": "1",
+      "ruling": "the owner's blades, 2026-10-28"
+    },
+    "EVOSIM_THEATRE_ALGA_RAMP_PHOTO": {
+      "value": "1",
+      "ruling": "the owner's blades, 2026-10-28"
+    },
+    "EVOSIM_THEATRE_ALGA_RAMP_STOP_A": {
+      "value": "0.0697,0.0755,0.0169",
+      "perWorld": "scripts/theatre-world-stops.tsv",
+      "ruling": "the owner's rulings of 2026-10-29: the blades' stops per world; trial d's stand for a world with no row, which is calibrated before it is filmed"
+    },
+    "EVOSIM_THEATRE_ALGA_RAMP_STOP_B": {
+      "value": "0.0280,0.0303,0.0068",
+      "perWorld": "scripts/theatre-world-stops.tsv",
+      "ruling": "as ALGA_RAMP_STOP_A"
+    },
+    "EVOSIM_THEATRE_ALGA_ROUND_TARGET": {
+      "value": "1",
+      "ruling": "the owner's rulings of 2026-10-29: the round producers take the darker forest green"
+    },
+    "EVOSIM_THEATRE_ALGA_ROUND_STOP": {
+      "value": "0.0280,0.0303,0.0068",
+      "ruling": "the owner's rulings of 2026-10-29: trial d's mid-green stop"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP": {
+      "value": "3",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_DEEPEN": {
+      "value": "0.5",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_OKLAB": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_AXES": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_LIGHT_DARK": {
+      "value": "0.04",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_ARC_MID": {
+      "value": "0",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_NEUTRAL_EDGE": {
+      "value": "0.12",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_DARK": {
+      "value": "0.5",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_YELLOW_LIFT": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_PATTERN_TINT": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_PATTERN_HUE": {
+      "value": "0.08",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_PATTERN_FLIP": {
+      "value": "0.2",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_PART_COLOUR": {
+      "value": "0.5",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_PART_LIGHT": {
+      "value": "0.3",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_RIM_CONTRAST": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_ZONE": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_ZONE_T": {
+      "value": "0.5",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_ZONE_CHROMA": {
+      "value": "0.14",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_LIGHT_PALE": {
+      "value": "0.55",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_ARC_START": {
+      "value": "190",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_ARC_END": {
+      "value": "62",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_CHROMA_MAX": {
+      "value": "0.22",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_CHROMA_POWER": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_NEUTRAL": {
+      "value": "0.5",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_FAMILY": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_FAMILY_FORCE": {
+      "value": "-1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_MOUTH2": {
+      "value": "2",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_MOUTH2_DISC": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_FAMILY_MIX": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_FAMILY_EDGE": {
+      "value": "0.2",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_FAMILY_LIGHT": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_FAMILY_CHROMA": {
+      "value": "0.16",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_FAMILY_SPOT": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_FAMILY_PINK_AWAY": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_FAMILY_PINK_DEEPEN": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_FAMILY_EDGE_BEND": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_RIM_BAND": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_IRIDESCENCE": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_COUNTERSHADE": {
+      "value": "1",
+      "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    }
+  },
+  "close": {
+    "EVOSIM_THEATRE_ONE_SKIN": {
+      "value": "6",
+      "ruling": "the close look (unity/Assets/Theatre/CLAUDE.md)"
+    },
+    "EVOSIM_THEATRE_SKIN2": {
+      "value": "2",
+      "ruling": "the close look"
+    },
+    "EVOSIM_THEATRE_SKIN2_BAND": {
+      "value": "2",
+      "ruling": "the close look"
+    },
+    "EVOSIM_THEATRE_PORTRAIT_FILL": {
+      "value": "0.8",
+      "ruling": "the close look"
+    }
+  },
+  "events": {
+    "EVOSIM_THEATRE_MOUTH2_BITE": {
+      "value": "1",
+      "ruling": "D277 and D281: the bite onsets that the crumbs, the plume and the bite bubbles read; the flash stays off (MOUTH2_BITE_FLASH defaults to 0 with the bite on)"
+    },
+    "EVOSIM_THEATRE_MOUTH2_BITE_MEAL": {
+      "value": "0.55",
+      "ruling": "D277: one meal, one onset"
+    },
+    "EVOSIM_THEATRE_BITE_CRUMBS": {
+      "value": "1",
+      "ruling": "D281: a bite shows its crumbs and no flash"
+    },
+    "EVOSIM_THEATRE_PLANT_CRUMBS": {
+      "value": "1",
+      "ruling": "D289 and D290: a bitten plant throws off its own fragments, more at a kill"
+    },
+    "EVOSIM_THEATRE_WOUND_PLUME": {
+      "value": "1",
+      "ruling": "D281 and D286: every hurt animal bleeds, a kill more than a wound"
+    },
+    "EVOSIM_THEATRE_DEATH_CUE": {
+      "value": "1",
+      "ruling": "D281: a death drains the body (grey until D290's trial chooses a variant) and releases a cloud"
+    },
+    "EVOSIM_THEATRE_REMAINS": {
+      "value": "1",
+      "ruling": "D277: dead tissue stays until it crumbles"
+    },
+    "EVOSIM_THEATRE_CRUMBLE": {
+      "value": "1",
+      "ruling": "D277: dead tissue crumbles into snow"
+    },
+    "EVOSIM_THEATRE_BIRTH_CLOUD": {
+      "value": "1",
+      "ruling": "D279: a birth is framed and marked at the birth point"
+    },
+    "EVOSIM_THEATRE_BIRTH_BUBBLES": {
+      "value": "1",
+      "ruling": "D290: bubbles in place of D279's motes"
+    },
+    "EVOSIM_THEATRE_BIRTH_CLOUD_LEAD": {
+      "value": "0.8",
+      "ruling": "practice adopted by the coordinator under D290 on 2026-11-03: the answer to the owner's phase105 verdict that the cloud seemed to start partway through; with D290's bubbles it times their onset, the early bubbles leaving over the lead (TheatreBirthCloud.cs, Make)"
+    },
+    "EVOSIM_THEATRE_BIRTH_SECONDS": {
+      "value": "0",
+      "ruling": "D279: the newborn is drawn solid at its true size from its first frame (D277's speck dropped)"
+    },
+    "EVOSIM_THEATRE_MOUTH2_GAPE": {
+      "value": "0.4",
+      "ruling": "practice adopted by the coordinator under D290 on 2026-11-03: what every film carried"
+    }
+  },
+  "trial": {
+    "EVOSIM_THEATRE_DEATH_HAZE": "the death cloud as a murk; under A/B (third pass in phase111)",
+    "EVOSIM_THEATRE_WOUND_PLUME_HAZE": "the plume as a murk; under A/B",
+    "EVOSIM_THEATRE_CRUMB_FLAKES": "the crumbs as torn flakes; an A/B only (D290)",
+    "EVOSIM_THEATRE_BIRTH_BUBBLES_COVER": "the bubbles' cover and cluster; under A/B",
+    "EVOSIM_THEATRE_BIRTH_BUBBLES_OBLATE": "under A/B",
+    "EVOSIM_THEATRE_BIRTH_BUBBLES_RISE2": "under A/B",
+    "EVOSIM_THEATRE_BIRTH_BUBBLES_COUNT": "D290 asks for more than take 1; the count is under A/B",
+    "EVOSIM_THEATRE_BITE_BUBBLES": "D290: a bite releases a few bubbles; first preview in phase112",
+    "EVOSIM_THEATRE_PEARLING": "D290's other events: oxygen pearling; first preview in phase112",
+    "EVOSIM_THEATRE_DEATH_LOOK": "D290: the death's look open to trial; milky (1) and blanched (2) beside the grey in phase112",
+    "EVOSIM_THEATRE_DEATH_LOOK_HAZE": "D290: the pale haze beside the browns in phase112",
+    "EVOSIM_THEATRE_NO_BOX": "the no-box rule of 2026-10-31; the box audit's stills in phase111"
+  },
+  "previewOnly": {
+    "EVOSIM_THEATRE_DEATH_CAPTION": "D281: the film leaves the number out",
+    "EVOSIM_THEATRE_ID_TAG": "D281: the film leaves the number out"
+  }
+}
