@@ -348,6 +348,11 @@ actually verifying it.
   remains: loose ends, instruments, measurements, the round-gap changes that are a new
   realisation of every seed and land best while no arm runs, pre-registration drafts and
   ledger screens for the round that waits.
+- **Answer the owner first, then work** (the owner, 2026-11-03). When a message from the owner
+  mixes instructions with questions or points for discussion, the turn opens with the answers,
+  whatever order the message took. Only the gathering an answer needs comes before it. The work
+  that needs nothing more from the owner starts after the answer. On 2026-11-03 a reply pushed,
+  recorded a decision and briefed a peer before it answered the owner's question about a run.
 - **Cap the load a build puts on the machine** (owner, 2026-09-23 afternoon, on seeing the
   CPU at 100%, asked whether farms and unit tests were running at the same time). A subagent's build of
   a tunable ran two farm runs at six threads each beside the test suites, because its brief
