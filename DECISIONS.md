@@ -317,6 +317,10 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D293](#d293) | Every brain unit inherits how fast it forgets | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 3 of `logbook/specs/forager-kit/spec.md` |
 | [D294](#d294) | A hunger sense reads the reserve on a log scale, beside D245's | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, on the owner's own request of that day for a log-scale hunger, as rule 4 of `logbook/specs/forager-kit/spec.md` |
 | [D295](#d295) | The nursery evolves the body after the bearing and memory arm, and the reach steps back once aim shows | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 1 of `logbook/specs/forager-kit/spec.md` |
+| [D296](#d296) | Plants may hold the rock at the oases, and half the plant founders start anchored to island coral | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 1 of `logbook/specs/plants-hold/spec.md` |
+| [D297](#d297) | Each part of a body earns light and draws matter where it stands | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 2 of `logbook/specs/plants-hold/spec.md` |
+| [D298](#d298) | A bitten module frees its place, so a plant can grow it again | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 3 of `logbook/specs/plants-hold/spec.md` |
+| [D299](#d299) | A birth waits for the brain's urge to breed, read beside a sense of the reserve against the gate | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 1 in form (b) of `logbook/specs/breeding-urge/spec.md` |
 
 ---
 
@@ -10738,3 +10742,77 @@ steps towards one radius, one arm a step (D282).
 **Why.** The body turns at 0.125 rad/s, so a quarter turn takes 13 s, the plainest limit in the numbers. The energy
 return, not food eaten, keeps the search from growing ever larger eating parts (D178, D285). The body waits for the
 bearing and the memory, because a body shaped for a brain without a bearing would be reshaped once it has one.
+
+### D296
+**Plants may hold the rock at the oases, and half the plant founders start anchored to island coral** · 2026-11-03
+
+**Status:** settled by the coordinator on 2026-11-03 under D291, as rule 1 of `logbook/specs/plants-hold/spec.md`. It
+reverses D165's rejection of anchored founders in the farm's worlds, the one place this work reverses an owner's ruling,
+because a grip has never formed in a world by budding alone and D262 now asks that a feature start overpowered. The
+coordinator flagged it to the owner. D268's clause that no plant must anchor stands.
+
+**Decision.** The anchoring cell joins the world's cell table and grips the bed and the reefs. Half the plant founders
+carry an anchoring root and are set touching island coral, and the cell's bud weight is four times the other types'.
+Forming or releasing a grip costs about nothing at first. It ships behind a switch that is off by default. If too little
+coral stands in lit water, D204's island shoals, ruled and never built, give the bed itself.
+
+**Why.** Round 66's plants drift at mid-depth as single blades, and nothing pays a plant to be more than one. A plant
+that holds an island's rock stays in the matter that falls there, as a drifter leaving at the current's 0.02 m/s does
+not, and can raise blades into brighter water. Forests on the islands become the oases, with open water between them,
+as the owner's guidance of 2026-10-15 asks.
+
+**Rejected.** Floats that lift small bodies, which would amend D064 and make a surface mat over the open water as well;
+held for the owner. D204's shoals first, which would change the islands' water and matter in the same screen.
+
+### D297
+**Each part of a body earns light and draws matter where it stands** · 2026-11-03
+
+**Status:** settled by the coordinator on 2026-11-03 under D291, as rule 2 of `logbook/specs/plants-hold/spec.md`. It
+brings the code to DESIGN.md §5A.1, which says a photosynthetic cell earns at its depth, and extends D110 from a part's
+pose to its height. D099's cap stands.
+
+**Decision.** A part's light is the irradiance at its own height and column, and its matter is drawn from its own cell,
+rationed as a body's draw is now. Each part casts its share of the body's shadow at its own layer. Light and matter get a
+switch each, off by default, and are screened together.
+
+**Why.** Today a body earns light and draws matter at one point, its centre of mass, so a stalk lifts nothing and a
+second blade drinks from the same stripped water as the first. Uptake of matter held back 96 % of plant steps in round
+66's world, so a blade that reaches other water is what a larger plant could gain.
+
+### D298
+**A bitten module frees its place, so a plant can grow it again** · 2026-11-03
+
+**Status:** settled by the coordinator on 2026-11-03 under D291, as rule 3 of `logbook/specs/plants-hold/spec.md`. It
+amends D106's second item, which asked for a plant regrowing a lost module when affordable.
+
+**Decision.** When a bite takes a part of an indeterminate node, that occurrence leaves the node's count, and the module
+rule may regrow it at the tissue price. The module rule's shape refusals are split by cause first. A cause that is a
+fault is fixed as agent work, and one whose fix would change what a body may be comes back as its own rule. Half the
+anchored founders draw their blade nodes indeterminate, with a ceiling of eight (D262). It ships behind a switch that is
+off by default.
+
+**Why.** Regrowth today works by count, only up to the node's ceiling, so a plant that has used its count never regrows
+a lost blade, and the shape test refused 42,515 of 42,651 additions in round 66's world. A plant that lives through a
+bite on a blade is what lets a grazed plant be large.
+
+### D299
+**A birth waits for the brain's urge to breed, read beside a sense of the reserve against the gate** · 2026-11-03
+
+**Status:** settled by the coordinator on 2026-11-03 under D291, as rule 1 in form (b) of
+`logbook/specs/breeding-urge/spec.md`. It amends the gate of D087's rule 2 and D098, extends D146's outputs as D268 did,
+and changes D120's banking while a birth waits. D120's account stays sealed (that specification's rule 2, form a), and
+the margin and adulthood are the fallback if the urge goes unused (its rule 3).
+
+**Decision.** Each body gains one brain output, the urge, on its root part. A body breeds only when its urge reads above
+-0.5 and its reserve, or its account, clears the gate as today. The margin stays as the floor a parent keeps. A new sense
+reads log2 of the reserve over the gate, clipped to -1 to 1. A fresh urge starts at a bias of +2, so founders breed as
+today (D262). It ships behind a switch that is off by default, with a knockout setting that holds the urge high, and is
+screened in a world beside D294's hunger sense.
+
+**Why.** The owner observed that a birth fired by the reserve crossing a line stores nothing beyond it. Biology gates
+breeding on condition, but by a state the body reads, not a reflex at a line, and the best choice between storing and
+breeding depends on the body's state [FDT11 Results, Fig. 1]. No sense today reads the reserve near the gate: D245's
+reads 0.96 there and 0.93 at half of it.
+
+**Rejected.** The urge in place of the margin, which would let a random brain breed itself to starvation. A birth chance
+rising with the surplus, whose shape would be our constant. A gate on crowding, a rule that reads the world's state.
