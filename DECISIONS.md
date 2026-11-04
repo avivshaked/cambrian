@@ -194,7 +194,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D169](#d169) | The leaf tank runs without the age rule, keeps only bitten leaves as food, and breeds two arms of 30 generations | 2026-10-13 | the owner ruled on 2026-10-13, about midday, on three of the four points the coordinator put to them on the swimming nursery's leaf tank, accepting each recommendation |
 | [D170](#d170) | The leaf tank scores the energy each swimmer eats from leaves bitten to death | 2026-10-13 | the owner ruled on 2026-10-13, early afternoon, choosing the coordinator's recommendation |
 | [D171](#d171) | The gripping-grazer control closes on its read, with neither a touching plant nor weight built | 2026-10-13 | the owner ruled on the afternoon of 2026-10-13, in the speed agent's session, after the control's null (`logbook/specs/grazer-grip-control-plan.md`) |
-| [D172](#d172) | A tank search stops when its smoothed eating stalls, and the exam takes every generation's top | 2026-10-13 | the owner ruled on the evening of 2026-10-13, proposing the idea and agreeing to the coordinator's recommended rule |
+| [D172](#d172) | A tank search stops when its smoothed eating stalls, and the exam takes every generation's top | 2026-10-13 | the owner ruled on the evening of 2026-10-13, proposing the idea and agreeing to the coordinator's recommended rule · amended by D303 for compared arms |
 | [D173](#d173) | A second pair of leaf arms in a sparser tank with a longer reach, before the worlds' form is chosen | 2026-10-13 | the owner ruled on the evening of 2026-10-13, choosing the coordinator's recommendation after the tops' benches (`logbook/specs/nursery-leaf-read.txt` on `nursery-leaf`) |
 | [D174](#d174) | Round 59 carries the direction form of the leaf smell, plants tank grazers in two of three isolated seeds, and founds fresh worlds | 2026-10-14 | the owner approved the coordinator's plan on 2026-10-14 at midday, after D173's arms were read (`logbook/specs/nursery-leaf-sparse-read.txt` on `nursery-d172`) |
 | [D175](#d175) | Fed islands are built and screened for round 60: matter arrives on D109's islands and is buried at each column's floor | 2026-10-14 | the owner approved testing it on 2026-10-14 in the afternoon, on the coordinator's proposal (`proposals/propose-r60-patchy-matter.md`, from a design study in `logbook/specs/r60-patchiness/report.txt`) |
@@ -324,6 +324,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D300](#d300) | A recorded genome keeps its format under D293's time constants | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, in review of D293's first build |
 | [D301](#d301) | A corpse turns pale, a death releases a soft haze in the water's colour, and the corpse keeps its markings | 2026-11-04 | ruled by the owner on 2026-11-04 after `scratch/owner/death-look-and-motes/`, on the coordinator's recommendations |
 | [D302](#d302) | The opener is the dive, made once, and it lands in each video's own world | 2026-11-04 | ruled by the owner on 2026-11-04, on the coordinator's recommendation |
+| [D303](#d303) | Nursery arms that are compared run a fixed, equal budget, and the 4 m bearing is rerun to 40 generations | 2026-11-04 | ruled by the owner on 2026-11-04, on the coordinator's recommendation, after the owner asked whether the searches stop before their learning tapers |
 
 ---
 
@@ -10892,3 +10893,30 @@ as a plane crash.
 
 **Rejected.** One fixed opener rendered once, the simplest and the most recognisable, which would show a world other than
 the video's own and age as the theatre's look changes. D288's void for the opener.
+
+### D303
+**Nursery arms that are compared run a fixed, equal budget, and the 4 m bearing is rerun to 40 generations** · 2026-11-04
+
+**Status:** ruled by the owner on 2026-11-04, on the coordinator's recommendation, after the owner asked whether the
+searches stop before their learning tapers. It amends D172 for arms that are compared with each other. D172's stop rule
+stays for a search that is read alone.
+
+**Decision.**
+- Arms that are compared run the same fixed number of generations, with no early stop: 40, set in the recipe by a stop
+  floor equal to the generation cap. Where the learning tapers is read from the curve afterwards.
+- The bearing at 4 m (`forager-kit-range4`) runs again to 40 generations on the same seed. Its first 22 generations
+  should replay exactly. The control and the 1 m arm follow at 40, so the three compare like for like.
+- How many seeds an arm needs before a verdict waits on a check of the literature. The owner asked that the nursery's
+  strategy be rethought, and that a faster nursery be built if the evidence calls for several seeds an arm. The first
+  step is a measurement of what a nursery generation costs on the card.
+
+**Why.** Under D172 the three forager-kit arms stopped at generations 21, 22 and 26. The 1 m arm had flattened, with a
+slope over its last 10 generations of −1.4 J a generation (standard error 1.5). The control was probably still creeping
+up, at +0.9 (1.3). The 4 m arm stopped at the earliest generation allowed while still climbing, at +2.4 (1.7). The
+score moves by 10 to 14 J from one generation to the next on noise alone, so a slow climb passes as a stall. Arms that
+stop at different generations mix how good an arm is with when the noise fired the rule. Benchmarking practice in
+evolutionary computation and reinforcement learning compares methods at equal budgets, over several seeds (to be
+confirmed against the sources).
+
+**Rejected.** Keeping D172 for comparisons and reading each result with a caveat, which is cheaper but leaves a
+"worth little" verdict untrustworthy whenever an arm stopped mid-climb.
