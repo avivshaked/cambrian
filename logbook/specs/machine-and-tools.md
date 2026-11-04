@@ -359,6 +359,12 @@ The root file's rules still apply. The entries below were moved word for word, s
   the key GitHub expects. The same git from the PowerShell tool listed the remote and pushed, and the
   pre-push hook ran as usual. Test the reach with `git ls-remote --heads origin main`, which sends
   nothing.
+- **Run a quoted Windows program through a `.cmd` file, not through `cmd //c '...'` from Git Bash.**
+  On 2026-11-04 a nursery `--check` written as `cmd //c 'cd /d ... && start "" /b /wait ... "C:\Program
+  Files\...\dotnet.exe" ...'` hung for half an hour without starting the program, and a second form
+  failed with "is not recognized", because Git Bash mangles the inner quotes. Written into a `.cmd`
+  file and run through `scratch/kit-arm/pinned.ps1 -Mask <mask> -Cmd <file>` from the PowerShell
+  tool, the same check passed in seconds.
 - **A refusal in one session is approved in that session** (2026-10-10). Claude Code's auto-mode
   classifier refused the speed agent's script for a several-hour unattended card chain, launched on the
   coordinator's word. The owner then said yes twice, in the coordinator's session, and neither yes
