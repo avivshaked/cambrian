@@ -37,6 +37,9 @@ angle [11], --lens mm on the theatre's 24 mm vertical sensor [35], --height of t
 metres [10], --hs significant wave height in metres [0.9], --wind m/s [6], --clouds amount 0..1
 [0.35], --exposure absolute, overriding the probe's, --percent of 1920x1080 [100],
 --save-blend writes <out>.blend beside the picture. The 16-bit picture is <out>-16bit.png.
+
+sea_dive.py imports this script: build() makes the still's scene and main() renders the still, so the dive's sea,
+sky, water and view transform are the still's own.
 """
 import argparse, math, os, sys, time
 import bpy
@@ -55,25 +58,34 @@ def stage(name):
     print("STAGE %7.2f s (+%6.2f) %s" % (now - T0, now - _last[0], name), flush=True)
     _last[0] = now
 
-argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-ap = argparse.ArgumentParser(prog="sea_still.py")
-ap.add_argument("out")
-ap.add_argument("samples", type=int)
-ap.add_argument("--eevee", action="store_true")
-ap.add_argument("--sun", type=float, default=28.0)
-ap.add_argument("--pitch", type=float, default=11.0)
-ap.add_argument("--lens", type=float, default=35.0)
-ap.add_argument("--height", type=float, default=10.0)
-ap.add_argument("--hs", type=float, default=0.9)
-ap.add_argument("--wind", type=float, default=6.0)
-ap.add_argument("--clouds", type=float, default=0.35)
-ap.add_argument("--exposure", type=float, default=None)
-ap.add_argument("--percent", type=int, default=100)
-ap.add_argument("--no-probe", action="store_true")
-ap.add_argument("--save-blend", action="store_true")
-A = ap.parse_args(argv)
-OUT = os.path.abspath(A.out)
-os.makedirs(os.path.dirname(OUT), exist_ok=True)
+def still_parser(prog="sea_still.py"):
+    """The still's options. sea_dive.py extends this parser, so the dive's scene is the still's."""
+    ap = argparse.ArgumentParser(prog=prog)
+    ap.add_argument("out")
+    ap.add_argument("samples", type=int)
+    ap.add_argument("--eevee", action="store_true")
+    ap.add_argument("--sun", type=float, default=28.0)
+    ap.add_argument("--pitch", type=float, default=11.0)
+    ap.add_argument("--lens", type=float, default=35.0)
+    ap.add_argument("--height", type=float, default=10.0)
+    ap.add_argument("--hs", type=float, default=0.9)
+    ap.add_argument("--wind", type=float, default=6.0)
+    ap.add_argument("--clouds", type=float, default=0.35)
+    ap.add_argument("--exposure", type=float, default=None)
+    ap.add_argument("--percent", type=int, default=100)
+    ap.add_argument("--no-probe", action="store_true")
+    ap.add_argument("--save-blend", action="store_true")
+    return ap
+
+def script_argv():
+    return sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+
+# The parsed options, the output path, the probed horizon and the sun's azimuth, set by build(): the functions
+# below read them as module globals.
+A = None
+OUT = None
+HORIZON = None
+az = None
 
 # ---------------------------------------------------------------- fixed choices
 OCEAN_SEED, OCEAN_TIME = 1102, 12.0
@@ -381,10 +393,40 @@ def smoothstep(a, b, x):
     t = np.clip((x - a) / (b - a), 0.0, 1.0)
     return t * t * (3 - 2 * t)
 
-def build_sea(az, wind_dir, vfov, hfov, rx, ry, density=1.5):
+def ocean_modifier(ob, wind_dir, time=OCEAN_TIME):
+    """The still's Ocean modifier on `ob`, at `time` seconds of the spectrum's own clock."""
+    mod = ob.modifiers.new("ocean", "OCEAN")
+    for k, v in (("geometry_mode", "DISPLACE"), ("resolution", OCEAN_RES), ("viewport_resolution", OCEAN_RES),
+                 ("spatial_size", OCEAN_TILE), ("size", 1.0), ("random_seed", OCEAN_SEED), ("time", time),
+                 ("spectrum", "PIERSON_MOSKOWITZ"), ("wind_velocity", A.wind), ("wave_alignment", 0.6),
+                 ("wave_direction", wind_dir), ("choppiness", 0.9), ("wave_scale", 1.0),
+                 ("wave_scale_min", 0.05), ("damping", 0.5), ("depth", 200.0),
+                 ("use_normals", False), ("use_foam", False)):
+        try:
+            setattr(mod, k, v)
+        except Exception as e:
+            print("WARN ocean.%s: %s" % (k, e), flush=True)
+    return mod
+
+def ocean_offsets(ob, P):
+    """The displacement the modifiers on `ob` give its vertices, whose rest positions are `P` (n x 3)."""
+    nv = len(P)
+    bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get()
+    ev = ob.evaluated_get(dg)
+    em = ev.to_mesh()
+    if len(em.vertices) != nv:
+        raise SystemExit("the ocean modifier changed the vertex count (%d, not %d)" % (len(em.vertices), nv))
+    co = np.empty(nv * 3, np.float32)
+    em.vertices.foreach_get("co", co)
+    ev.to_mesh_clear()
+    return co.reshape(-1, 3).astype(np.float64) - P
+
+def build_sea(az, wind_dir, vfov, hfov, rx, ry, density=1.5, info=None):
     """A fan of quads from under the camera to FAR, one row and one column every `density`
     pixels of the frame, so that it is as fine near the camera as the picture can show. Returns
-    the object and the mesh's resolved slope rms, radial and sideways, 20-120 m out."""
+    the object and the mesh's resolved slope rms, radial and sideways, 20-120 m out. `info`, a dict,
+    receives the height scale, for sea_dive.py's moving sea."""
     h = A.height
     dth = math.radians(density * math.degrees(vfov) / ry)
     th_max = math.radians(A.pitch) + vfov / 2 + math.radians(3.0)
@@ -416,28 +458,9 @@ def build_sea(az, wind_dir, vfov, hfov, rx, ry, density=1.5):
     print("SEA %d rows x %d columns, %d vertices, %.1f..%.0f m" % (nr, nc, nv, r[0], r[-1]), flush=True)
     stage("sea mesh")
 
-    mod = ob.modifiers.new("ocean", "OCEAN")
-    for k, v in (("geometry_mode", "DISPLACE"), ("resolution", OCEAN_RES), ("viewport_resolution", OCEAN_RES),
-                 ("spatial_size", OCEAN_TILE), ("size", 1.0), ("random_seed", OCEAN_SEED), ("time", OCEAN_TIME),
-                 ("spectrum", "PIERSON_MOSKOWITZ"), ("wind_velocity", A.wind), ("wave_alignment", 0.6),
-                 ("wave_direction", wind_dir), ("choppiness", 0.9), ("wave_scale", 1.0),
-                 ("wave_scale_min", 0.05), ("damping", 0.5), ("depth", 200.0),
-                 ("use_normals", False), ("use_foam", False)):
-        try:
-            setattr(mod, k, v)
-        except Exception as e:
-            print("WARN ocean.%s: %s" % (k, e), flush=True)
-    bpy.context.view_layer.update()
-    dg = bpy.context.evaluated_depsgraph_get()
-    ev = ob.evaluated_get(dg)
-    em = ev.to_mesh()
-    if len(em.vertices) != nv:
-        raise SystemExit("the ocean modifier changed the vertex count (%d, not %d)" % (len(em.vertices), nv))
-    co = np.empty(nv * 3, np.float32)
-    em.vertices.foreach_get("co", co)
-    ev.to_mesh_clear()
+    mod = ocean_modifier(ob, wind_dir)
+    D = ocean_offsets(ob, P)
     ob.modifiers.remove(mod)
-    D = co.reshape(-1, 3).astype(np.float64) - P
     near = rv < WAVE_FADE[0]
     area = (rv * (rv * rv + h * h))[near]       # rows are even in angle, so weight each vertex by its patch of sea
     def wstd(x):
@@ -450,6 +473,8 @@ def build_sea(az, wind_dir, vfov, hfov, rx, ry, density=1.5):
     if not 0.2 <= k <= 5.0:
         print("WARN ocean scale %.3f clipped: the spectrum's own height is far from --hs" % k, flush=True)
         k = min(5.0, max(0.2, k))
+    if info is not None:
+        info["k"] = k
     w = 1.0 - smoothstep(WAVE_FADE[0], WAVE_FADE[1], rv)
     Q = P + D * (k * w)[:, None]
     me.vertices.foreach_set("co", Q.astype(np.float32).ravel())
@@ -469,19 +494,27 @@ def build_sea(az, wind_dir, vfov, hfov, rx, ry, density=1.5):
     stage("ocean")
     return ob, mesh
 
-def ripple_height(t, pos, wind_dir, q, amp, weights=None):
+def ripple_height(t, pos, wind_dir, q, amp, weights=None, clock=None, drift=None, evolve=None):
     """The ripples' height in metres at the world position `pos`: one Perlin octave for each spacing in
     RIPPLE_LATTICE, each of an amplitude proportional to its spacing so that every octave carries the same
     slope, the along-wind coordinate stretched by `q` so that the crests run longer across the wind than
     along it. `weights`, one per octave (a number or a socket), fade octaves out. The same graph serves the
-    material's bump and the geometry-nodes measurement of its slope."""
+    material's bump and the geometry-nodes measurement of its slope.
+    `clock` (a socket, seconds after the still's instant) makes them move, for sea_dive.py: octave i drifts
+    down the wind at drift[i] m/s and evolves by moving through the noise's third coordinate, which the
+    surface does not otherwise use, at evolve[i] lattice units a second. Without it the graph is the still's."""
     px, py, _ = t.sep(pos)
     ca, sa = math.cos(wind_dir), math.sin(wind_dir)
     along = t.m("ADD", t.m("MULTIPLY", px, ca), t.m("MULTIPLY", py, sa))
     across = t.m("SUBTRACT", t.m("MULTIPLY", py, ca), t.m("MULTIPLY", px, sa))
     total = None
     for i, lat in enumerate(RIPPLE_LATTICE):
-        v = t.xyz(t.m("MULTIPLY", along, q / lat), t.m("MULTIPLY", across, 1.0 / lat), 17.31 * (i + 1)).outputs[0]
+        if clock is None:
+            v = t.xyz(t.m("MULTIPLY", along, q / lat), t.m("MULTIPLY", across, 1.0 / lat), 17.31 * (i + 1)).outputs[0]
+        else:
+            x = t.m("SUBTRACT", t.m("MULTIPLY", along, q / lat), t.m("MULTIPLY", clock, drift[i] * q / lat))
+            w = t.m("ADD", t.m("MULTIPLY", clock, evolve[i]), 17.31 * (i + 1))
+            v = t.xyz(x, t.m("MULTIPLY", across, 1.0 / lat), w).outputs[0]
         h = t.m("MULTIPLY", t.m("SUBTRACT", t.noise(v, 1.0, 0.0, 0.5), 0.5), amp * lat)
         if weights is not None:
             h = t.m("MULTIPLY", h, weights[i])
@@ -533,12 +566,19 @@ def ripple_weights(g):
     material computes the same with nodes)."""
     return [float(smoothstep(RIPPLE_FADE[0] / lat, RIPPLE_FADE[1] / lat, g)) for lat in RIPPLE_LATTICE]
 
-def sea_material(eevee, rip):
+def sea_material(eevee, rip, animate=False):
     """`rip` holds the ripples' wind direction, stretch and amplitude, the mean square slope each octave
-    carries at full weight, the mesh's, Cox and Munk's, and the frame's angle per pixel."""
+    carries at full weight, the mesh's, Cox and Munk's, and the frame's angle per pixel. With `animate`
+    (sea_dive.py), a Value node named "ripple-clock" moves the ripples by rip["drift"] and rip["evolve"]."""
     mat = bpy.data.materials.new("sea")
     t = Tree(mat.node_tree)
     t.nt.nodes.clear()
+    clock = None
+    if animate:
+        ck = t.new("ShaderNodeValue")
+        ck.name = ck.label = "ripple-clock"
+        ck.outputs[0].default_value = 0.0
+        clock = ck.outputs[0]
     dist = t.new("ShaderNodeCameraData").outputs["View Distance"]
     geo = t.new("ShaderNodeNewGeometry")
     # One over the pixel's footprint on the sea: d * pixel across the view, that over cos(incidence) along
@@ -552,7 +592,8 @@ def sea_material(eevee, rip):
     bump = t.new("ShaderNodeBump")
     bump.inputs["Strength"].default_value = 1.0
     bump.inputs["Distance"].default_value = 1.0          # the height is in metres, so the slope is its gradient
-    t.feed(bump.inputs["Height"], ripple_height(t, geo.outputs["Position"], rip["wind_dir"], rip["q"], rip["amp"], weights))
+    t.feed(bump.inputs["Height"], ripple_height(t, geo.outputs["Position"], rip["wind_dir"], rip["q"], rip["amp"], weights,
+                                                clock, rip.get("drift"), rip.get("evolve")))
     # The roughness carries whatever mean square slope neither the mesh nor the drawn ripples do: GGX alpha
     # is roughness squared, and alpha squared is the mean square slope.
     resolved = t.m("MULTIPLY", t.m("POWER", t.maprange(dist, WAVE_FADE[0], WAVE_FADE[1], 1.0, 0.0), 2.0), rip["mesh_mss"])
@@ -648,124 +689,6 @@ def sea_material(eevee, rip):
         print("WARN could not set emission_sampling", flush=True)
     return mat
 
-# ---------------------------------------------------------------- the scene
-S.clear_scene()
-sc = S.setup_render(100, A.samples, exposure=0.0, motion_blur=False)
-sc.render.resolution_x, sc.render.resolution_y = 1920, 1080
-sc.render.resolution_percentage = A.percent
-sc.render.use_persistent_data = False
-sc.cycles.max_bounces = 6
-sc.cycles.caustics_refractive = False    # no second, refracted count of the sun that the shadow rays already bring
-sc.cycles.seed = 0
-sc.cycles.use_animated_seed = False
-stage("setup")
-
-wi = build_world()
-stage("world")
-
-sun = None
-if not A.no_probe:
-    sun = probe_sky(wi)
-    stage("probe")
-if sun is not None:
-    s = sun["sun"]
-    az = math.atan2(s.y, s.x)
-    elev = math.degrees(math.asin(max(-1.0, min(1.0, s.z))))
-    print("PROBE sun azimuth %.2f deg, elevation %.2f deg (asked %.1f); sky ring %.4g, sun peak %.4g"
-          % (math.degrees(az), elev, A.sun, sun["sky"], sun["peak"]), flush=True)
-    if abs(elev - A.sun) > 2.0:
-        print("WARN the probed sun is %.1f deg from the elevation asked" % (elev - A.sun), flush=True)
-else:
-    az = math.radians(90.0)               # sun_rotation 0 is believed to put the sun at +Y
-    print("WARN no probe: the camera faces +Y, where the sky's sun is believed to be", flush=True)
-exposure = A.exposure
-if exposure is None:
-    exposure = math.log2(SKY_TARGET / sun["sky"]) if sun else 0.0
-    exposure = max(-14.0, min(14.0, exposure))
-sc.view_settings.exposure = exposure
-print("EXPOSURE %.3f%s" % (exposure, " (given)" if A.exposure is not None else " (from the probe)" if sun else " (default)"),
-      flush=True)
-if sun is not None and sun.get("zenith") is not None:
-    z = sun["zenith"]
-    wi["zenith"].outputs[0].default_value = (z[0], z[1], z[2], 1.0)
-    print("PROBE zenith radiance %.4g %.4g %.4g" % z, flush=True)
-else:
-    s = sun["sky"] if sun else 1.0
-    wi["zenith"].outputs[0].default_value = (0.6 * s, 0.8 * s, 1.0 * s, 1.0)
-    print("WARN no zenith from the probe: the clouds take a blue-white guess at the sky ring's level", flush=True)
-HORIZON = {"toward": None, "away": None}
-if sun is not None:
-    HORIZON.update({k: v for k, v in (sun.get("horizon") or {}).items() if v is not None})
-for key, guess in (("toward", (1.0, 0.95, 0.9)), ("away", (0.7, 0.8, 1.0))):
-    if HORIZON[key] is None:
-        s0 = sun["sky"] if sun else 1.0
-        HORIZON[key] = tuple(g * s0 for g in guess)
-        print("WARN no %s horizon from the probe: a guess at the sky ring's level" % key, flush=True)
-print("PROBE horizon toward the sun %.4g %.4g %.4g, away %.4g %.4g %.4g" % (HORIZON["toward"] + HORIZON["away"]), flush=True)
-wi["towards_sun"].inputs[0].default_value = 0.25 * math.cos(az)
-wi["towards_sun"].inputs[1].default_value = 0.25 * math.sin(az)
-
-pitch = math.radians(A.pitch)
-loc = Vector((0.0, 0.0, A.height))
-aim = loc + Vector((math.cos(az) * math.cos(pitch), math.sin(az) * math.cos(pitch), -math.sin(pitch)))
-cam = S.make_camera(tuple(loc), tuple(aim), lens=A.lens)
-cam.data.dof.use_dof = False
-cam.data.clip_start, cam.data.clip_end = 0.3, 60000.0
-rx = sc.render.resolution_x * A.percent // 100
-ry = sc.render.resolution_y * A.percent // 100
-vfov = 2 * math.atan(0.5 * cam.data.sensor_height / A.lens)
-hfov = 2 * math.atan(math.tan(vfov / 2) * sc.render.resolution_x / sc.render.resolution_y)
-print("CAMERA %.0f m up, %.1f deg down, lens %.0f mm: %.1f x %.1f deg; frame top %.1f deg above the horizon"
-      % (A.height, A.pitch, A.lens, math.degrees(hfov), math.degrees(vfov), math.degrees(vfov / 2) - A.pitch), flush=True)
-
-wind_dir = math.remainder(az + math.radians(200.0), 2 * math.pi)   # the swells and the ripples run with it
-sea, mesh_slope = build_sea(az, wind_dir, vfov, hfov, rx, ry)
-
-# The ripples make up the slope the mesh lacks, per axis, less the sub-pixel share: the mesh's radial slope
-# is taken as along the wind (which runs 20 degrees off the view) and its sideways slope as across it.
-cm_up, cm_cross = cox_munk(A.wind)
-keep = 1.0 - SUBPIXEL_SHARE
-want_along = math.sqrt(keep * max(0.0, cm_up - mesh_slope[0] ** 2))
-want_across = math.sqrt(keep * max(0.0, cm_cross - mesh_slope[1] ** 2))
-iso = measure_ripples(wind_dir, 1.0)         # Blender's noise is not quite isotropic: measure, then stretch
-q = (want_along / max(want_across, 1e-6)) / (iso[0] / iso[1])
-unit = measure_ripples(wind_dir, q)
-amp = math.sqrt((want_along ** 2 + want_across ** 2) / (unit[0] ** 2 + unit[1] ** 2))
-bump_along, bump_across = amp * unit[0], amp * unit[1]
-rip = {"wind_dir": wind_dir, "q": q, "amp": amp, "pixel": vfov / ry,
-       "octave_mss": (bump_along ** 2 + bump_across ** 2) / len(RIPPLE_LATTICE),
-       "mesh_mss": mesh_slope[0] ** 2 + mesh_slope[1] ** 2, "mss": cm_up + cm_cross}
-sub_along = math.sqrt(SUBPIXEL_SHARE * max(0.0, cm_up - mesh_slope[0] ** 2))
-sub_across = math.sqrt(SUBPIXEL_SHARE * max(0.0, cm_cross - mesh_slope[1] ** 2))
-tot_along = math.sqrt(bump_along ** 2 + mesh_slope[0] ** 2 + sub_along ** 2)
-tot_across = math.sqrt(bump_across ** 2 + mesh_slope[1] ** 2 + sub_across ** 2)
-print("RIPPLES %d octaves, %.0f to %.0f cm, unstretched slope ratio %.3f, stretched %.3f along the wind, height scale"
-      " %.4f; slope rms along the wind / across it: the bump (measured by geometry nodes) %.3f / %.3f, the mesh %.3f /"
-      " %.3f, the near roughness %.3f / %.3f; all three %.3f / %.3f, per axis %.3f (Cox-Munk at %.0f m/s: upwind %.3f,"
-      " crosswind %.3f, per axis %.3f)"
-      % (len(RIPPLE_LATTICE), 100 * RIPPLE_LATTICE[0], 100 * RIPPLE_LATTICE[-1], iso[0] / iso[1], q, amp, bump_along,
-         bump_across, mesh_slope[0], mesh_slope[1], sub_along, sub_across, tot_along, tot_across,
-         math.sqrt(0.5 * (tot_along ** 2 + tot_across ** 2)), A.wind, math.sqrt(cm_up), math.sqrt(cm_cross),
-         math.sqrt(0.5 * (cm_up + cm_cross))), flush=True)
-cols = []
-for r_m in (15, 20, 30, 50, 100, 200, 400, 1000):
-    d = math.hypot(r_m, A.height)
-    w = ripple_weights(math.sqrt(max(A.height / d, 0.02)) / (d * rip["pixel"]))
-    res = sum(x * x for x in w) * rip["octave_mss"] + rip["mesh_mss"] * (1 - float(smoothstep(*WAVE_FADE, d))) ** 2
-    cols.append("%d m: bump %3.0f%%, roughness %.3f" % (r_m, 100 * sum(x * x for x in w) / len(w),
-                                                        (max(0.0, rip["mss"] - res) + ROUGH_FLOOR ** 4) ** 0.25))
-print("ROUGH along the frame's centre line, the share of the ripples' slope drawn and the roughness: " + "; ".join(cols),
-      flush=True)
-stage("ripples")
-sea.data.materials.append(sea_material(A.eevee, rip))
-if not A.eevee:
-    sol = sea.modifiers.new("deep", "SOLIDIFY")   # closes the water: a volume needs an inside
-    sol.thickness = 300.0
-    sol.offset = -1.0
-    sol.use_rim = True
-    sol.use_even_offset = False
-stage("material")
-
 def neutral_log_view(exposure):
     """The view transform moved into the compositor, after the grade, with a longer shoulder. theatre_scene
     sets Khronos PBR Neutral, which is the identity up to 0.76 and white by about 1.8: everything brighter
@@ -788,6 +711,7 @@ def neutral_log_view(exposure):
     sep = t.new("CompositorNodeSeparateColor")
     t.feed(sep.inputs[0], src)
     ch = [t.m("MULTIPLY", sep.outputs[i], 2.0 ** exposure) for i in range(3)]
+    gain_nodes = [c.node for c in ch]            # the exposure, which sea_dive.py changes frame by frame
     lo = t.m("MINIMUM", t.m("MINIMUM", ch[0], ch[1]), ch[2])
     toe = t.m("SUBTRACT", lo, t.m("MULTIPLY", t.m("MULTIPLY", lo, lo), 6.25))
     off = t.m("ADD", t.m("MULTIPLY", t.m("LESS_THAN", lo, 0.08), t.m("SUBTRACT", toe, 0.04)), 0.04)
@@ -812,49 +736,7 @@ def neutral_log_view(exposure):
     print("VIEW theatre_scene set %s, look %s; now Standard, exposure 0, with exposure %.3f, PBR Neutral's toe and"
           " desaturation and a log shoulder (knee %.2f, s %.4f, white at %.0f, %.1f stops over 1) in the compositor"
           % (was[0], was[1], exposure, k, s, TONE_WHITE, math.log2(TONE_WHITE)), flush=True)
-
-S.grade(threshold=GLARE_T * 2.0 ** (-exposure), strength=BLOOM, size=0.6, vignette=0.2)
-neutral_log_view(exposure)
-
-if A.eevee:
-    for eng in ("BLENDER_EEVEE", "BLENDER_EEVEE_NEXT"):
-        try:
-            sc.render.engine = eng
-            break
-        except Exception:
-            continue
-    sc.eevee.taa_render_samples = A.samples
-    w = sc.world
-    try:
-        thr = 30.0 * sun["sky"] if sun else 10.0
-        if sun:
-            thr = min(thr, sun["peak"] / 3.0)
-        w.sun_threshold = thr
-        w.sun_angle = math.radians(0.545)
-        w.use_sun_shadow = False
-        print("EEVEE world sun threshold %.4g" % thr, flush=True)
-    except Exception as e:
-        print("WARN EEVEE world sun:", e, flush=True)
-print("RENDER engine", sc.render.engine, "samples", A.samples, "denoiser", sc.cycles.denoiser,
-      "use_gpu", getattr(sc.cycles, "denoising_use_gpu", "?"), "compositor", getattr(sc.render, "compositor_device", "?"),
-      "%dx%d" % (rx, ry), flush=True)
-stage("grade")
-
-if A.save_blend:
-    bpy.ops.wm.save_as_mainfile(filepath=os.path.splitext(OUT)[0] + ".blend")
-    stage("save blend")
-
-if os.environ.get("EVOSIM_PROFILE"):
-    last = [None]
-    def on_stats(st):
-        key = st.split("|")[-1].strip()[:60]
-        if key != last[0]:
-            last[0] = key
-            stage("stats " + key)
-    bpy.app.handlers.render_stats.append(on_stats)
-    bpy.app.handlers.render_pre.append(lambda *a: stage("render_pre"))
-    bpy.app.handlers.render_post.append(lambda *a: stage("render_post"))
-    bpy.app.handlers.render_write.append(lambda *a: stage("render_write"))
+    return gain_nodes
 
 def write_dithered(src, dst, seed):
     """Quantise the 16-bit picture `src` to the 8-bit `dst` with triangular dither of one level either way.
@@ -879,22 +761,205 @@ def write_dithered(src, dst, seed):
     print("DITHER %s from %s: mean level %.3f before, %.3f after (0-255)" % (os.path.basename(dst), os.path.basename(src),
                                                                        255 * float(px.mean()), float(lv.mean())), flush=True)
 
-MASTER = os.path.splitext(OUT)[0] + "-16bit.png"
-set_format(sc.render.image_settings, "PNG")
-sc.render.image_settings.color_depth = "16"
-sc.render.filepath = MASTER
-bpy.ops.render.render(write_still=True)
-stage("render")
-write_dithered(MASTER, OUT, DITHER_SEED)
-stage("dither")
+# ---------------------------------------------------------------- the scene
+def build(args, out, ripple_motion=None, fan_res=None):
+    """The still's scene, from its sky to its view transform, for `args` (still_parser's options) and the
+    picture `out`. sea_dive.py builds its scene with this too: `ripple_motion`, a function of the wind's
+    direction returning the ripples' drift and evolve rates, makes the ripples move with a clock node, and
+    `fan_res` measures the swells' scale and slope on the fan of a frame of that size rather than this one's.
+    Returns the parts the caller needs."""
+    global A, OUT, HORIZON, az
+    A = args
+    OUT = os.path.abspath(out)
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    S.clear_scene()
+    sc = S.setup_render(100, A.samples, exposure=0.0, motion_blur=False)
+    sc.render.resolution_x, sc.render.resolution_y = 1920, 1080
+    sc.render.resolution_percentage = A.percent
+    sc.render.use_persistent_data = False
+    sc.cycles.max_bounces = 6
+    sc.cycles.caustics_refractive = False    # no second, refracted count of the sun that the shadow rays already bring
+    sc.cycles.seed = 0
+    sc.cycles.use_animated_seed = False
+    stage("setup")
 
-try:
-    img = bpy.data.images.load(OUT)
-    px = np.empty(img.size[0] * img.size[1] * img.channels, np.float32)
-    img.pixels.foreach_get(px)
-    px = px.reshape(-1, img.channels)[:, :3]
-    print("PICTURE mean level %.3f, clipped %.2f%% of pixels" % (float(px.mean()), 100.0 * float((px.max(axis=1) > 0.98).mean())),
+    wi = build_world()
+    stage("world")
+
+    sun = None
+    if not A.no_probe:
+        sun = probe_sky(wi)
+        stage("probe")
+    if sun is not None:
+        s = sun["sun"]
+        az = math.atan2(s.y, s.x)
+        elev = math.degrees(math.asin(max(-1.0, min(1.0, s.z))))
+        print("PROBE sun azimuth %.2f deg, elevation %.2f deg (asked %.1f); sky ring %.4g, sun peak %.4g"
+              % (math.degrees(az), elev, A.sun, sun["sky"], sun["peak"]), flush=True)
+        if abs(elev - A.sun) > 2.0:
+            print("WARN the probed sun is %.1f deg from the elevation asked" % (elev - A.sun), flush=True)
+    else:
+        az = math.radians(90.0)               # sun_rotation 0 is believed to put the sun at +Y
+        print("WARN no probe: the camera faces +Y, where the sky's sun is believed to be", flush=True)
+    exposure = A.exposure
+    if exposure is None:
+        exposure = math.log2(SKY_TARGET / sun["sky"]) if sun else 0.0
+        exposure = max(-14.0, min(14.0, exposure))
+    sc.view_settings.exposure = exposure
+    print("EXPOSURE %.3f%s" % (exposure, " (given)" if A.exposure is not None else " (from the probe)" if sun else " (default)"),
           flush=True)
-except Exception as e:
-    print("WARN could not read the picture back:", e, flush=True)
-print("DONE", OUT, flush=True)
+    if sun is not None and sun.get("zenith") is not None:
+        z = sun["zenith"]
+        wi["zenith"].outputs[0].default_value = (z[0], z[1], z[2], 1.0)
+        print("PROBE zenith radiance %.4g %.4g %.4g" % z, flush=True)
+    else:
+        s = sun["sky"] if sun else 1.0
+        wi["zenith"].outputs[0].default_value = (0.6 * s, 0.8 * s, 1.0 * s, 1.0)
+        print("WARN no zenith from the probe: the clouds take a blue-white guess at the sky ring's level", flush=True)
+    HORIZON = {"toward": None, "away": None}
+    if sun is not None:
+        HORIZON.update({k: v for k, v in (sun.get("horizon") or {}).items() if v is not None})
+    for key, guess in (("toward", (1.0, 0.95, 0.9)), ("away", (0.7, 0.8, 1.0))):
+        if HORIZON[key] is None:
+            s0 = sun["sky"] if sun else 1.0
+            HORIZON[key] = tuple(g * s0 for g in guess)
+            print("WARN no %s horizon from the probe: a guess at the sky ring's level" % key, flush=True)
+    print("PROBE horizon toward the sun %.4g %.4g %.4g, away %.4g %.4g %.4g" % (HORIZON["toward"] + HORIZON["away"]), flush=True)
+    wi["towards_sun"].inputs[0].default_value = 0.25 * math.cos(az)
+    wi["towards_sun"].inputs[1].default_value = 0.25 * math.sin(az)
+
+    pitch = math.radians(A.pitch)
+    loc = Vector((0.0, 0.0, A.height))
+    aim = loc + Vector((math.cos(az) * math.cos(pitch), math.sin(az) * math.cos(pitch), -math.sin(pitch)))
+    cam = S.make_camera(tuple(loc), tuple(aim), lens=A.lens)
+    cam.data.dof.use_dof = False
+    cam.data.clip_start, cam.data.clip_end = 0.3, 60000.0
+    rx = sc.render.resolution_x * A.percent // 100
+    ry = sc.render.resolution_y * A.percent // 100
+    vfov = 2 * math.atan(0.5 * cam.data.sensor_height / A.lens)
+    hfov = 2 * math.atan(math.tan(vfov / 2) * sc.render.resolution_x / sc.render.resolution_y)
+    print("CAMERA %.0f m up, %.1f deg down, lens %.0f mm: %.1f x %.1f deg; frame top %.1f deg above the horizon"
+          % (A.height, A.pitch, A.lens, math.degrees(hfov), math.degrees(vfov), math.degrees(vfov / 2) - A.pitch), flush=True)
+
+    wind_dir = math.remainder(az + math.radians(200.0), 2 * math.pi)   # the swells and the ripples run with it
+    ocean_info = {}
+    sea, mesh_slope = build_sea(az, wind_dir, vfov, hfov, *(fan_res or (rx, ry)), info=ocean_info)
+
+    # The ripples make up the slope the mesh lacks, per axis, less the sub-pixel share: the mesh's radial slope
+    # is taken as along the wind (which runs 20 degrees off the view) and its sideways slope as across it.
+    cm_up, cm_cross = cox_munk(A.wind)
+    keep = 1.0 - SUBPIXEL_SHARE
+    want_along = math.sqrt(keep * max(0.0, cm_up - mesh_slope[0] ** 2))
+    want_across = math.sqrt(keep * max(0.0, cm_cross - mesh_slope[1] ** 2))
+    iso = measure_ripples(wind_dir, 1.0)         # Blender's noise is not quite isotropic: measure, then stretch
+    q = (want_along / max(want_across, 1e-6)) / (iso[0] / iso[1])
+    unit = measure_ripples(wind_dir, q)
+    amp = math.sqrt((want_along ** 2 + want_across ** 2) / (unit[0] ** 2 + unit[1] ** 2))
+    bump_along, bump_across = amp * unit[0], amp * unit[1]
+    rip = {"wind_dir": wind_dir, "q": q, "amp": amp, "pixel": vfov / ry,
+           "octave_mss": (bump_along ** 2 + bump_across ** 2) / len(RIPPLE_LATTICE),
+           "mesh_mss": mesh_slope[0] ** 2 + mesh_slope[1] ** 2, "mss": cm_up + cm_cross}
+    sub_along = math.sqrt(SUBPIXEL_SHARE * max(0.0, cm_up - mesh_slope[0] ** 2))
+    sub_across = math.sqrt(SUBPIXEL_SHARE * max(0.0, cm_cross - mesh_slope[1] ** 2))
+    tot_along = math.sqrt(bump_along ** 2 + mesh_slope[0] ** 2 + sub_along ** 2)
+    tot_across = math.sqrt(bump_across ** 2 + mesh_slope[1] ** 2 + sub_across ** 2)
+    print("RIPPLES %d octaves, %.0f to %.0f cm, unstretched slope ratio %.3f, stretched %.3f along the wind, height scale"
+          " %.4f; slope rms along the wind / across it: the bump (measured by geometry nodes) %.3f / %.3f, the mesh %.3f /"
+          " %.3f, the near roughness %.3f / %.3f; all three %.3f / %.3f, per axis %.3f (Cox-Munk at %.0f m/s: upwind %.3f,"
+          " crosswind %.3f, per axis %.3f)"
+          % (len(RIPPLE_LATTICE), 100 * RIPPLE_LATTICE[0], 100 * RIPPLE_LATTICE[-1], iso[0] / iso[1], q, amp, bump_along,
+             bump_across, mesh_slope[0], mesh_slope[1], sub_along, sub_across, tot_along, tot_across,
+             math.sqrt(0.5 * (tot_along ** 2 + tot_across ** 2)), A.wind, math.sqrt(cm_up), math.sqrt(cm_cross),
+             math.sqrt(0.5 * (cm_up + cm_cross))), flush=True)
+    cols = []
+    for r_m in (15, 20, 30, 50, 100, 200, 400, 1000):
+        d = math.hypot(r_m, A.height)
+        w = ripple_weights(math.sqrt(max(A.height / d, 0.02)) / (d * rip["pixel"]))
+        res = sum(x * x for x in w) * rip["octave_mss"] + rip["mesh_mss"] * (1 - float(smoothstep(*WAVE_FADE, d))) ** 2
+        cols.append("%d m: bump %3.0f%%, roughness %.3f" % (r_m, 100 * sum(x * x for x in w) / len(w),
+                                                            (max(0.0, rip["mss"] - res) + ROUGH_FLOOR ** 4) ** 0.25))
+    print("ROUGH along the frame's centre line, the share of the ripples' slope drawn and the roughness: " + "; ".join(cols),
+          flush=True)
+    stage("ripples")
+    if ripple_motion is not None:
+        rip.update(ripple_motion(wind_dir))
+    sea.data.materials.append(sea_material(A.eevee, rip, animate=ripple_motion is not None))
+    if not A.eevee:
+        sol = sea.modifiers.new("deep", "SOLIDIFY")   # closes the water: a volume needs an inside
+        sol.thickness = 300.0
+        sol.offset = -1.0
+        sol.use_rim = True
+        sol.use_even_offset = False
+    stage("material")
+    S.grade(threshold=GLARE_T * 2.0 ** (-exposure), strength=BLOOM, size=0.6, vignette=0.2)
+    gain_nodes = neutral_log_view(exposure)
+    return {"sc": sc, "world": wi, "sun": sun, "az": az, "exposure": exposure, "cam": cam, "rx": rx, "ry": ry,
+            "vfov": vfov, "hfov": hfov, "wind_dir": wind_dir, "sea": sea, "mesh_slope": mesh_slope, "rip": rip,
+            "ocean": ocean_info, "gain_nodes": gain_nodes}
+
+def main():
+    args = still_parser().parse_args(script_argv())
+    ctx = build(args, args.out)
+    sc, sun, rx, ry = ctx["sc"], ctx["sun"], ctx["rx"], ctx["ry"]
+    if A.eevee:
+        for eng in ("BLENDER_EEVEE", "BLENDER_EEVEE_NEXT"):
+            try:
+                sc.render.engine = eng
+                break
+            except Exception:
+                continue
+        sc.eevee.taa_render_samples = A.samples
+        w = sc.world
+        try:
+            thr = 30.0 * sun["sky"] if sun else 10.0
+            if sun:
+                thr = min(thr, sun["peak"] / 3.0)
+            w.sun_threshold = thr
+            w.sun_angle = math.radians(0.545)
+            w.use_sun_shadow = False
+            print("EEVEE world sun threshold %.4g" % thr, flush=True)
+        except Exception as e:
+            print("WARN EEVEE world sun:", e, flush=True)
+    print("RENDER engine", sc.render.engine, "samples", A.samples, "denoiser", sc.cycles.denoiser,
+          "use_gpu", getattr(sc.cycles, "denoising_use_gpu", "?"), "compositor", getattr(sc.render, "compositor_device", "?"),
+          "%dx%d" % (rx, ry), flush=True)
+    stage("grade")
+
+    if A.save_blend:
+        bpy.ops.wm.save_as_mainfile(filepath=os.path.splitext(OUT)[0] + ".blend")
+        stage("save blend")
+
+    if os.environ.get("EVOSIM_PROFILE"):
+        last = [None]
+        def on_stats(st):
+            key = st.split("|")[-1].strip()[:60]
+            if key != last[0]:
+                last[0] = key
+                stage("stats " + key)
+        bpy.app.handlers.render_stats.append(on_stats)
+        bpy.app.handlers.render_pre.append(lambda *a: stage("render_pre"))
+        bpy.app.handlers.render_post.append(lambda *a: stage("render_post"))
+        bpy.app.handlers.render_write.append(lambda *a: stage("render_write"))
+
+    MASTER = os.path.splitext(OUT)[0] + "-16bit.png"
+    set_format(sc.render.image_settings, "PNG")
+    sc.render.image_settings.color_depth = "16"
+    sc.render.filepath = MASTER
+    bpy.ops.render.render(write_still=True)
+    stage("render")
+    write_dithered(MASTER, OUT, DITHER_SEED)
+    stage("dither")
+
+    try:
+        img = bpy.data.images.load(OUT)
+        px = np.empty(img.size[0] * img.size[1] * img.channels, np.float32)
+        img.pixels.foreach_get(px)
+        px = px.reshape(-1, img.channels)[:, :3]
+        print("PICTURE mean level %.3f, clipped %.2f%% of pixels" % (float(px.mean()), 100.0 * float((px.max(axis=1) > 0.98).mean())),
+              flush=True)
+    except Exception as e:
+        print("WARN could not read the picture back:", e, flush=True)
+    print("DONE", OUT, flush=True)
+
+if __name__ == "__main__":
+    main()
