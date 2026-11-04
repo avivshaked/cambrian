@@ -190,9 +190,9 @@ elsewhere, in `SafariPlans.cs`, `TheatreSafari.cs` or its launcher. Each is ente
 and the owner is told after. The safari and the films differ only where the owner has ruled it, and the file's entry names
 that ruling.
 
-The blades' two stops are meant to be per world, from their world's row in `scripts/theatre-world-stops.tsv`, but
-nothing reads that table yet. Every film and the safari take the file's stand-in value, and the reader says so on every
-film. Each row is set so
+The blades' two stops are per world (D256), from their world's row in `scripts/theatre-world-stops.tsv`. Both
+launchers pass their arm to `Use-FilmLook -World`, which takes the row named by the arm, or by the arm without its
+trailing seed, so `r62cf-6202` reads `r62cf`. A world with no row takes the file's stand-in, and the reader warns. Each row is set so
 that the blades land on the underwater photographs' hue, 102 to 108, in that world's own light. A stop chosen on one
 world's light does not carry to another: trial d's stops, chosen on the test stage, read tan at hue 90 in r62cf's light.
 A world with no row is calibrated before it is filmed. `scripts/theatre-blade-stops.py` measures a frame's blades and
