@@ -308,8 +308,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D284](#d284) | The nursery trains grazers with the mouth's place evolving, so D280's retrain waits for D283 | 2026-11-02 | ruled by the owner on 2026-11-02 |
 | [D285](#d285) | A mouth is the size its cell's genes give it, wherever it sits | 2026-11-02 | ruled by the owner on 2026-11-02, who agreed with the coordinator's amendment to D283's build spec (`logbook/specs/mouth-gene-spec.md`, section 11) |
 | [D286](#d286) | Every hurt animal bleeds, and a kill bleeds more than a wound | 2026-11-02 | completed by D289 (a plant's cue); ruled by the owner on 2026-11-02 |
-| [D287](#d287) | The channel's opener and closer are remade from the grazer film's creatures, filmed in the theatre | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendation |
-| [D288](#d288) | The titles' look: the creatures in their own colours, glowing in a void, composed from separate layers | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendation for the colours, with the layers the owner's own |
+| [D287](#d287) | The channel's opener and closer are remade from the grazer film's creatures, filmed in the theatre | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendation · partly superseded by D302 |
+| [D288](#d288) | The titles' look: the creatures in their own colours, glowing in a void, composed from separate layers | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendation for the colours, with the layers the owner's own · partly superseded by D302 |
 | [D289](#d289) | A bitten plant throws off its own fragments, more at a kill | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendation |
 | [D290](#d290) | Every film takes the theatre's look; bubbles mark a birth and a bite, and a death's look is open to trial | 2026-11-03 | its trial of a death's look closed by D301; ruled by the owner on 2026-11-03, after the previews in `scratch/owner/birth-bubbles-first-take/`, `scratch/owner/growth-eased-off-and-on/` and `scratch/owner/plant-kill-fragments-off-and-on/`, on… |
 | [D291](#d291) | The coordinator develops and builds the forager kit, the hunger sense, a breeding gate and growing plants, under the owner's stance | 2026-11-03 | delegated by the owner on 2026-11-03, who set out their stance on each part and left the development and the build to the coordinator |
@@ -323,6 +323,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D299](#d299) | A birth waits for the brain's urge to breed, read beside a sense of the reserve against the gate | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 1 in form (b) of `logbook/specs/breeding-urge/spec.md` |
 | [D300](#d300) | A recorded genome keeps its format under D293's time constants | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, in review of D293's first build |
 | [D301](#d301) | A corpse turns pale, a death releases a soft haze in the water's colour, and the corpse keeps its markings | 2026-11-04 | ruled by the owner on 2026-11-04 after `scratch/owner/death-look-and-motes/`, on the coordinator's recommendations |
+| [D302](#d302) | The opener is the dive, made once, and it lands in each video's own world | 2026-11-04 | ruled by the owner on 2026-11-04, on the coordinator's recommendation |
 
 ---
 
@@ -10868,3 +10869,26 @@ body.
 
 **Rejected.** The grey drain. D281's motes, in the corpse's paint or in the water's, at either size. A corpse with no
 cloud, which picture 5 showed reads as a death by the pale body alone.
+
+### D302
+**The opener is the dive, made once, and it lands in each video's own world** · 2026-11-04
+
+**Status:** ruled by the owner on 2026-11-04, on the coordinator's recommendation. For the opener it supersedes D287's
+creatures chosen once from the grazer film's world, and D288's void with the creatures glowing in it. The closer stays
+as D287 and D288 have it.
+
+**Decision.**
+- The opener follows a video's cold open. It is the dive from the approved sea still (`scripts/channel/sea_dive.py`),
+  rendered once in Blender, with the channel's titles over the hold on the ocean.
+- Its last few seconds land in that video's own world, filmed in the theatre in the film look and seen as the bubbles
+  clear. A dissolve may carry the handover, so that nearly all of the opener is the same footage in every video.
+- The dive eases in: the camera glides and steepens into the water rather than falling freely.
+
+**Why.** The owner noted that each world looks different, so an opener that shows the world would differ in every video,
+and asked whether that was worth its cost. The cost is small. The dive is made once, and each video adds a theatre shot
+of a few seconds, about 15 minutes of machine time, and a composite. The opener then previews the film it opens and
+does not go stale, the reason D287 gave for remaking v1. On the same day the owner found that the dive's free fall read
+as a plane crash.
+
+**Rejected.** One fixed opener rendered once, the simplest and the most recognisable, which would show a world other than
+the video's own and age as the theatre's look changes. D288's void for the opener.
