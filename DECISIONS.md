@@ -10920,3 +10920,11 @@ confirmed against the sources).
 
 **Rejected.** Keeping D172 for comparisons and reading each result with a caveat, which is cheaper but leaves a
 "worth little" verdict untrustworthy whenever an arm stopped mid-climb.
+
+**Checked the same evening.** A source check (`scratch/research-stop-and-learn/notes.md`) found the sources agreeing
+on many independent runs an arm, judged with confidence intervals or non-parametric tests, and never on one run.
+None gives a number. Henderson et al. 2018 found 5 runs too few in reinforcement learning, Gupta et al. 2021 used 3,
+and Bartz-Beielstein et al. 2020 leave the count to experimental design. On budgets they split, so the line above
+saying practice compares at equal budgets was too strong. Bartz-Beielstein et al. warn that stopping rules that differ
+between algorithms can bias a comparison. The COCO platform measures the evaluations needed to reach a target and
+does not fix a budget at all. An equal budget with the whole curve reported, as decided here, is one defensible form.
