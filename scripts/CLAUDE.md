@@ -166,6 +166,10 @@ belongs to a run that has ended, so it can be stopped by its process id (2026-10
   once, so a card session ran unwatched. Pass anything with a space through a file the script reads
   (or an ISO date with a `T`), send stderr to a file, and read the launched script's first log line
   before trusting it.
+- **`Start-Process -Wait` waits for every process its child starts, the compiler server included.**
+  A `dotnet test` or `build` leaves `VBCSCompiler` running for minutes after it ends, so on 2026-11-04 a
+  script sat ten minutes on a suite that finished in 38 s, until `dotnet build-server shutdown` ended it.
+  Wait on the process alone (`-PassThru`, then `$p.WaitForExit()`), or pass dotnet `--disable-build-servers`.
 - **A watch's end pattern must appear in nothing the job writes before it ends.** Later on
   2026-10-08 a script copied its driver watch's opening line, which names the end pattern, into the
   job log the watch reads, so the watch saw "the end" at its first look and left the card run
