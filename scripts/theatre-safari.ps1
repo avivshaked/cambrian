@@ -370,7 +370,7 @@ try {
 
     # The agreed look, last: the names above were cleared, and the look's dials are none of them, so a caller's own
     # (a pinned dial for a comparison film) stays and is printed. The names it set are restored with the rest below.
-    $names += @(Use-FilmLook -Sections wide, events)
+    $names += @(Use-FilmLook -Sections wide, events -World $Arm)
 
     $arguments = @(
         '-projectPath', $proj, '-batchmode',

@@ -7,7 +7,7 @@
   Unity's look is set by EVOSIM_THEATRE_* variables ("dials") read when the process starts, and the agreed
   values live in one file, so the two launchers do not keep tables of their own that drift apart.
 
-  Use-FilmLook -Sections wide,events[,close] [-PrintOnly]
+  Use-FilmLook -Sections wide,events[,close] [-World <arm>] [-PrintOnly]
     wide    every shot
     close   added for a portrait or a close shot; where it names a dial that wide names too, close wins
     events  births, bites and deaths
@@ -27,8 +27,14 @@
 
   The file is found in the main checkout from any worktree (the parent of git's common directory), since a
   worktree holds only what its branch tracks; failing that, in this script's own repository, and it says so.
-  A dial with a 'perWorld' table takes its 'value' (the file's stand-in for a world with no row); the table is
-  not consulted here, and a line says so.
+  A dial with a 'perWorld' table and a 'perWorldColumn' that the environment leaves unset takes its value from
+  the table's row for -World, and a line names the row. The table is tab-separated, read from the same checkout as
+  the file (its path is relative to the repository root), with '#' lines as comments and the first other line as
+  the header. A row matches when its 'world' is the arm's name, or the name with a trailing -<digits> removed
+  (r65-c-6203 finds r65-c); the exact name wins. A world with no row takes the dial's 'value', the file's
+  stand-in, with a warning, since a world is calibrated before it is filmed (scripts/theatre-blade-stops.py);
+  with no -World the dial takes 'value' and a line says the table was not consulted. A perWorld dial without a
+  'perWorldColumn', a row whose column is missing or empty, and a table that is named but absent all refuse.
 
   It returns the names of the dials it set, so that a launcher which restores its environment afterwards can
   restore these too; it refuses, rather than carry on without the look, when the file is missing or does not
@@ -43,6 +49,7 @@ function Use-FilmLook {
     param(
         # A comma list arrives as one string through "powershell -File" (CLAUDE.md's new-worker gotcha), so it is split again here.
         [Parameter(Mandatory)][string[]]$Sections,
+        [string]$World = '',
         [switch]$PrintOnly
     )
 
@@ -115,9 +122,16 @@ function Use-FilmLook {
             if ($null -ne $entry.PSObject.Properties['ruling']) { $ruling = [string]$entry.ruling }
             $table = ''
             if ($null -ne $entry.PSObject.Properties['perWorld']) { $table = [string]$entry.perWorld }
-            $dials[$property.Name] = [pscustomobject]@{ Value = [string]$entry.value; Ruling = $ruling; PerWorld = $table; Section = $section }
+            $column = ''
+            if ($null -ne $entry.PSObject.Properties['perWorldColumn']) { $column = [string]$entry.perWorldColumn }
+            $dials[$property.Name] = [pscustomobject]@{ Value = [string]$entry.value; Ruling = $ruling; PerWorld = $table; Column = $column; Section = $section }
         }
     }
+
+    # ------------------------------------------------------------ the per-world table, read once and only when a dial needs it
+    $root = Split-Path -Parent (Split-Path -Parent $path)
+    $stops = $null
+    $worldName = $World.Trim()
 
     # ------------------------------------------------------------ the environment
     $set = @(); $same = 0; $kept = 0
@@ -134,10 +148,46 @@ function Use-FilmLook {
             }
         }
 
+        $value = $dial.Value
+        $worldNote = ''
+        if ([string]::IsNullOrEmpty($have) -and $dial.PerWorld) {
+            if ($worldName) {
+                if (-not $dial.Column) { throw "Use-FilmLook: $path, $($dial.Section).$name names a perWorld table but no 'perWorldColumn'." }
+                if ($null -eq $stops) {
+                    $tablePath = [System.IO.Path]::GetFullPath((Join-Path $root $dial.PerWorld))
+                    if (-not (Test-Path -LiteralPath $tablePath -PathType Leaf)) { throw "Use-FilmLook: $name names the per-world table $($dial.PerWorld), and there is no file at $tablePath." }
+                    $header = $null; $rows = @()
+                    foreach ($line in [System.IO.File]::ReadAllLines($tablePath, [System.Text.Encoding]::UTF8)) {
+                        if ([string]::IsNullOrWhiteSpace($line) -or $line.StartsWith('#')) { continue }
+                        $cells = $line -split "`t"
+                        if ($null -eq $header) { $header = $cells; continue }
+                        $row = @{}
+                        for ($i = 0; $i -lt $header.Count; $i++) { $row[$header[$i].Trim()] = if ($i -lt $cells.Count) { $cells[$i].Trim() } else { '' } }
+                        $rows += , $row
+                    }
+                    if ($null -eq $header -or $header -notcontains 'world') { throw "Use-FilmLook: $tablePath has no header with a 'world' column." }
+                    $stops = [pscustomobject]@{ Path = $tablePath; Rows = $rows }
+                }
+                $stripped = $worldName -replace '-\d+$', ''
+                $match = $stops.Rows | Where-Object { $_['world'] -ceq $worldName } | Select-Object -First 1
+                if (-not $match) { $match = $stops.Rows | Where-Object { $_['world'] -ceq $stripped } | Select-Object -First 1 }
+                if ($match) {
+                    if (-not $match.ContainsKey($dial.Column) -or [string]::IsNullOrEmpty($match[$dial.Column])) {
+                        throw "Use-FilmLook: world $($match['world'])'s row in $($stops.Path) has no '$($dial.Column)' value for $name."
+                    }
+                    $value = $match[$dial.Column]
+                    $worldNote = "look: $name takes '$value' from world $($match['world'])'s row in $($dial.PerWorld)"
+                } else {
+                    $worldNote = "stand-in"
+                    Write-Warning "look: $name takes '$value', the look's stand-in: world '$worldName' has no row in $($dial.PerWorld); a world is calibrated before it is filmed (scripts/theatre-blade-stops.py)"
+                }
+            }
+        }
+
         if ([string]::IsNullOrEmpty($have)) {
             $set += $name
-            if ($PrintOnly) { Write-Host "  would set $name = $($dial.Value)   [$($dial.Section)]" }
-            else { [Environment]::SetEnvironmentVariable($name, $dial.Value, 'Process') }
+            if ($PrintOnly) { Write-Host "  would set $name = $value   [$($dial.Section)]" }
+            else { [Environment]::SetEnvironmentVariable($name, $value, 'Process') }
         } elseif ($equal) {
             $same++
             if ($PrintOnly) { Write-Host "  already   $name = $have   [$($dial.Section)]" }
@@ -146,7 +196,8 @@ function Use-FilmLook {
             Write-Host "look: $name is '$have' in the environment and stays so; the look says '$($dial.Value)' ($($dial.Ruling))"
             continue
         }
-        if ($dial.PerWorld) { Write-Host "look: $name takes '$($dial.Value)', the look's value for a world with no row; its per-world table $($dial.PerWorld) was not consulted" }
+        if ($worldNote -and $worldNote -ne 'stand-in') { Write-Host $worldNote }
+        elseif ($dial.PerWorld -and -not $worldNote) { Write-Host "look: $name takes '$($dial.Value)', the look's value for a world with no row; its per-world table $($dial.PerWorld) was not consulted" }
     }
 
     $verb = if ($PrintOnly) { 'would set' } else { 'set' }

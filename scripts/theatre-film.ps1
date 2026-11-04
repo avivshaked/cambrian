@@ -484,7 +484,7 @@ try {
     # printed when they differ. The close look joins when a close shot is filmed. The names it set are restored below.
     $lookSections = @('wide', 'events')
     if ($shotList -contains 'close') { $lookSections += 'close' }
-    $names += @(Use-FilmLook -Sections $lookSections)
+    $names += @(Use-FilmLook -Sections $lookSections -World $Arm)
 
     Write-Host "$Arm -> worker $Worker ($proj)"
     if ($Nursery) {
