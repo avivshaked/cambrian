@@ -1,8 +1,8 @@
 """The dive's crossing: the camera passes from above the open sea, through the surface, into the water. The scene
 is the approved still's (sea_still.py's build(): its sky, its water, its view transform and dither), with the sea
-set moving and the camera on one of two paths.
+set moving and the camera on one of three paths.
 
-    blender -b --factory-startup --python sea_dive.py -- <out-prefix> <samples> --path A|B [options]
+    blender -b --factory-startup --python sea_dive.py -- <out-prefix> <samples> --path A|B|C [options]
 
 Frames are written as <out-prefix>NNNN.png (8-bit, dithered as the still is), and, with --keep-16bit, beside each
 its 16-bit master.
@@ -29,6 +29,17 @@ frame, 10 m up, then a fall at g that pitches down, a crossing at about 14 m/s, 
 quadratic-drag slowdown, and a level-out a few metres down. Both keyframe the camera, so Cycles blurs its motion
 over a 180-degree shutter (--shutter).
 
+Path C, the blend (about 11.5 s): the still's frame held for three seconds with a slow drift forward (C_HOLD,
+C_DRIFT), then B's fall into the glitter. Round the crossing the film slows (C_RAMP): the simulated time, which
+drives the camera, the sea, the ripples, the bubbles and the white water, runs eight times slower than the film
+for the last half metre and the first moments under, and 32 times slower for the instant the port goes through
+the surface, as a high-speed camera would film it; the camera's motion per frame, and so its blur, shrinks with
+it. At the crossing the entering camera throws a spray (Spray) and is wrapped in white water (WhiteWater), then
+in B's burst of bubbles, unchanged. Under water it brakes as B does, turns up to the sun through the moving
+surface, turns down and levels, and goes on forward at a steady 0.9 m/s in open water. The light under water
+carries shafts (Shafts): the sun's light refracted through the same moving surface, focused into a net that is
+traced and binned per frame, and laid on the water sun through the surface's shadow switch.
+
 Above water the exposure is the still's. Under water it is metered as a camera's automatic exposure would meter
 it: each rendered frame's centre-weighted geometric mean luminance is driven towards that of the theatre's shallow
 water as the theatre shows it (AE_TARGET), in proportion to the share of the frame under water, lagging 0.15 s
@@ -46,10 +57,15 @@ Options (defaults in brackets), besides sea_still.py's: --path, --frames (all, o
 0,30,60-90) [all], --step render every nth of them [1], --port [0.12], --shutter fraction of a frame, 0 for none
 [0.5], --ae-track [none], --ae-resume [none], --under-stops a fixed exposure change under water instead of the
 metering [none], --bubbles a multiplier on the burst's count, 0 for none [1], --water-sun off, under or always
-[under], --light trick or caustics [trick], --keep-16bit.
+[under], --light trick or caustics [trick], --keep-16bit; for path C, --layer full or bubbles (the bubbles alone on a
+transparent background, RGBA, the water between them clear) [full], --shafts on or off [on], --white-water and
+--spray multipliers on their density and count, 0 for none [1], --shaft-debug depth (a test pattern by depth
+instead of the traced net), --dry (build the scene and the path, print them, render nothing). Path C writes its
+camera, frame by frame, to <out-prefix>-camera.json.
 """
 import json, math, os, sys, time
 import bpy
+import bmesh
 import numpy as np
 from mathutils import Vector, Quaternion
 
@@ -59,7 +75,7 @@ import sea_still as SS
 
 FPS = 30
 G = 9.81
-PATH_SECONDS = {"A": 6.0, "B": 4.0}
+PATH_SECONDS = {"A": 6.0, "B": 4.0}           # C's length follows from its speed ramp
 DR0, CR, DPHI_FRONT, DPHI_BACK = 0.15, 0.004, 0.0012, 0.012   # the disc at full size: rings, columns
 FRONT_HALF, FRONT_BLEND = math.radians(50.0), math.radians(20.0)
 PORT = 0.12                               # m: set from --port
@@ -72,7 +88,7 @@ AE_TARGET = 0.0526
 
 def parse():
     ap = SS.still_parser("sea_dive.py")
-    ap.add_argument("--path", choices=("A", "B"), required=True)
+    ap.add_argument("--path", choices=("A", "B", "C"), required=True)
     ap.add_argument("--frames", default="all")
     ap.add_argument("--step", type=int, default=1)
     ap.add_argument("--port", type=float, default=0.12)
@@ -84,6 +100,14 @@ def parse():
     ap.add_argument("--light", choices=("trick", "caustics"), default="trick")
     ap.add_argument("--keep-16bit", action="store_true")
     ap.add_argument("--water-sun", choices=("off", "under", "always"), default="under")
+    ap.add_argument("--layer", choices=("full", "bubbles"), default="full")
+    ap.add_argument("--shafts", choices=("on", "off"), default="on")
+    ap.add_argument("--white-water", type=float, default=1.0)
+    ap.add_argument("--spray", type=float, default=1.0)
+    ap.add_argument("--shaft-debug", choices=("depth",), default=None)
+    ap.add_argument("--shaft-ab", action="store_true")
+    ap.add_argument("--shaft-medium", type=float, default=None)
+    ap.add_argument("--dry", action="store_true")
     return ap.parse_args(SS.script_argv())
 
 def frame_list(spec, n, step):
@@ -390,6 +414,697 @@ def key_camera(cam, states, az):
         cam.keyframe_insert("location", frame=f)
         cam.keyframe_insert("rotation_euler", frame=f)
 
+# ---------------------------------------------------------------- path C, the blend
+C_HOLD = 3.0              # s: the still's own frame, held before the fall (a fraction of a frame is added: see path_C)
+C_DRIFT = 0.10            # m/s: the hold's drift forward, towards the sun
+C_FWD = 1.2               # m/s: the fall's forward speed, as B's
+C_PITCH_E = -58.0         # deg: the pitch at the crossing (B's -62, a little less steep, to keep the glitter in frame)
+C_UNDER = 6.0             # s of simulated time after the crossing
+C_DRAG_L = 0.9            # m: B's quadratic-drag length under water
+C_COURSE = (0.15, 1.6)    # s after the crossing over which the course turns from the entry's to level
+C_SWIM = [(0.0, 0.6), (2.6, 0.6), (4.6, 0.9), (C_UNDER, 0.9)]        # m/s: the floor of the speed under water
+C_PITCH_UNDER = [(0.0, C_PITCH_E), (0.25, -56.0), (0.7, -38.0), (1.2, -8.0), (1.8, 24.0), (2.4, 36.0), (3.2, 38.0),
+                 (3.8, 26.0), (4.6, 2.0), (5.2, -4.0), (C_UNDER, -4.0)]
+# The speed ramp, in s of simulated time from the crossing: each window rises from the one below it over its first
+# pair of times to its top (film seconds per simulated second) and falls back over its second pair.
+C_RAMP = (((-0.075, -0.035, 0.030, 0.120), 8.0), ((-0.008, -0.003, 0.003, 0.010), 32.0))
+C_DT = 1.0 / 6000.0       # s: the integration step
+
+def c_ramp(tau):
+    k, below = 1.0, 1.0
+    for (a, b, c, d), top in C_RAMP:
+        k += (top - below) * sstep(a, b, tau) * (1.0 - sstep(c, d, tau))
+        below = top
+    return k
+
+def c_extra_before():
+    """The film seconds the ramp adds before the crossing."""
+    taus = np.arange(-0.2, 0.0, C_DT)
+    return float(sum(c_ramp(x) - 1.0 for x in taus) * C_DT)
+
+def path_C(probe, az):
+    """The blend: the still's frame held, B's fall, a speed ramp round the crossing, and under water B's braking,
+    a turn up to the sun, a turn down and a steady course forward. Returns one state a film frame, each with its
+    simulated time "t" and its film time "tf"."""
+    fwd = Vector((math.cos(az), math.sin(az), 0.0))
+    above = PORT * math.sin(math.radians(-C_PITCH_E))
+    def fall(hold):
+        x, z, vz, t = 0.0, 10.0, 0.0, 0.0
+        T, X, Z, VF, VZ = [], [], [], [], []
+        while True:
+            vf = C_DRIFT + (C_FWD - C_DRIFT) * sstep(hold, hold + 1.0, t)
+            T.append(t); X.append(x); Z.append(z); VF.append(vf); VZ.append(vz)
+            if t > hold:
+                vz -= G * C_DT
+            x += vf * C_DT
+            z += vz * C_DT
+            t += C_DT
+            if z < 1.5 and z <= probe.height(round(t * FPS) / FPS, fwd.x * x, fwd.y * x) + above:
+                T.append(t); X.append(x); Z.append(z); VF.append(vf); VZ.append(vz)
+                return np.array(T), np.array(X), np.array(Z), np.array(VF), np.array(VZ)
+            if t > hold + 4.0:
+                raise SystemExit("path C: the fall never met the surface")
+    # Lengthen the hold by a fraction of a frame so that a film frame falls on the crossing.
+    extra = c_extra_before()
+    hold = C_HOLD
+    for it in range(3):
+        T, X, Z, VF, VZ = fall(hold)
+        F_e = (T[-1] + extra) * FPS
+        hold += ((math.ceil(F_e) if it == 0 else round(F_e)) - F_e) / FPS
+    T, X, Z, VF, VZ = fall(hold)
+    t_e, x_e, z_e, vf_e, vz_e = T[-1], X[-1], Z[-1], VF[-1], VZ[-1]
+    v_e = math.hypot(vf_e, vz_e)
+    beta_e = math.atan2(-vz_e, vf_e)
+    pitch_above = -11.0 + (C_PITCH_E + 11.0) * np.array([sstep(hold + 0.05, t_e, t) for t in T])
+    # under water
+    n_u = int(round(C_UNDER / C_DT))
+    tu = np.arange(1, n_u + 1) * C_DT
+    tab = np.linspace(0.0, C_UNDER, 1201)
+    tm = tu - 0.5 * C_DT
+    v = np.maximum(np.interp(tm, tab, [pchip(C_SWIM, x) for x in tab]), v_e / (1.0 + v_e * tm / C_DRAG_L))
+    beta = beta_e * (1.0 - np.array([sstep(C_COURSE[0], C_COURSE[1], x) for x in tm]))
+    xu = x_e + np.cumsum(v * np.cos(beta) * C_DT)
+    zu = z_e - np.cumsum(v * np.sin(beta) * C_DT)
+    pitch_under = np.interp(tu, tab, [pchip(C_PITCH_UNDER, x) for x in tab])
+    t_all = np.concatenate([T, t_e + tu])
+    x_all = np.concatenate([X, xu])
+    z_all = np.concatenate([Z, zu])
+    p_all = np.concatenate([pitch_above, pitch_under])
+    k_all = np.array([c_ramp(t - t_e) for t in t_all])
+    F_all = np.concatenate([[0.0], np.cumsum(0.5 * (k_all[1:] + k_all[:-1]) * np.diff(t_all))])
+    n = int(math.floor(F_all[-1] * FPS + 1e-9)) + 1
+    F = np.arange(n) / FPS
+    tf = np.interp(F, F_all, t_all)
+    xf, zf, pf = np.interp(tf, t_all, x_all), np.interp(tf, t_all, z_all), np.interp(tf, t_all, p_all)
+    states = [{"t": float(tf[f]), "tf": float(F[f]), "loc": Vector((fwd.x * xf[f], fwd.y * xf[f], zf[f])),
+               "pitch": float(pf[f]), "roll": 0.0} for f in range(n)]
+    f_e = int(np.argmin(np.abs(tf - t_e)))
+    for i in range(n):
+        a, b = states[max(0, i - 1)], states[min(n - 1, i + 1)]
+        states[i]["vel"] = (b["loc"] - a["loc"]) / max(1e-9, b["t"] - a["t"])
+        p = math.radians(states[i]["pitch"])
+        states[i]["dir"] = Vector((math.cos(az) * math.cos(p), math.sin(az) * math.cos(p), math.sin(p)))
+    entry = {"t": t_e, "frame": f_e, "loc": Vector((fwd.x * x_e, fwd.y * x_e, z_e)), "v": v_e, "beta": beta_e,
+             "hold": hold, "dir": Vector((fwd.x * math.cos(beta_e), fwd.y * math.cos(beta_e), -math.sin(beta_e)))}
+    print("PATH C: hold %.4f s, the fall %.3f s; the port meets the surface at %.4f s simulated, %.4f s on film, frame %d"
+          " (simulated %.5f s, %.2f ms off); %.2f m/s, %.1f deg below level; %d frames, %.2f s of film for %.2f s simulated"
+          % (hold, t_e - hold, t_e, F_all[np.searchsorted(t_all, t_e)], f_e, tf[f_e], 1e3 * (tf[f_e] - t_e), v_e,
+             math.degrees(beta_e), n, F[-1], t_all[-1]), flush=True)
+    return states, entry
+
+def make_instancer(name, mat, subdiv=3):
+    """An object whose mesh holds points, each drawn as a sphere scaled by its "bscale" attribute (as the bubbles)."""
+    me = bpy.data.meshes.new(name)
+    ob = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(ob)
+    ng = bpy.data.node_groups.new(name + "-gn", "GeometryNodeTree")
+    ng.interface.new_socket("Geometry", in_out="INPUT", socket_type="NodeSocketGeometry")
+    ng.interface.new_socket("Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry")
+    N = ng.nodes
+    gi, go = N.new("NodeGroupInput"), N.new("NodeGroupOutput")
+    ico = N.new("GeometryNodeMeshIcoSphere")
+    ico.inputs["Radius"].default_value = 1.0
+    ico.inputs["Subdivisions"].default_value = subdiv
+    sm = N.new("GeometryNodeSetMaterial")
+    sm.inputs["Material"].default_value = mat
+    ss = N.new("GeometryNodeSetShadeSmooth")
+    iop = N.new("GeometryNodeInstanceOnPoints")
+    na = N.new("GeometryNodeInputNamedAttribute")
+    na.data_type = "FLOAT_VECTOR"
+    na.inputs["Name"].default_value = "bscale"
+    L = ng.links
+    L.new(ico.outputs[0], sm.inputs[0])
+    L.new(sm.outputs[0], ss.inputs[0])
+    L.new(gi.outputs[0], iop.inputs[0])
+    L.new(ss.outputs[0], SS.sock(iop.inputs, "Instance"))
+    L.new(SS.sock(na.outputs, "Attribute", "VECTOR"), SS.sock(iop.inputs, "Scale"))
+    L.new(iop.outputs[0], go.inputs[0])
+    ob.modifiers.new(name, "NODES").node_group = ng
+    no_deform_blur(ob)
+    return ob
+
+def set_points(ob, X, scale):
+    me = bpy.data.meshes.new(ob.name)
+    me.vertices.add(len(X))
+    if len(X):
+        me.vertices.foreach_set("co", X.astype(np.float32).ravel())
+        at = me.attributes.new("bscale", "FLOAT_VECTOR", "POINT")
+        at.data.foreach_set("vector", scale.astype(np.float32).ravel())
+    old = ob.data
+    ob.data = me
+    bpy.data.meshes.remove(old)
+
+class Spray:
+    """The spray the entering camera throws: droplets ejected from the line where its housing meets the water,
+    from a few milliseconds before the port's centre crosses, outward and upward, fast and low as the jet a blunt
+    body throws at impact, and falling ballistically back to the surface. The camera sees them only while its
+    port is still partly above the water, which the speed ramp stretches to a few frames."""
+    def __init__(self, entry, probe, count, seed=23):
+        mat = bpy.data.materials.new("droplet")
+        nt = mat.node_tree
+        nt.nodes.clear()
+        g = nt.nodes.new("ShaderNodeBsdfGlass")
+        g.distribution = "GGX"
+        g.inputs["Roughness"].default_value = 0.0
+        g.inputs["IOR"].default_value = 1.333
+        o = nt.nodes.new("ShaderNodeOutputMaterial")
+        nt.links.new(g.outputs[0], o.inputs["Surface"])
+        self.ob = make_instancer("spray", mat, subdiv=2)
+        rng = np.random.default_rng(seed)
+        n = int(count)
+        self.n = n
+        e = entry["dir"]
+        c = entry["loc"] + e * (PORT * math.sin(math.radians(-C_PITCH_E)) / max(0.2, -e.z))
+        self.c = np.array(c[:])
+        th = rng.uniform(0.0, 2 * math.pi, n)
+        rad = rng.uniform(0.07, 0.14, n)
+        el = np.radians(rng.uniform(6.0, 55.0, n))
+        sp = np.exp(rng.uniform(math.log(3.0), math.log(24.0), n))
+        self.ts = entry["t"] - 0.004 + 0.03 * rng.random(n) ** 2
+        u = np.stack([np.cos(th), np.sin(th), np.zeros(n)], -1)
+        self.x0 = self.c[None, :] + u * rad[:, None]
+        self.v0 = u * (sp * np.cos(el))[:, None]
+        self.v0[:, 2] = sp * np.sin(el)
+        self.r = np.exp(rng.uniform(math.log(3e-4), math.log(2.5e-3), n))
+        self.probe, self.entry = probe, entry
+        print("SPRAY %d droplets, radius %.1f..%.1f mm, %.0f..%.0f m/s, from %.3f s" % (n, 1e3 * self.r.min(), 1e3 * self.r.max(),
+              sp.min(), sp.max(), self.ts.min()), flush=True)
+    def at(self, t, show):
+        tau = t - self.ts
+        live = (tau >= 0) & show
+        tau = np.maximum(tau, 0.0)[:, None]
+        X = self.x0 + self.v0 * tau
+        X[:, 2] -= 0.5 * G * tau[:, 0] ** 2
+        surf = self.probe.height(round(t * FPS) / FPS, self.c[0], self.c[1])
+        live &= X[:, 2] > surf + self.r
+        r = self.r[live]
+        set_points(self.ob, X[live], np.stack([r, r, r], -1))
+        self.ob.hide_render = not bool(live.any())
+        return int(live.sum())
+
+class WhiteWater:
+    """White water at the entry: a cloud of air entrained round the entering camera, as fine bubbles that scatter
+    light without absorbing it. Scattering by bubbles a few tenths of a millimetre across goes as 1.5 times the
+    air's volume fraction over the radius, so a cloud of a per cent of air is opaque within a few centimetres. Its
+    shape is not simulated: a sleeve round the camera's path from the surface down to a little ahead of the port,
+    flaring at the surface, widening with time, its density broken into pockets by noise; the camera leaves it
+    through its lower end at WW_DEPTH. Its density is set by eye. The render follows one volume bounce, so light
+    cannot diffuse into a cloud this dense and its inside renders black, which white water is not: the many
+    scatterings it does not follow are put back as emission, each unit of scattering emitting the radiance a
+    diffusing white cloud holds, WW_DIFFUSE times the downwelling irradiance in the water over pi, dimmed with
+    depth by the water's absorption and by WW_DIM a metre (the light lost out of the cloud's sides). The
+    downwelling irradiance is the refracted sun's on a level surface plus the sky's: the sky probe's radiance taken
+    to vary as the cosine of the zenith angle from its level at the horizon to its level at the zenith,
+    integrated over the sky, times SKY_T for the surface's transmittance of diffuse light. In this sky it is
+    several times the sun's."""
+    WW_SIGMA, WW_DEPTH, WW_G, WW_DECAY, WW_DIFFUSE, WW_DIM = 12.0, 0.5, 0.3, 0.8, 0.8, 1.5
+    WW_GRAIN = 26.0            # 1/m: the noise's scale, pockets a few centimetres across
+    SKY_T = 0.85
+    def __init__(self, entry, probe, strength, wsun=None, sky=None):
+        E = [wsun.strength * c * wsun.d.z for c in wsun.ob.data.color] if wsun is not None else [0.0, 0.0, 0.0]
+        if sky is not None and sky.get("zenith") is not None and SS.HORIZON is not None:
+            Z, H = sky["zenith"], [0.5 * (a + b) for a, b in zip(SS.HORIZON["toward"], SS.HORIZON["away"])]
+            Es = [math.pi * (h / 3.0 + 2.0 * z / 3.0) * self.SKY_T for z, h in zip(Z, H)]
+            print("WHITE WATER downwelling in the water: sun %.2f %.2f %.2f, sky %.2f %.2f %.2f" % (*E, *Es), flush=True)
+            E = [a + b for a, b in zip(E, Es)]
+        self.E = E
+        e = entry["dir"]
+        self.e = e
+        self.o = entry["loc"] + e * (PORT * math.sin(math.radians(-C_PITCH_E)) / max(0.2, -e.z))
+        surf = probe.height(round(entry["t"] * FPS) / FPS, self.o.x, self.o.y)
+        self.o.z = surf
+        self.entry, self.probe = entry, probe
+        me = bpy.data.meshes.new("white-water")
+        hx, top, depth = 0.95, -0.005, 1.1
+        bm = bmesh.new()
+        bmesh.ops.create_cube(bm, size=1.0)               # outward normals: a volume's boundary
+        for vt in bm.verts:
+            vt.co.x *= 2 * hx
+            vt.co.y *= 2 * hx
+            vt.co.z = top - (0.5 - vt.co.z) * (depth + top)
+        bm.to_mesh(me)
+        bm.free()
+        self.ob = bpy.data.objects.new("white-water", me)
+        bpy.context.scene.collection.objects.link(self.ob)
+        self.ob.location = self.o
+        self.ob.data.materials.append(self.material(strength))
+        no_deform_blur(self.ob)
+        self.ob.hide_render = True
+        print("WHITE WATER at %.2f %.2f %.3f, axis %.2f %.2f %.2f, %.0f /m at full density, left through its end %.2f m down"
+              % (self.o.x, self.o.y, self.o.z, e.x, e.y, e.z, self.WW_SIGMA * strength, self.WW_DEPTH), flush=True)
+    def material(self, strength):
+        mat = bpy.data.materials.new("white-water")
+        t = SS.Tree(mat.node_tree)
+        t.nt.nodes.clear()
+        P = t.new("ShaderNodeTexCoord").outputs["Object"]
+        self.clock = t.new("ShaderNodeValue")
+        self.clock.name = self.clock.label = "ww-clock"
+        self.front = t.new("ShaderNodeValue")
+        self.front.name = self.front.label = "ww-front"
+        tau = self.clock.outputs[0]
+        e = tuple(self.e)
+        dn = t.new("ShaderNodeVectorMath", operation="DOT_PRODUCT")
+        t.feed(dn.inputs[0], P)
+        dn.inputs[1].default_value = e
+        s = dn.outputs["Value"]
+        radial = t.vm("SUBTRACT", P, t.vm("SCALE", t.xyz(*e).outputs[0], scale=s))
+        ln = t.new("ShaderNodeVectorMath", operation="LENGTH")
+        t.feed(ln.inputs[0], radial)
+        r = ln.outputs["Value"]
+        R = t.m("ADD", t.m("ADD", 0.16, t.m("MULTIPLY", tau, 0.8)), t.m("MULTIPLY", t.m("MAXIMUM", t.m("SUBTRACT", 0.35, s), 0.0), 0.6))
+        fr = t.maprange(t.m("DIVIDE", r, R), 0.55, 1.0, 1.0, 0.0)
+        fs = t.m("MULTIPLY", t.maprange(s, -0.03, 0.04, 0.0, 1.0),
+                 t.maprange(s, t.m("SUBTRACT", self.front.outputs[0], 0.12), self.front.outputs[0], 1.0, 0.0))
+        nz = t.new("ShaderNodeTexNoise")
+        nz.noise_dimensions = "4D"
+        t.feed(nz.inputs["Vector"], P)
+        nz.inputs["Scale"].default_value = self.WW_GRAIN
+        nz.inputs["Detail"].default_value = 2.0
+        nz.inputs["Roughness"].default_value = 0.5
+        t.feed(nz.inputs["W"], t.m("MULTIPLY", tau, 6.0))
+        pockets = t.maprange(nz.outputs["Fac"], 0.3, 0.7, 0.0, 1.0)
+        decay = t.m("EXPONENT", t.m("DIVIDE", tau, -self.WW_DECAY))
+        dens = t.m("MULTIPLY", t.m("MULTIPLY", t.m("MULTIPLY", fr, fs), t.m("ADD", 0.2, t.m("MULTIPLY", pockets, 0.8))),
+                   t.m("MULTIPLY", decay, self.WW_SIGMA * strength))
+        vc = t.new("ShaderNodeVolumeCoefficients")
+        vc.inputs["Absorption Coefficients"].default_value = (0.0, 0.0, 0.0)
+        t.feed(vc.inputs["Scatter Coefficients"], t.xyz(dens, dens, dens).outputs[0])
+        vc.inputs["Anisotropy"].default_value = self.WW_G
+        # the diffused light, standing for the scatterings the render does not follow
+        self.light = t.new("ShaderNodeValue")
+        self.light.name = self.light.label = "ww-light"
+        _, _, pz = t.sep(P)
+        depth = t.m("MAXIMUM", t.m("MULTIPLY", pz, -1.0), 0.0)
+        em = []
+        for c in range(3):
+            L = t.m("EXPONENT", t.m("MULTIPLY", depth, -(SS.WATER_ABSORB[c] + self.WW_DIM)))
+            L = t.m("MULTIPLY", L, self.WW_DIFFUSE * self.E[c] / math.pi)
+            em.append(t.m("MULTIPLY", t.m("MULTIPLY", L, dens), self.light.outputs[0]))
+        t.feed(vc.inputs["Emission Coefficients"], t.xyz(*em).outputs[0])
+        out = t.new("ShaderNodeOutputMaterial")
+        t.feed(out.inputs["Volume"], vc.outputs[0])
+        return mat
+    def at(self, t, cam, light=1.0):
+        tau = t - self.entry["t"]
+        if tau < 0.0 or tau > 2.5:
+            self.ob.hide_render = True
+            return 0.0
+        self.ob.hide_render = False
+        self.light.outputs[0].default_value = light
+        s_cam = (cam - self.o).dot(self.e)
+        front = min(self.WW_DEPTH, s_cam + 0.06 + 0.12 * math.exp(-tau / 0.02))
+        self.clock.outputs[0].default_value = tau
+        self.front.outputs[0].default_value = front
+        return front
+
+class Fizz:
+    """The white water's resolved bubbles: air torn from the cavity's walls and the splash as the camera goes in,
+    in the size spectrum Deane and Stokes (2002) measured under breaking waves (number per radius falling as r to
+    the -3/2 below the Hinze scale, about a millimetre, and as r to the -10/3 above it), 0.1 to 4 mm. They are
+    released round the camera's path as its port passes each depth, from the surface down to FZ_DEPTH: most round
+    the camera and just behind its port, some pushed ahead of it; each starts with a share of the camera's
+    velocity, an outward push and a turbulent swirl, and relaxes within FZ_TAU to its rise speed. The camera
+    soon outruns them. Their material is the bubbles' own."""
+    FZ_DEPTH, FZ_TAU, FZ_SWIRL = 0.5, 0.035, 0.7
+    def __init__(self, entry, states, probe, count, seed=31):
+        self.mat = bubble_material()
+        self.ob = make_instancer("fizz", self.mat, subdiv=2)
+        rng = np.random.default_rng(seed)
+        n = int(count)
+        self.n = n
+        e = entry["dir"]
+        self.e = np.array(e[:])
+        o = entry["loc"] + e * (PORT * math.sin(math.radians(-C_PITCH_E)) / max(0.2, -e.z))
+        o.z = probe.height(round(entry["t"] * FPS) / FPS, o.x, o.y)
+        self.o = np.array(o[:])
+        # the port's progress along the axis, and the camera's speed, against time
+        ts = np.array([s["t"] for s in states])
+        prog = np.array([(np.array(s["loc"][:]) - self.o) @ self.e + PORT for s in states])
+        speed = np.array([s["vel"].length for s in states])
+        after = ts >= entry["t"] - 0.01
+        ts, prog, speed = ts[after], prog[after], speed[after]
+        # sizes: a piecewise power law, inverted
+        r0, rh, r1 = 1e-4, 1e-3, 4e-3
+        a1, a2 = 1.5, 10.0 / 3.0
+        m1 = (rh ** (1 - a1) - r0 ** (1 - a1)) / (1 - a1)
+        m2 = rh ** (a2 - a1) * (r1 ** (1 - a2) - rh ** (1 - a2)) / (1 - a2)
+        u = rng.random(n)
+        lo = u < m1 / (m1 + m2)
+        q = u * (m1 + m2)
+        r = np.empty(n)
+        r[lo] = (r0 ** (1 - a1) + (1 - a1) * q[lo]) ** (1 / (1 - a1))
+        r[~lo] = (rh ** (1 - a2) + (1 - a2) * (q[~lo] - m1) / rh ** (a2 - a1)) ** (1 / (1 - a2))
+        self.r = r
+        # where and when
+        s = -0.01 + self.FZ_DEPTH * rng.random(n) ** 0.7
+        # A third are the air cushion a flat port traps as it meets the water, broken into bubbles on its face and
+        # carried ahead of it until they are swept off round its edge.
+        ahead = rng.random(n) < 0.35
+        self.ts = np.interp(np.maximum(s, prog.min()), prog, ts) - 0.004 * rng.random(n)
+        lead = np.where(ahead, rng.uniform(0.01, 0.12, n), rng.uniform(-0.06, 0.0, n))
+        rho = np.where(ahead, 0.12 * np.sqrt(rng.random(n)), 0.06 + 0.24 * np.sqrt(rng.random(n)))
+        b1 = np.cross(self.e, [1.0, 0.0, 0.0])
+        b1 /= np.linalg.norm(b1)
+        b2 = np.cross(self.e, b1)
+        th = rng.uniform(0.0, 2 * math.pi, n)
+        radial = np.cos(th)[:, None] * b1 + np.sin(th)[:, None] * b2
+        self.x0 = self.o + (s + lead)[:, None] * self.e + rho[:, None] * radial
+        vcam = np.interp(self.ts, ts, speed)
+        share = np.where(ahead, rng.uniform(0.85, 1.0, n), rng.uniform(0.2, 0.7, n))
+        self.v0 = (share * vcam)[:, None] * self.e + rng.uniform(0.5, 1.5, n)[:, None] * radial \
+                  + rng.normal(0.0, self.FZ_SWIRL, (n, 3))
+        self.rise = np.minimum(0.25, 0.136 * (r / 2.5e-4) ** 2)
+        self.probe, self.entry = probe, entry
+        print("FIZZ %d bubbles, radius %.2f..%.1f mm (median %.2f mm, %d over 1 mm), released %.4f..%.4f s, %d ahead"
+              % (n, 1e3 * r.min(), 1e3 * r.max(), 1e3 * float(np.median(r)), int((r > 1e-3).sum()), self.ts.min(),
+                 self.ts.max(), int(ahead.sum())), flush=True)
+    def positions(self, t):
+        tau = t - self.ts
+        live = tau >= 0
+        tau = np.maximum(tau, 0.0)[:, None]
+        w = np.zeros((self.n, 3))
+        w[:, 2] = self.rise
+        X = self.x0 + w * tau + (self.v0 - w) * self.FZ_TAU * (1 - np.exp(-tau / self.FZ_TAU))
+        surf = self.probe.height(round(t * FPS) / FPS, self.o[0], self.o[1])
+        live &= X[:, 2] < surf - self.r
+        return X, live
+    def at(self, t):
+        X, live = self.positions(t)
+        r = self.r[live]
+        set_points(self.ob, X[live], np.stack([r, r, r], -1))
+        self.ob.hide_render = not bool(live.any())
+        return int(live.sum())
+
+class Shafts:
+    """The sun's light under the moving surface, focused by it. Cycles's caustics through a specular surface lit by
+    a sun the size of the real one do not converge, so the focusing is traced here: per frame, the surface's
+    ripples (the same node graph and clock as the material's bump, every octave drawn) and its swells (the same
+    Ocean modifier) are sampled on a grid SH_H apart over the water in front of the camera; the sun is refracted
+    through each grid point's slope by Snell's law, weighted by Fresnel's transmittance and the facet's
+    foreshortening, and followed down to SH_DEPTHS, where the rays are binned and smoothed by one bin. A bin's count
+    over a flat surface's is the irradiance there over a flat surface's: 1 everywhere under a flat sea, more in the
+    net where rays converge, less between. Each depth's map is kept by where the flat sea's refracted sun ray
+    through that point meets the surface, so that the water sun, whose shadow rays already pass the surface only
+    along that ray, is coloured by the map as they cross it: the depth is the shadow ray's length times the ray's
+    cosine, interpolated between the depths, faded to 1 at the surface (where nothing has focused yet) and below
+    the deepest. Approximations: geometric optics; the sun a point but for the one-bin blur (its 0.4-degree disc
+    blurs less than a bin above 3 m); each ray's light carried to the camera as if it travelled along the mean
+    refracted direction (rays deviate from it by a few degrees); the swell's slope taken from its height field
+    without its horizontal shift."""
+    SH_H = 0.02
+    SH_DEPTHS = tuple(0.25 * 1.6 ** k for k in range(8))      # 0.25 .. 6.7 m
+    SH_FAR = 15.0                                           # m: the net faded to 1 here
+    SH_AHEAD, SH_SIDE, SH_EDGE = (-3.0, 15.0), 7.0, 0.8      # m: the region round the camera, and its faded border
+    SH_SWELL_H = 0.25
+    # Seawater's particles scatter mostly within a few degrees of forward (Petzold's measurements; an equivalent
+    # Henyey-Greenstein g of about 0.92), and that sharp forward peak is what carries shafts to an eye looking
+    # towards the sun. The still's water, one g of 0.8 calibrated for its colour, has none; this adds a particulate
+    # share, SH_B a metre with g SH_G, as its own medium from SH_TOP below the mean surface (under the troughs).
+    SH_B, SH_G, SH_TOP = 0.05, 0.92, -0.6
+    def __init__(self, sea_mat, wsun, ctx, debug=None, medium=None):
+        az = ctx["az"]
+        self.debug = debug
+        self.ea = np.array([math.cos(az), math.sin(az)])
+        self.eb = np.array([-math.sin(az), math.cos(az)])
+        h = self.SH_H
+        self.na = int(round((self.SH_AHEAD[1] - self.SH_AHEAD[0]) / h)) + 1
+        self.nb = int(round(2 * self.SH_SIDE / h)) + 1
+        self.k = ctx["ocean"]["k"]
+        d = np.array(wsun.d[:])
+        s = np.array(ctx["sun"]["sun"][:])
+        s /= np.linalg.norm(s)
+        self.d3 = np.array([d[:2] @ self.ea, d[:2] @ self.eb, d[2]])
+        self.s3 = np.array([s[:2] @ self.ea, s[:2] @ self.eb, s[2]])
+        self.T_flat = self.fresnel_t(np.array([s[2]]))[0]
+        rip = ctx["rip"]
+        # the ripples' heights, by the material's own graph, on a grid of points moved each frame
+        ng = bpy.data.node_groups.new("shaft-ripples", "GeometryNodeTree")
+        ng.interface.new_socket("Geometry", in_out="INPUT", socket_type="NodeSocketGeometry")
+        ng.interface.new_socket("Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry")
+        t = SS.Tree(ng)
+        gi, go = t.new("NodeGroupInput"), t.new("NodeGroupOutput")
+        self.clock = t.new("ShaderNodeValue")
+        hgt = SS.ripple_height(t, t.new("GeometryNodeInputPosition").outputs[0], rip["wind_dir"], rip["q"], rip["amp"],
+                               None, self.clock.outputs[0], rip["drift"], rip["evolve"])
+        sp = t.new("GeometryNodeSetPosition")
+        t.feed(sp.inputs["Geometry"], gi.outputs[0])
+        t.feed(sp.inputs["Offset"], t.xyz(0.0, 0.0, hgt).outputs[0])
+        t.feed(go.inputs[0], sp.outputs[0])
+        me = bpy.data.meshes.new("shaft-grid")
+        me.vertices.add(self.na * self.nb)
+        self.grid = bpy.data.objects.new("shaft-grid", me)
+        bpy.context.scene.collection.objects.link(self.grid)
+        self.grid.modifiers.new("ripples", "NODES").node_group = ng
+        self.grid.hide_render = True
+        # the swells, on a coarser grid with the Ocean modifier
+        hs = self.SH_SWELL_H
+        self.nas = int(math.ceil((self.SH_AHEAD[1] - self.SH_AHEAD[0]) / hs)) + 4
+        self.nbs = int(math.ceil(2 * self.SH_SIDE / hs)) + 4
+        me2 = bpy.data.meshes.new("shaft-swell")
+        me2.vertices.add(self.nas * self.nbs)
+        self.swell = bpy.data.objects.new("shaft-swell", me2)
+        bpy.context.scene.collection.objects.link(self.swell)
+        self.swell.hide_render = True
+        self.swell_mod = SS.ocean_modifier(self.swell, ctx["wind_dir"])
+        # the maps: eight depths in the channels of two float images
+        self.img = []
+        for i in range(2):
+            im = bpy.data.images.new("shaft-net-%d" % i, self.na, self.nb, alpha=True, float_buffer=True)
+            im.colorspace_settings.name = "Non-Color"
+            im.alpha_mode = "CHANNEL_PACKED"
+            im.pixels.foreach_set(np.ones(self.na * self.nb * 4, np.float32))
+            self.img.append(im)
+        self.material(sea_mat, wsun)
+        self.last = None
+        # the particulate medium
+        self.b = self.SH_B if medium is None else medium
+        self.box = None
+        if self.b > 0:
+            bm = bmesh.new()
+            bmesh.ops.create_cube(bm, size=1.0)
+            for vt in bm.verts:
+                vt.co.x *= 80.0
+                vt.co.y *= 80.0
+                vt.co.z = self.SH_TOP - (0.5 - vt.co.z) * 20.0
+            me3 = bpy.data.meshes.new("particles")
+            bm.to_mesh(me3)
+            bm.free()
+            self.box = bpy.data.objects.new("particles", me3)
+            bpy.context.scene.collection.objects.link(self.box)
+            pm = bpy.data.materials.new("particles")
+            pn = pm.node_tree
+            pn.nodes.clear()
+            vc = pn.nodes.new("ShaderNodeVolumeCoefficients")
+            vc.inputs["Absorption Coefficients"].default_value = (0.0, 0.0, 0.0)
+            vc.inputs["Scatter Coefficients"].default_value = (self.b, self.b, self.b)
+            vc.inputs["Anisotropy"].default_value = self.SH_G
+            po = pn.nodes.new("ShaderNodeOutputMaterial")
+            pn.links.new(vc.outputs[0], po.inputs["Volume"])
+            try:
+                pm.cycles.homogeneous_volume = True
+            except Exception:
+                pass
+            me3.materials.append(pm)
+            no_deform_blur(self.box)
+            self.box.hide_render = True
+            print("SHAFTS particulate medium %.3f /m, g %.2f, from %.1f m down" % (self.b, self.SH_G, self.SH_TOP), flush=True)
+        print("SHAFTS a %d x %d grid %.0f cm apart (%.0f x %.0f m), depths %s m; refracted sun %.1f deg up; flat"
+              " transmittance %.3f" % (self.na, self.nb, 100 * h, self.SH_AHEAD[1] - self.SH_AHEAD[0], 2 * self.SH_SIDE,
+                                       ", ".join("%.2f" % z for z in self.SH_DEPTHS), math.degrees(math.asin(d[2])),
+                                       self.T_flat), flush=True)
+    @staticmethod
+    def fresnel_t(ci):
+        ct = np.sqrt(np.maximum(0.0, 1.0 - (1.0 - ci ** 2) / N_WATER ** 2))
+        rs = ((ci - N_WATER * ct) / (ci + N_WATER * ct)) ** 2
+        rp = ((N_WATER * ci - ct) / (N_WATER * ci + ct)) ** 2
+        return 1.0 - 0.5 * (rs + rp)
+    def material(self, sea_mat, wsun):
+        nt = sea_mat.node_tree
+        t = SS.Tree(nt)
+        tr = next(nd for nd in nt.nodes if nd.bl_idname == "ShaderNodeBsdfTransparent")
+        geo = t.new("ShaderNodeNewGeometry")
+        lp = t.new("ShaderNodeLightPath")
+        z = t.m("MULTIPLY", lp.outputs["Ray Length"], float(self.d3[2]))
+        px, py, _ = t.sep(geo.outputs["Position"])
+        a = t.m("ADD", t.m("MULTIPLY", px, float(self.ea[0])), t.m("MULTIPLY", py, float(self.ea[1])))
+        b = t.m("ADD", t.m("MULTIPLY", px, float(self.eb[0])), t.m("MULTIPLY", py, float(self.eb[1])))
+        self.a0, self.b0, self.weight = t.new("ShaderNodeValue"), t.new("ShaderNodeValue"), t.new("ShaderNodeValue")
+        for nd, nm in ((self.a0, "shaft-a0"), (self.b0, "shaft-b0"), (self.weight, "shaft-weight")):
+            nd.name = nd.label = nm
+        u = t.m("MULTIPLY", t.m("ADD", t.m("DIVIDE", t.m("SUBTRACT", a, self.a0.outputs[0]), self.SH_H), 0.5), 1.0 / self.na)
+        v = t.m("MULTIPLY", t.m("ADD", t.m("DIVIDE", t.m("SUBTRACT", b, self.b0.outputs[0]), self.SH_H), 0.5), 1.0 / self.nb)
+        uv = t.xyz(u, v, 0.0).outputs[0]
+        C = []
+        for im in self.img:
+            tex = t.new("ShaderNodeTexImage")
+            tex.image = im
+            tex.interpolation = "Linear"
+            tex.extension = "EXTEND"
+            t.feed(tex.inputs["Vector"], uv)
+            sep = t.new("ShaderNodeSeparateColor")
+            t.feed(sep.inputs[0], tex.outputs["Color"])
+            C += [sep.outputs[0], sep.outputs[1], sep.outputs[2], tex.outputs["Alpha"]]
+        sidx = t.m("MINIMUM", t.m("MAXIMUM", t.m("DIVIDE", t.m("LOGARITHM", t.m("DIVIDE", t.m("MAXIMUM", z, 1e-3),
+                                                                                    self.SH_DEPTHS[0]), math.e),
+                                                     math.log(1.6)), 0.0), float(len(self.SH_DEPTHS) - 1))
+        raw = None
+        for k, ck in enumerate(C):
+            wk = t.m("MAXIMUM", t.m("SUBTRACT", 1.0, t.m("ABSOLUTE", t.m("SUBTRACT", sidx, float(k)))), 0.0)
+            term = t.m("MULTIPLY", wk, ck)
+            raw = term if raw is None else t.m("ADD", raw, term)
+        near = t.m("DIVIDE", z, self.SH_DEPTHS[0], clamp=True)
+        far = t.m("SUBTRACT", 1.0, t.m("DIVIDE", t.m("SUBTRACT", z, self.SH_DEPTHS[-1]), self.SH_FAR - self.SH_DEPTHS[-1],
+                                       clamp=True))
+        dev = t.m("MULTIPLY", t.m("MULTIPLY", t.m("SUBTRACT", raw, 1.0), near), far)
+        col = t.m("ADD", 1.0, t.m("MULTIPLY", t.m("MULTIPLY", dev, wsun.aimed), self.weight.outputs[0]))
+        t.feed(tr.inputs["Color"], t.xyz(col, col, col).outputs[0])
+    def region(self, cam):
+        h = self.SH_H
+        ca, cb = float(np.array(cam[:2]) @ self.ea), float(np.array(cam[:2]) @ self.eb)
+        a0 = math.floor((ca + self.SH_AHEAD[0]) / h) * h
+        b0 = math.floor((cb - self.SH_SIDE) / h) * h
+        return a0, b0
+    def update(self, t, cam, w, medium=True):
+        self.weight.outputs[0].default_value = w
+        if self.box is not None:
+            self.box.hide_render = not (w > 0.0 and medium)
+        if w <= 0.0:
+            return 0.0
+        key = (round(t, 6), self.region(cam))
+        if key == self.last:
+            return 0.0
+        t0 = time.time()
+        a0, b0 = key[1]
+        h, na, nb = self.SH_H, self.na, self.nb
+        self.a0.outputs[0].default_value = a0
+        self.b0.outputs[0].default_value = b0
+        if self.debug == "depth":
+            C = [np.full((nb, na), 0.4 + 0.2 * k) for k in range(len(self.SH_DEPTHS))]
+        else:
+            A = a0 + h * np.arange(na)
+            B = b0 + h * np.arange(nb)
+            AA, BB = np.meshgrid(A, B)
+            XY = AA[..., None] * self.ea + BB[..., None] * self.eb
+            P = np.concatenate([XY, np.zeros((nb, na, 1))], -1).reshape(-1, 3)
+            me = self.grid.data
+            me.vertices.foreach_set("co", P.astype(np.float32).ravel())
+            me.update()
+            self.clock.outputs[0].default_value = t
+            hr = SS.ocean_offsets(self.grid, P)[:, 2].reshape(nb, na)
+            # the swells on the coarse grid, their slope interpolated to the fine one
+            hs = self.SH_SWELL_H
+            a0s, b0s = math.floor(a0 / hs) * hs - hs, math.floor(b0 / hs) * hs - hs
+            As, Bs = a0s + hs * np.arange(self.nas), b0s + hs * np.arange(self.nbs)
+            AAs, BBs = np.meshgrid(As, Bs)
+            XYs = AAs[..., None] * self.ea + BBs[..., None] * self.eb
+            Ps = np.concatenate([XYs, np.zeros((self.nbs, self.nas, 1))], -1).reshape(-1, 3)
+            self.swell.data.vertices.foreach_set("co", Ps.astype(np.float32).ravel())
+            self.swell.data.update()
+            self.swell_mod.time = SS.OCEAN_TIME + t
+            eta = SS.ocean_offsets(self.swell, Ps)[:, 2].reshape(self.nbs, self.nas) * self.k
+            gb_s, ga_s = np.gradient(eta, hs)
+            fa = (A - a0s) / hs
+            fb = (B - b0s) / hs
+            def interp(Fd):
+                i0 = np.clip(np.floor(fa).astype(int), 0, self.nas - 2)
+                j0 = np.clip(np.floor(fb).astype(int), 0, self.nbs - 2)
+                xa, xb = (fa - i0)[None, :], (fb - j0)[:, None]
+                return ((1 - xa) * (1 - xb) * Fd[j0][:, i0] + xa * (1 - xb) * Fd[j0][:, i0 + 1]
+                        + (1 - xa) * xb * Fd[j0 + 1][:, i0] + xa * xb * Fd[j0 + 1][:, i0 + 1])
+            gb_r, ga_r = np.gradient(hr, h)
+            ga, gb = ga_r + interp(ga_s), gb_r + interp(gb_s)
+            nrm = np.sqrt(ga ** 2 + gb ** 2 + 1.0)
+            n = np.stack([-ga / nrm, -gb / nrm, 1.0 / nrm], -1)
+            s = self.s3
+            ci = np.clip(n @ s, 1e-3, 1.0)
+            eta_r = 1.0 / N_WATER
+            k = np.sqrt(np.maximum(0.0, 1.0 - eta_r ** 2 * (1.0 - ci ** 2)))
+            r = -eta_r * s[None, None, :] + (eta_r * ci - k)[..., None] * n
+            wgt = (ci / n[..., 2]) / s[2] * self.fresnel_t(ci) / self.T_flat
+            dz = self.d3
+            Da = r[..., 0] / -r[..., 2] + dz[0] / dz[2]
+            Db = r[..., 1] / -r[..., 2] + dz[1] / dz[2]
+            I, J = np.meshgrid(np.arange(na), np.arange(nb))
+            wf = wgt.ravel()
+            C = []
+            for z in self.SH_DEPTHS:
+                fi, fj = (I + z * Da / h).ravel(), (J + z * Db / h).ravel()
+                i0, j0 = np.floor(fi).astype(np.int64), np.floor(fj).astype(np.int64)
+                xa, xb = fi - i0, fj - j0
+                hist = np.zeros(na * nb)
+                for di, dj, ww in ((0, 0, (1 - xa) * (1 - xb)), (1, 0, xa * (1 - xb)), (0, 1, (1 - xa) * xb), (1, 1, xa * xb)):
+                    ii, jj = i0 + di, j0 + dj
+                    ok = (ii >= 0) & (ii < na) & (jj >= 0) & (jj < nb)
+                    hist += np.bincount((jj[ok] * na + ii[ok]), weights=(wf * ww)[ok], minlength=na * nb)
+                c = hist.reshape(nb, na)
+                kern = np.array([1.0, 4.0, 6.0, 4.0, 1.0]) / 16.0
+                c = np.pad(c, 2, mode="edge")
+                c = sum(kern[i] * c[:, i:i + na] for i in range(5))
+                c = sum(kern[i] * c[i:i + nb, :] for i in range(5))
+                C.append(c)
+        ea_f = SS.smoothstep(0.0, self.SH_EDGE, np.minimum(np.arange(na), na - 1 - np.arange(na)) * h)
+        eb_f = SS.smoothstep(0.0, self.SH_EDGE, np.minimum(np.arange(nb), nb - 1 - np.arange(nb)) * h)
+        fade = eb_f[:, None] * ea_f[None, :]
+        for i, im in enumerate(self.img):
+            px = np.stack([1.0 + (C[4 * i + j] - 1.0) * fade for j in range(4)], -1).astype(np.float32)
+            im.pixels.foreach_set(px.ravel())
+            im.update()
+        self.last = key
+        stats = C[4]
+        print("SHAFTS t %.4f region a %.2f b %.2f: net at %.1f m mean %.3f, 1st-99th percentile %.2f..%.2f, max %.1f; %.2f s"
+              % (t, a0, b0, self.SH_DEPTHS[4], float(stats.mean()), float(np.percentile(stats, 1)),
+                 float(np.percentile(stats, 99)), float(stats.max()), time.time() - t0), flush=True)
+        return time.time() - t0
+
+def gate_camera_rays(mat):
+    """The bubbles-only layer: the water's volume is clear to camera rays and as before to every other ray."""
+    nt = mat.node_tree
+    t = SS.Tree(nt)
+    vc = next(nd for nd in nt.nodes if nd.bl_idname == "ShaderNodeVolumeCoefficients")
+    lp = t.new("ShaderNodeLightPath")
+    keep = t.m("SUBTRACT", 1.0, lp.outputs["Is Camera Ray"])
+    for name, val in (("Absorption Coefficients", SS.WATER_ABSORB), ("Scatter Coefficients", SS.WATER_SCATTER)):
+        t.feed(vc.inputs[name], t.vm("SCALE", t.xyz(*val).outputs[0], scale=keep))
+
+def write_dithered_rgba(src, dst, seed):
+    """write_dithered, keeping the alpha channel (straight, as the 16-bit PNG holds it)."""
+    img = bpy.data.images.load(src)
+    img.colorspace_settings.name = "Non-Color"
+    img.alpha_mode = "CHANNEL_PACKED"
+    W, H, ch = img.size[0], img.size[1], img.channels
+    px = np.empty(W * H * ch, np.float32)
+    img.pixels.foreach_get(px)
+    bpy.data.images.remove(img)
+    px = px.reshape(H, W, ch).astype(np.float64)
+    if ch < 4:
+        px = np.concatenate([px[..., :3], np.ones((H, W, 1))], -1)
+    rng = np.random.default_rng(seed)
+    lv = np.clip(np.floor(px * 255.0 + 0.5 + rng.random(px.shape) - rng.random(px.shape)), 0.0, 255.0)
+    out = bpy.data.images.new("dithered", W, H, alpha=True)
+    out.alpha_mode = "CHANNEL_PACKED"
+    out.pixels.foreach_set((lv / 255.0).astype(np.float32).ravel())
+    out.filepath_raw = dst
+    out.file_format = "PNG"
+    out.save()
+    bpy.data.images.remove(out)
+    a = px[..., 3]
+    print("DITHER-RGBA %s: alpha mean %.4f, %.2f%% of pixels with any alpha" % (os.path.basename(dst), float(a.mean()),
+                                                                           100.0 * float((a > 1e-3).mean())), flush=True)
+
+def in_view(X, st, hfov, vfov):
+    """How many of the points X the camera of state `st` sees, in front of its port."""
+    if not len(X):
+        return 0
+    p = math.radians(st["pitch"])
+    d = np.array(st["dir"][:])
+    right = np.cross(d, [0.0, 0.0, 1.0])
+    right /= np.linalg.norm(right)
+    up = np.cross(right, d)
+    V = X - np.array(st["loc"][:])
+    zc = V @ d
+    ok = zc > PORT
+    return int((ok & (np.abs(V @ right) < zc * math.tan(hfov / 2)) & (np.abs(V @ up) < zc * math.tan(vfov / 2))).sum())
+
 # ---------------------------------------------------------------- the bubbles
 def bubble_material():
     mat = bpy.data.materials.new("bubble")
@@ -475,7 +1190,8 @@ class Bubbles:
         self.probe, self.entry = probe, entry
         print("BUBBLES %d (%d ahead of the lens), radius %.1f..%.1f mm (%d over 6 mm), released %.2f..%.2f s"
               % (n, int(front.sum()), 1e3 * r.min(), 1e3 * r.max(), int(big.sum()), ts.min(), ts.max()), flush=True)
-    def at(self, t):
+    def positions(self, t):
+        """The bubbles' centres at `t` and which of them are alive."""
         tau = t - self.ts
         live = tau >= 0
         tau = np.maximum(tau, 0.0)[:, None]
@@ -485,6 +1201,9 @@ class Bubbles:
         X = self.x0 + w * tau + (self.v0 - w) * self.tau * (1 - e)
         surf = self.probe.height(round(t * FPS) / FPS, self.entry["loc"].x, self.entry["loc"].y)
         live &= X[:, 2] < surf - self.r
+        return X, live
+    def at(self, t):
+        X, live = self.positions(t)
         X, r, fl = X[live], self.r[live], self.flat[live]
         me = bpy.data.meshes.new("bubbles")
         me.vertices.add(len(X))
@@ -541,6 +1260,7 @@ class WaterSun:
         self.factor = T * ci / ct                                       # normal irradiance in the water over the air's
         Ew = [e * self.factor for e in E]
         d = Vector((sun_dir.x, sun_dir.y, 0.0)).normalized() * math.sin(zw) + Vector((0, 0, math.cos(zw)))
+        self.d = d                       # towards the sun, in the water
         ld = bpy.data.lights.new("water-sun", "SUN")
         peak = max(Ew)
         ld.color = tuple(e / peak for e in Ew)
@@ -569,7 +1289,8 @@ class WaterSun:
         t.feed(dn.inputs[0], geo.outputs["Incoming"])
         dn.inputs[1].default_value = tuple(-c for c in d)
         aimed = t.m("GREATER_THAN", dn.outputs["Value"], math.cos(math.radians(1.0)))
-        through = t.m("ADD", t.m("SUBTRACT", 1.0, self.gate.outputs[0]), t.m("MULTIPLY", self.gate.outputs[0], aimed))
+        self.aimed = aimed               # path C's shafts colour these rays
+        through =t.m("ADD", t.m("SUBTRACT", 1.0, self.gate.outputs[0]), t.m("MULTIPLY", self.gate.outputs[0], aimed))
         t.feed(mix, t.m("MULTIPLY", shadow, through))
         print("WATER SUN irradiance in air %.4g %.4g %.4g (normal); transmittance %.3f, in the water %.3f of it, %.1f deg up"
               % (E[0], E[1], E[2], T, self.factor, 90.0 - math.degrees(zw)), flush=True)
@@ -639,6 +1360,7 @@ class WaterSun:
         self.glint.visible_glossy = self.glint.visible_transmission = True
         coll = bpy.data.collections.new("water-sun-receivers")
         coll.objects.link(ob)
+        self.glint_coll = coll           # path C's fizz joins it
         self.glint.light_linking.receiver_collection = coll
         self.sc.collection.objects.link(self.glint)
         self.glint.hide_render = True
@@ -656,8 +1378,8 @@ def main():
     global PORT
     args = parse()
     PORT = args.port
-    T = PATH_SECONDS[args.path]
-    n = int(round(T * FPS))
+    T = PATH_SECONDS.get(args.path)
+    n = int(round(T * FPS)) if T else None
     prefix = os.path.abspath(args.out)
     os.makedirs(os.path.dirname(prefix), exist_ok=True)
     ctx = SS.build(args, prefix + ".png", ripple_motion=ripple_motion, fan_res=(1920, 1080))
@@ -684,12 +1406,17 @@ def main():
     if args.water_sun != "off" and args.light == "trick":
         wsun = WaterSun(sc, ctx["sun"]["sun"], mat)
         SS.stage("water sun")
-    centre = (0.0, 0.0) if args.path == "A" else (math.cos(az) * 1.0, math.sin(az) * 1.0)
-    probe = Probe(centre, wind_dir, k)
-    if args.path == "A":
-        states, entry = path_A(probe, n)
+    if args.path == "C":
+        probe = Probe((math.cos(az) * 2.0, math.sin(az) * 2.0), wind_dir, k, n=81, step=0.25)
+        states, entry = path_C(probe, az)
+        n = len(states)
     else:
-        states, entry = path_B(probe, n, az)
+        centre = (0.0, 0.0) if args.path == "A" else (math.cos(az) * 1.0, math.sin(az) * 1.0)
+        probe = Probe(centre, wind_dir, k)
+        if args.path == "A":
+            states, entry = path_A(probe, n)
+        else:
+            states, entry = path_B(probe, n, az)
     cam.animation_data_clear()
     key_camera(cam, states, az)
     cam.data.clip_start = PORT
@@ -717,19 +1444,81 @@ def main():
             track = {int(k): v for k, v in json.load(fh).items() if k.isdigit()}
         print("AE from the track %s" % args.ae_track, flush=True)
     bubbles = None
-    if args.path == "B" and args.bubbles > 0:
+    if args.path in ("B", "C") and args.bubbles > 0:
         bubbles = Bubbles(states, entry, probe, 6000 * args.bubbles)
         if wsun is not None:
             wsun.light_bubbles(bubbles.ob)
     ng = sc.compositing_node_group
     glare = [nd for nd in ng.nodes if nd.bl_idname == "CompositorNodeGlare"]
+    spray = ww = shafts = fizz = None
+    if args.path == "C":
+        if args.spray > 0 and args.layer == "full":
+            spray = Spray(entry, probe, 2500 * args.spray)
+        if args.white_water > 0:
+            ww = WhiteWater(entry, probe, args.white_water, wsun, ctx["sun"])
+            fizz = Fizz(entry, states, probe, 40000 * args.white_water)
+            if wsun is not None and getattr(wsun, "glint_coll", None) is not None:
+                wsun.glint_coll.objects.link(fizz.ob)
+        if wsun is not None and args.shafts == "on":
+            shafts = Shafts(mat, wsun, ctx, args.shaft_debug, args.shaft_medium)
+        if args.layer == "bubbles":
+            # the bubbles alone: the film transparent, the sea unseen by the camera, its water clear to camera rays
+            sc.render.film_transparent = True
+            sea.ob.visible_camera = False
+            gate_camera_rays(mat)
+            comb = next(nd for nd in ng.nodes if nd.bl_idname == "CompositorNodeCombineColor")
+            rl = next(nd for nd in ng.nodes if nd.bl_idname == "CompositorNodeRLayers")
+            ng.links.new(rl.outputs["Alpha"], comb.inputs[3])
+            # The denoiser does not touch alpha, and the unbiased volume sampler's transmittance through the white
+            # water is a random estimate: its alpha came out grainy. Ray marching estimates it step by step.
+            try:
+                sc.cycles.volume_biased = True
+            except Exception as e:
+                print("WARN volume_biased:", e, flush=True)
+            print("LAYER bubbles: film transparent, the sea hidden from the camera, its water clear to camera rays; volumes"
+                  " ray-marched", flush=True)
+        # the camera, frame by frame, for the hand-over to the theatre
+        vfov, hfov = ctx["vfov"], ctx["hfov"]
+        rows = []
+        for f, st in enumerate(states):
+            nv = nfz = 0
+            if bubbles:
+                X, live = bubbles.positions(st["t"])
+                nv = in_view(X[live], st, hfov, vfov)
+            if fizz:
+                X, live = fizz.positions(st["t"])
+                nfz = in_view(X[live], st, hfov, vfov)
+            st["in_view"], st["fizz_in_view"] = nv, nfz
+            rows.append({"f": f, "tf": st["tf"], "t": st["t"], "loc": list(st["loc"]), "surf": st["surf"],
+                         "depth": st["surf"] - st["loc"].z, "pitch": st["pitch"], "dir": list(st["dir"]),
+                         "speed": st["vel"].length, "under": st["under"], "bubbles_in_view": nv, "fizz_in_view": nfz})
+        with open(prefix + "-camera.json", "w") as fh:
+            json.dump({"entry": {"t": entry["t"], "frame": entry["frame"], "hold": entry["hold"], "v": entry["v"],
+                                 "beta_deg": math.degrees(entry["beta"])},
+                       "hfov_deg": math.degrees(hfov), "vfov_deg": math.degrees(vfov), "lens_mm": args.lens,
+                       "still_exposure": exposure, "ae_target": AE_TARGET, "frames": rows}, fh, indent=0)
+        dense = max(range(n), key=lambda f: states[f]["in_view"])
+        print("CAMERA-C written; the densest bubble frame %d (%d in view); last frame with a bubble in view %d"
+              % (dense, states[dense]["in_view"], max([f for f in range(n) if states[f]["in_view"] > 0] or [-1])), flush=True)
+        for f in range(n):
+            st = states[f]
+            if f % 3 == 0 or abs(f - entry["frame"]) <= 12:
+                print("PATHC f %3d tf %.3f t %.4f cam %+.3f %+.3f %+.3f depth %+.3f pitch %+.1f speed %.2f under %.2f bubbles %d"
+                      " fizz %d" % (f, st["tf"], st["t"], st["loc"].x, st["loc"].y, st["loc"].z, st["surf"] - st["loc"].z,
+                                    st["pitch"], st["vel"].length, st["under"], st["in_view"], st["fizz_in_view"]), flush=True)
+        if args.dry:
+            print("DRY run: nothing rendered", flush=True)
+            return
     SS.stage("paths")
     print("RENDER %s, %d frames of %d, %dx%d, %d samples, port %.2f m, shutter %.2f, under-stops %s, light %s"
           % (args.path, len(frame_list(args.frames, n, args.step)), n, ctx["rx"], ctx["ry"], args.samples, args.port,
              args.shutter, args.under_stops, args.light), flush=True)
     SS.set_format(sc.render.image_settings, "PNG")
     sc.render.image_settings.color_depth = "16"
+    if args.layer == "bubbles":
+        sc.render.image_settings.color_mode = "RGBA"
     times, used, ae, f_prev = [], {}, 0.0, None
+    metered = {}
     if args.ae_resume:
         # carry the metering on from an earlier run of the frames before these
         with open(args.ae_resume) as fh:
@@ -747,6 +1536,13 @@ def main():
         if wsun is not None:
             ws = 1.0 if args.water_sun == "always" else st["under"]
             wsun.set(ws)
+        extra = ""
+        if args.path == "C":
+            ns = spray.at(st["t"], st["under"] < 1.0) if spray else 0
+            front = ww.at(st["t"], st["loc"]) if ww else 0.0
+            nf = fizz.at(st["t"]) if fizz else 0
+            tsh = shafts.update(st["t"], st["loc"], ws, args.layer == "full") if shafts else 0.0
+            extra = " spray %d white-water front %.2f fizz %d shafts %.2f s" % (ns, front, nf, tsh)
         if track is not None:
             ae = track[min(track, key=lambda g: abs(g - f))]
         elif args.under_stops is not None:
@@ -765,8 +1561,21 @@ def main():
         sc.render.filepath = master
         bpy.ops.render.render(write_still=True)
         t2 = time.time()
-        SS.write_dithered(master, "%s%04d.png" % (prefix, f), f)
+        if args.layer == "bubbles":
+            write_dithered_rgba(master, "%s%04d.png" % (prefix, f), f)
+        else:
+            SS.write_dithered(master, "%s%04d.png" % (prefix, f), f)
         m = meter(master)
+        metered[f] = (used[f], m, st["under"])
+        if args.shaft_ab and shafts is not None and ws > 0:
+            # the same frame without the shafts, for comparison
+            shafts.weight.outputs[0].default_value = 0.0
+            sc.render.filepath = prefix + "-noshafts-master-16bit.png"
+            ta = time.time()
+            bpy.ops.render.render(write_still=True)
+            print("SHAFT-AB frame %d: with %.2f s, without %.2f s (render only)" % (f, t2 - t1, time.time() - ta), flush=True)
+            SS.write_dithered(sc.render.filepath, "%s%04d-noshafts.png" % (prefix, f), f)
+            shafts.weight.outputs[0].default_value = ws
         if track is None and args.under_stops is None:
             # the automatic exposure: under water, towards the theatre's level, lagging AE_LAG
             want = st["under"] * min(4.0, max(-4.0, math.log2(AE_TARGET / max(m / 2.0 ** ae, 1e-6))))
@@ -778,13 +1587,17 @@ def main():
         t3 = time.time()
         times.append((t1 - t0, t2 - t1, t3 - t0))
         print("FRAME %3d t %.3f hrel %+.3f pitch %+.1f under %.2f water-sun %.2f exposure %+.2f metered %.4f bubbles %d: sea %.2f s,"
-              " render %.2f s, all %.2f s" % (f, st["t"], st["hrel"], st["pitch"], st["under"], ws, used[f], m, nb, t1 - t0, t2 - t1,
-                                             t3 - t0), flush=True)
+              " render %.2f s, all %.2f s%s" % (f, st["t"], st["hrel"], st["pitch"], st["under"], ws, used[f], m, nb, t1 - t0,
+                                               t2 - t1, t3 - t0, extra), flush=True)
     if used and not args.ae_track:
         out = {str(k): v for k, v in sorted(used.items())}
         out.update({"next": ae, "last": f_prev})
         with open(prefix + "-exposure-%04d-%04d.json" % (min(used), max(used)), "w") as fh:
             json.dump(out, fh, indent=0)
+    if metered and args.path == "C":
+        # each frame's exposure change, its metering and its share under water, for grading the exposure track
+        with open(prefix + "-metered-%04d-%04d.json" % (min(metered), max(metered)), "w") as fh:
+            json.dump({str(k): v for k, v in sorted(metered.items())}, fh, indent=0)
     if times:
         a = np.array(times)
         print("TIMES %d frames: sea and set-up %.2f s, render %.2f s, whole frame %.2f s on average; total %.1f s"
