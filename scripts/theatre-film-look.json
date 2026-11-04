@@ -169,11 +169,13 @@
     "EVOSIM_THEATRE_ALGA_RAMP_STOP_A": {
       "value": "0.0697,0.0755,0.0169",
       "perWorld": "scripts/theatre-world-stops.tsv",
+      "perWorldColumn": "stop_a",
       "ruling": "the owner's rulings of 2026-10-29: the blades' stops per world; trial d's stand for a world with no row, which is calibrated before it is filmed"
     },
     "EVOSIM_THEATRE_ALGA_RAMP_STOP_B": {
       "value": "0.0280,0.0303,0.0068",
       "perWorld": "scripts/theatre-world-stops.tsv",
+      "perWorldColumn": "stop_b",
       "ruling": "as ALGA_RAMP_STOP_A"
     },
     "EVOSIM_THEATRE_ALGA_ROUND_TARGET": {
