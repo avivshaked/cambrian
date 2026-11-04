@@ -53,8 +53,12 @@ which ends before any grazer is founded.
 **Nothing overshoots.** No arm's leaves fall below half the control's in any 3,000 s bin. The lowest ratio is 0.56,
 in the half-rate arm.
 
-**Body plans keep their variety.** The bred grazers' part counts have a median of 4 in every arm and bin, apart from
-the quarter-rate arm's last bin at 3. The upper quartile is 4 or 5, and every arm reaches 8 parts.
+~~**Body plans keep their variety.** The bred grazers' part counts have a median of 4 in every arm and bin, apart from
+the quarter-rate arm's last bin at 3. The upper quartile is 4 or 5, and every arm reaches 8 parts.~~
+
+*Corrected on 2026-11-04 by the coordinator: these numbers are not part counts. `part-count-read.py` read `pt` from the
+birth rows, and that field is the patch a body was born in. The script now refuses to run. The screen
+never measured the variety of body plans. The rule's answer above does not use it.*
 
 ## Against the predictions
 
@@ -64,7 +68,7 @@ the quarter-rate arm's last bin at 3. The upper quartile is 4 or 5, and every ar
 | The slow share falls with S: 0.28, 0.25, 0.23, 0.22 | Failed: 0.20, 0.21, 0.16, 0.19, with no trend |
 | All four pass D222 | Three pass; today's arm misses test 2 by 0.004 |
 | The rule picks S = 0.25 | Failed: S = 0.25 misses the margin by 0.006, and no S is picked |
-| The tenth-rate arm's part counts sit within one part of today's | Held |
+| The tenth-rate arm's part counts sit within one part of today's | ~~Held~~ Not measured: the read counted birth patches (corrected 2026-11-04) |
 | No arm's slow share is under 0.17 | Failed narrowly: S = 0.25 is at 0.164 |
 
 ## What it means
@@ -83,6 +87,6 @@ That points at the brain a child is born with, which fitting the brain at birth 
 | test 2 | `r62g-windows.txt`, `r62g-seasons.txt` |
 | never ate, age at death | `grazer-tally-*.txt` |
 | overshoot | `overshoot-*.txt`, against `r62cs-w500-6201` |
-| part counts | `part-count.txt` |
+| ~~part counts~~ birth patches, not part counts | `part-count.txt` |
 | the unbound sources make most changes | inference, not measured |
 | test 2's miss is noise | inference, on one seed |

@@ -4,10 +4,17 @@ is a body born with atk 1 and ink 1 and a parent (p >= 0), as grazer-tally.py de
 of distinct part counts in each bin.
 
 Usage: python -I scripts/reads/part-count-read.py RUN [RUN ...] [--bin 3000] [--end 24000]
+
+It refuses to run. `pt` on a birth row is the patch the body was born in (LineageEvent.Patch,
+src/Evosim.Core/Ecosystem/LineageEvent.cs), not its part count, so everything it printed counted patches (found
+2026-11-04). The grown part count of a living body is in scripts/what-evolved.py's section 3, from the genomes.
 """
 import argparse
 import json
 import os
+import sys
+
+sys.exit("part-count-read.py: `pt` is the birth patch, not the part count; use scripts/what-evolved.py section 3")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("runs", nargs="+")
