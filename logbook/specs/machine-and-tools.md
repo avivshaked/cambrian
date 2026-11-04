@@ -354,6 +354,11 @@ The root file's rules still apply. The entries below were moved word for word, s
 - **The owner's guard hook** (`~/.claude/hooks/guard.ps1`) asks before a force push, a history
   rewrite, or a write outside the git repository, the memory folders and `%TEMP%\claude\`. Its
   prompt is the owner's to answer.
+- **Push from the PowerShell tool, not from Git Bash.** On 2026-11-04 `git push origin main` from
+  the Bash tool failed with "Permission denied (publickey)", because Git Bash's ssh does not reach
+  the key GitHub expects. The same git from the PowerShell tool listed the remote and pushed, and the
+  pre-push hook ran as usual. Test the reach with `git ls-remote --heads origin main`, which sends
+  nothing.
 - **A refusal in one session is approved in that session** (2026-10-10). Claude Code's auto-mode
   classifier refused the speed agent's script for a several-hour unattended card chain, launched on the
   coordinator's word. The owner then said yes twice, in the coordinator's session, and neither yes
