@@ -53,6 +53,20 @@ namespace Evosim.Theatre
         /// <summary>The word in <c>run.json</c> this replay is for.</summary>
         public const string EngineName = "dynamics";
 
+        /// <summary>
+        /// The word the graphics card's farm writes (<c>Evosim.Farm.Gpu</c>): the same Core world and the same pool and
+        /// checkpoint files, stepped on the card. This replay steps it on the processor, so it is a cousin of such a run by
+        /// construction. A checkpoint restore is labelled one already, and a founding open meets the identity check against
+        /// the run's own samples, which reports where the two part (the coordinator's ruling of 2026-10-30, for the family
+        /// drawing's portraits of r63s).
+        /// </summary>
+        public const string CardEngineName = "gpu";
+
+        /// <summary>Whether this replay opens a run that <paramref name="engine"/> recorded.</summary>
+        public static bool Opens(string engine) =>
+            string.Equals(engine, EngineName, StringComparison.Ordinal) ||
+            string.Equals(engine, CardEngineName, StringComparison.Ordinal);
+
         public RunRecord Record { get; private set; }
 
         /// <summary>The farm's harness, stepping Core's world with the project's own solver.</summary>
@@ -118,7 +132,7 @@ namespace Evosim.Theatre
                 return null;
             }
 
-            if (!string.Equals(replay.Record.Engine, EngineName, StringComparison.Ordinal))
+            if (!Opens(replay.Record.Engine))
             {
                 refusal =
                     "run.json says this run was stepped by '" + replay.Record.Engine +
@@ -158,10 +172,24 @@ namespace Evosim.Theatre
             // The farm's own arithmetic, through the farm's own method, so a step this replay
             // accepts is a step the recording's launcher would have accepted and the steps per
             // metabolic step are the same integer on both sides.
+            // D239: the pace factor is the config's (the hash names it) and the manifest's
+            // paceFactor is its other witness; a recording where they part is not one world.
+            float pace = replay.Record.Config.PaceFactor;
+            if (pace != replay.Record.PaceFactor)
+            {
+                refusal =
+                    "run.json says the pace factor was " +
+                    replay.Record.PaceFactor.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) +
+                    " and config.json says " +
+                    pace.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) +
+                    "; a replay at either would be another world.";
+                return null;
+            }
+
             int stepsPerMetabolic;
             try
             {
-                dt = EnvBinding.ResolvePhysicsStep(dt, out stepsPerMetabolic);
+                dt = EnvBinding.ResolvePhysicsStep(dt, pace, out stepsPerMetabolic);
             }
             catch (Exception e)
             {
@@ -429,6 +457,9 @@ namespace Evosim.Theatre
         /// <inheritdoc />
         public ReefGeometry Reefs => Sim?.World?.Reefs;
 
+        /// <inheritdoc />
+        public CoralRock Coral => Sim?.World?.Coral;
+
         public int BodyCount => Sim?.World?.Living?.Count ?? 0;
 
         public Vector3 PositionOf(int index)
@@ -451,7 +482,16 @@ namespace Evosim.Theatre
         /// <inheritdoc />
         public long IdAt(int index) => Sim.World.Living[index].Id;
 
-        /// <summary>A body's root velocity from the solver, m/s, or zero.</summary>
+        /// <summary>
+        /// D239's pace factor k, the world's: physics seconds in one world second. 1 when no world.
+        /// </summary>
+        public float PaceFactor => Sim != null ? Sim.PaceFactor : 1f;
+
+        /// <summary>
+        /// A body's root velocity from the solver, in metres per WORLD second (D239: the solver's
+        /// own is per physics second, so above k = 1 it is multiplied by k), or zero. The film
+        /// plans multiply it by world seconds to lead a subject, so it is the world's.
+        /// </summary>
         public Vector3 VelocityOf(long id)
         {
             if (Sim == null || !Sim.TryPose(id, out Evosim.Dynamics.Creature body) || body == null ||
@@ -461,6 +501,7 @@ namespace Evosim.Theatre
             }
 
             var v = new Vector3((float)body.Velocity[0], (float)body.Velocity[1], (float)body.Velocity[2]);
+            if (Sim.PaceFactor != 1f) v *= Sim.PaceFactor;
             return FilmPlans.Shot.Finite(v) ? v : Vector3.zero;
         }
 
@@ -483,6 +524,20 @@ namespace Evosim.Theatre
                 return true;
             }
 
+            return false;
+        }
+
+        /// <summary>The live world draws no remains as a film window does, so none.</summary>
+        public bool TryRemains(long id, out FilmRemains remains)
+        {
+            remains = default;
+            return false;
+        }
+
+        /// <summary>The live world does not know its births ahead of time as a film window does, so none.</summary>
+        public bool TryUnborn(long id, out FilmUnborn unborn)
+        {
+            unborn = default;
             return false;
         }
 

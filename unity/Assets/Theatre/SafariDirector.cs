@@ -287,10 +287,10 @@ namespace Evosim.Theatre
         public StoryWindows Windows => _windows;
 
         /// <summary>The world on screen: the film window playing, or the live world.</summary>
-        public IFilmWorld World => FromWindows ? (IFilmWorld)_runner.Window : _runner.Live;
+        public IFilmWorld World => _runner.Nursery != null ? (IFilmWorld)_runner.Nursery : FromWindows ? (IFilmWorld)_runner.Window : _runner.Live;
 
         /// <summary>The bodies on screen: the window's fed view, or the live world's.</summary>
-        public LiveWorldView View => FromWindows ? _runner.Window?.View : _runner.LiveView;
+        public LiveWorldView View => _runner.Nursery != null ? _runner.Nursery.View : FromWindows ? _runner.Window?.View : _runner.LiveView;
 
         /// <summary>
         /// The word the frames on screen carry: the window's verdict (FAITHFUL, COUSIN or
@@ -798,7 +798,8 @@ namespace Evosim.Theatre
             if (live == null) { Fail("the world went away mid-seek: " + _runner.Error); return; }
 
             double deadline = _wall.Elapsed.TotalSeconds + Math.Max(0.01d, wallBudgetSeconds);
-            float dt = Mathf.Max(1e-4f, live.Sim.PhysicsDt);
+            // D239: world seconds a step (physics dt over k), because it is compared with the world's clock.
+            float dt = Mathf.Max(1e-4f, live.Sim.WorldSecondsPerStep);
 
             // The world's own steps are timed one by one and the loop as a whole, so the seek's
             // last line can say how much of its wall time was the world and how much was not.
@@ -1095,7 +1096,7 @@ namespace Evosim.Theatre
         private int _takeCount;
         private bool _endPending;
 
-        private double Now(TheatreDynamicsReplay live) => _takeT0 + (live.Steps - _takeSteps0) * (double)live.Sim.PhysicsDt;
+        private double Now(TheatreDynamicsReplay live) => _takeT0 + (live.Steps - _takeSteps0) * (double)live.Sim.WorldSecondsPerStep;
 
         /// <summary>
         /// The next frame: the world stepped to the frame's second, the take's camera posed at it.
@@ -1127,7 +1128,7 @@ namespace Evosim.Theatre
             if (live == null) { Fail("the world went away mid-take"); return false; }
 
             SafariPlans.Take take = _takes[_take];
-            float dt = Mathf.Max(1e-4f, live.Sim.PhysicsDt);
+            float dt = Mathf.Max(1e-4f, live.Sim.WorldSecondsPerStep); // D239: world seconds a step
 
             if (_takeFrame > 0) _takeTarget += interval;
             double deadline = _wall.Elapsed.TotalSeconds + wallBudgetSeconds;
@@ -1803,7 +1804,8 @@ namespace Evosim.Theatre
 
             _takeFrame++;
 
-            // The take ends as a live one does, on the physics step nearest its length.
+            // The take ends as a live one does, on the physics step nearest its length. The verdict's
+            // physicsDt is the step in world seconds already (D239: the farm writes it divided by k).
             double dt = _window.Window.Verdict != null && _window.Window.Verdict.PhysicsDt > 0d ? _window.Window.Verdict.PhysicsDt : 1e-4d;
             if (into + 0.5d * dt >= take.Seconds) _endPending = true;
             return true;

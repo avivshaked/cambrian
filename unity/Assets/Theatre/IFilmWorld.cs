@@ -48,5 +48,73 @@ namespace Evosim.Theatre
         /// whose children are its birth rows in the window.
         /// </summary>
         bool TryAccount(long id, out double reserve, out int children);
+
+        /// <summary>
+        /// A dead body's remains as the world draws them at <see cref="Second"/> (D220), for a close
+        /// shot whose named subject is no longer alive: the death shot's time-lapse opens after the
+        /// death, and its subject is then the remains. False when the world draws no remains under
+        /// that id at this second, which the live world and the nursery never do.
+        /// </summary>
+        bool TryRemains(long id, out FilmRemains remains);
+
+        /// <summary>
+        /// Where a body not yet born at <see cref="Second"/> will first stand (D279's birth film), for a
+        /// close shot whose named subject is born after the shot opens: the birth film opens before
+        /// the birth, so the birth cloud forms in frame and the newborn appears inside it. False when
+        /// the world holds no birth of that id after this second, which the live world and the nursery
+        /// never do.
+        /// </summary>
+        bool TryUnborn(long id, out FilmUnborn unborn);
+    }
+
+    /// <summary>
+    /// A body not yet born at the second on screen, as <see cref="IFilmWorld.TryUnborn"/> gives it: the
+    /// place its first recorded pose puts it, enough for a close shot to frame that place as it frames a
+    /// living body, to hold on it until the body is drawn, and for its log line.
+    /// </summary>
+    public struct FilmUnborn
+    {
+        /// <summary>The root at the first frame that holds the body, m: where the view will first draw it.</summary>
+        public Vector3 Root;
+
+        /// <summary>
+        /// The box the parts of that first pose fill at their recorded size, m, before the newborn's grow-in: the
+        /// stand-in a close shot reads in place of the drawn box until the body is drawn.
+        /// </summary>
+        public Bounds Box;
+
+        /// <summary>How far the parts reach from the root at their recorded size, m, as the crowd measures a living body.</summary>
+        public float Reach;
+
+        /// <summary>The second of the body's birth row.</summary>
+        public double Born;
+
+        /// <summary>The second of the first frame that holds the body, at or just after <see cref="Born"/>.</summary>
+        public double FirstFrame;
+    }
+
+    /// <summary>
+    /// One body's remains at the second on screen, as <see cref="IFilmWorld.TryRemains"/> gives them:
+    /// enough for a close shot to frame them as it frames a living body, and for its log line.
+    /// </summary>
+    public struct FilmRemains
+    {
+        /// <summary>The drawn root, m.</summary>
+        public Vector3 Root;
+
+        /// <summary>How far the parts still held reach from the root, m.</summary>
+        public float Reach;
+
+        /// <summary>The parts still held.</summary>
+        public int Parts;
+
+        /// <summary>The second the remains began, the death for a body that is itself the remains.</summary>
+        public double Since;
+
+        /// <summary>The second the run removes them: <see cref="Since"/> and the run's remains window.</summary>
+        public double Removed;
+
+        /// <summary>The view that draws them, which a portrait reads the drawn box and the root from.</summary>
+        public LiveWorldView View;
     }
 }

@@ -1,0 +1,4 @@
+# The blade stops per world, set so the blades land on the photographs' hue in that world's light. A film's launcher sets EVOSIM_THEATRE_ALGA_RAMP_STOP_A and _B from its world's row. Computed with scripts/theatre-blade-stops.py and checked by a render.
+world	stop_a	stop_b	measured_hue	measured_sat	measured_light	frame	note
+r62cf	0.1318,0.2662,0.0359	0.0529,0.1068,0.0145	104.7	0.409	0.221	r62cf-6202 22515 s	film look; blades at the photographs' hue (102-108) in this world's light
+r63b-c	0.1674,0.3713,0.0598	0.0672,0.1490,0.0242	102.0	0.44	0.24	r63b-c-6202 24000-24006 s, 7 frames	film look; one step from r62cf's row (which read hue 98.7 here); a second step toward 105 (0.1838,0.4117,0.0766 and 0.0738,0.1652,0.0310) is not yet rendered

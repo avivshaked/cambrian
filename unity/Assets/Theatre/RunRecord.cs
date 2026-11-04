@@ -147,23 +147,125 @@ namespace Evosim.Theatre
         public int? Threads { get; private set; }
 
         /// <summary>
-        /// The economy's step, from <c>run.json</c>'s <c>metabolicStepSeconds</c>, or 0.
+        /// The economy's step in WORLD seconds, from <c>run.json</c>'s <c>metabolicStepSeconds</c>,
+        /// or 0.
         /// </summary>
         /// <remarks>
         /// Read but not obeyed: it is a constant in both engines (<c>Ecosystem</c>'s and
         /// <c>EnvBinding.MetabolicStepSeconds</c>, 0.5 s), and the replay derives its own steps per
-        /// metabolic step from the physics step through the farm's own
+        /// metabolic step from the physics step and <see cref="PaceFactor"/> through the farm's own
         /// <c>EnvBinding.ResolvePhysicsStep</c>. What it is for is to catch a recording made by a
         /// build whose economy ran at another cadence, which would make every sample time
-        /// meaningless without a single column saying so.
+        /// meaningless without a single column saying so. D239: it is in world seconds, so a paced
+        /// run (k above 1) writes 0.5 whatever its steps hold; at k = 1 it is steps times dt, as it
+        /// always was.
         /// </remarks>
         public double MetabolicStepSeconds { get; private set; }
+
+        /// <summary>
+        /// D239's pace factor k as <c>run.json</c> wrote it (<c>paceFactor</c>, present only when
+        /// k is not 1), or 1 when absent. The manifest's side of the same number the config
+        /// carries as <c>RunConfig.PaceFactor</c>; a replay refuses the two disagreeing.
+        /// </summary>
+        public float PaceFactor { get; private set; } = 1f;
 
         /// <summary>Every sample the run wrote, in order. Empty when it wrote none.</summary>
         public IReadOnlyList<RunSample> Samples { get; private set; }
 
         /// <summary>Why <c>stats.jsonl</c> could not be read, or null.</summary>
         public string SamplesNote { get; private set; }
+
+        /// <summary>
+        /// The switches a run recorded before them is read with as off, each beside the proof that the world
+        /// with the switch off is the world that ran before it existed.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Only a switch with a recorded switch-off proof goes here</b> (the coordinator's ruling of
+        /// 2026-11-02, the theatre's CLAUDE.md). A new tunable makes the strict reader refuse every config
+        /// written before it, and the picture-only reader that takes over keeps only the water's shape, the
+        /// floor and the development limits, so every film of an older world would change and lose its
+        /// identity with the reference stills. For a switch whose off state is proven to be the old world's
+        /// bytes, the config with it filled as off describes the world that ran, so the strict reader is
+        /// asked again with it filled. A switch with no such proof stays refused, and the old-run reader
+        /// takes it. The farm's, Core's and the nursery's loaders refuse as they always did: this is the
+        /// theatre's instrument and no more.
+        /// </para>
+        /// <para>
+        /// <c>After</c> is the key the switch follows in its section of <c>config.json</c>, which is where
+        /// the fill puts it; a file without exactly one such line is not filled.
+        /// </para>
+        /// </remarks>
+        private static readonly (string Key, string After, string Proof)[] ProvenOffSwitches =
+        {
+            // D275, a bite needs the mouth. With it off, r66's check 2 found C on the new build equal to
+            // r65's C on every row (logbook/specs/r66-prereg/predictions.md), and the crowd fixture
+            // re-recorded on the build equal on every row (runs/cefix-s4/2026-11-02-031625-b958f841).
+            ("biteNeedsMouth", "deathRowIncome", "D275: r66's check 2 and the crowd fixture re-record"),
+        };
+
+        /// <summary>
+        /// <see cref="RunDirectory.ReadConfig"/>, and when it refuses a config that lacks only switches in
+        /// <see cref="ProvenOffSwitches"/>, the same read with each of them filled as off, logged on one line.
+        /// Every theatre reader that reads a run's config again strictly goes through here, so the look's own
+        /// reads (the run's water in <see cref="TheatreRunSnow"/>, the solo stills) see the config the record saw.
+        /// </summary>
+        public static RunConfig ReadConfigFillingProvenOff(string dir, out string hashMismatch)
+        {
+            try
+            {
+                return RunDirectory.ReadConfig(dir, out hashMismatch);
+            }
+            catch (Exception refusal)
+            {
+                string file = System.IO.Path.Combine(dir, "config.json");
+                if (!File.Exists(file)) throw;
+
+                string text = File.ReadAllText(file);
+                var filled = new List<string>();
+
+                foreach (var s in ProvenOffSwitches)
+                {
+                    if (text.Contains("\"" + s.Key + "\"")) continue;
+
+                    var after = new System.Text.RegularExpressions.Regex(
+                        "(\\r?\\n)([ \\t]*)\"" + s.After + "\"[^\\r\\n]*,(?=\\r?\\n)");
+                    System.Text.RegularExpressions.MatchCollection found = after.Matches(text);
+                    if (found.Count != 1) throw;
+
+                    System.Text.RegularExpressions.Match m = found[0];
+                    text = text.Insert(m.Index + m.Length, m.Groups[1].Value + m.Groups[2].Value + "\"" + s.Key + "\": false,");
+                    filled.Add(s.Key + " = false (" + s.Proof + ")");
+                }
+
+                if (filled.Count == 0) throw;
+
+                RunConfig config;
+                try
+                {
+                    config = RunConfigJson.Read(text, out hashMismatch);
+                }
+                catch (Exception)
+                {
+                    // Something besides the proven switches is missing: the first refusal stands, and the
+                    // old-run reader takes the run where the caller allows one.
+                    throw refusal;
+                }
+
+                // The stored hash was written before the filled keys existed, so it cannot match the settings
+                // as read; the mismatch is kept, and says why.
+                if (hashMismatch != null)
+                {
+                    hashMismatch = "the stored hash predates the switches filled as off (" +
+                                   string.Join(", ", filled) + "): " + hashMismatch;
+                }
+
+                UnityEngine.Debug.Log("[Theatre] config fill: " + dir + " was recorded before " + filled.Count +
+                                      " switch" + (filled.Count == 1 ? "" : "es") + " proven off, read with " +
+                                      string.Join("; ", filled));
+                return config;
+            }
+        }
 
         /// <summary>
         /// Reads a run directory. Throws with the reason when the directory is not one.
@@ -202,7 +304,7 @@ namespace Evosim.Theatre
 
             try
             {
-                record.Config = RunDirectory.ReadConfig(dir, out string hashMismatch);
+                record.Config = ReadConfigFillingProvenOff(dir, out string hashMismatch);
                 record.ConfigHashMismatch = hashMismatch;
             }
             catch (Exception refusal) when (forPicture)
@@ -241,6 +343,9 @@ namespace Evosim.Theatre
 
             record.MetabolicStepSeconds =
                 manifest.Has("metabolicStepSeconds") ? manifest["metabolicStepSeconds"].AsDouble() : 0d;
+
+            // D239: written only when k is not 1, so absent is 1 and not a gap.
+            if (manifest.Has("paceFactor")) record.PaceFactor = manifest["paceFactor"].AsFloat();
 
             // Optional on purpose: every run recorded before D078 has no such field, and refusing
             // them would make the theatre useless on the whole record to date. Absent stays absent

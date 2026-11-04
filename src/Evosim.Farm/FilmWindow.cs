@@ -123,6 +123,12 @@ namespace Evosim.Farm
     public static class FilmWindow
     {
         public const string PosesFileName = "film.poses.bin";
+
+        /// <summary>
+        /// Each powered joint's stroke, a line for each frame of the poses file (<see cref="StrokeRecorder"/>).
+        /// Presentation only: nothing in a run, a checkpoint or the pose stream reads it.
+        /// </summary>
+        public const string StrokeFileName = "film.stroke.jsonl";
         public const string GenomesFileName = "genomes.jsonl.gz";
         public const string PlansFileName = "plans.jsonl";
         public const string EventsFileName = "events.jsonl";
@@ -713,7 +719,7 @@ namespace Evosim.Farm
             string[] names =
             {
                 PosesFileName, Path.ChangeExtension(PosesFileName, ".idx"), GenomesFileName,
-                PlansFileName, EventsFileName, IdentityFileName, CorpsesFileName,
+                PlansFileName, EventsFileName, IdentityFileName, CorpsesFileName, StrokeFileName,
                 RemainsFileName,
             };
 
@@ -1243,6 +1249,7 @@ namespace Evosim.Farm
             private readonly Result _result;
 
             private PoseRecorder _poses;
+            private StrokeRecorder _stroke;
             private JsonlGzWriter _genomes;
             private JsonlWriter _plans;
             private JsonlWriter _events;
@@ -1305,6 +1312,8 @@ namespace Evosim.Farm
                 _poses = PoseRecorder.AtPath(
                     Path.Combine(_outDirectory, PosesFileName), (float)(1d / _options.FramesPerSecond),
                     _configHash);
+                // The stroke log beside it: a line for each frame the poses file takes.
+                _stroke = new StrokeRecorder(Path.Combine(_outDirectory, StrokeFileName));
                 // Core's members, the run's own genomes.jsonl.gz format: a member at each report
                 // second, each carrying its length, so one reader reads both files.
                 _genomes = new JsonlGzWriter(Path.Combine(_outDirectory, GenomesFileName), memberEachRow: false);
@@ -1409,6 +1418,10 @@ namespace Evosim.Farm
                 if (t + Eps < _nextFrame / fps) return;
 
                 _poses.WriteFrame(sim, t);
+
+                // The stroke line for the same frame and the same second, read from the same
+                // bodies a moment after the pose, with nothing stepped between the two.
+                _stroke.WriteFrame(sim, t);
                 _result.Frames++;
 
                 while (_nextFrame <= _lastFrame && _nextFrame / fps <= t + Eps) _nextFrame++;
@@ -1494,6 +1507,7 @@ namespace Evosim.Farm
                 _genomes.EndMember();
                 _plans.Flush();
                 _events.Flush();
+                _stroke?.Flush();
                 _corpses?.EndMember();
                 _remains?.EndMember();
             }
@@ -1519,6 +1533,8 @@ namespace Evosim.Farm
 
                 _poses?.Dispose();
                 _poses = null;
+                _stroke?.Dispose();
+                _stroke = null;
                 _genomes?.Dispose();
                 _genomes = null;
                 _plans?.Dispose();

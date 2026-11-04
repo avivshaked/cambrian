@@ -169,6 +169,7 @@ Shader "Evosim/Theatre Bed"
             #pragma fragment Fragment
             #pragma target 3.0
 
+            #pragma multi_compile _ _EVO_CAUSTIC_VARIETY
             #pragma multi_compile_fog
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
 

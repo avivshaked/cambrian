@@ -100,8 +100,12 @@ Shader "Evosim/Theatre Shaft March"
             #pragma vertex Vertex
             #pragma fragment Fragment
             #pragma target 3.5
+            #pragma multi_compile _ _EVO_CAUSTIC_VARIETY
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #if defined(_EVO_CAUSTIC_VARIETY)
+            #define EVO_CAUSTIC_LITE
+            #endif
             #include "TheatreWater.hlsl"
             #include "TheatreDepth.hlsl"
             #include "TheatreVolume.hlsl"

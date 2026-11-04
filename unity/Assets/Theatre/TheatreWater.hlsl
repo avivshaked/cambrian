@@ -150,6 +150,16 @@ float4 _EvoLook2;
 // metre; z the open water's brightness as a multiple of the column under the second batch.
 float4 _EvoFade;
 
+// The shaders' clock, for everything that moves with the water: the ripples, the caustics, the
+// shafts and the snow. Unity's own clock by default. A render that must match another frame for
+// frame (the HDRP spike's side-by-side, D202) sets _EvoClockOn and hands its own clock in
+// _EvoClock: the safari's take time under EVOSIM_THEATRE_SAFARI_CLOCK, since Unity's clock starts
+// counting when Play mode opens and so stands at a different second in every render.
+float _EvoClock;
+float _EvoClockOn;
+
+float EvoTime() { return _EvoClockOn > 0.5 ? _EvoClock : _Time.y; }
+
 // Each dial falls back rather than refusing, because a scene that never built a skin still draws
 // bodies and a bed, and a zero wavelength there would divide the sea by nothing. The fallbacks
 // are TheatreSkin's own defaults.
@@ -517,6 +527,150 @@ float3 EvoRippleNormal(float2 xz, float time)
     return normalize(float3(-slope.x, 1.0, -slope.y));
 }
 
+#if defined(_EVO_CAUSTIC_VARIETY)
+// ---------------------------------------------------------------------------------------------
+// The varied caustic (EVOSIM_THEATRE_CAUSTIC_VARIETY, keyword _EVO_CAUSTIC_VARIETY).
+//
+// EvoRipple's three sines make a lattice: one set of cells, the same size and the same sharpness
+// everywhere and at every time, which reads as a disco ball. A real net of caustics has loops of
+// every size, sharp in one place and soft in the next, that swell and fade as the groups of waves
+// pass. This builds the caustic's curvature (and only that: EvoRipple itself, the drawn ceiling
+// and EvoBeamAt are untouched) from six trains at six scales, and then varies them five ways:
+//
+//   octaves      six trains from 0.27 to 2.5 of the wave length dial, at their own headings and
+//                speeds, the curvature shared out so no one scale dominates (the finest train
+//                carried more than half of today's);
+//   warp         the sampling point is moved by a smooth noise a few metres across, by a fraction
+//                of a cell, so the cells change size and shape across the bed;
+//   groups       each train's strength rides a slow envelope, a few metres across and a few
+//                seconds long, so patches brighten and fade;
+//   wobble       each train's phase is nudged by a noise that itself drifts, so the phase speed
+//                differs a little from place to place and there is no single beat;
+//   depth        the finer a train, the sooner the sun's width blurs it away with depth, and the
+//                fold clamp rises from the near value to the far one over the light's reach.
+//
+// Value noise with a hash that has no sine in it, defined here and not borrowed from the carve's:
+// that one comes later in the file and takes a sine a corner. No texture is read.
+//
+// The curvature of a warped train is taken as the unwarped train's at the warped point. The exact
+// Laplacian also carries the warp's own gradient (the cells stretch where the warp does), a
+// correction of a few tenths at the warp amplitude set here, which is the variety this adds and
+// not an error to remove.
+
+static const float EVO_CV_CURVATURE_GAIN = 1.15;  // all six trains' curvature, against the shared reference
+static const float EVO_CV_SPREAD         = 2.8;   // value noise in [0, 1] is taken to about +-1 by (n - 0.5) * this
+static const float EVO_CV_WARP_METRES    = 6.0;   // lattice of the warp and wobble noise, metres
+static const float EVO_CV_WARP_FRACTION  = 0.22;  // the warp's reach, as a share of the wave length dial
+static const float2 EVO_CV_WARP_DRIFT    = float2(0.14, 0.11);  // metres a second the warp noise slides
+static const float EVO_CV_WOBBLE_RADIANS = 0.9;   // phase nudge of the middle train at wobble +-1; the others scale it
+static const float EVO_CV_GROUP_METRES   = 8.5;   // lattice of the group envelopes, metres
+static const float2 EVO_CV_GROUP_DRIFT   = float2(-0.45, 0.62); // metres a second the groups slide
+static const float EVO_CV_GROUP_PERIOD   = 7.0;   // seconds for a group to swell and fade once
+static const float EVO_CV_GROUP_DEPTH    = 1.0;   // how far an envelope swings off one (the clamp keeps it in 0.2 to 1.7)
+static const float EVO_CV_BLUR_PER_METRE = 0.012; // the sun's width as radians of blur per metre of depth (the disc is 0.0093)
+static const float EVO_CV_FOLD_NEAR      = 0.14;  // the fold clamp at the surface: today's
+static const float EVO_CV_FOLD_FAR       = 0.40;  // the fold clamp at the light's reach
+
+float4 EvoCausticHash(float2 p)
+{
+    float4 p4 = frac(p.xyxy * float4(0.1031, 0.1030, 0.0973, 0.1099));
+    p4 += dot(p4, p4.wzxy + 33.33);
+    return frac((p4.xxyz + p4.yzzw) * p4.zywx);
+}
+
+// Four independent value noises in [0, 1] at one point, sharing the cell and the weights.
+float4 EvoCausticNoise(float2 p)
+{
+    float2 cell = floor(p);
+    float2 f = p - cell;
+    float2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+
+    float4 a = EvoCausticHash(cell);
+    float4 b = EvoCausticHash(cell + float2(1.0, 0.0));
+    float4 c = EvoCausticHash(cell + float2(0.0, 1.0));
+    float4 d = EvoCausticHash(cell + float2(1.0, 1.0));
+
+    return lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
+}
+
+float EvoCausticGroup(float n)
+{
+    return clamp(1.0 + EVO_CV_GROUP_DEPTH * (n - 0.5) * EVO_CV_SPREAD, 0.2, 1.7);
+}
+
+// The fold clamp: sharp at the surface, softer with the depth the light has come down.
+float EvoCausticFold(float focusing)
+{
+    return lerp(EVO_CV_FOLD_NEAR, EVO_CV_FOLD_FAR, saturate(focusing / EvoLightReachMetres()));
+}
+
+// One train's share of the curvature at a point. fraction is the wave length as a share of the dial's,
+// weight the share of the reference curvature (amplitude times k0 squared) the train carries, and
+// sigma the blur, in metres, the depth has put on the light.
+float EvoCausticTrain(float2 xz, float time, float2 heading, float fraction, float speedMul,
+                      float weight, float wobbleShare, float wobble, float envelope,
+                      float k0, float baseC, float refCurv, float sigma)
+{
+    float k = k0 / fraction;
+    float c = baseC * speedMul * sqrt(fraction);
+    float phase = k * dot(heading, xz) - k * c * time + wobbleShare * wobble;
+
+    float kSigma = k * sigma;
+    float soft = 1.0 / (1.0 + kSigma * kSigma);
+
+    // The Laplacian of a sine train of amplitude a is -a k^2 sin, and weight * refCurv is a k^2.
+    return -refCurv * weight * envelope * soft * sin(phase);
+}
+
+float EvoCausticGainVaried(float3 positionWS, float time)
+{
+    float depth = max(0.0, -positionWS.y);
+    float focusing = min(depth, EvoLightReachMetres());
+
+    float3 ray = EvoSunRayWS();
+    float2 xz = positionWS.xz - focusing * ray.xz / max(0.15, -ray.y);
+
+    float wavelength = EvoWaveLengthMetres();
+    float k0 = 6.2831853 / wavelength;
+    float refCurv = EvoWaveMetres() * k0 * k0;
+    float baseC = EvoWaveSpeed() * sqrt(9.81 * wavelength / 6.2831853);
+
+    // The warp, the wobble and the groups' timing from one lookup; the groups from a second.
+    float4 slow = EvoCausticNoise((xz + EVO_CV_WARP_DRIFT * time) / EVO_CV_WARP_METRES);
+    float4 groups = EvoCausticNoise((xz + EVO_CV_GROUP_DRIFT * time) / EVO_CV_GROUP_METRES);
+
+    float2 xzw = xz + (slow.xy - 0.5) * (EVO_CV_SPREAD * EVO_CV_WARP_FRACTION * wavelength);
+    float wobble = (slow.z - 0.5) * EVO_CV_SPREAD * EVO_CV_WOBBLE_RADIANS;
+
+    // The long groups and the short ones breathe against each other, so a patch that fades under one
+    // is not the patch that fades under the other.
+    float breath = 0.5 + 0.5 * sin(6.2831853 * (time / EVO_CV_GROUP_PERIOD + slow.w));
+    float longGroup = EvoCausticGroup(lerp(groups.x, groups.y, breath));
+    float shortGroup = EvoCausticGroup(lerp(groups.z, groups.w, 1.0 - breath));
+
+    float sigma = EVO_CV_BLUR_PER_METRE * focusing;
+
+    // Spelled out, like EvoRipple's, because an array indexed at run time is the one construction a
+    // shader compiler may refuse. Listed from the longest train to the finest; the third, fourth
+    // and sixth are today's three (the same heading and fraction), and the others are new.
+    float curvature = 0.0;
+    curvature += EvoCausticTrain(xzw, time, float2( 0.74314,  0.66913), 2.50, 0.90, 0.70, 0.45, wobble, longGroup,  k0, baseC, refCurv, sigma);
+    curvature += EvoCausticTrain(xzw, time, float2(-0.46947, -0.88295), 1.55, 1.10, 0.75, 0.65, wobble, longGroup,  k0, baseC, refCurv, sigma);
+    curvature += EvoCausticTrain(xzw, time, float2( 0.99503,  0.09950), 1.00, 1.00, 0.60, 1.00, wobble, longGroup,  k0, baseC, refCurv, sigma);
+    curvature += EvoCausticTrain(xzw, time, float2(-0.31623,  0.94868), 0.53, 0.85, 0.80, 0.85, wobble, shortGroup, k0, baseC, refCurv, sigma);
+    curvature += EvoCausticTrain(xzw, time, float2(-0.93969,  0.34202), 0.38, 1.20, 0.55, 0.70, wobble, shortGroup, k0, baseC, refCurv, sigma);
+    curvature += EvoCausticTrain(xzw, time, float2( 0.62470, -0.78087), 0.27, 1.00, 0.85, 0.55, wobble, shortGroup, k0, baseC, refCurv, sigma);
+    curvature *= EVO_CV_CURVATURE_GAIN;
+
+    // 1 - 1 / 1.333, as in EvoCausticGain.
+    const float bend = 0.248;
+
+    float area = 1.0 + focusing * bend * curvature;
+
+    return 1.0 / max(EvoCausticFold(focusing), abs(area));
+}
+
+#endif
 // How much of the sun's light the surface gathers onto a point, in [0, 1].
 //
 // This is the fourth day's fourth item and the reason the wave field exists. A bundle of rays
@@ -541,6 +695,9 @@ float3 EvoRippleNormal(float2 xz, float time)
 // gain with the flat water dropped. The arithmetic is the one this function always did.
 float EvoCausticGain(float3 positionWS, float time)
 {
+#if defined(_EVO_CAUSTIC_VARIETY) && !defined(EVO_CAUSTIC_LITE)
+    return EvoCausticGainVaried(positionWS, time);
+#endif
     float depth = max(0.0, -positionWS.y);
     float focusing = min(depth, EvoLightReachMetres());
 
@@ -556,6 +713,11 @@ float EvoCausticGain(float3 positionWS, float time)
 
     float area = 1.0 + focusing * bend * curvature;
 
+#if defined(_EVO_CAUSTIC_VARIETY)
+    // The shaders that sample the gain many times a pixel (EVO_CAUSTIC_LITE) keep today's three trains
+    // and take the fold clamp that rises with depth.
+    return 1.0 / max(EvoCausticFold(focusing), abs(area));
+#endif
     return 1.0 / max(0.14, abs(area));
 }
 

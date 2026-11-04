@@ -230,6 +230,9 @@ namespace Evosim.Theatre
         {
             if (Instance == null) return;
 
+            // D239: the solo viewer steps in its own physics seconds, which is exact at a pace factor
+            // of 1. TheatreRunner.OpenSolo refuses a paced record by name, so a body here never comes
+            // from a world with k above 1.
             float dt = Ecosystem.FixedDt;
 
             Sensors.Sample();

@@ -60,6 +60,14 @@ namespace Evosim.Theatre.EditorTools
             if (!string.IsNullOrEmpty(run))
             {
                 RunRecord record = RunRecord.Load(run);
+
+                // D239: the PhysX solo body has no pace factor (TheatreRunner.OpenSolo refuses the same way).
+                if (record.Config.PaceFactor != 1f)
+                    throw new InvalidOperationException(
+                        "The run has a pace factor of " +
+                        record.Config.PaceFactor.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) +
+                        " (D239); the PhysX solo check has none.");
+
                 config = record.Config;
                 water = record.ArmName + " (" + record.ConfigHash + ")";
                 Evosim.Sim.Ecosystem.ConfigurePhysicsStep(record.PhysicsDtSeconds);

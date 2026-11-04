@@ -53,6 +53,12 @@
   -nographics (a picture needs a graphics device), four job workers. It refuses worker 1 (unity/,
   the owner's Editor) and a worker a Unity process already holds.
 
+  The look is the agreed film look: scripts/theatre-film-look.json, wide and events (and close when
+  the shots include close), set into the environment through scripts/theatre-film-look.ps1; a dial
+  already in the environment wins, and the launch prints each such dial beside the file's value and
+  ruling. A dial this script sets from a parameter (-Carve, -MotionBlur) is in the environment first,
+  so it is compared with the file's value the same way.
+
 .PARAMETER Arm
   Arm name, as in <RunsRoot>/<Arm>. The newest run inside it is the one filmed.
 
@@ -99,7 +105,8 @@
 
 .PARAMETER MotionBlur
   The grade's camera motion blur for these frames, 0 to 1 (EVOSIM_THEATRE_MOTION_BLUR). Left at the
-  theatre's own default (0.3, tuned for the fly camera at screen rate) when not given. The blur is
+  theatre's own default (0.3, tuned for the fly camera at screen rate) when not given; the agreed film
+  look (scripts/theatre-film-look.json) sets 0 for a call that does not give it. The blur is
   drawn from one frame's camera move, so a fast orbit at a low fps smears: the first smoke's orbit
   (a full turn in 20 s at 10 fps) was unreadable at its middle with the default and sharp at 0.
 
@@ -155,11 +162,36 @@
   On each shot's first three frames, also filter on the CPU and encode the old way, and write to
   the log how far the two paths are apart (EVOSIM_THEATRE_DOWNSAMPLE_CHECK=1). Changes no frame.
 
+.NOTES
+  The Editor's log carries "[Theatre] timing:" lines: each stage of the film with its seconds and the seconds since
+  the Editor's code first ran, and one "dress" line with what the dressing spent. They are always on.
+  Setting the environment variable EVOSIM_FILM_LOG_TIMESTAMPS=1 before the call also launches Unity with -timestamps,
+  so every line of the log (the ones that have no timer too) carries its wall time. Off when unset, and then
+  Unity's arguments are exactly as before.
+
+# nursery2:begin guard=$Nursery
+.PARAMETER Member
+  With -Nursery, the swimmer the follow and nose shots film, by its pool member: the row of the tank's pool it was made
+  from, which is members[].pool in episode.json (EVOSIM_THEATRE_FILM_MEMBER). Its body id is its slot, members[].slot.
+.PARAMETER To
+  With -Nursery, the tank second the film ends at. The film then runs from -At to -To, and -Seconds is set from them.
+.PARAMETER Fill
+  The follow shot's swimmer fills this share of the frame's height, 0.3 to 0.8 (EVOSIM_THEATRE_FILM_FILL); default 0.7.
+.PARAMETER NoseSeconds
+  The nose shot's length, s (EVOSIM_THEATRE_FILM_NOSE_SECONDS), default 3.
+.PARAMETER NoseAt
+  The tank second the nose shot starts at (EVOSIM_THEATRE_FILM_NOSE_AT); the film's start when not given.
+
+# nursery2:end
 .EXAMPLE
   ./scripts/theatre-film.ps1 ckUi -At 400 -RunsRoot runs -Seconds 20 -Fps 10
 .EXAMPLE
   ./scripts/theatre-film.ps1 r48-s1 -FromFarm scratch/story-windows/r48-v2/story-01-r48-s1-main -Shots close -Seconds 20
 .EXAMPLE
+# nursery2:begin guard=$Nursery
+.EXAMPLE
+  ./scripts/theatre-film.ps1 nursery-graft -Nursery scratch/restep/graft-own-d0-t1-25fps-leaves -NurseryRoot . -Shots follow,nose -Member 8 -At 105 -To 232 -Fps 25
+# nursery2:end
   ./scripts/theatre-film.ps1 r47-s2 -At 5000 -Worker 5 -Shots close -Seconds 10 -CpuDownsample -SyncEncode
 #>
 [CmdletBinding()]
@@ -167,6 +199,15 @@ param(
     [Parameter(Mandatory, Position = 0)][string]$Arm,
     [double]$At = -1,
     [string]$FromFarm,
+    [string]$Nursery,
+    [string]$NurseryRoot,
+    # nursery2:begin guard=$Nursery
+    [int]$Member = -1,
+    [double]$To = -1,
+    [double]$Fill = -1,
+    [double]$NoseSeconds = 3,
+    [double]$NoseAt = -1,
+    # nursery2:end
     [int]$Worker = 6,
     [string[]]$Shots = @('orbit', 'close'),
     [double]$Seconds = 60,
@@ -196,10 +237,22 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'theatre-film-look.ps1')
 $unity = 'C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Unity.exe'
 if (-not (Test-Path $unity)) { throw "No Unity at $unity" }
 
 $invariant = [System.Globalization.CultureInfo]::InvariantCulture
+# nursery2:begin guard=$Nursery
+if ($PSBoundParameters.ContainsKey('To')) {
+    if (-not $Nursery) { throw "-To: the end second of a nursery film. Give -Nursery." }
+    if (-not $PSBoundParameters.ContainsKey('At')) { throw "-To: needs -At, the second the film starts at." }
+    if ($To -le $At) { throw "-To: $To is not after -At $At." }
+    $Seconds = $To - $At
+}
+foreach ($flag in 'Member', 'Fill', 'NoseSeconds', 'NoseAt') {
+    if ($PSBoundParameters.ContainsKey($flag) -and -not $Nursery) { throw "-$flag belongs to a nursery film. Give -Nursery." }
+}
+# nursery2:end
 
 # A comma list arrives as one string through "powershell -File" (CLAUDE.md's new-worker gotcha),
 # so every element is split again here.
@@ -212,10 +265,20 @@ foreach ($value in $Shots) {
 }
 if ($shotList.Count -eq 0) { throw "-Shots needs at least one of orbit, close, drift, canopy, sink, vanish." }
 foreach ($s in $shotList) {
+    # nursery2:begin guard=$Nursery
+    if ($Nursery -and @('follow', 'nose') -contains $s) { continue }
+    # nursery2:end
     if (@('orbit', 'close', 'drift', 'canopy', 'sink', 'vanish') -notcontains $s) { throw "-Shots: '$s' is not a shot. The shots are orbit, close, drift, canopy, sink, vanish." }
     if (@('sink', 'vanish') -contains $s -and -not $FromFarm) { throw "-Shots: '$s' follows a corpse, and the corpses are read from a farm film window. Give -FromFarm." }
 }
 $shotList = @($shotList | Select-Object -Unique)
+# nursery2:begin guard=$Nursery
+if ($Nursery) {
+    if (($shotList -contains 'follow' -or $shotList -contains 'nose') -and $Member -lt 0) { throw "-Member: the follow and nose shots need the pool member to film (episode.json's members: pool is the row, slot is the body)." }
+    if ($PSBoundParameters.ContainsKey('Fill') -and ($Fill -lt 0.3 -or $Fill -gt 0.8)) { throw "-Fill: $Fill is outside 0.3 to 0.8." }
+    if ($NoseSeconds -le 0 -or $NoseSeconds -gt 60) { throw "-NoseSeconds: $NoseSeconds is outside 0 to 60." }
+}
+# nursery2:end
 
 if ($Size -notmatch '^(\d+)[xX](\d+)$') { throw "-Size: '$Size' is not a size. Write it as WxH." }
 if (([int]$Matches[1]) % 2 -ne 0 -or ([int]$Matches[2]) % 2 -ne 0) { throw "-Size: both sides must be even for yuv420p." }
@@ -230,7 +293,10 @@ if ($PSBoundParameters.ContainsKey('MotionBlur') -and ($MotionBlur -lt 0 -or $Mo
 if ($PSBoundParameters.ContainsKey('Aperture') -and ($Aperture -lt 1 -or $Aperture -gt 32)) { throw "-Aperture: $Aperture is outside 1 to 32." }
 
 if ($Worker -eq 1) { throw "Worker 1 is unity/, which the owner keeps open in the Editor. Use a worker from 2 up." }
-if (-not $FromFarm -and -not $PSBoundParameters.ContainsKey('At')) { throw "-At or -FromFarm: a film is shot from a checkpoint or from a farm film window." }
+if ($Nursery -and $FromFarm) { throw "-Nursery and -FromFarm: a film is shot from one source." }
+if ($Nursery -and $Trace) { throw "-Trace reads the solver, and a nursery tank's frames have none." }
+if ($Nursery -and -not $NurseryRoot) { throw "-NurseryRoot: the repository root the tank's pool path is relative to." }
+if (-not $FromFarm -and -not $Nursery -and -not $PSBoundParameters.ContainsKey('At')) { throw "-At or -FromFarm: a film is shot from a checkpoint or from a farm film window." }
 if ($FromFarm -and $Trace) { throw "-Trace reads the solver, and a farm film window has none. Drop -Trace, or film from a checkpoint." }
 
 $ffmpeg = Get-Command ffmpeg -ErrorAction SilentlyContinue
@@ -258,9 +324,19 @@ if ($FromFarm) {
     $windowName = Split-Path -Leaf $windowDirectory
 }
 
+$nurseryDirectory = $null
+$nurseryName = $null
+if ($Nursery) {
+    $nurseryDirectory = [System.IO.Path]::GetFullPath($(if ([System.IO.Path]::IsPathRooted($Nursery)) { $Nursery } else { Join-Path $root $Nursery }))
+    foreach ($f in 'episode.json', 'frames.bin') {
+        if (-not (Test-Path -LiteralPath (Join-Path $nurseryDirectory $f))) { throw "-Nursery: no $f in $nurseryDirectory." }
+    }
+    $nurseryName = Split-Path -Leaf $nurseryDirectory
+}
+
 $runsDirectory = if ([System.IO.Path]::IsPathRooted($RunsRoot)) { $RunsRoot } else { Join-Path $root $RunsRoot }
 # A window names its run in its verdict, and the arm is then only the films' folder.
-if (-not $FromFarm) {
+if (-not $FromFarm -and -not $Nursery) {
     $armDirectory = Join-Path $runsDirectory $Arm
     if (-not (Test-Path $armDirectory)) { throw "No arm directory at $armDirectory" }
 
@@ -310,12 +386,13 @@ $filmDirectory = Join-Path $root "scratch\films\$Arm"
 $tag = if ($Freeze) { '-frozen' } else { '' }
 if ($CpuDownsample) { $tag += '-cpudown' }
 if ($SyncEncode) { $tag += '-sync' }
-$frameDirectory = if ($FromFarm) { Join-Path $filmDirectory "farm-$windowName$tag" } else { Join-Path $filmDirectory "$checkpointSecond$tag" }
-$clipStem = if ($FromFarm) { "$Arm-$windowName" } else { "$Arm-t$checkpointSecond" }
+$frameDirectory = if ($Nursery) { Join-Path $filmDirectory "nursery-$nurseryName$tag" } elseif ($FromFarm) { Join-Path $filmDirectory "farm-$windowName$tag" } else { Join-Path $filmDirectory "$checkpointSecond$tag" }
+$clipStem = if ($Nursery) { "$Arm-nursery-$nurseryName" } elseif ($FromFarm) { "$Arm-$windowName" } else { "$Arm-t$checkpointSecond" }
 
 $logDirectory = Join-Path $root 'scratch\logs'
 New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
-$log = Join-Path $logDirectory "theatre-film-$Arm$tag.log"
+# The start time is in the name, so a second film of the same arm never overwrites the first one's log.
+$log = Join-Path $logDirectory ("theatre-film-$Arm$tag-{0}.log" -f (Get-Date -Format 'yyyyMMddTHHmmss'))
 
 $names = @(
     'EVOSIM_THEATRE_RUN', 'EVOSIM_THEATRE_CHECKPOINT', 'EVOSIM_THEATRE_SEEK', 'EVOSIM_REPO_ROOT',
@@ -326,7 +403,11 @@ $names = @(
     'EVOSIM_THEATRE_FILM_CLOSE_SECONDS', 'EVOSIM_THEATRE_FILM_CLOSE_FOLLOW',
     'EVOSIM_THEATRE_CANOPY_MOVE', 'EVOSIM_THEATRE_DOF', 'EVOSIM_THEATRE_DOF_APERTURE',
     'EVOSIM_THEATRE_CPU_DOWNSAMPLE', 'EVOSIM_THEATRE_SYNC_ENCODE', 'EVOSIM_THEATRE_DOWNSAMPLE_CHECK',
-    'EVOSIM_THEATRE_WINDOW', 'EVOSIM_THEATRE_FILM_SPEED', 'EVOSIM_THEATRE_FILM_CORPSE')
+    'EVOSIM_THEATRE_WINDOW', 'EVOSIM_THEATRE_FILM_SPEED', 'EVOSIM_THEATRE_FILM_CORPSE',
+    'EVOSIM_THEATRE_NURSERY', 'EVOSIM_THEATRE_NURSERY_ROOT')
+# nursery2:begin guard=$Nursery
+$names += @('EVOSIM_THEATRE_FILM_MEMBER', 'EVOSIM_THEATRE_FILM_FILL', 'EVOSIM_THEATRE_FILM_NOSE_SECONDS', 'EVOSIM_THEATRE_FILM_NOSE_AT')
+# nursery2:end
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -337,11 +418,23 @@ try {
     # A checkpoint carries its own run directory; the rest are removed so that a shell which did
     # something else first cannot turn the film into a replay, a reconstruction or a solo body.
     foreach ($name in @('EVOSIM_THEATRE_RUN', 'EVOSIM_THEATRE_SNAP_FROM', 'EVOSIM_THEATRE_OVERRIDE', 'EVOSIM_THEATRE_GENOME',
-                        'EVOSIM_THEATRE_WINDOW', 'EVOSIM_THEATRE_CHECKPOINT', 'EVOSIM_THEATRE_SEEK')) {
+                        'EVOSIM_THEATRE_WINDOW', 'EVOSIM_THEATRE_CHECKPOINT', 'EVOSIM_THEATRE_SEEK',
+                        'EVOSIM_THEATRE_NURSERY', 'EVOSIM_THEATRE_NURSERY_ROOT')) {
         Remove-Item "env:$name" -ErrorAction SilentlyContinue
     }
 
-    if ($FromFarm) {
+    if ($Nursery) {
+        $env:EVOSIM_THEATRE_NURSERY = $nurseryDirectory
+        $env:EVOSIM_THEATRE_NURSERY_ROOT = [System.IO.Path]::GetFullPath($NurseryRoot)
+        # nursery2:begin guard=$Nursery
+        foreach ($n in 'EVOSIM_THEATRE_FILM_MEMBER', 'EVOSIM_THEATRE_FILM_FILL', 'EVOSIM_THEATRE_FILM_NOSE_SECONDS', 'EVOSIM_THEATRE_FILM_NOSE_AT') { Remove-Item "env:$n" -ErrorAction SilentlyContinue }
+        if ($Member -ge 0) { $env:EVOSIM_THEATRE_FILM_MEMBER = "$Member" }
+        if ($PSBoundParameters.ContainsKey('Fill')) { $env:EVOSIM_THEATRE_FILM_FILL = $Fill.ToString($invariant) }
+        $env:EVOSIM_THEATRE_FILM_NOSE_SECONDS = $NoseSeconds.ToString($invariant)
+        if ($PSBoundParameters.ContainsKey('NoseAt')) { $env:EVOSIM_THEATRE_FILM_NOSE_AT = $NoseAt.ToString($invariant) }
+        # nursery2:end
+        if ($PSBoundParameters.ContainsKey('At')) { $env:EVOSIM_THEATRE_SEEK = $At.ToString($invariant) }
+    } elseif ($FromFarm) {
         # The window carries its run directory in its verdict, as a checkpoint carries its own.
         $env:EVOSIM_THEATRE_WINDOW = $windowDirectory
         if ($PSBoundParameters.ContainsKey('At')) { $env:EVOSIM_THEATRE_SEEK = $At.ToString($invariant) }
@@ -387,8 +480,19 @@ try {
     if ($DownsampleCheck) { $env:EVOSIM_THEATRE_DOWNSAMPLE_CHECK = '1' }
     else { Remove-Item env:EVOSIM_THEATRE_DOWNSAMPLE_CHECK -ErrorAction SilentlyContinue }
 
+    # The agreed look, last, so that the dials set from the parameters above (-Carve, -MotionBlur) are compared with it and
+    # printed when they differ. The close look joins when a close shot is filmed. The names it set are restored below.
+    $lookSections = @('wide', 'events')
+    if ($shotList -contains 'close') { $lookSections += 'close' }
+    $names += @(Use-FilmLook -Sections $lookSections)
+
     Write-Host "$Arm -> worker $Worker ($proj)"
-    if ($FromFarm) {
+    if ($Nursery) {
+        Write-Host "  tank   $nurseryDirectory (root $NurseryRoot); recorded frames, nothing stepped"
+        # nursery2:begin guard=$Nursery
+        if ($Member -ge 0) { Write-Host "  member pool member $Member (follow and nose shots)" }
+        # nursery2:end
+    } elseif ($FromFarm) {
         Write-Host "  window $windowDirectory"
         Write-Host ("  from   {0} s to {1} s at {2} fps of run {3}, recorded {4}; every frame says so" -f `
             $verdict.from, $verdict.to, $verdict.fps, $verdict.run, $verdict.verdict.ToUpperInvariant())
@@ -408,6 +512,8 @@ try {
         '-executeMethod', 'Evosim.Theatre.EditorTools.TheatreFilm.Run',
         '-job-worker-count', '4',
         '-logFile', $log)
+    # EVOSIM_FILM_LOG_TIMESTAMPS=1: Unity stamps every log line with its wall time, to set beside the film's own timing: lines.
+    if ($env:EVOSIM_FILM_LOG_TIMESTAMPS -eq '1') { $arguments += '-timestamps' }
 
     $process = Start-Process -FilePath $unity -ArgumentList $arguments -NoNewWindow -PassThru
 

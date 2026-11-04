@@ -326,6 +326,869 @@ namespace Evosim.Theatre
             return Mathf.Clamp(value, low, high);
         }
 
+        /// <summary>
+        /// The marine producers' bend with the current (<c>EVOSIM_THEATRE_ALGA_BEND</c>, 0 off by default), read once:
+        /// how much of the room the sway leaves a blade it may lean into, 0 to 1, and from 1 to 4 how far past that room it
+        /// leans, by a share of its length (<c>TheatreBody.shader</c>, <c>AlgaBendReach</c>). Zero unless the marine producers'
+        /// dial (<c>EVOSIM_THEATRE_ALGA</c>) and the sway dial (<c>EVOSIM_THEATRE_SWAY</c>) are on too, which the
+        /// palette reads the same way. Zero means nothing is pushed, set or read for it anywhere.
+        /// </summary>
+        public static readonly float AlgaBendStrength =
+            Dial("EVOSIM_THEATRE_ALGA", 0f, 0f, 1f) > 0f && Dial("EVOSIM_THEATRE_SWAY", 0f, 0f, 1f) > 0f
+                ? Dial("EVOSIM_THEATRE_ALGA_BEND", 0f, 0f, 4f)
+                : 0f;
+
+        // skin2:begin
+        /// <summary>
+        /// The one skin's second look (<c>EVOSIM_THEATRE_SKIN2</c>, 0 off by default; 1 on), read once: a diffuse sheen, light
+        /// through the tissue, asymmetry, a pattern by clade and a margin band on the one skin
+        /// (<c>TheatreBody.shader</c>, <c>Skin2*</c>, <c>PatternSkin2</c>), and a pattern regime by clade on every part
+        /// (<c>TheatrePattern.StyleOf</c>). Off means the shader keyword below is never enabled, <c>_PatternShift</c>'s z and w
+        /// are never set, the skin mesh's leaf channel stays zero and nothing else in the theatre reads it.
+        /// </summary>
+        public static readonly bool Skin2On = Dial("EVOSIM_THEATRE_SKIN2", 0f, 0f, 2f) >= 0.5f;
+
+        /// <summary>The shader keyword SKIN2's code in <c>TheatreBody.shader</c> is compiled under.</summary>
+        public const string Skin2Keyword = "_EVO_SKIN2";
+
+        private static bool _skin2KeywordOn;
+
+        // SHEEN begin
+        /// <summary>
+        /// The sheen cap (<c>EVOSIM_THEATRE_SHEEN_CAP</c>, 0 off by default; 1 on), read once, and on only with SKIN2 on: the
+        /// white SKIN2's sheen adds on the one skin and on a part is rolled off toward a share of the luminance of the body's
+        /// own key light at the pixel, so a surface facing the light keeps its colour under a soft highlight
+        /// (<c>TheatreBody.shader</c>, <c>SheenCapped</c>, <c>SheenCapShare</c>). Off means the shader keyword below is never
+        /// enabled and nothing else in the theatre reads it.
+        /// </summary>
+        public static readonly bool SheenCapOn = Dial("EVOSIM_THEATRE_SHEEN_CAP", 0f, 0f, 1f) >= 0.5f && Skin2On;
+
+        /// <summary>The shader keyword the sheen cap's code in <c>TheatreBody.shader</c> is compiled under.</summary>
+        public const string SheenCapKeyword = "_EVO_SHEEN_CAP";
+        // SHEEN end
+        // SHEEN2 begin
+        /// <summary>
+        /// The sheen cap's second value (<c>EVOSIM_THEATRE_SHEEN_CAP</c> at 2; the dial runs 0 to 2), read once. With SKIN2 on it
+        /// is value 1 (<see cref="SheenCapOn"/>). With SKIN2 off, at 2, the same roll-off is applied to the white the base
+        /// tissue's own specular adds on the one skin and on a creature's part (<c>TheatreBody.shader</c>,
+        /// <c>SheenCappedBase</c>, <c>SheenCapBaseShare</c>). Off means the shader keyword below is never enabled and nothing
+        /// else in the theatre reads it.
+        /// </summary>
+        public static readonly float SheenCapLevel = Dial("EVOSIM_THEATRE_SHEEN_CAP", 0f, 0f, 2f);
+
+        /// <summary>Whether the base tissue's specular is capped: the dial at 2 and SKIN2 off.</summary>
+        public static readonly bool SheenCapBaseOn = SheenCapLevel >= 1.5f && !Skin2On;
+
+        /// <summary>The shader keyword the base cap's code in <c>TheatreBody.shader</c> is compiled under.</summary>
+        public const string SheenCapBaseKeyword = "_EVO_SHEEN_CAP2";
+
+        private static bool _sheenCapBaseKeywordOn;
+
+        /// <summary>
+        /// Enables <see cref="SheenCapBaseKeyword"/> once, for every material that has it, when <see cref="SheenCapBaseOn"/>;
+        /// does nothing otherwise. Called when the look is pushed and when a one skin is built, and nothing turns it off.
+        /// </summary>
+        public static void EnsureSheenCapBaseKeyword()
+        {
+            if (!SheenCapBaseOn || _sheenCapBaseKeywordOn) return;
+
+            Shader.EnableKeyword(SheenCapBaseKeyword);
+            _sheenCapBaseKeywordOn = true;
+            Debug.Log("[Theatre] sheen cap 2 on: the white of the base tissue's specular rolls off toward a share of the body's own " +
+                      "key light, SKIN2 off (EVOSIM_THEATRE_SHEEN_CAP=2, shader keyword " + SheenCapBaseKeyword + ").");
+        }
+        // SHEEN2 end
+        // skin2b:begin
+        /// <summary>
+        /// SKIN2 at level 2 (<c>EVOSIM_THEATRE_SKIN2</c> at 1.5 or more, read once): the margin band is laid at the body's
+        /// outline seen across its broad face, in place of level 1's (<c>TheatreBody.shader</c>, <c>Skin2MarginB</c>), and the
+        /// one skin's rim mark carries a hinge fade (<c>TheatreOneSkin.Skin2BOutline</c>). Level 1 is unchanged;
+        /// this adds the shader keyword below, enabled by <see cref="EnsureSkin2Keyword"/> beside SKIN2's.
+        /// </summary>
+        public static readonly bool Skin2BOn = Dial("EVOSIM_THEATRE_SKIN2", 0f, 0f, 2f) >= 1.5f;
+
+        /// <summary>The shader keyword SKIN2 level 2's code in <c>TheatreBody.shader</c> is compiled under.</summary>
+        public const string Skin2BKeyword = "_EVO_SKIN2B";
+
+        // skin2band:begin
+        /// <summary>
+        /// The margin band's boldness at SKIN2 level 2 (<c>EVOSIM_THEATRE_SKIN2_BAND</c>, 1 to 4, default 1), read once: the band's
+        /// width and opacity are multiplied by it (<c>TheatreBody.shader</c>, <c>Skin2MarginB</c>), the width capped at
+        /// <c>Skin2BBandWidthCap</c> of the local half width up to 2, rising to <c>Skin2BBandWidthCap3</c> (half) at 3, and the
+        /// opacity at 1. At 1 the shader's output is the level without the
+        /// dial, to the bit. It means nothing unless <see cref="Skin2BOn"/>; <see cref="EnsureSkin2Keyword"/> writes it beside the keyword.
+        /// </summary>
+        public static readonly float Skin2BBand = Dial("EVOSIM_THEATRE_SKIN2_BAND", 1f, 1f, 4f);
+        // skin2band:end
+        // BAND4 begin
+        /// <summary>
+        /// The band dial at 4 (<c>EVOSIM_THEATRE_SKIN2_BAND=4</c> beside SKIN2 at 2), read once: the one skin's band adds the
+        /// part ends, the crease line and a thin silhouette rim to level 3's (<c>TheatreBody.shader</c>, <c>Skin2B4*</c>), and the
+        /// skin mesh carries the part-end mark in its UV0 (<c>TheatreOneSkin.Skin2BEnds</c>). Below 4 the keyword below is never
+        /// enabled and the skin mesh has no UV0.
+        /// </summary>
+        public static readonly bool Skin2BandFour = Skin2BOn && Skin2BBand >= 3.5f;
+
+        /// <summary>The shader keyword SKIN2_BAND 4's code in <c>TheatreBody.shader</c> is compiled under.</summary>
+        public const string Skin2BandFourKeyword = "_EVO_SKIN2_BAND4";
+        // BAND4 end
+
+        // skin2b:end
+        /// <summary>
+        /// Enables <see cref="Skin2Keyword"/> once, for every material that has it, when the dial is on; does nothing when it
+        /// is off. Called when the look is pushed, when a one skin is built and when the palette paints under the dial, and
+        /// nothing turns it off.
+        /// </summary>
+        public static void EnsureSkin2Keyword()
+        {
+            if (!Skin2On || _skin2KeywordOn) return;
+
+            Shader.EnableKeyword(Skin2Keyword);
+            _skin2KeywordOn = true;
+            // SHEEN begin
+            if (SheenCapOn)
+            {
+                Shader.EnableKeyword(SheenCapKeyword);
+                Debug.Log("[Theatre] sheen cap on: the white of SKIN2's sheen rolls off toward a share of the body's own key light " +
+                          "(EVOSIM_THEATRE_SHEEN_CAP, shader keyword " + SheenCapKeyword + ").");
+            }
+            // SHEEN end
+            // skin2b:begin
+            if (Skin2BOn)
+            {
+                Shader.EnableKeyword(Skin2BKeyword);
+                Debug.Log("[Theatre] skin 2 level 2 on: the margin band at the body's outline, across its broad face (shader keyword " +
+                          Skin2BKeyword + ").");
+                // skin2band:begin
+                // Set whenever the level is on, so a value left in the Editor's shader globals by an earlier run is overwritten.
+                Shader.SetGlobalFloat("_EvoSkin2BBand", Skin2BBand);
+                if (Skin2BBand > 1f)
+                {
+                    Debug.Log("[Theatre] skin 2 band: the margin band's width and opacity times " +
+                              Skin2BBand.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) +
+                              " (EVOSIM_THEATRE_SKIN2_BAND), the width capped at a quarter of the local half width up to 2 and at a half at 3, the opacity at 1.");
+                }
+                // skin2band:end
+                // BAND4 begin
+                if (Skin2BandFour)
+                {
+                    Shader.EnableKeyword(Skin2BandFourKeyword);
+                    Debug.Log("[Theatre] skin 2 band 4: the band adds the part ends, the crease line and a thin silhouette rim to " +
+                              "level 3's (shader keyword " + Skin2BandFourKeyword + ").");
+                }
+                // BAND4 end
+            }
+            // skin2b:end
+            Debug.Log("[Theatre] skin 2 on: a diffuse sheen, light through the tissue, asymmetry, a pattern by clade and a " +
+                      "margin band on the one skin (shader keyword " + Skin2Keyword + ").");
+        }
+
+        // skin2:end
+        /// <summary>
+        /// The algal blade (<c>EVOSIM_THEATRE_ALGA_BLADE</c>, 0 off by default), read once: a free-drifting blade (the frond) is
+        /// drawn as one or a few broad blades that fill most of its part (<c>TheatreBody.shader</c>, <c>AlgaBlade*</c>), in place
+        /// of the stem with leaflets. On only with the marine producers' dial (<c>EVOSIM_THEATRE_ALGA</c>) on too, which the
+        /// palette reads the same way. Off means the shader keyword below is never enabled and nothing else in the theatre reads it.
+        /// </summary>
+        public static readonly bool AlgaBladeOn =
+            Dial("EVOSIM_THEATRE_ALGA", 0f, 0f, 1f) > 0f && Dial("EVOSIM_THEATRE_ALGA_BLADE", 0f, 0f, 1f) >= 0.5f;
+
+        /// <summary>The shader keyword the blade's code in <c>TheatreBody.shader</c> is compiled under.</summary>
+        public const string AlgaBladeKeyword = "_EVO_ALGA_BLADE";
+
+        private static bool _algaBladeKeywordOn;
+
+        /// <summary>
+        /// Enables <see cref="AlgaBladeKeyword"/> once, for every material that has it, when the dial is on; does nothing when
+        /// it is off. Called when the look is pushed and the first time the palette paints a frond, and nothing turns it off.
+        /// </summary>
+        public static void EnsureAlgaBladeKeyword()
+        {
+            if (!AlgaBladeOn || _algaBladeKeywordOn) return;
+
+            Shader.EnableKeyword(AlgaBladeKeyword);
+            _algaBladeKeywordOn = true;
+            Debug.Log("[Theatre] algal blade on: a free-drifting blade is drawn as broad blades (shader keyword " +
+                      AlgaBladeKeyword + ").");
+        }
+
+        /// <summary>
+        /// Level 2 of the algal blade (<c>EVOSIM_THEATRE_ALGA_BLADE</c> at 2), read once: each frond takes a colour along a
+        /// ramp from sea lettuce to kelp, the light through the blade when the key is behind it, and a finer ruffle along the
+        /// margin, all shading in <c>TheatreBody.shader</c> (<c>AlgaBlade*</c>, under the keyword below as well as
+        /// <see cref="AlgaBladeKeyword"/>). On only with the marine producers' dial on, as level 1 is. At 0 and 1 the keyword is
+        /// never enabled, and the shader compiles the text it did before.
+        /// </summary>
+        public static readonly bool AlgaBlade2On =
+            Dial("EVOSIM_THEATRE_ALGA", 0f, 0f, 1f) > 0f && Dial("EVOSIM_THEATRE_ALGA_BLADE", 0f, 0f, 3f) >= 1.5f;
+
+        /// <summary>The second shader keyword the blade's level 2 is compiled under.</summary>
+        public const string AlgaBlade2Keyword = "_EVO_ALGA_BLADE2";
+
+        private static bool _algaBlade2KeywordOn;
+
+        /// <summary>
+        /// Enables <see cref="AlgaBlade2Keyword"/> once, for every material that has it, when level 2 is on; does nothing at
+        /// any other level. Called where <see cref="EnsureAlgaBladeKeyword"/> is.
+        /// </summary>
+        public static void EnsureAlgaBlade2Keyword()
+        {
+            if (!AlgaBlade2On || _algaBlade2KeywordOn) return;
+
+            Shader.EnableKeyword(AlgaBlade2Keyword);
+            _algaBlade2KeywordOn = true;
+            Debug.Log("[Theatre] algal blade level 2 on: a colour range, light through the blade and a finer margin ruffle " +
+                      "(shader keyword " + AlgaBlade2Keyword + ").");
+        }
+
+        // BLADE3 begin
+        /// <summary>
+        /// Level 3 of the algal blade (<c>EVOSIM_THEATRE_ALGA_BLADE</c> at 3), read once: level 2, and light through the thin
+        /// blade and a ruffled margin (scallops cut inward, a wave out of the plane within the box's room), in
+        /// <c>TheatreBody.shader</c> (<c>AlgaBlade3*</c>, under the keyword below as well as <see cref="AlgaBladeKeyword"/>). On
+        /// only with the marine producers' dial on, as levels 1 and 2 are. At 2 and below the keyword is never enabled, and the
+        /// shader compiles the text it did before.
+        /// </summary>
+        public static readonly bool AlgaBlade3On =
+            Dial("EVOSIM_THEATRE_ALGA", 0f, 0f, 1f) > 0f && Dial("EVOSIM_THEATRE_ALGA_BLADE", 0f, 0f, 3f) >= 2.5f;
+
+        /// <summary>The third shader keyword the blade's level 3 is compiled under.</summary>
+        public const string AlgaBlade3Keyword = "_EVO_ALGA_BLADE3";
+
+        private static bool _algaBlade3KeywordOn;
+
+        /// <summary>
+        /// Enables <see cref="AlgaBlade3Keyword"/> once, for every material that has it, when level 3 is on; does nothing at
+        /// any other level. Called where <see cref="EnsureAlgaBladeKeyword"/> is.
+        /// </summary>
+        public static void EnsureAlgaBlade3Keyword()
+        {
+            if (!AlgaBlade3On || _algaBlade3KeywordOn) return;
+
+            Shader.EnableKeyword(AlgaBlade3Keyword);
+            _algaBlade3KeywordOn = true;
+            Debug.Log("[Theatre] algal blade level 3 on: light through the thin blade and a ruffled margin " +
+                      "(shader keyword " + AlgaBlade3Keyword + ").");
+        }
+
+        // BLADE3 end
+        // RAMPPHOTO begin
+        /// <summary>
+        /// <c>EVOSIM_THEATRE_ALGA_RAMP_PHOTO</c> (0 to 1, default 0), read once: how far level 2's colour ramp (the sea-lettuce and
+        /// mid-green stops of <c>AlgaBladeColour</c> in <c>TheatreBody.shader</c>) is moved toward photographed sea lettuce, in
+        /// linear colour. Zero unless level 2 of the algal blade is on (<see cref="AlgaBlade2On"/>), as that level's code is. The
+        /// value is the global <c>_EvoAlgaRampPhoto</c>; the shader's code sits under the keyword below.
+        /// </summary>
+        public static readonly float AlgaRampPhoto =
+            AlgaBlade2On ? Dial("EVOSIM_THEATRE_ALGA_RAMP_PHOTO", 0f, 0f, 1f) : 0f;
+
+        /// <summary>True when the photographed ramp's dial is above zero.</summary>
+        public static readonly bool AlgaRampPhotoOn = AlgaRampPhoto > 0f;
+
+        /// <summary>The shader keyword the photographed ramp's lines in <c>TheatreBody.shader</c> are compiled under.</summary>
+        public const string AlgaRampPhotoKeyword = "_EVO_ALGA_RAMP_PHOTO";
+
+        private static bool _algaRampPhotoKeywordOn;
+
+        /// <summary>
+        /// Sets the photographed ramp's global, and enables <see cref="AlgaRampPhotoKeyword"/> once, when the dial is above zero;
+        /// does nothing when it is zero. Called where <see cref="EnsureAlgaBlade2Keyword"/> is.
+        /// </summary>
+        public static void EnsureAlgaRampPhoto()
+        {
+            if (!AlgaRampPhotoOn) return;
+
+            Shader.SetGlobalFloat("_EvoAlgaRampPhoto", AlgaRampPhoto);
+            if (_algaRampPhotoKeywordOn) return;
+
+            Shader.EnableKeyword(AlgaRampPhotoKeyword);
+            _algaRampPhotoKeywordOn = true;
+            Debug.Log("[Theatre] algal blade ramp photo " + AlgaRampPhoto.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) +
+                      ": the sea-lettuce stop moves toward linear (0.4185, 0.5134, 0.1481) and the mid-green stop toward (0.1682, 0.2063, 0.0595) " +
+                      "(shader keyword " + AlgaRampPhotoKeyword + ").");
+        }
+
+        // RAMPPHOTO end
+        // RAMPSTOPS begin
+        /// <summary>The environment variable that replaces the sea-lettuce photo stop (<c>AlgaBladeRampPhotoA</c>).</summary>
+        public const string AlgaRampStopAVariable = "EVOSIM_THEATRE_ALGA_RAMP_STOP_A";
+
+        /// <summary>The environment variable that replaces the mid-green photo stop (<c>AlgaBladeRampPhotoB</c>).</summary>
+        public const string AlgaRampStopBVariable = "EVOSIM_THEATRE_ALGA_RAMP_STOP_B";
+
+        /// <summary>The environment variable that replaces <c>AlgaBladeRampShare</c> under the photographed ramp's keyword.</summary>
+        public const string AlgaRampShareVariable = "EVOSIM_THEATRE_ALGA_RAMP_SHARE";
+
+        /// <summary>
+        /// The sea-lettuce photo stop from <see cref="AlgaRampStopAVariable"/>, read once and only while the photographed ramp
+        /// is on: three numbers <c>r,g,b</c> in linear colour, each 0 to 1. <c>w</c> is 1 when it is set and valid, 0 when it is
+        /// unset or refused, and the shader's constant then stands. The global is <c>_EvoAlgaRampStopA</c>.
+        /// </summary>
+        public static readonly Vector4 AlgaRampStopA = AlgaRampPhotoOn ? ReadAlgaRampStop(AlgaRampStopAVariable) : Vector4.zero;
+
+        /// <summary>The mid-green photo stop, as <see cref="AlgaRampStopA"/> is; the global is <c>_EvoAlgaRampStopB</c>.</summary>
+        public static readonly Vector4 AlgaRampStopB = AlgaRampPhotoOn ? ReadAlgaRampStop(AlgaRampStopBVariable) : Vector4.zero;
+
+        /// <summary>
+        /// The share of the way <c>AlgaBladeColour</c> takes the ramp's hue, from <see cref="AlgaRampShareVariable"/> (0 to 1),
+        /// read once and only while the photographed ramp is on. <c>x</c> is the share, <c>w</c> is 1 when it is set and valid, 0
+        /// when it is unset or refused, and <c>AlgaBladeRampShare</c> then stands. The global is <c>_EvoAlgaRampShare</c>.
+        /// </summary>
+        public static readonly Vector4 AlgaRampShare = AlgaRampPhotoOn ? ReadAlgaRampShare(AlgaRampShareVariable) : Vector4.zero;
+
+        private static bool _algaRampStopsLogged;
+
+        private static bool InUnitRange(float v) => !float.IsNaN(v) && !float.IsInfinity(v) && v >= 0f && v <= 1f;
+
+        // Unset or blank gives zero without a word; a value that is not three numbers in 0 to 1 is refused with a log line naming
+        // the variable, and gives zero too, so the constant stands.
+        private static Vector4 ReadAlgaRampStop(string name)
+        {
+            string text = System.Environment.GetEnvironmentVariable(name);
+            if (string.IsNullOrWhiteSpace(text)) return Vector4.zero;
+
+            string[] parts = text.Split(',');
+            float[] v = new float[3];
+            bool ok = parts.Length == 3;
+            for (int i = 0; ok && i < 3; i++)
+            {
+                ok = float.TryParse(parts[i].Trim(), System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out v[i]) && InUnitRange(v[i]);
+            }
+
+            if (ok) return new Vector4(v[0], v[1], v[2], 1f);
+
+            Debug.LogWarning("[Theatre] " + name + " is not three numbers r,g,b in linear colour, each 0 to 1 ('" + text +
+                             "'); the shader's constant stands.");
+            return Vector4.zero;
+        }
+
+        private static Vector4 ReadAlgaRampShare(string name)
+        {
+            string text = System.Environment.GetEnvironmentVariable(name);
+            if (string.IsNullOrWhiteSpace(text)) return Vector4.zero;
+
+            if (float.TryParse(text.Trim(), System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out float v) && InUnitRange(v))
+                return new Vector4(v, 0f, 0f, 1f);
+
+            Debug.LogWarning("[Theatre] " + name + " is not a number from 0 to 1 ('" + text + "'); the shader's constant stands.");
+            return Vector4.zero;
+        }
+
+        private static string RampStopsText(Vector4 v) =>
+            v.x.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) + "," +
+            v.y.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) + "," +
+            v.z.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
+
+        /// <summary>
+        /// Sets the three globals when the photographed ramp is on, and logs once the values in force and which came from the
+        /// environment; does nothing when the dial is zero. Called straight after <see cref="EnsureAlgaRampPhoto"/>.
+        /// </summary>
+        public static void EnsureAlgaRampStops()
+        {
+            if (!AlgaRampPhotoOn) return;
+
+            Shader.SetGlobalVector("_EvoAlgaRampStopA", AlgaRampStopA);
+            Shader.SetGlobalVector("_EvoAlgaRampStopB", AlgaRampStopB);
+            Shader.SetGlobalVector("_EvoAlgaRampShare", AlgaRampShare);
+            if (_algaRampStopsLogged) return;
+
+            _algaRampStopsLogged = true;
+            Debug.Log("[Theatre] algal blade ramp stops: sea-lettuce stop " +
+                      (AlgaRampStopA.w > 0.5f ? "(" + RampStopsText(AlgaRampStopA) + ") from " + AlgaRampStopAVariable
+                                              : "the shader's (0.4185,0.5134,0.1481)") +
+                      "; mid-green stop " +
+                      (AlgaRampStopB.w > 0.5f ? "(" + RampStopsText(AlgaRampStopB) + ") from " + AlgaRampStopBVariable
+                                              : "the shader's (0.1682,0.2063,0.0595)") +
+                      "; share " +
+                      (AlgaRampShare.w > 0.5f
+                          ? AlgaRampShare.x.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + " from " + AlgaRampShareVariable
+                          : "the shader's AlgaBladeRampShare") + ".");
+        }
+
+        // RAMPSTOPS end
+        // ROUNDPHOTO begin
+        /// <summary>
+        /// <c>EVOSIM_THEATRE_ALGA_ROUND_PHOTO</c> (0 to 1, default 0), read once: how far a round producer (a photosynthetic sphere,
+        /// capsule or superellipsoid, which <c>TheatrePalette.DrawnAsLeaf</c> keeps off the blade path) is taken toward the colour a
+        /// blade gets at the photographed ramp's mid-green stop. Zero unless the photographed ramp is on
+        /// (<see cref="AlgaRampPhotoOn"/>), as the stops it reads are. The value is the global <c>_EvoAlgaRoundPhoto</c>; the
+        /// shader's code sits under the keyword below.
+        /// </summary>
+        public static readonly float AlgaRoundPhoto =
+            AlgaRampPhotoOn ? Dial("EVOSIM_THEATRE_ALGA_ROUND_PHOTO", 0f, 0f, 1f) : 0f;
+
+        /// <summary>True when the round producers' photographed colour is above zero.</summary>
+        public static readonly bool AlgaRoundPhotoOn = AlgaRoundPhoto > 0f;
+
+        /// <summary>The shader keyword the round producers' lines in <c>TheatreBody.shader</c> are compiled under.</summary>
+        public const string AlgaRoundPhotoKeyword = "_EVO_ALGA_ROUND_PHOTO";
+
+        private static bool _algaRoundPhotoKeywordOn;
+
+        /// <summary>
+        /// Sets the round producers' global, and enables <see cref="AlgaRoundPhotoKeyword"/> once, when the dial is above zero;
+        /// does nothing when it is zero. Called straight after <see cref="EnsureAlgaRampStops"/>.
+        /// </summary>
+        public static void EnsureAlgaRoundPhoto()
+        {
+            if (!AlgaRoundPhotoOn) return;
+
+            Shader.SetGlobalFloat("_EvoAlgaRoundPhoto", AlgaRoundPhoto);
+            if (_algaRoundPhotoKeywordOn) return;
+
+            Shader.EnableKeyword(AlgaRoundPhotoKeyword);
+            _algaRoundPhotoKeywordOn = true;
+            Debug.Log("[Theatre] algal round producers photo " + AlgaRoundPhoto.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) +
+                      ": a round part takes that share of the multiplier a blade gets at the mid-green stop, target " +
+                      (AlgaRampStopB.w > 0.5f
+                          ? "(" + RampStopsText(AlgaRampStopB) + ") from " + AlgaRampStopBVariable
+                          : "the ramp's mid green (0.055,0.2429,0.0301) moved toward (0.1682,0.2063,0.0595) by the ramp photo " +
+                            AlgaRampPhoto.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)) +
+                      " (shader keyword " + AlgaRoundPhotoKeyword + ").");
+        }
+
+        // ROUNDPHOTO end
+        // ROUNDTARGET begin
+        /// <summary>
+        /// <c>EVOSIM_THEATRE_ALGA_ROUND_TARGET</c> (0 to 1, default 0), read once: how far a round producer (a photosynthetic
+        /// sphere, capsule or superellipsoid, which <c>TheatrePalette.DrawnAsLeaf</c> keeps off the blade path) takes, on its whole
+        /// light as a blade does, the colour multiplier a blade gets at the photographed ramp's mid-green stop. Zero unless the
+        /// photographed ramp is on (<see cref="AlgaRampPhotoOn"/>), as the stops it reads are. It is independent of
+        /// <c>EVOSIM_THEATRE_ALGA_ROUND_PHOTO</c>. The value is the global <c>_EvoAlgaRoundTarget</c>; the shader's code sits under
+        /// the keyword below.
+        /// </summary>
+        public static readonly float AlgaRoundTarget =
+            AlgaRampPhotoOn ? Dial("EVOSIM_THEATRE_ALGA_ROUND_TARGET", 0f, 0f, 1f) : 0f;
+
+        /// <summary>True when the round producers' target colour is above zero.</summary>
+        public static readonly bool AlgaRoundTargetOn = AlgaRoundTarget > 0f;
+
+        /// <summary>The environment variable that gives the round producers' target its own stop, apart from the blades' mid-green stop.</summary>
+        public const string AlgaRoundStopVariable = "EVOSIM_THEATRE_ALGA_ROUND_STOP";
+
+        /// <summary>
+        /// The round producers' own target stop from <see cref="AlgaRoundStopVariable"/>, read once and only while the round
+        /// producers' target is on: three numbers <c>r,g,b</c> in linear colour, each 0 to 1, parsed and refused as the ramp's
+        /// stops are. <c>w</c> is 1 when it is set and valid, 0 when it is unset or refused, and the target the blades' stops
+        /// give (<see cref="AlgaRampStopB"/>, else the ramp's own) then stands. The global is <c>_EvoAlgaRoundStop</c>.
+        /// </summary>
+        public static readonly Vector4 AlgaRoundStop = AlgaRoundTargetOn ? ReadAlgaRampStop(AlgaRoundStopVariable) : Vector4.zero;
+
+        /// <summary>The shader keyword the round producers' target lines in <c>TheatreBody.shader</c> are compiled under.</summary>
+        public const string AlgaRoundTargetKeyword = "_EVO_ALGA_ROUND_TARGET";
+
+        private static bool _algaRoundTargetKeywordOn;
+
+        /// <summary>
+        /// Sets the round producers' target global, and enables <see cref="AlgaRoundTargetKeyword"/> once, when the dial is above
+        /// zero; does nothing when it is zero. Called after <see cref="EnsureAlgaRoundPhoto"/>.
+        /// </summary>
+        public static void EnsureAlgaRoundTarget()
+        {
+            if (!AlgaRoundTargetOn) return;
+
+            Shader.SetGlobalFloat("_EvoAlgaRoundTarget", AlgaRoundTarget);
+            Shader.SetGlobalVector("_EvoAlgaRoundStop", AlgaRoundStop);
+            if (_algaRoundTargetKeywordOn) return;
+
+            Shader.EnableKeyword(AlgaRoundTargetKeyword);
+            _algaRoundTargetKeywordOn = true;
+            Debug.Log("[Theatre] algal round producers target " + AlgaRoundTarget.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) +
+                      ": a round part's whole light takes that share of the multiplier a blade gets at the mid-green stop, target " +
+                      (AlgaRoundStop.w > 0.5f
+                          ? "(" + RampStopsText(AlgaRoundStop) + ") from " + AlgaRoundStopVariable
+                          : AlgaRampStopB.w > 0.5f
+                              ? "(" + RampStopsText(AlgaRampStopB) + ") from " + AlgaRampStopBVariable
+                              : "the ramp's mid green (0.055,0.2429,0.0301) moved toward (0.1682,0.2063,0.0595) by the ramp photo " +
+                                AlgaRampPhoto.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)) +
+                      " (shader keyword " + AlgaRoundTargetKeyword + ").");
+        }
+
+        // ROUNDTARGET end
+        // THALLI begin
+        /// <summary>
+        /// The thalli (<c>EVOSIM_THEATRE_THALLI</c>, 0 off by default, 1 on), read once: a compact photosynthetic box, which the
+        /// blade path draws as a flat lamina, is drawn as a seaweed thallus that fills its box (<c>TheatreMeshes.Thallus</c>):
+        /// Ulva, Padina or Codium by its proportions. Off means no thallus mesh is built, the shader keyword below is never
+        /// enabled, and nothing else in the theatre reads it.
+        /// </summary>
+        public static readonly bool ThalliOn = Dial("EVOSIM_THEATRE_THALLI", 0f, 0f, 1f) >= 0.5f;
+
+        /// <summary>The shader keyword the thallus's lines in <c>TheatreBody.shader</c> are compiled under.</summary>
+        public const string ThalliKeyword = "_EVO_THALLI";
+
+        private static bool _thalliKeywordOn;
+
+        /// <summary>
+        /// Enables <see cref="ThalliKeyword"/> once, for every material that has it, when the dial is on; does nothing when it is
+        /// off. Called when the look is pushed and the first time the palette dresses a thallus, and nothing turns it off.
+        /// </summary>
+        public static void EnsureThalliKeyword()
+        {
+            if (!ThalliOn || _thalliKeywordOn) return;
+
+            Shader.EnableKeyword(ThalliKeyword);
+            _thalliKeywordOn = true;
+            Debug.Log("[Theatre] thalli on: a compact producer is drawn as Ulva, Padina or Codium inside its box (shader keyword " +
+                      ThalliKeyword + ").");
+        }
+
+        // THALLI end
+        // ARC begin
+        /// <summary>
+        /// The blade's arc bend with the current (<c>EVOSIM_THEATRE_ALGA_ARC</c> at 1 and 2, 0 off by default), read once: 1 from
+        /// a dial of 0.5, 2 from 1.5. Level 1 bends a broad blade as a rod bends, inside its collider box; level 2 is a
+        /// trial beyond the collider, whose reach the palette logs per blade (<c>TheatreBody.shader</c>, <c>AlgaArc*</c>,
+        /// under the keyword below as well as <see cref="AlgaBladeKeyword"/> and <see cref="AlgaBlade2Keyword"/>). Zero unless
+        /// the blade is at level 2 or 3 and <see cref="AlgaBendStrength"/> is above zero, which also needs the marine producers'
+        /// and the sway dials: the flow a blade bends with is written by that dial's plumbing. It is a dial of its own and
+        /// changes nothing of <c>EVOSIM_THEATRE_ALGA_BEND</c> at any value. Zero means the keyword is never enabled and
+        /// nothing is pushed.
+        /// </summary>
+        public static readonly int AlgaArcLevel = ReadAlgaArcLevel();
+
+        private static int ReadAlgaArcLevel()
+        {
+            if (!(AlgaBendStrength > 0f) || !AlgaBlade2On) return 0;
+
+            float dial = Dial("EVOSIM_THEATRE_ALGA_ARC", 0f, 0f, 2f);
+            return dial >= 1.5f ? 2 : dial >= 0.5f ? 1 : 0;
+        }
+
+        // ARCROOM begin
+        /// <summary>
+        /// The share of a blade's arc its bend may reach beyond its box on the thin axis (<c>EVOSIM_THEATRE_ALGA_ARC_ROOM</c>, 0 to 0.3,
+        /// 0 off by default), read once; a preview beyond D242. Zero unless the arc is on (<see cref="AlgaArcLevel"/> above zero), so
+        /// it acts where the arc acts and nowhere else. It reaches the shader in <c>_EvoAlgaArc.y</c> and the renderer's bounds in
+        /// <c>TheatreMeshes.LeafBounds</c>.
+        /// </summary>
+        public static readonly float AlgaArcRoom = AlgaArcLevel > 0 ? Dial("EVOSIM_THEATRE_ALGA_ARC_ROOM", 0f, 0f, 0.3f) : 0f;
+        // ARCROOM end
+        // ARCDRIVE begin
+        /// <summary>
+        /// A diagnostic view of what holds the blade arc down (<c>EVOSIM_THEATRE_ALGA_ARC_DRIVE</c>, 0 to 3, 0 off by default), read once,
+        /// never for a film. Zero unless the arc is on (<see cref="AlgaArcLevel"/> above zero), so it acts where the arc acts and nowhere
+        /// else. 1 bends every acting blade by each axis' full limit; 2 draws it in grey by the flow's component across its thin axis;
+        /// 3 by the drive. It reaches the shader in <c>_EvoAlgaArcDrive</c> and the keyword <see cref="AlgaArcDriveKeyword"/>.
+        /// </summary>
+        public static readonly int AlgaArcDriveMode = AlgaArcLevel > 0 ? (int)(Dial("EVOSIM_THEATRE_ALGA_ARC_DRIVE", 0f, 0f, 3f) + 0.5f) : 0;
+
+        /// <summary>The shader keyword the arc diagnostic in <c>TheatreBody.shader</c> is compiled under.</summary>
+        public const string AlgaArcDriveKeyword = "_EVO_ALGA_ARC_DRIVE";
+
+        private static bool _algaArcDriveKeywordOn;
+
+        /// <summary>
+        /// Enables <see cref="AlgaArcDriveKeyword"/> once, and says once what the value draws, when the diagnostic is on; does nothing
+        /// when it is off. Called from <see cref="EnsureAlgaArcKeyword"/>, so only when the arc is on.
+        /// </summary>
+        private static void EnsureAlgaArcDriveKeyword()
+        {
+            if (AlgaArcDriveMode == 0 || _algaArcDriveKeywordOn) return;
+
+            Shader.EnableKeyword(AlgaArcDriveKeyword);
+            _algaArcDriveKeywordOn = true;
+            Debug.Log("[Theatre] arc drive diagnostic " + AlgaArcDriveMode + " on, not for a film (shader keyword " + AlgaArcDriveKeyword +
+                      "): " + (AlgaArcDriveMode == 1
+                          ? "every blade the arc acts on bends by each axis' full limit, the flow's component and the drive taken as one."
+                          : AlgaArcDriveMode == 2
+                              ? "every blade the arc acts on is grey by |flow . thin axis|, black none (0.004) and white all (1)."
+                              : "every blade the arc acts on is grey by the drive (share to its power, times the wave, times the hold), " +
+                                "black none (0.004) and white all (1).") +
+                      " A blade the arc does not act on is drawn as usual.");
+        }
+        // ARCDRIVE end
+        // FLUTTER begin
+        /// <summary>
+        /// The blade's flutter (<c>EVOSIM_THEATRE_ALGA_FLUTTER</c>, 0 to 1, 0 off by default), read once. Zero unless the arc is on
+        /// (<see cref="AlgaArcLevel"/> above zero), so it acts where the arc acts and nowhere else. It reaches the shader in
+        /// <c>_EvoAlgaArc.z</c> and the keyword <see cref="AlgaFlutterKeyword"/>.
+        /// </summary>
+        public static readonly float AlgaFlutter = AlgaArcLevel > 0 ? Dial("EVOSIM_THEATRE_ALGA_FLUTTER", 0f, 0f, 1f) : 0f;
+
+        /// <summary>The shader keyword the flutter in <c>TheatreBody.shader</c> is compiled under.</summary>
+        public const string AlgaFlutterKeyword = "_EVO_ALGA_FLUTTER";
+
+        // The flutter wave's constants as the shader has them (AlgaFlutterHertz, AlgaFlutterWaves), here only for the log: change both together.
+        private const float AlgaFlutterHertzLogged = 0.5f;
+        private const float AlgaFlutterWavesLogged = 1f;
+
+        private static bool _algaFlutterKeywordOn;
+
+        /// <summary>
+        /// Enables <see cref="AlgaFlutterKeyword"/> once, and says once its value and the wave's constants, when the dial is on; does
+        /// nothing when it is off. Called from <see cref="EnsureAlgaArcKeyword"/>, so only when the arc is on.
+        /// </summary>
+        private static void EnsureAlgaFlutterKeyword()
+        {
+            if (!(AlgaFlutter > 0f) || _algaFlutterKeywordOn) return;
+
+            Shader.EnableKeyword(AlgaFlutterKeyword);
+            _algaFlutterKeywordOn = true;
+            Debug.Log("[Theatre] algal blade flutter " + AlgaFlutter.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) +
+                      " on (shader keyword " + AlgaFlutterKeyword + "): a wave from the anchor to the free end across the blade's thin axis, " +
+                      AlgaFlutterHertzLogged.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + " Hz and " +
+                      AlgaFlutterWavesLogged.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) +
+                      " wave(s) along the arc, at most the thin axis' limit, by the current's speed.");
+        }
+        // FLUTTER end
+        // FLUTTERNOISE begin
+        /// <summary>
+        /// The flutter's noise (<c>EVOSIM_THEATRE_ALGA_FLUTTER_NOISE</c>, 0 to 1, 0 off by default), read once. Zero unless the flutter is
+        /// on (<see cref="AlgaFlutter"/> above zero). Each blade ripples at a frequency and an amplitude of its own, and a slow gust
+        /// swells and slackens the ripple. It reaches the shader in <c>_EvoAlgaArc.w</c> and the keyword <see cref="AlgaFlutterNoiseKeyword"/>.
+        /// </summary>
+        public static readonly float AlgaFlutterNoise = AlgaFlutter > 0f ? Dial("EVOSIM_THEATRE_ALGA_FLUTTER_NOISE", 0f, 0f, 1f) : 0f;
+
+        /// <summary>The shader keyword the flutter's noise in <c>TheatreBody.shader</c> is compiled under.</summary>
+        public const string AlgaFlutterNoiseKeyword = "_EVO_ALGA_FLUTTER_NOISE";
+
+        // The noise's constants as the shader has them (AlgaFlutterNoiseHertzLow and High, AlgaFlutterNoiseAmpLow and High, AlgaFlutterGustFloor and Ceiling,
+        // AlgaFlutterGustHertzA, B and C, AlgaFlutterGustSpread), here only for the log: change both together.
+        private const float AlgaFlutterNoiseHertzLowLogged = 0.3f;
+        private const float AlgaFlutterNoiseHertzHighLogged = 0.7f;
+        private const float AlgaFlutterNoiseAmpLowLogged = 0.7f;
+        private const float AlgaFlutterNoiseAmpHighLogged = 1.3f;
+        private const float AlgaFlutterGustFloorLogged = 0.4f;
+        private const float AlgaFlutterGustCeilingLogged = 1.6f;
+        private const float AlgaFlutterGustHertzALogged = 0.053f;
+        private const float AlgaFlutterGustHertzBLogged = 0.089f;
+        private const float AlgaFlutterGustHertzCLogged = 0.137f;
+        private const float AlgaFlutterGustSpreadLogged = 60f;
+
+        private static bool _algaFlutterNoiseKeywordOn;
+
+        /// <summary>
+        /// Enables <see cref="AlgaFlutterNoiseKeyword"/> once, and says once its value and the constants, when the dial is on; does
+        /// nothing when it is off. Called from <see cref="EnsureAlgaArcKeyword"/>, after the flutter's own, so only when the flutter is on.
+        /// </summary>
+        private static void EnsureAlgaFlutterNoiseKeyword()
+        {
+            if (!(AlgaFlutterNoise > 0f) || _algaFlutterNoiseKeywordOn) return;
+
+            Shader.EnableKeyword(AlgaFlutterNoiseKeyword);
+            _algaFlutterNoiseKeywordOn = true;
+            System.Globalization.CultureInfo invariant = System.Globalization.CultureInfo.InvariantCulture;
+            Debug.Log("[Theatre] algal blade flutter noise " + AlgaFlutterNoise.ToString("0.###", invariant) +
+                      " on (shader keyword " + AlgaFlutterNoiseKeyword + "): each blade its own ripple, " +
+                      AlgaFlutterNoiseHertzLowLogged.ToString("0.###", invariant) + " to " + AlgaFlutterNoiseHertzHighLogged.ToString("0.###", invariant) +
+                      " Hz and an amplitude factor from " + AlgaFlutterNoiseAmpLowLogged.ToString("0.###", invariant) +
+                      " to " + AlgaFlutterNoiseAmpHighLogged.ToString("0.###", invariant) + " and a phase of its own by the part's number, under a gust of three sines at " + AlgaFlutterGustHertzALogged.ToString("0.###", invariant) + ", " +
+                      AlgaFlutterGustHertzBLogged.ToString("0.###", invariant) + " and " + AlgaFlutterGustHertzCLogged.ToString("0.###", invariant) +
+                      " Hz from " + AlgaFlutterGustFloorLogged.ToString("0.###", invariant) + " to " + AlgaFlutterGustCeilingLogged.ToString("0.###", invariant) + " of the ripple, each blade up to " +
+                      AlgaFlutterGustSpreadLogged.ToString("0.###", invariant) + " s ahead of the clock.");
+        }
+        // FLUTTERNOISE end
+        /// <summary>The shader keyword the blade's arc bend in <c>TheatreBody.shader</c> is compiled under.</summary>
+        public const string AlgaArcKeyword = "_EVO_ALGA_ARC";
+
+        private static bool _algaArcKeywordOn;
+
+        /// <summary>
+        /// Enables <see cref="AlgaArcKeyword"/> once, for every material that has it, when the arc is on; does nothing when
+        /// it is off. Called when the look is pushed and the first time the palette paints a frond.
+        /// </summary>
+        public static void EnsureAlgaArcKeyword()
+        {
+            if (AlgaArcLevel == 0 || _algaArcKeywordOn) return;
+
+            Shader.EnableKeyword(AlgaArcKeyword);
+            _algaArcKeywordOn = true;
+            // ARCDRIVE begin
+            EnsureAlgaArcDriveKeyword();
+            // ARCDRIVE end
+            // FLUTTER begin
+            EnsureAlgaFlutterKeyword();
+            // FLUTTER end
+            // FLUTTERNOISE begin
+            EnsureAlgaFlutterNoiseKeyword();
+            // FLUTTERNOISE end
+            Debug.Log("[Theatre] algal blade arc bend level " + AlgaArcLevel + " on" +
+                      (AlgaArcLevel > 1 ? ", a trial beyond the collider" : ", inside the collider") +
+                      " (shader keyword " + AlgaArcKeyword + ").");
+        }
+
+        /// <summary>
+        /// The arc's switch (<c>_EvoAlgaArc</c>, TheatreBody.shader): x the level while the look is not held, else zero. Never
+        /// called with the dial off, so the global stays the zero a shader global is.
+        /// </summary>
+        private static void PushAlgaArc(bool on)
+        {
+            Shader.SetGlobalVector("_EvoAlgaArc", new Vector4(on ? (float)AlgaArcLevel : 0f, 0f, 0f, 0f));
+            // ARCROOM begin
+            if (AlgaArcRoom > 0f) Shader.SetGlobalVector("_EvoAlgaArc", new Vector4(on ? (float)AlgaArcLevel : 0f, on ? AlgaArcRoom : 0f, 0f, 0f));
+            // ARCROOM end
+            // FLUTTER begin
+            if (AlgaFlutter > 0f) Shader.SetGlobalVector("_EvoAlgaArc", new Vector4(on ? (float)AlgaArcLevel : 0f, on ? AlgaArcRoom : 0f, on ? AlgaFlutter : 0f, 0f));
+            // FLUTTER end
+            // FLUTTERNOISE begin
+            if (AlgaFlutterNoise > 0f) Shader.SetGlobalVector("_EvoAlgaArc", new Vector4(on ? (float)AlgaArcLevel : 0f, on ? AlgaArcRoom : 0f, on ? AlgaFlutter : 0f, on ? AlgaFlutterNoise : 0f));
+            // FLUTTERNOISE end
+            // ARCDRIVE begin
+            if (AlgaArcDriveMode > 0) Shader.SetGlobalFloat("_EvoAlgaArcDrive", on ? (float)AlgaArcDriveMode : 0f);
+            // ARCDRIVE end
+        }
+
+        // ARC end
+        // LOOKSTAGE begin
+        /// <summary>
+        /// <c>EVOSIM_THEATRE_LOOK_STAGE</c> (0 to 3, default 0), read once: a diagnostic, never a look and never a film. Above 0 a
+        /// producer's pixel (a blade, or under <c>EVOSIM_THEATRE_THALLI</c> a thallus) is returned early from the body shader's
+        /// forward fragment, opaque and in linear, with its colour at one stage: 1 the body as it enters the lighting, 2 the diffuse
+        /// light alone, 3 everything before the water (the fog not yet mixed). Every other pixel draws as usual. The value is the
+        /// global <c>_EvoLookStage</c>, the shader's code sits under the keyword below. Off, the keyword is never enabled and the
+        /// global never set.
+        /// </summary>
+        public static readonly int LookStage = Mathf.RoundToInt(Dial("EVOSIM_THEATRE_LOOK_STAGE", 0f, 0f, 3f));
+
+        /// <summary>True when the look stage's dial is at 1, 2 or 3.</summary>
+        public static readonly bool LookStageOn = LookStage >= 1;
+
+        /// <summary>The shader keyword the look stage's lines in <c>TheatreBody.shader</c> are compiled under.</summary>
+        public const string LookStageKeyword = "_EVO_LOOK_STAGE";
+
+        private static bool _lookStageKeywordOn;
+
+        /// <summary>
+        /// Sets the look stage's global, and enables <see cref="LookStageKeyword"/> once, when the dial is on; does nothing when it
+        /// is off. Called when the look is pushed, and nothing turns it off.
+        /// </summary>
+        public static void EnsureLookStage()
+        {
+            if (!LookStageOn) return;
+
+            Shader.SetGlobalFloat("_EvoLookStage", LookStage);
+            if (_lookStageKeywordOn) return;
+
+            Shader.EnableKeyword(LookStageKeyword);
+            _lookStageKeywordOn = true;
+            string what = LookStage == 1
+                ? "the body colour as it enters the lighting"
+                : LookStage == 2 ? "the diffuse light alone" : "everything before the water, the fog not yet mixed";
+            Debug.Log("[Theatre] look stage " + LookStage + " on: a producer's pixel draws " + what + ", opaque and linear (shader keyword " +
+                      LookStageKeyword + "). A diagnostic, never for a film.");
+        }
+        // LOOKSTAGE end
+        // LOOKPROBE begin
+        /// <summary>
+        /// <c>EVOSIM_THEATRE_LOOK_PROBE</c> (0 to 3, an integer, default 0), read once: a diagnostic, never a look and never a film. It
+        /// switches one colour term in the body shader's forward fragment, to show whether that term is live. 1 skips the marine
+        /// producers' level-2 colour ramp (<c>AlgaBladeColour</c>), so its ratio is one and the blade keeps every other term; 2 draws a
+        /// sea-lettuce thallus (under <c>EVOSIM_THEATRE_THALLI</c>) magenta wherever the tone multiply on a part's whole light reaches
+        /// it; 3 draws every thallus a flat colour by its form (sea lettuce red, Padina green, Codium blue). The value is the global
+        /// <c>_EvoLookProbe</c>, the shader's code sits under the keyword below. Off, the keyword is never
+        /// enabled and the global never set.
+        /// </summary>
+        public static readonly int LookProbe = Mathf.RoundToInt(Dial("EVOSIM_THEATRE_LOOK_PROBE", 0f, 0f, 3f));
+
+        /// <summary>True when the look probe's dial is at 1, 2 or 3.</summary>
+        public static readonly bool LookProbeOn = LookProbe >= 1;
+
+        /// <summary>The shader keyword the look probe's lines in <c>TheatreBody.shader</c> are compiled under.</summary>
+        public const string LookProbeKeyword = "_EVO_LOOK_PROBE";
+
+        private static bool _lookProbeKeywordOn;
+
+        /// <summary>
+        /// Sets the look probe's global, and enables <see cref="LookProbeKeyword"/> once, when the dial is on; does nothing when it
+        /// is off. Called when the look is pushed, and nothing turns it off.
+        /// </summary>
+        public static void EnsureLookProbe()
+        {
+            if (!LookProbeOn) return;
+
+            Shader.SetGlobalFloat("_EvoLookProbe", LookProbe);
+            if (_lookProbeKeywordOn) return;
+
+            Shader.EnableKeyword(LookProbeKeyword);
+            _lookProbeKeywordOn = true;
+            string what = LookProbe == 1
+                ? "the level-2 colour ramp's multiply on a blade is skipped"
+                : LookProbe == 2
+                    ? "a sea-lettuce thallus draws magenta where the tone multiply on the whole light reaches it"
+                : "every thallus draws a flat colour by its form where the tone multiply on the whole light reaches it (sea lettuce red, Padina green, Codium blue)";
+            Debug.Log("[Theatre] look probe " + LookProbe + " on: " + what + " (shader keyword " + LookProbeKeyword +
+                      "). A diagnostic, never for a film.");
+        }
+        // LOOKPROBE end
+        // caustic-variety:begin
+        /// <summary>
+        /// The varied caustic (<c>EVOSIM_THEATRE_CAUSTIC_VARIETY</c>, 0 off by default), read once: the caustic net the bed, the rocks,
+        /// the bodies, the shafts and the snow are lit by is built from six wave trains at six scales with a warp, group envelopes, a
+        /// phase wobble and a depth-raised fold clamp (<c>TheatreWater.hlsl</c>, <c>EvoCausticGainVaried</c>). Off means the shader
+        /// keyword below is never enabled and nothing else in the theatre reads it.
+        /// </summary>
+        public static readonly bool CausticVarietyOn = Dial("EVOSIM_THEATRE_CAUSTIC_VARIETY", 0f, 0f, 1f) >= 0.5f;
+
+        /// <summary>The shader keyword the varied caustic's code in <c>TheatreWater.hlsl</c> is compiled under.</summary>
+        public const string CausticVarietyKeyword = "_EVO_CAUSTIC_VARIETY";
+
+        private static bool _causticVarietyKeywordOn;
+
+        /// <summary>
+        /// Enables <see cref="CausticVarietyKeyword"/> once, for every material that has it, when the dial is on; does nothing when
+        /// it is off. Called when the look is pushed and nothing turns it off.
+        /// </summary>
+        public static void EnsureCausticVarietyKeyword()
+        {
+            if (!CausticVarietyOn || _causticVarietyKeywordOn) return;
+
+            Shader.EnableKeyword(CausticVarietyKeyword);
+            _causticVarietyKeywordOn = true;
+            Debug.Log("[Theatre] varied caustic on (shader keyword " + CausticVarietyKeyword + ").");
+        }
+
+        // caustic-variety:end
+        /// <summary>
+        /// Dappled light on bodies (<c>EVOSIM_THEATRE_BODY_DAPPLE</c>, 0 off by default; 1, 2 and 3), read once: moving
+        /// patches of the water's light over the bodies in the top metres, on the one skin and on parts alike, in place of
+        /// the body caustic's few hairlines on upward faces (<c>TheatreBody.shader</c>, <c>EvoDappleNet</c>). The step
+        /// sets the strength (<see cref="BodyDappleStrength"/>): 0.7, 1.0 and 1.4. Off means the shader keyword below is
+        /// never enabled, the global is never set and nothing else in the theatre reads it.
+        /// </summary>
+        public static readonly int BodyDappleStep = Mathf.RoundToInt(Dial("EVOSIM_THEATRE_BODY_DAPPLE", 0f, 0f, 3f));
+
+        /// <summary>True when the body dapple's dial is at 1, 2 or 3.</summary>
+        public static readonly bool BodyDappleOn = BodyDappleStep >= 1;
+
+        /// <summary>The dapple's strength at each step (index 0 is off): what the caustic colour is multiplied by at its brightest.</summary>
+        private static readonly float[] BodyDappleStrengths = { 0f, 0.7f, 1.0f, 1.4f };
+
+        /// <summary>The strength of the dapple at the dial's step, zero when the dial is off.</summary>
+        public static float BodyDappleStrength => BodyDappleStrengths[Mathf.Clamp(BodyDappleStep, 0, 3)];
+
+        /// <summary>The shader keyword the dapple's code in <c>TheatreBody.shader</c> is compiled under.</summary>
+        public const string BodyDappleKeyword = "_EVO_BODY_DAPPLE";
+
+        private static bool _bodyDappleKeywordOn;
+
+        /// <summary>
+        /// Enables <see cref="BodyDappleKeyword"/> once, for every material that has it, when the dial is on; does nothing
+        /// when it is off. Called when the look is pushed, and nothing turns it off.
+        /// </summary>
+        public static void EnsureBodyDappleKeyword()
+        {
+            if (!BodyDappleOn || _bodyDappleKeywordOn) return;
+
+            Shader.EnableKeyword(BodyDappleKeyword);
+            _bodyDappleKeywordOn = true;
+            Debug.Log("[Theatre] body dapple on: step " + BodyDappleStep + ", strength " +
+                      BodyDappleStrength.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) +
+                      " (shader keyword " + BodyDappleKeyword + ").");
+        }
+
+        /// <summary>
+        /// The dapple's strength for the shaders (<c>_EvoDapple</c>): the step's strength while the look is not held, and zero
+        /// while it is, which draws the body caustic as it was. Only called with the dial on.
+        /// </summary>
+        private static void PushBodyDapple(bool on)
+        {
+            EnsureBodyDappleKeyword();
+            Shader.SetGlobalFloat("_EvoDapple", on ? BodyDappleStrength : 0f);
+        }
+
         // ---------------------------------------------------------------- the furniture
 
         /// <summary>Motes of marine snow over the whole box, whatever the population.</summary>
@@ -440,6 +1303,9 @@ namespace Evosim.Theatre
         private GameObject _march;
         private Material _marchMaterial;
         private GameObject _shells;
+
+        /// <summary>The snow shells' renderer, or null: the lens draws them after itself (<see cref="TheatreLens"/>).</summary>
+        public Renderer ShellsRenderer => _shells != null ? _shells.GetComponent<Renderer>() : null;
         private Material _shellMaterial;
 
         private bool _fogSaved;
@@ -553,7 +1419,8 @@ namespace Evosim.Theatre
             // the sun to be.
             PushWater();
 
-            if (Look.Any) Debug.Log("[Theatre] " + Look.Describe());
+            // Always told, switches on or off, so the log names the look set a picture was drawn with.
+            Debug.Log("[Theatre] " + Look.Describe());
         }
 
         /// <summary>
@@ -689,7 +1556,86 @@ namespace Evosim.Theatre
                 _daylight.Overcast));
 
             PushSecond(on);
+            PushAlgaBend(on);
+            if (AlgaBladeOn) EnsureAlgaBladeKeyword();
+            if (AlgaBlade2On) EnsureAlgaBlade2Keyword();
+            // BLADE3 begin
+            if (AlgaBlade3On) EnsureAlgaBlade3Keyword();
+            // BLADE3 end
+            // RAMPPHOTO begin
+            if (AlgaRampPhotoOn) EnsureAlgaRampPhoto();
+            // RAMPPHOTO end
+            // RAMPSTOPS begin
+            if (AlgaRampPhotoOn) EnsureAlgaRampStops();
+            // RAMPSTOPS end
+            // ROUNDPHOTO begin
+            if (AlgaRoundPhotoOn) EnsureAlgaRoundPhoto();
+            // ROUNDPHOTO end
+            // ROUNDTARGET begin
+            if (AlgaRoundTargetOn) EnsureAlgaRoundTarget();
+            // ROUNDTARGET end
+            // ARC begin
+            if (AlgaArcLevel > 0)
+            {
+                PushAlgaArc(on);
+                EnsureAlgaArcKeyword();
+            }
+            // ARC end
+            // THALLI begin
+            if (ThalliOn) EnsureThalliKeyword();
+            // THALLI end
+            // LOOKSTAGE begin
+            if (LookStageOn) EnsureLookStage();
+            // LOOKSTAGE end
+            // LOOKPROBE begin
+            if (LookProbeOn) EnsureLookProbe();
+            // LOOKPROBE end
+            if (CausticVarietyOn) EnsureCausticVarietyKeyword(); // caustic-variety
+            if (BodyDappleOn) PushBodyDapple(on);
+            if (Skin2On) EnsureSkin2Keyword(); // skin2
+            // SHEEN2 begin
+            if (SheenCapBaseOn) EnsureSheenCapBaseKeyword();
+            // SHEEN2 end
             ApplyFurnitureSwitches();
+        }
+
+        /// <summary>
+        /// The bend with the current's switch (<c>_EvoAlgaBend</c>, TheatreBody.shader): z the dial's strength and w
+        /// one while it is on and the look is not held. Never set with the dial off, so the global stays the zero a
+        /// shader global is. The flow itself is per blade (<see cref="TheatrePalette.Flow"/>).
+        /// </summary>
+        private void PushAlgaBend(bool on)
+        {
+            if (!(AlgaBendStrength > 0f)) return;
+
+            Shader.SetGlobalVector("_EvoAlgaBend", new Vector4(0f, 0f, AlgaBendStrength, on ? 1f : 0f));
+        }
+
+        /// <summary>
+        /// The snow's lens for one render (<c>_EvoSnowLens</c>, TheatreSnow.hlsl): the focus, and the
+        /// aperture the camera's field of view makes on the grade's frame at <see cref="TheatreLook.SnowFStop"/>.
+        /// Every mote sharp, as before, with <see cref="TheatreLook.SnowBlur"/> off.
+        /// </summary>
+        /// <param name="focusMetres">The shot's focus along the view axis, or 0 for none.</param>
+        /// <param name="fieldOfView">The camera's vertical field of view, degrees.</param>
+        public void PushSnowLens(float focusMetres, float fieldOfView)
+        {
+            if (!Look.SnowBlur)
+            {
+                Shader.SetGlobalVector("_EvoSnowLens", Vector4.zero);
+                return;
+            }
+
+            float format = TheatreGrade.Current != null ? TheatreGrade.Current.FormatMillimetres : 24f;
+            float focal = Camera.FieldOfViewToFocalLength(Mathf.Clamp(fieldOfView, 1f, 179f), format);
+
+            // Under the theatre's lens the snow is seen through the same glass as everything else.
+            float stop = Look.Lens && TheatreGrade.Current != null ? TheatreGrade.Current.PortraitAperture : Look.SnowFStop;
+            float aperture = focal / 1000f / Mathf.Clamp(stop, 1f, 22f);
+            float focus = Look.SnowFocusMetres > 0f ? Look.SnowFocusMetres : Mathf.Max(0f, focusMetres);
+
+            Shader.SetGlobalVector("_EvoSnowLens", new Vector4(
+                focus, aperture, Mathf.Clamp(Look.SnowBlurCap, 1f, 200f), Mathf.Clamp01(Look.SnowBlurKeep)));
         }
 
         /// <summary>
@@ -716,10 +1662,24 @@ namespace Evosim.Theatre
                 Mathf.Max(0.01f, Look.SnowReference),
                 Mathf.Max(0.01f, Look.FloorReference),
                 Mathf.Clamp01(Look.FloorDust),
-                0f));
+                Mathf.Clamp01(Look.SnowLeast)));
 
             Shader.SetGlobalVector("_EvoSnowDrift", new Vector4(
                 _snowDrift.x, _snowDrift.y, _snowDrift.z, on && Look.SnowDrift ? 1f : 0f));
+
+            Shader.SetGlobalVector("_EvoSnowFlake", new Vector4(
+                Mathf.Clamp(Look.SnowSizeSpread, 0f, 1.2f),
+                Mathf.Clamp(Look.SnowBigShare, 0f, 0.5f),
+                Mathf.Clamp(Look.SnowBigFactor, 1f, 8f),
+                Mathf.Clamp01(Look.SnowShape)));
+            Shader.SetGlobalVector("_EvoSnowFluff", new Vector4(
+                Mathf.Clamp(Look.SnowFluff, 0f, 2f), Mathf.Clamp(Look.SnowAggregate, 0f, 2f), Look.SnowConserve ? 1f : 0f, 0f));
+
+            // The bodies and the water (TheatreBody.shader's _EvoBodyWater): zero, today's bodies, while a census
+            // view holds today's look.
+            Shader.SetGlobalVector("_EvoBodyWater", on ? new Vector4(
+                Mathf.Clamp01(Look.BodyWater), Mathf.Clamp01(Look.BodyRimCut),
+                Mathf.Clamp01(Look.BodyGlowCut), Mathf.Clamp01(Look.BodyTransCut)) : Vector4.zero);
 
             if (_marchMaterial != null)
             {
@@ -812,6 +1772,9 @@ namespace Evosim.Theatre
         {
             PushDaylight(TheatreDaylight.At(frame));
             PushSnow(frame, eye, filmSecond);
+            if (TheatreUptake.Enabled) TheatreUptake.Frame(frame, eye, filmSecond);
+            if (TheatreMouth2.Bite > 0f) TheatreMouthBite.Frame(frame);
+            if (TheatreMouthBite.KillContactLog) TheatreMouthBite.LogContacts(frame);
         }
 
         /// <summary>
@@ -841,7 +1804,7 @@ namespace Evosim.Theatre
         /// </remarks>
         public void PushSnow(ITheatreFrame frame, Vector3 eye, double filmSecond = double.NaN)
         {
-            if (!(Look.RunSnow || Look.SnowDrift) || frame == null) return;
+            if (!(Look.RunSnow || Look.SnowDrift || AlgaBendStrength > 0f) || frame == null) return;
 
             string path = frame.Record?.Path;
             if (_runSnow == null || _runSnowPath != path)
@@ -896,8 +1859,59 @@ namespace Evosim.Theatre
 
             if (Look.SnowDrift && !filmOwns) AdvanceDrift(filmGives ? filmSecond : second, eye);
 
+            // The second the bend with the current reads the run's water at: the film's where it gives one, as the
+            // drift's is. Not entered with that dial off.
+            if (AlgaBendStrength > 0f && (filmGives || !filmOwns)) _waterSecond = filmGives ? filmSecond : second;
+
             PushLook();
         }
+
+        /// <summary>The run's second the water was last pushed at, NaN before any (the bend with the current).</summary>
+        private double _waterSecond = double.NaN;
+
+        /// <summary>
+        /// Whether the run being replayed has a current the theatre could build (<see cref="TheatreRunSnow.HasCurrent"/>),
+        /// which only a push of a frame under the bend with the current, the snow fields or the drift opens.
+        /// </summary>
+        public bool HasRunWater => _runSnow != null && _runSnow.HasCurrent;
+
+        /// <summary>
+        /// The run's water velocity at a place in the world's frame at the second last pushed, m/s: the world's
+        /// current as <c>Evosim.Core</c>'s field gives it (the same field the snow's drift reads), horizontal and
+        /// vertical. Zero without a current.
+        /// </summary>
+        public Vector3 WaterAt(Vector3 place) => WaterAt(place, _waterSecond);
+
+        /// <summary>The same at a second the caller names (a fed view knows the frame it has just placed; the push comes after it).</summary>
+        public Vector3 WaterAt(Vector3 place, double second) =>
+            HasRunWater && !double.IsNaN(second) ? _runSnow.VelocityAt(place, second) : Vector3.zero;
+
+        /// <summary>The run's second the water was last pushed at, NaN before any.</summary>
+        public double WaterSecond => _waterSecond;
+
+        /// <summary>
+        /// How fast the run's snow sinks, m/s: the rate the shells' drift lowers their motes at, which the crumble's flakes
+        /// sink by too (D277). Zero before a push has opened the run's water.
+        /// </summary>
+        public float SnowSinkMetresPerSecond => _runSnow != null ? _runSnow.SinkMetresPerSecond : 0f;
+
+        /// <summary>
+        /// Whether a push of a frame has opened the run's water, so the current and the sink above read the run's and not zero (D277's
+        /// flakes cache both at their birth).
+        /// </summary>
+        public bool RunWaterOpen => _runSnow != null;
+
+        /// <summary>
+        /// Whether any switch that opens the run's water is on (the snow fields, the drift or the bend with the current), as
+        /// <see cref="PushSnow"/> tests it. With none on the water is never opened, and <see cref="RunWaterOpen"/> stays false.
+        /// </summary>
+        public bool RunWaterWanted => Look.RunSnow || Look.SnowDrift || AlgaBendStrength > 0f;
+
+        /// <summary>
+        /// The snow shells' material, or null when the look has none: the crumble's flakes take the water's box, tank and
+        /// waterline and the motes' colour and gain from it, so they sit in the same water the shells do (D277).
+        /// </summary>
+        public Material SnowShellsMaterial => _shellMaterial;
 
         private void UploadSnow()
         {
@@ -1248,6 +2262,8 @@ namespace Evosim.Theatre
 
             SetVolume(material, low, high, min, size, tankRadius, waterline);
             material.SetFloat("_ShellGain", 0.35f * Mathf.Clamp(Look.ShellGain, 0f, 4f));
+            material.SetFloat("_ShareScale", Mathf.Clamp(Look.SnowQuantity, 0.25f, 3f));
+            material.SetFloat("_MoteAmbient", Mathf.Clamp(Look.SnowAmbient, 0f, 6f));
 
             _shells = VolumeObject("Theatre Snow Shells", low, high, material);
         }
@@ -1521,7 +2537,12 @@ namespace Evosim.Theatre
         /// null with none, which is every recording before them. Drawn from the same geometry the
         /// grid's mask and the contacts read, so the rock in the picture is the rock in the run.
         /// </param>
-        public void Dress(Bounds box, BedShape bed = null, float tankRadius = 0f, ReefGeometry reefs = null)
+        /// <param name="coral">
+        /// Round 62's branching coral (logbook/specs/coral-build.md), or null with none. Drawn from
+        /// the placed colonies' own pieces, beside the mushroom reefs and in the same rock; off with
+        /// <c>EVOSIM_THEATRE_CORAL=0</c>.
+        /// </param>
+        public void Dress(Bounds box, BedShape bed = null, float tankRadius = 0f, ReefGeometry reefs = null, CoralRock coral = null)
         {
             Undress();
             EnsureRoot();
@@ -1569,6 +2590,7 @@ namespace Evosim.Theatre
 
             if (tankRadius > 0f) BuildGlass(min, size, tankRadius);
             if (reefs != null && reefs.Count > 0) BuildReefs(min, bed, reefs);
+            if (coral != null && coral.Count > 0) BuildCoral(coral);
         }
 
         /// <summary>
@@ -1633,6 +2655,131 @@ namespace Evosim.Theatre
             }
         }
 
+        /// <summary>
+        /// Round 62's branching coral as rock: one holder and one mesh a colony
+        /// (<see cref="TheatreCoralRock"/>), at the colony's trunk foot, under the reefs' rock
+        /// material. Tracked in the reefs' lists, so <see cref="Undress"/> drops it with them.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The rock shader's cap properties, read for a tree.</b> The shader tints by height
+        /// between <c>_CapUnderLocal</c> and <c>_CapTopLocal</c> (deep rock at the bottom, mid
+        /// rock at the top, the crust on what faces up in the upper two thirds) and puts a cap's
+        /// shadow below <c>_CapUnderLocal</c>. Per colony, in its own frame: the under is 0, the
+        /// trunk's foot, so nothing above the bed sits under a shadow and only a branch's
+        /// underside darkens, by its normal; the top is the colony's highest surface, so the
+        /// tone climbs from a dark foot to a lighter crown and the crust settles on the plates
+        /// and the upper branches; the radius is the colony's farthest horizontal reach, which
+        /// the shader reads only for the shadow it never draws here; the seed is the colony's.
+        /// </para>
+        /// <para>
+        /// Coordinates: a piece is in the run's metres in the tank frame, which is the frame the
+        /// reefs and the bodies are drawn in (<see cref="BuildReefs"/> places a holder at
+        /// <c>(CentreX, MidY, CentreZ)</c> with no offset), so a holder goes at
+        /// <c>(X, BaseY, Z)</c> and no <c>min</c> is subtracted.
+        /// </para>
+        /// </remarks>
+        private void BuildCoral(CoralRock rock)
+        {
+            if (!TheatreCoralRock.Enabled) return;
+
+            if (_reefRockMaterial == null) _reefRockMaterial = MakeReefMaterial("Theatre Reef Rock");
+            if (_reefRockMaterial == null) return;
+
+            CoralGeometry coral = rock.Coral;
+            var block = new MaterialPropertyBlock();
+            int vertices = 0;
+            float living = TheatreCoralRock.Living;
+            float polyp = TheatreCoralRock.PolypMetres;
+            float shape = TheatreCoralRock.Shape;
+            float warm = TheatreCoralRock.Warm;
+
+            // The further looks (each dial at 2): set only then, so at 0 and 1 the block and the
+            // mesh are what they were.
+            bool shapeFurther = shape > 0f && TheatreCoralRock.ShapeFurther;
+            bool livingFurther = living > 0f && TheatreCoralRock.LivingFurther;
+
+            // The bold looks (each dial at 3), laid over the further ones: set only then, so at 0 to 2
+            // the block and the mesh are what they were.
+            bool shapeBold = shapeFurther && TheatreCoralRock.ShapeBold;
+            bool livingBold = livingFurther && TheatreCoralRock.LivingBold;
+
+            // The polyps out, on living tissue only: set only then, so with the dial off the block is
+            // what it was.
+            bool tufts = living > 0f && TheatreCoralRock.PolypTufts;
+
+            for (int c = 0; c < coral.Count; c++)
+            {
+                CoralGeometry.Colony colony = coral.ColonyAt(c);
+
+                Mesh mesh = TheatreCoralRock.Colony(coral, c, out float top, out float reach, shape, shapeFurther, livingFurther, shapeBold);
+                vertices += mesh.vertexCount;
+                _reefMeshes.Add(mesh);
+
+                var holder = new GameObject("Theatre Coral " + c) { hideFlags = HideFlags.DontSave };
+                holder.transform.SetParent(_root.transform, false);
+                holder.transform.position = new Vector3((float)colony.X, (float)colony.BaseY, (float)colony.Z);
+                _reefs.Add(holder);
+
+                block.Clear();
+                block.SetFloat("_CapTopLocal", top);
+                block.SetFloat("_CapUnderLocal", 0f);
+                block.SetFloat("_CapRadius", reach);
+                block.SetFloat("_RockSeed", TheatreCoralRock.SeedUnit(c));
+
+                if (shapeFurther)
+                {
+                    block.SetFloat("_CoralForm", 1f);
+                    block.SetFloat("_BumpMetres", TheatreCoralRock.BumpMetres);
+                }
+
+                if (living > 0f)
+                {
+                    TheatreCoralRock.LivingTint(c, out Vector4 tissue, out Vector4 tip);
+                    if (livingFurther) TheatreCoralRock.PaletteTint(c, out tissue, out tip);
+                    if (livingBold) TheatreCoralRock.VividTint(c, out tissue, out tip);
+                    block.SetFloat("_Living", living);
+                    block.SetVector("_LiveTint", tissue);
+                    block.SetVector("_LiveTip", tip);
+                    block.SetFloat("_PolypMetres", polyp);
+                    if (warm > 0f)
+                    {
+                        Vector4 crown = TheatreCoralRock.WarmTint(c);
+                        crown.w = warm;
+                        block.SetVector("_LiveWarm", crown);
+                    }
+
+                    if (livingFurther)
+                    {
+                        block.SetFloat("_Bare", 1f);
+                        block.SetVector("_BareTint", TheatreCoralRock.BareTint);
+                        block.SetFloat("_BareEdge", TheatreCoralRock.BareEdge(c));
+                    }
+
+                    if (livingBold) block.SetFloat("_Vivid", 1f);
+
+                    if (tufts) block.SetFloat("_Polyps", 1f);
+                }
+
+                AddPiece(holder, "Colony", mesh, _reefRockMaterial, block);
+            }
+
+            Debug.Log(TheatreCoralRock.Summary(coral, vertices));
+            Debug.Log(
+                "[Theatre] coral living " + living.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) +
+                (living > 0f
+                    ? " (gain " + TheatreCoralRock.LivingGain.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) +
+                      ", corallite " + polyp.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + " m" +
+                      ", warm crowns " + warm.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + ")"
+                    : " (bare stone)") +
+                "; shape " + shape.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) +
+                (shape > 0f ? " (lobed plates, forked knobbly tips)" : " (the physics' pieces)") +
+                (shapeFurther ? "; further shape (tapered branches, axial polyps, thin rims, bumps, rings and ridges)" : "") +
+                (shapeBold ? "; bold shape (a bush: thin cores, sprigs, pronged tips, a mat on every plate)" : "") +
+                (livingFurther ? "; palette per colony and bare skeleton below" : "") +
+                (livingBold ? "; bright living tissue with pale tips" : ""));
+        }
+
         private static void AddPiece(GameObject holder, string name, Mesh mesh, Material material, MaterialPropertyBlock block)
         {
             var piece = new GameObject(name) { hideFlags = HideFlags.DontSave };
@@ -1674,6 +2821,8 @@ namespace Evosim.Theatre
             material.SetVector("_RockCrust", LinearOf(RockCrust));
             material.SetVector("_CausticColor", LinearOf(new Color(0.55f, 0.85f, 0.95f, 1f)));
             material.SetFloat("_CausticReach", Mathf.Clamp(SurfaceLightMetres, 1f, 60f));
+            material.SetFloat("_GlintStrength", Mathf.Clamp(Look.RockGlint, 0f, 0.5f));
+            material.SetFloat("_GlintRoughness", Mathf.Clamp(Look.RockGlintRoughness, 0.05f, 1f));
             return material;
         }
 
@@ -2538,6 +3687,10 @@ namespace Evosim.Theatre
                 TheatreToneStep.Active = false;
             }
             if (_snowTexture != null) { UnityEngine.Object.DestroyImmediate(_snowTexture); _snowTexture = null; }
+            if (AlgaBendStrength > 0f) Shader.SetGlobalVector("_EvoAlgaBend", Vector4.zero);
+            // ARC begin
+            if (AlgaArcLevel > 0) Shader.SetGlobalVector("_EvoAlgaArc", Vector4.zero);
+            // ARC end
             Shader.SetGlobalVector("_EvoWaterLow", Vector4.zero);
 
             TheatreMeshes.Release();
@@ -2779,4 +3932,190 @@ namespace Evosim.Theatre
             else Object.DestroyImmediate(thing);
         }
     }
+    // DEBUGTINT begin
+    /// <summary>
+    /// <c>EVOSIM_THEATRE_DEBUG_TINT</c> (0 or 1, default 0), read once: a diagnostic, never a look. At 1 every renderer under a
+    /// creature's root is drawn in one flat colour by its kind (<see cref="KindOf"/>), with no light, fog, pattern or mark, so a
+    /// frame answers "what draws this?". A renderer on the body shader takes <c>_DebugTint</c> on its block (w 1 the colour, w 2
+    /// the vertex colour, which the one skin sets per vertex: <c>TheatreOneSkin.DebugColours</c>); one on another shader (the
+    /// mouth mark's unlit sphere) takes an unlit material of the kind's colour. Nothing moves. The pass runs at the end of every
+    /// paint (<c>TheatrePalette.Paint</c>) and of every skin dress (<c>TheatreOneSkin.Dress</c>), so the state a frame shows is the
+    /// one after both. The log has one legend line a run and one count line per body. Off, nothing here runs and no keyword is set.
+    /// </summary>
+    public static class TheatreDebugTint
+    {
+        public static readonly bool On = TheatreSkin.Dial("EVOSIM_THEATRE_DEBUG_TINT", 0f, 0f, 1f) >= 0.5f;
+
+        /// <summary>The body shader's keyword: the forward fragment returns the flat colour first.</summary>
+        public const string Keyword = "_EVO_DEBUG_TINT";
+
+        public const int Skin = 0, FinWeb = 1, PartBox = 2, PartRod = 3, PartBall = 4, Knuckle = 5, Bridge = 6, MouthMark = 7, Other = 8;
+
+        /// <summary>The kinds' names, in the order of the numbers above.</summary>
+        public static readonly string[] Names =
+        {
+            "one skin (per vertex, below)", "fin web", "part piece, box", "part piece, rod (cylinder shaft)",
+            "part piece, ball or cap (sphere)", "knuckle", "bridge", "mouth mark", "anything else under the creature",
+        };
+
+        /// <summary>
+        /// The kinds' colours: far apart in hue and value so a glance tells them apart. The skin's entry is never drawn (the skin
+        /// takes its vertex colours); its colours are <see cref="SkinBone"/>, <see cref="SkinBlend"/> and <see cref="SkinMouth"/>.
+        /// </summary>
+        public static readonly Color[] Colours =
+        {
+            new Color(1f, 0f, 1f), new Color(0f, 1f, 1f), new Color(1f, 0f, 0f), new Color(1f, 0.5f, 0f),
+            new Color(1f, 1f, 0f), new Color(0f, 1f, 0f), new Color(0f, 0.45f, 0f), new Color(0.55f, 0.55f, 0.55f),
+            new Color(0f, 0f, 1f),
+        };
+
+        /// <summary>The one skin's vertices by their largest bone, cycling by bone slot: magenta, violet, pink, plum.</summary>
+        public static readonly Color[] SkinBone =
+        {
+            new Color(1f, 0f, 1f), new Color(0.55f, 0f, 1f), new Color(1f, 0.45f, 0.75f), new Color(0.45f, 0f, 0.45f),
+        };
+
+        /// <summary>A skin vertex in a joint's blend (its largest bone weight under TheatreOneSkin's DebugBlendShare): white.</summary>
+        public static readonly Color SkinBlend = Color.white;
+
+        /// <summary>A skin vertex within the shader's mouth reach of a skin mouth: black.</summary>
+        public static readonly Color SkinMouth = Color.black;
+
+        private static readonly int TintId = Shader.PropertyToID("_DebugTint");
+        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorId = Shader.PropertyToID("_Color");
+        private const string BodyShader = "Evosim/Theatre Body";
+
+        private static bool _started;
+        private static MaterialPropertyBlock _block;
+        private static readonly Material[] _unlit = new Material[Colours.Length];
+        private static readonly Dictionary<long, int> _passes = new Dictionary<long, int>();
+
+        /// <summary>A renderer's kind, from the names and meshes the theatre gives what it makes.</summary>
+        public static int KindOf(Renderer renderer)
+        {
+            string name = renderer.gameObject.name;
+
+            if (renderer is SkinnedMeshRenderer)
+            {
+                if (name == "OneSkin") return Skin;
+                return name.StartsWith("FinWeb", System.StringComparison.Ordinal) ? FinWeb : Other;
+            }
+
+            if (name.StartsWith("Knuckle", System.StringComparison.Ordinal)) return Knuckle;
+            if (name.StartsWith("Bridge", System.StringComparison.Ordinal)) return Bridge;
+            if (name == TheatreMouthMarks.MarkName) return MouthMark;
+
+            if (name == "Visual")
+            {
+                var filter = renderer.GetComponent<MeshFilter>();
+                Mesh mesh = filter != null ? filter.sharedMesh : null;
+                if (mesh != null && (mesh == TheatreMeshes.Sphere() || TheatreMeshes.IsPrimitiveSphere(mesh))) return PartBall;
+                if (mesh != null && (mesh == TheatreMeshes.Cylinder() || TheatreMeshes.IsPrimitiveCylinder(mesh))) return PartRod;
+                return PartBox;
+            }
+
+            return Other;
+        }
+
+        /// <summary>Tints every renderer under <paramref name="root"/> by its kind, and logs the body's counts at its second pass.</summary>
+        public static void Apply(long id, Transform root)
+        {
+            if (!On || root == null) return;
+
+            if (!_started)
+            {
+                _started = true;
+                Shader.EnableKeyword(Keyword);
+                Debug.Log(Legend());
+            }
+
+            if (_block == null) _block = new MaterialPropertyBlock();
+
+            Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+            var all = new int[Colours.Length];
+            var drawn = new int[Colours.Length];
+
+            foreach (Renderer renderer in renderers)
+            {
+                if (renderer == null) continue;
+
+                int kind = KindOf(renderer);
+                Color colour = Colours[kind];
+                all[kind]++;
+                if (renderer.enabled && renderer.gameObject.activeInHierarchy) drawn[kind]++;
+
+                Material material = renderer.sharedMaterial;
+                bool body = material != null && material.shader != null && material.shader.name == BodyShader;
+
+                if (!body)
+                {
+                    Material unlit = UnlitOf(kind);
+                    if (unlit != null) renderer.sharedMaterial = unlit;
+                }
+
+                renderer.GetPropertyBlock(_block);
+                _block.SetVector(TintId, new Vector4(colour.r, colour.g, colour.b, kind == Skin ? 2f : 1f));
+
+                // An unlit material reads its colour from the block before the material, so the block carries it too; a body-shader
+                // renderer's own _BaseColor is left alone (the skin's dress reads it as its colour fallback).
+                if (!body)
+                {
+                    _block.SetColor(BaseColorId, colour);
+                    _block.SetColor(ColorId, colour);
+                }
+
+                renderer.SetPropertyBlock(_block);
+            }
+
+            _passes.TryGetValue(id, out int passes);
+            _passes[id] = ++passes;
+            if (passes != 2) return;
+
+            var line = new System.Text.StringBuilder();
+            line.Append("[Theatre] debug tint: body ").Append(id).Append(", renderers drawn of all by kind:");
+
+            for (int k = 0; k < Colours.Length; k++)
+            {
+                if (all[k] == 0) continue;
+                line.Append(' ').Append(Names[k]).Append(' ').Append(drawn[k]).Append(" of ").Append(all[k]).Append(';');
+            }
+
+            Debug.Log(line.ToString());
+        }
+
+        /// <summary>The legend: every kind and its colour, and the skin's per-vertex colours.</summary>
+        public static string Legend()
+        {
+            var line = new System.Text.StringBuilder("[Theatre] debug tint: ");
+
+            line.Append("skin by its largest bone = magenta (slot 0), violet (1), pink (2), plum (3), cycling; skin in a joint's blend = white; ");
+            line.Append("skin within a mouth's reach = black; ");
+
+            string[] colourNames = { "", "cyan", "red", "orange", "yellow", "green", "dark green", "grey", "blue" };
+            for (int k = 1; k < Colours.Length; k++)
+            {
+                line.Append(Names[k]).Append(" = ").Append(colourNames[k]).Append(k < Colours.Length - 1 ? "; " : "");
+            }
+
+            line.Append(" (flat, no light, fog or mark; a renderer not under a creature draws as it does)");
+            return line.ToString();
+        }
+
+        /// <summary>An unlit material of a kind's colour, for a renderer whose shader is not the body's, made once.</summary>
+        private static Material UnlitOf(int kind)
+        {
+            if (_unlit[kind] != null) return _unlit[kind];
+
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
+            if (shader == null) return null;
+
+            var material = new Material(shader) { name = "Debug tint " + Names[kind], hideFlags = HideFlags.HideAndDontSave };
+            material.SetColor(BaseColorId, Colours[kind]);
+            material.SetColor(ColorId, Colours[kind]);
+            _unlit[kind] = material;
+            return material;
+        }
+    }
+    // DEBUGTINT end
 }

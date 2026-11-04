@@ -297,6 +297,16 @@ namespace Evosim.Theatre
             Vector3 extents = new Vector3(0.5f, 0.5f, 0.5f);
             if (abs[thin] > 1e-6f) extents[thin] += Mathf.Max(0f, curlFraction) * width / abs[thin];
 
+            // Above 1 the bend with the current leans a blade's free end by up to half its half length, in metres and
+            // on two axes, outside its box (TheatreBody.shader, AlgaBendReach), so the bounds take that margin too.
+            if (TheatreSkin.AlgaBendStrength > 1f) extents += new Vector3(0.3f, 0.3f, 0.3f);
+
+            // ARCROOM begin
+            // The arc's room (EVOSIM_THEATRE_ALGA_ARC_ROOM): the bend can stand that share of the blade's length outside the box on the
+            // thin axis, so the bounds grow by it each side (object units: a share of the longest side over the thin side).
+            if (TheatreSkin.AlgaArcRoom > 0f && abs[thin] > 1e-6f)
+                extents[thin] += TheatreSkin.AlgaArcRoom * Mathf.Max(abs.x, Mathf.Max(abs.y, abs.z)) / abs[thin];
+            // ARCROOM end
             return new Bounds(Vector3.zero, 2f * extents);
         }
 
@@ -348,6 +358,15 @@ namespace Evosim.Theatre
             if (rounded == _sphere || IsPrimitiveSphere(rounded)) return BuiltinSphere();
             if (rounded == _cylinder || IsPrimitiveCylinder(rounded)) return BuiltinCylinder();
             if (rounded == _lamina) return BuiltinCube();
+            // NOBOX begin
+            if (TheatreNoBox.Enabled && TheatreNoBox.Is(rounded)) return BuiltinCube();
+            // NOBOX end
+            // THALLI begin
+            if (IsThallus(rounded)) return BuiltinCube();
+            // THALLI end
+            // SNOUT begin
+            if (IsSnout(rounded)) return BuiltinCube();
+            // SNOUT end
             return null;
         }
 
@@ -364,6 +383,18 @@ namespace Evosim.Theatre
             Discard(ref _sphere);
             Discard(ref _cylinder);
             Discard(ref _lamina);
+            // THALLI begin
+            ReleaseThalli();
+            // THALLI end
+            // SNOUT begin
+            ReleaseSnouts();
+            // SNOUT end
+            // FAMILYMESH begin
+            if (TheatreFamilyMesh.Enabled) TheatreFamilyMesh.Release();
+            // FAMILYMESH end
+            // NOBOX begin
+            if (TheatreNoBox.Enabled) TheatreNoBox.Release();
+            // NOBOX end
         }
 
         private static void Discard(ref Mesh mesh)
@@ -757,6 +788,1018 @@ namespace Evosim.Theatre
             return Finish("Theatre Cylinder", vertices, normals, triangles, 0f);
         }
 
+        // THALLI begin
+        // ---------------------------------------------------------------- the thallus
+
+        /// <summary>
+        /// The three thalli a compact producer is drawn as under <c>EVOSIM_THEATRE_THALLI</c> (<see cref="TheatreSkin.ThalliOn"/>):
+        /// sea lettuce, peacock's tail and dead man's fingers.
+        /// </summary>
+        public enum ThallusForm { Ulva = 0, Padina = 1, Codium = 2 }
+
+        /// <summary>
+        /// The solid flag a thallus mesh carries in UV channel three (<see cref="Finish"/>): 0.2, 0.25 or 0.3. Under a half, so
+        /// every test the shader had before this dial reads a thallus as neither the box, the blade nor the skin, and only the
+        /// dial's own lines tell the three apart (<c>TheatreBody.shader</c>, <c>ThalliFlag*</c>; the two must move together).
+        /// </summary>
+        public static float ThallusFlag(ThallusForm form) => 0.2f + 0.05f * (int)form;
+
+        /// <summary>
+        /// The compact test (<see cref="ThallusShaped"/>): the smallest side over the middle one above this. At or under it the
+        /// box keeps the blade path; the blade's own flat test (<see cref="LeafThinness"/>, 0.4) is stricter, so a plump slab
+        /// between the two stays a plump blade.
+        /// </summary>
+        public const float ThalliFlattest = 0.5f;
+
+        /// <summary>The compact test's other half: the middle side over the largest at least this. Under it a box is a strap and keeps the blade.</summary>
+        public const float ThalliSlenderest = 0.3f;
+
+        /// <summary>
+        /// The form rule (<see cref="ThallusFormOf"/>): the middle side over the largest under this is a long box, drawn as
+        /// Codium; otherwise the smallest over the middle under <see cref="ThalliSquat"/> is a squat box with one short axis,
+        /// drawn as Padina; otherwise the box is near-cubic, drawn as Ulva.
+        /// </summary>
+        public const float ThalliLong = 0.65f;
+
+        /// <summary>See <see cref="ThalliLong"/>.</summary>
+        public const float ThalliSquat = 0.75f;
+
+        /// <summary>
+        /// Within this of either threshold the part's hash moves the line, so a population near it mixes two forms rather than
+        /// splitting on the last digit of a side. Fixed per part, so a body keeps its form from frame to frame and run to run.
+        /// </summary>
+        public const float ThalliBand = 0.05f;
+
+        /// <summary>How far an anchor must sit off the box's middle, in object units (the face is at 0.5), to put the base there.</summary>
+        private const float ThalliAnchorFace = 0.2f;
+
+        /// <summary>How much of the box's half extent, on each axis, a thallus reaches at most.</summary>
+        private const float ThalliFill = 0.97f;
+
+        /// <summary>
+        /// A size class is the box's three sides over its largest, each rounded to this step (at least one step): one cached
+        /// mesh per form, variant, growth axis, base end and size class.
+        /// </summary>
+        private const float ThalliAspectStep = 0.1f;
+
+        /// <summary>At most this many thallus meshes are cached; a part that would need one more keeps the blade (counted in the log).</summary>
+        public const int ThalliMeshCap = 96;
+
+        /// <summary>The most a thallus's free end may sway, in object units, before the room each vertex has cuts it.</summary>
+        private const float ThalliSwayWant = 0.04f;
+
+        /// <summary>The sway's weight up the thallus: its height share to this power, so the base holds still.</summary>
+        private const float ThalliSwayBend = 1.5f;
+
+        /// <summary>The sway's lag from base to tip, in cycles, so the thallus waves rather than tilts.</summary>
+        private const float ThalliWaveLag = 0.15f;
+
+        // Ulva: sheets from one base, each a grid of stations base to tip and rows rim to rim, two faces.
+        private const int UlvaStations = 16;
+        private const int UlvaRows = 18;
+        private const float UlvaLeanLeast = 0.35f;     // each sheet's lean off the growth axis, radians
+        private const float UlvaLeanMost = 0.8f;
+        private const float UlvaWidth = 0.55f;         // the half width at the widest, over the sheet's length
+        private const float UlvaWidthBase = 0.15f;     // the half width at the base, over the widest
+        private const float UlvaWidest = 0.65f;        // where along the sheet it is widest
+        private const float UlvaTipRound = 0.3f;       // how much shorter the sheet is at its rims than on its midline
+        private const float UlvaRuffle = 0.22f;        // the margin's ruffle out of the sheet, over the half width
+        private const float UlvaCrumple = 0.08f;       // the whole sheet's crumple, over the half width
+        private const float UlvaCup = 0.25f;           // the sheet's cup across, over the half width
+        private const float UlvaHalfThick = 0.03f;     // the half thickness on the midline, over the sheet's length
+        private const float UlvaBaseDark = 0.2f;       // the tone lost at the base
+        private const float UlvaThinMiddle = 0.45f;    // the thinness on the midline; one at the margin
+
+        // Padina: one funnel slit down one side, or two fans, from one base; rings from the stalk out, columns across.
+        private const int PadinaRings = 28;
+        private const int PadinaColumnsFunnel = 40;
+        private const int PadinaColumnsFan = 22;
+        private const float PadinaStalk = 0.05f;       // the radius the sheet starts at, over the funnel's
+        private const float PadinaFunnelSpan = 2.75f;  // half the funnel's sweep round its axis, radians (the slit is the rest)
+        private const float PadinaFanSpan = 1.25f;     // half a fan's sweep
+        private const float PadinaLobeDepth = 0.08f;   // the margin's lobes, over the radius
+        private const float PadinaRollFrom = 0.8f;     // where the inrolled rim starts, over the radius
+        private const float PadinaRoll = 0.1f;         // how far the rim rolls in toward the axis, over the radius
+        private const float PadinaRollLift = 0.06f;    // and up
+        private const float PadinaRuffle = 0.035f;     // the margin's wave, over the radius
+        private const float PadinaHalfThick = 0.02f;   // the half thickness at the stalk, over the radius
+        private const int PadinaBands = 6;             // the concentric growth bands, stalk to rim
+        private const float PadinaBandDepth = 0.14f;   // the tone a band's dark ring loses
+        private const float PadinaLimeBase = 0.12f;    // the lime over the whole sheet
+        private const float PadinaLimeRim = 0.6f;      // and at the rim
+        private const float PadinaThin = 0.3f;         // the sheet's thinness: little light through a limed sheet
+
+        // Codium: even cylinders forking in twos, each a capsule.
+        private const float CodiumFork = 0.5f;         // half the angle between two daughters, radians
+        private const float CodiumShorten = 0.8f;      // a daughter's length over its mother's
+        private const float CodiumBow = 0.12f;         // a segment's bow, over its length
+        private const float CodiumRadiusFew = 0.16f;   // the radius over the box's smaller cross half extent, three levels
+        private const float CodiumRadiusMany = 0.12f;  // and four
+        private const float CodiumToneBase = 0.85f;    // the tone at the base; one at the tips
+
+        private static readonly Dictionary<int, Mesh> _thalli = new Dictionary<int, Mesh>();
+        private static readonly HashSet<Mesh> _thallusMeshes = new HashSet<Mesh>();
+        private static readonly HashSet<long> _thalliSeen = new HashSet<long>();
+        private static readonly int[] _thalliForms = new int[3];
+        private static int _thalliVertices;
+        private static int _thalliOverCap;
+        private static bool _thalliHooked;
+        private static bool _thalliSaid;
+
+        /// <summary>True for a thallus mesh.</summary>
+        public static bool IsThallus(Mesh mesh) => mesh != null && _thallusMeshes.Contains(mesh);
+
+        /// <summary>
+        /// The compact test: a box of these sides is drawn as a thallus when its smallest side is over
+        /// <see cref="ThalliFlattest"/> of the middle one (not flat) and its middle side at least <see cref="ThalliSlenderest"/>
+        /// of the largest (not a strap).
+        /// </summary>
+        public static bool ThallusShaped(Vector3 sides)
+        {
+            Sorted(sides, out float large, out float middle, out float small, out _, out _);
+            return large > 1e-6f && middle > 1e-6f && small > ThalliFlattest * middle && middle >= ThalliSlenderest * large;
+        }
+
+        /// <summary>The form rule (<see cref="ThalliLong"/>), its thresholds moved within <see cref="ThalliBand"/> by the part's hash.</summary>
+        public static ThallusForm ThallusFormOf(Vector3 sides, uint hash)
+        {
+            Sorted(sides, out float large, out float middle, out float small, out _, out _);
+            float shift = ThalliBand * (2f * Unit(hash, 1) - 1f);
+
+            if (middle < (ThalliLong + shift) * large) return ThallusForm.Codium;
+            if (small < (ThalliSquat + shift) * middle) return ThallusForm.Padina;
+            return ThallusForm.Ulva;
+        }
+
+        /// <summary>
+        /// A part's hash, from things stable on it: the body plan's carve seed, the part's index and its genome half extents.
+        /// The same on every frame and in every run, and the same for every body of one plan.
+        /// </summary>
+        public static uint ThallusHash(float planSeed, int part, Vector3 halfExtents)
+        {
+            uint h = Mix(0x9E3779B9u ^ (uint)part);
+            h = Mix(h ^ Bits(planSeed));
+            h = Mix(h ^ Bits(halfExtents.x));
+            h = Mix(h ^ Bits(halfExtents.y));
+            return Mix(h ^ Bits(halfExtents.z));
+        }
+
+        /// <summary>
+        /// The thallus for a part, or null when it is not compact or the cache is full: its form by the form rule, its growth
+        /// axis (Codium's the longest, Padina's the shortest, Ulva's the anchor's or the hash's), its base at the anchor's end
+        /// when the anchor sits off the middle on that axis and at the hash's end otherwise, and one of two variants by the hash.
+        /// </summary>
+        /// <param name="sides">The visual's local scale, the part's full sides.</param>
+        /// <param name="anchor">The part's own joint anchor in object units, w one when it hangs from a parent.</param>
+        public static Mesh Thallus(Vector3 sides, Vector4 anchor, uint hash, out ThallusForm form)
+        {
+            form = ThallusForm.Ulva;
+            if (!ThallusShaped(sides)) return null;
+
+            form = ThallusFormOf(sides, hash);
+            Sorted(sides, out float large, out _, out _, out int longest, out int shortest);
+
+            int axis;
+            if (form == ThallusForm.Codium) axis = longest;
+            else if (form == ThallusForm.Padina) axis = shortest;
+            else if (anchor.w > 0.5f) axis = Mathf.Abs(anchor.x) >= Mathf.Abs(anchor.y) && Mathf.Abs(anchor.x) >= Mathf.Abs(anchor.z) ? 0 : (Mathf.Abs(anchor.y) >= Mathf.Abs(anchor.z) ? 1 : 2);
+            else axis = (int)((hash >> 20) % 3u);
+
+            float at = anchor.w > 0.5f ? anchor[axis] : 0f;
+            bool baseHigh = Mathf.Abs(at) > ThalliAnchorFace ? at > 0f : ((hash >> 24) & 1u) == 1u;
+            int variant = (int)((hash >> 16) & 1u);
+
+            int qx = Quantise(Mathf.Abs(sides.x) / large);
+            int qy = Quantise(Mathf.Abs(sides.y) / large);
+            int qz = Quantise(Mathf.Abs(sides.z) / large);
+
+            int key = (int)form | (variant << 2) | (axis << 3) | ((baseHigh ? 1 : 0) << 5) | (qx << 6) | (qy << 10) | (qz << 14);
+
+            if (_thalli.TryGetValue(key, out Mesh mesh) && mesh != null) return mesh;
+
+            if (_thalli.Count >= ThalliMeshCap)
+            {
+                _thalliOverCap++;
+                return null;
+            }
+
+            var e = new Vector3(qx, qy, qz) * ThalliAspectStep;
+            mesh = BuildThallus(form, e, axis, baseHigh, variant, Mix((uint)key ^ 0x5bd1e995u));
+
+            _thalli[key] = mesh;
+            _thallusMeshes.Add(mesh);
+            _thalliVertices += mesh.vertexCount;
+
+            return mesh;
+        }
+
+        /// <summary>Counts one part drawn as a thallus, once per body and part, for the run's line (<see cref="SayThalli"/>).</summary>
+        public static void CountThallus(int body, int part, ThallusForm form)
+        {
+            if (!_thalliHooked)
+            {
+                _thalliHooked = true;
+                Application.quitting += SayThalli;
+            }
+
+            if (_thalliSeen.Add(((long)body << 32) | (uint)part)) _thalliForms[(int)form]++;
+        }
+
+        /// <summary>
+        /// The run's one line under the dial: how many parts took each form, the meshes cached and their vertices, and how many
+        /// parts kept the blade because the cache was full. Said once, when the theatre closes or the application quits.
+        /// </summary>
+        public static void SayThalli()
+        {
+            if (_thalliSaid || !TheatreSkin.ThalliOn) return;
+            _thalliSaid = true;
+
+            Debug.Log("[Theatre] thalli: " + (_thalliForms[0] + _thalliForms[1] + _thalliForms[2]) + " parts drawn as thalli, " +
+                      _thalliForms[0] + " Ulva, " + _thalliForms[1] + " Padina, " + _thalliForms[2] + " Codium; " +
+                      _thallusMeshes.Count + " meshes cached, " + _thalliVertices + " vertices; " +
+                      _thalliOverCap + " kept the blade with the cache full.");
+        }
+
+        private static void ReleaseThalli()
+        {
+            SayThalli();
+
+            foreach (Mesh thallus in new List<Mesh>(_thallusMeshes))
+            {
+                Mesh m = thallus;
+                Discard(ref m);
+            }
+
+            _thallusMeshes.Clear();
+            _thalli.Clear();
+            _thalliVertices = 0;
+        }
+
+        private static int Quantise(float share) => Mathf.Clamp(Mathf.RoundToInt(share / ThalliAspectStep), 1, Mathf.RoundToInt(1f / ThalliAspectStep));
+
+        private static void Sorted(Vector3 sides, out float large, out float middle, out float small, out int longest, out int shortest)
+        {
+            float a = Mathf.Abs(sides.x), b = Mathf.Abs(sides.y), c = Mathf.Abs(sides.z);
+            large = Mathf.Max(a, Mathf.Max(b, c));
+            small = Mathf.Min(a, Mathf.Min(b, c));
+            middle = a + b + c - large - small;
+            longest = a >= b && a >= c ? 0 : (b >= c ? 1 : 2);
+            shortest = a <= b && a <= c ? 0 : (b <= c ? 1 : 2);
+        }
+
+        private static uint Bits(float f) => System.BitConverter.ToUInt32(System.BitConverter.GetBytes(f), 0);
+
+        private static uint Mix(uint x)
+        {
+            x ^= x >> 16;
+            x *= 0x7feb352du;
+            x ^= x >> 15;
+            x *= 0x846ca68bu;
+            x ^= x >> 16;
+            return x;
+        }
+
+        /// <summary>A number in [0, 1] from a hash and a salt.</summary>
+        private static float Unit(uint hash, int salt) => Mix(hash ^ ((uint)salt * 0x9E3779B9u)) / 4294967295f;
+
+        private static float Smooth(float low, float high, float x)
+        {
+            float t = Mathf.Clamp01((x - low) / (high - low));
+            return t * t * (3f - 2f * t);
+        }
+
+        /// <summary>
+        /// A thallus mesh, built in a canonical frame (x and z across, y the growth axis, the base at the bottom) inside a box of
+        /// half extents <paramref name="e"/> on the object axes (the largest one), then turned onto the object axes and scaled
+        /// into the unit box. Each form fits its centre lines or mid-surfaces into the box less its own thickness on every axis,
+        /// so every vertex is inside <see cref="ThalliFill"/> of the box before the clamp in <see cref="FinishThallus"/>.
+        /// </summary>
+        private static Mesh BuildThallus(ThallusForm form, Vector3 e, int axis, bool baseHigh, int variant, uint seed)
+        {
+            int axisA = (axis + 1) % 3;
+            int axisB = (axis + 2) % 3;
+            var box = new Vector3(e[axisA], e[axis], e[axisB]);
+            var build = new ThallusBuild();
+
+            if (form == ThallusForm.Ulva) BuildUlva(build, box, variant, seed);
+            else if (form == ThallusForm.Padina) BuildPadina(build, box, variant, seed);
+            else BuildCodium(build, box, variant, seed);
+
+            return FinishThallus(build, form, e, axis, baseHigh);
+        }
+
+        private sealed class ThallusBuild
+        {
+            public readonly List<Vector3> Position = new List<Vector3>();
+            public readonly List<Vector3> Normal = new List<Vector3>();
+            public readonly List<Color> Tissue = new List<Color>();
+            public readonly List<float> Height = new List<float>();
+            public readonly List<int> Triangles = new List<int>();
+        }
+
+        /// <summary>
+        /// The per-axis scale and centre that fit points into the canonical box less a margin on every side, so a surface within
+        /// the margin of the fitted points is inside the box's <see cref="ThalliFill"/>.
+        /// </summary>
+        private static Vector3 FitScale(List<Vector3> points, Vector3 box, float margin, out Vector3 centre)
+        {
+            Vector3 min = points[0], max = points[0];
+            foreach (Vector3 p in points) { min = Vector3.Min(min, p); max = Vector3.Max(max, p); }
+
+            centre = 0.5f * (min + max);
+            Vector3 half = 0.5f * (max - min);
+            var scale = Vector3.one;
+
+            for (int i = 0; i < 3; i++)
+            {
+                float room = Mathf.Max(0f, box[i] * ThalliFill - margin);
+                scale[i] = half[i] > 1e-5f ? room / half[i] : 0f;
+            }
+
+            return scale;
+        }
+
+        /// <summary>
+        /// Fits sheets' mid-surfaces into the box: a first fit with no margin gives the thickness's scale (the cube root of the
+        /// three axis scales), and the second keeps that much thickness clear of every face. The mid-surfaces are mapped in place;
+        /// the scale the half thicknesses take is returned.
+        /// </summary>
+        private static float FitSheets(List<Vector3[,]> mids, float maxHalf, Vector3 box)
+        {
+            var all = new List<Vector3>();
+            foreach (Vector3[,] mid in mids) foreach (Vector3 p in mid) all.Add(p);
+
+            Vector3 s0 = FitScale(all, box, 0f, out _);
+            float thick = Mathf.Pow(Mathf.Max(1e-9f, s0.x * s0.y * s0.z), 1f / 3f);
+            Vector3 s = FitScale(all, box, maxHalf * thick, out Vector3 centre);
+
+            foreach (Vector3[,] mid in mids)
+            {
+                for (int i = 0; i < mid.GetLength(0); i++)
+                    for (int j = 0; j < mid.GetLength(1); j++)
+                        mid[i, j] = Vector3.Scale(mid[i, j] - centre, s);
+            }
+
+            return thick;
+        }
+
+        /// <summary>
+        /// Two faces on a mapped mid-surface, each offset along the surface normal by the half thickness, which is zero on every
+        /// rim so the two faces meet there. Both faces of a point carry the mid-point's height, so they sway together.
+        /// </summary>
+        private static void AddSheet(ThallusBuild b, Vector3[,] mid, float[,] half, Color[,] tissue)
+        {
+            int nu = mid.GetLength(0), nv = mid.GetLength(1);
+            var normal = new Vector3[nu, nv];
+
+            for (int i = 0; i < nu; i++)
+            {
+                for (int j = 0; j < nv; j++)
+                {
+                    Vector3 du = mid[Mathf.Min(i + 1, nu - 1), j] - mid[Mathf.Max(i - 1, 0), j];
+                    Vector3 dv = mid[i, Mathf.Min(j + 1, nv - 1)] - mid[i, Mathf.Max(j - 1, 0)];
+                    Vector3 n = Vector3.Cross(du, dv);
+                    normal[i, j] = n.sqrMagnitude > 1e-14f ? n.normalized : (j > 0 ? normal[i, j - 1] : Vector3.up);
+                }
+            }
+
+            for (int face = 0; face < 2; face++)
+            {
+                float side = face == 0 ? 1f : -1f;
+                int start = b.Position.Count;
+
+                for (int i = 0; i < nu; i++)
+                {
+                    for (int j = 0; j < nv; j++)
+                    {
+                        b.Position.Add(mid[i, j] + normal[i, j] * (side * half[i, j]));
+                        b.Normal.Add(normal[i, j] * side);
+                        b.Tissue.Add(tissue[i, j]);
+                        b.Height.Add(mid[i, j].y);
+                    }
+                }
+
+                for (int i = 0; i < nu - 1; i++)
+                {
+                    for (int j = 0; j < nv - 1; j++)
+                    {
+                        int a = start + i * nv + j;
+                        Quad(b, a, a + 1, a + nv, a + nv + 1);
+                    }
+                }
+            }
+        }
+
+        /// <summary>Two triangles of a quad; <see cref="FinishThallus"/> winds every triangle by its normals.</summary>
+        private static void Quad(ThallusBuild b, int a, int bb, int c, int d)
+        {
+            b.Triangles.Add(a); b.Triangles.Add(c); b.Triangles.Add(bb);
+            b.Triangles.Add(bb); b.Triangles.Add(c); b.Triangles.Add(d);
+        }
+
+        /// <summary>
+        /// Ulva: three or four broad sheets from one base, each leaning out its own way, widest two thirds up and rounded at the
+        /// tip, cupped, crumpled and ruffled hardest at the margin, thin to nothing at every rim.
+        /// </summary>
+        private static void BuildUlva(ThallusBuild b, Vector3 box, int variant, uint seed)
+        {
+            int sheets = variant == 0 ? 3 : 4;
+            float turn = 2f * Mathf.PI * Unit(seed, 1);
+
+            var mids = new List<Vector3[,]>();
+            var halves = new List<float[,]>();
+            var tissues = new List<Color[,]>();
+            float maxHalf = 0f;
+
+            for (int k = 0; k < sheets; k++)
+            {
+                float psi = turn + 2f * Mathf.PI * k / sheets + 0.5f * (Unit(seed, 10 + k) - 0.5f);
+                float beta = Mathf.Lerp(UlvaLeanLeast, UlvaLeanMost, Unit(seed, 20 + k));
+                float length = Mathf.Lerp(0.8f, 1f, Unit(seed, 30 + k));
+                float p1 = 2f * Mathf.PI * Unit(seed, 40 + k);
+                float p2 = 2f * Mathf.PI * Unit(seed, 50 + k);
+                float p3 = 2f * Mathf.PI * Unit(seed, 60 + k);
+
+                var radial = new Vector3(Mathf.Cos(psi), 0f, Mathf.Sin(psi));
+                var across = new Vector3(-Mathf.Sin(psi), 0f, Mathf.Cos(psi));
+                float sinb = Mathf.Sin(beta), cosb = Mathf.Cos(beta);
+
+                var mid = new Vector3[UlvaStations + 1, UlvaRows + 1];
+                var half = new float[UlvaStations + 1, UlvaRows + 1];
+                var tissue = new Color[UlvaStations + 1, UlvaRows + 1];
+
+                for (int i = 0; i <= UlvaStations; i++)
+                {
+                    float u = (float)i / UlvaStations;
+
+                    for (int j = 0; j <= UlvaRows; j++)
+                    {
+                        float v = Mathf.Sin(0.5f * Mathf.PI * (2f * j / UlvaRows - 1f));
+                        float s = u * (1f - UlvaTipRound * v * v);
+
+                        Vector3 spine = length * (cosb * s * Vector3.up + sinb * Mathf.Pow(s, 1.4f) * radial);
+                        Vector3 tangent = (cosb * Vector3.up + sinb * 1.4f * Mathf.Pow(Mathf.Max(s, 1e-3f), 0.4f) * radial).normalized;
+                        Vector3 face = Vector3.Cross(tangent, across).normalized;
+
+                        float w = length * UlvaWidth * (UlvaWidthBase + (1f - UlvaWidthBase) * Mathf.Sin(0.5f * Mathf.PI * Mathf.Min(1f, s / UlvaWidest)));
+                        float edge = Mathf.Max(Mathf.Abs(v), Smooth(0.55f, 1f, s));
+
+                        float ruffle = w * edge * edge * UlvaRuffle *
+                                       (Mathf.Sin(2f * Mathf.PI * (3.1f * s + 1.7f * v) + p1) + 0.5f * Mathf.Sin(2f * Mathf.PI * (5.3f * s - 2.9f * v) + p2)) +
+                                       w * UlvaCrumple * s * Mathf.Sin(2f * Mathf.PI * (1.6f * s + 1.1f * v) + p3);
+                        float cup = UlvaCup * w * v * v;
+
+                        mid[i, j] = spine + across * (v * w) + face * (ruffle + cup);
+                        half[i, j] = length * UlvaHalfThick * Mathf.Sqrt(Mathf.Max(0f, 1f - v * v)) * Mathf.Sqrt(Mathf.Max(0f, Mathf.Sin(Mathf.PI * u)));
+                        maxHalf = Mathf.Max(maxHalf, half[i, j]);
+
+                        float tone = 1f - UlvaBaseDark * (1f - s) * (1f - s);
+                        tissue[i, j] = new Color(tone, 0f, UlvaThinMiddle + (1f - UlvaThinMiddle) * edge * edge, 1f);
+                    }
+                }
+
+                mids.Add(mid);
+                halves.Add(half);
+                tissues.Add(tissue);
+            }
+
+            float thick = FitSheets(mids, maxHalf, box);
+
+            for (int k = 0; k < sheets; k++)
+            {
+                float[,] half = halves[k];
+                for (int i = 0; i < half.GetLength(0); i++)
+                    for (int j = 0; j < half.GetLength(1); j++)
+                        half[i, j] *= thick;
+
+                AddSheet(b, mids[k], half, tissues[k]);
+            }
+        }
+
+        /// <summary>
+        /// Padina: a trumpet funnel slit down one side, or two fans, opening from one stalk, with lobes and a wave at the margin,
+        /// the rim rolled in toward the axis, concentric growth bands in the tone and lime toward the rim.
+        /// </summary>
+        private static void BuildPadina(ThallusBuild b, Vector3 box, int variant, uint seed)
+        {
+            int fans = variant == 0 ? 1 : 2;
+            int columns = variant == 0 ? PadinaColumnsFunnel : PadinaColumnsFan;
+            float span = variant == 0 ? PadinaFunnelSpan : PadinaFanSpan;
+            float open0 = variant == 0 ? 0.45f : 0.75f;
+            float open1 = variant == 0 ? 1.0f : 1.25f;
+            float turn = 2f * Mathf.PI * Unit(seed, 1);
+
+            var mids = new List<Vector3[,]>();
+            var halves = new List<float[,]>();
+            var tissues = new List<Color[,]>();
+            float maxHalf = 0f;
+
+            for (int f = 0; f < fans; f++)
+            {
+                float centre = turn + Mathf.PI * f + 0.3f * (Unit(seed, 10 + f) - 0.5f);
+                int lobes = 5 + Mathf.FloorToInt(3f * Unit(seed, 20 + f) - 1e-4f);
+                float phaseL = 2f * Mathf.PI * Unit(seed, 30 + f);
+                float phaseR = 2f * Mathf.PI * Unit(seed, 40 + f);
+
+                var mid = new Vector3[PadinaRings + 1, columns + 1];
+                var half = new float[PadinaRings + 1, columns + 1];
+                var tissue = new Color[PadinaRings + 1, columns + 1];
+
+                for (int i = 0; i <= PadinaRings; i++)
+                {
+                    float rho = PadinaStalk + (1f - PadinaStalk) * i / PadinaRings;
+
+                    for (int j = 0; j <= columns; j++)
+                    {
+                        float tau = 2f * j / columns - 1f;
+                        float theta = centre + span * tau;
+                        float reach = 1f - PadinaLobeDepth * (0.5f + 0.5f * Mathf.Cos(lobes * (theta - centre) + phaseL));
+                        float r = rho * reach;
+                        float open = open0 + (open1 - open0) * rho;
+                        var radial = new Vector3(Mathf.Cos(theta), 0f, Mathf.Sin(theta));
+
+                        Vector3 p = r * (Mathf.Cos(open) * Vector3.up + Mathf.Sin(open) * radial);
+                        float q = Smooth(PadinaRollFrom, 1f, rho);
+                        p += reach * q * q * (PadinaRoll * -radial + PadinaRollLift * Vector3.up);
+                        p += Vector3.up * (PadinaRuffle * rho * rho * Mathf.Sin(7f * theta + phaseR));
+
+                        mid[i, j] = p;
+                        half[i, j] = PadinaHalfThick * Mathf.Sqrt(Mathf.Max(0f, 1f - rho * rho * rho * rho)) *
+                                     Mathf.Sqrt(Mathf.Max(0f, 1f - Mathf.Pow(tau, 8f))) *
+                                     Mathf.Sqrt(Mathf.Clamp01((rho - PadinaStalk) / 0.1f));
+                        maxHalf = Mathf.Max(maxHalf, half[i, j]);
+
+                        float band = 1f - PadinaBandDepth * (0.5f + 0.5f * Mathf.Cos(2f * Mathf.PI * PadinaBands * rho));
+                        float lime = PadinaLimeBase + (PadinaLimeRim - PadinaLimeBase) * Smooth(0.84f, 1f, rho);
+                        tissue[i, j] = new Color(band, lime, PadinaThin, 1f);
+                    }
+                }
+
+                mids.Add(mid);
+                halves.Add(half);
+                tissues.Add(tissue);
+            }
+
+            float thick = FitSheets(mids, maxHalf, box);
+
+            for (int f = 0; f < fans; f++)
+            {
+                float[,] half = halves[f];
+                for (int i = 0; i < half.GetLength(0); i++)
+                    for (int j = 0; j < half.GetLength(1); j++)
+                        half[i, j] *= thick;
+
+                AddSheet(b, mids[f], half, tissues[f]);
+            }
+        }
+
+        private struct CodiumSegment
+        {
+            public Vector3 From, Bow, To;
+            public int Level;
+        }
+
+        /// <summary>
+        /// Codium: a trunk that forks in two, three or four times, each fork in a plane a quarter turn from its mother's, every
+        /// segment a capsule of one radius along a bowed centre line. The centre lines are fitted into the box less the radius,
+        /// so every capsule is inside.
+        /// </summary>
+        private static void BuildCodium(ThallusBuild b, Vector3 box, int variant, uint seed)
+        {
+            int levels = variant == 0 ? 3 : 4;
+            int rings = variant == 0 ? 8 : 7;
+            int sides = variant == 0 ? 12 : 10;
+            float radiusShare = variant == 0 ? CodiumRadiusFew : CodiumRadiusMany;
+
+            var segments = new List<CodiumSegment>();
+            int salt = 0;
+
+            void Grow(Vector3 from, Vector3 dir, Vector3 plane, int level, float length)
+            {
+                salt++;
+                Vector3 to = from + dir * length;
+                Vector3 bow = from + dir * (0.5f * length) + plane * (length * CodiumBow * (2f * Unit(seed, 100 + salt) - 1f));
+                segments.Add(new CodiumSegment { From = from, Bow = bow, To = to, Level = level });
+
+                if (level + 1 >= levels) return;
+
+                float fork = Mathf.Rad2Deg * (CodiumFork + 0.15f * (Unit(seed, 200 + salt) - 0.5f));
+                Vector3 left = (Quaternion.AngleAxis(fork, plane) * dir).normalized;
+                Vector3 right = (Quaternion.AngleAxis(-fork, plane) * dir).normalized;
+
+                // Each daughter forks in the plane through it at right angles to its mother's fork.
+                Grow(to, left, Vector3.Cross(left, plane).normalized, level + 1, length * CodiumShorten);
+                Grow(to, right, Vector3.Cross(right, plane).normalized, level + 1, length * CodiumShorten);
+            }
+
+            // The trunk leans a little off the growth axis in the plane of its first fork; z is across that plane.
+            float lean = 0.25f * (Unit(seed, 1) - 0.5f);
+            Grow(Vector3.zero, new Vector3(Mathf.Sin(lean), Mathf.Cos(lean), 0f), Vector3.forward, 0, 1f);
+
+            var centres = new List<Vector3[]>();
+            var all = new List<Vector3>();
+            foreach (CodiumSegment segment in segments)
+            {
+                var line = new Vector3[rings];
+                for (int k = 0; k < rings; k++)
+                {
+                    float t = (float)k / (rings - 1);
+                    line[k] = (1f - t) * (1f - t) * segment.From + 2f * (1f - t) * t * segment.Bow + t * t * segment.To;
+                    all.Add(line[k]);
+                }
+                centres.Add(line);
+            }
+
+            float radius = Mathf.Min(radiusShare * Mathf.Min(box.x, box.z), 0.3f * box.y) * ThalliFill;
+            Vector3 scale = FitScale(all, box, radius, out Vector3 centre);
+
+            for (int s = 0; s < segments.Count; s++)
+            {
+                Vector3[] line = centres[s];
+                for (int k = 0; k < line.Length; k++) line[k] = Vector3.Scale(line[k] - centre, scale);
+
+                float tone = CodiumToneBase + (1f - CodiumToneBase) * segments[s].Level / Mathf.Max(1, levels - 1);
+                AddCapsule(b, line, radius, sides, new Color(tone, 0f, 0f, 1f));
+            }
+        }
+
+        /// <summary>
+        /// A capsule of one radius along a centre line: rings at the line's points, framed by parallel transport, and a
+        /// hemisphere at each end. Every vertex is within the radius of a point of the line. A ring's vertices carry its centre's
+        /// height, and a cap's its end's, so a ring sways as one.
+        /// </summary>
+        private static void AddCapsule(ThallusBuild b, Vector3[] line, float radius, int sides, Color tissue)
+        {
+            const int capRings = 4;
+            int count = line.Length;
+
+            var tangents = new Vector3[count];
+            for (int k = 0; k < count; k++)
+            {
+                Vector3 t = line[Mathf.Min(k + 1, count - 1)] - line[Mathf.Max(k - 1, 0)];
+                tangents[k] = t.sqrMagnitude > 1e-14f ? t.normalized : Vector3.up;
+            }
+
+            Vector3 n0 = Vector3.Cross(tangents[0], Mathf.Abs(tangents[0].y) < 0.9f ? Vector3.up : Vector3.right).normalized;
+            var across = new Vector3[count];
+            across[0] = n0;
+            for (int k = 1; k < count; k++)
+            {
+                Vector3 n = across[k - 1] - tangents[k] * Vector3.Dot(across[k - 1], tangents[k]);
+                across[k] = n.sqrMagnitude > 1e-14f ? n.normalized : across[k - 1];
+            }
+
+            // The rings, base pole to tip pole: (centre, radius, axis, across, normal tilt along the axis, height).
+            var ringCentre = new List<Vector3>();
+            var ringRadius = new List<float>();
+            var ringAxis = new List<Vector3>();
+            var ringAcross = new List<Vector3>();
+            var ringTilt = new List<float>();
+            var ringHeight = new List<float>();
+
+            for (int c = 1; c < capRings; c++)
+            {
+                float angle = 0.5f * Mathf.PI * c / capRings;
+                ringCentre.Add(line[0] - tangents[0] * (radius * Mathf.Cos(angle)));
+                ringRadius.Add(radius * Mathf.Sin(angle));
+                ringAxis.Add(tangents[0]); ringAcross.Add(across[0]);
+                ringTilt.Add(-Mathf.Cos(angle)); ringHeight.Add(line[0].y);
+            }
+
+            for (int k = 0; k < count; k++)
+            {
+                ringCentre.Add(line[k]); ringRadius.Add(radius);
+                ringAxis.Add(tangents[k]); ringAcross.Add(across[k]);
+                ringTilt.Add(0f); ringHeight.Add(line[k].y);
+            }
+
+            for (int c = capRings - 1; c >= 1; c--)
+            {
+                float angle = 0.5f * Mathf.PI * c / capRings;
+                ringCentre.Add(line[count - 1] + tangents[count - 1] * (radius * Mathf.Cos(angle)));
+                ringRadius.Add(radius * Mathf.Sin(angle));
+                ringAxis.Add(tangents[count - 1]); ringAcross.Add(across[count - 1]);
+                ringTilt.Add(Mathf.Cos(angle)); ringHeight.Add(line[count - 1].y);
+            }
+
+            int basePole = b.Position.Count;
+            b.Position.Add(line[0] - tangents[0] * radius);
+            b.Normal.Add(-tangents[0]);
+            b.Tissue.Add(tissue);
+            b.Height.Add(line[0].y);
+
+            int first = b.Position.Count;
+            for (int r = 0; r < ringCentre.Count; r++)
+            {
+                Vector3 axis = ringAxis[r];
+                Vector3 x = ringAcross[r];
+                Vector3 y = Vector3.Cross(axis, x);
+                float tilt = ringTilt[r];
+                float flat = Mathf.Sqrt(Mathf.Max(0f, 1f - tilt * tilt));
+
+                for (int i = 0; i < sides; i++)
+                {
+                    float a = 2f * Mathf.PI * i / sides;
+                    Vector3 out_ = Mathf.Cos(a) * x + Mathf.Sin(a) * y;
+                    b.Position.Add(ringCentre[r] + out_ * ringRadius[r]);
+                    b.Normal.Add((out_ * flat + axis * tilt).normalized);
+                    b.Tissue.Add(tissue);
+                    b.Height.Add(ringHeight[r]);
+                }
+            }
+
+            int tipPole = b.Position.Count;
+            b.Position.Add(line[count - 1] + tangents[count - 1] * radius);
+            b.Normal.Add(tangents[count - 1]);
+            b.Tissue.Add(tissue);
+            b.Height.Add(line[count - 1].y);
+
+            for (int i = 0; i < sides; i++)
+            {
+                int j = (i + 1) % sides;
+                b.Triangles.Add(basePole); b.Triangles.Add(first + i); b.Triangles.Add(first + j);
+            }
+
+            for (int r = 0; r < ringCentre.Count - 1; r++)
+            {
+                for (int i = 0; i < sides; i++)
+                {
+                    int j = (i + 1) % sides;
+                    Quad(b, first + r * sides + i, first + r * sides + j, first + (r + 1) * sides + i, first + (r + 1) * sides + j);
+                }
+            }
+
+            int last = first + (ringCentre.Count - 1) * sides;
+            for (int i = 0; i < sides; i++)
+            {
+                int j = (i + 1) % sides;
+                b.Triangles.Add(tipPole); b.Triangles.Add(last + i); b.Triangles.Add(last + j);
+            }
+        }
+
+        /// <summary>
+        /// Turns a built thallus onto the object axes and into the unit box: the growth axis is <paramref name="axis"/>, the base
+        /// at its high end when <paramref name="baseHigh"/>. A canonical point at its box's face lands at <c>0.5 * Inset</c>,
+        /// and every vertex is clamped there besides. The sway's reach is baked per vertex in UV channel four: the most a
+        /// thallus may sway (<see cref="ThalliSwayWant"/>, cut so that no vertex's share exceeds its room on the two axes the
+        /// sway moves along) times the vertex's height share to <see cref="ThalliSwayBend"/>; then its lag, and the axis. Every
+        /// triangle is wound so that its face normal agrees with its vertices' normals.
+        /// </summary>
+        private static Mesh FinishThallus(ThallusBuild b, ThallusForm form, Vector3 e, int axis, bool baseHigh)
+        {
+            int axisA = (axis + 1) % 3;
+            int axisB = (axis + 2) % 3;
+            float half = 0.5f * Inset;
+            float flip = baseHigh ? -1f : 1f;  // the canonical bottom (the base) lands at the low end, or at the high end when flipped
+            var box = new Vector3(e[axisA], e[axis], e[axisB]);
+
+            int n = b.Position.Count;
+            var vertices = new List<Vector3>(n);
+            var normals = new List<Vector3>(n);
+            var colours = new List<Color>(n);
+            var reach = new List<Vector4>(n);
+
+            float low = float.MaxValue, high = float.MinValue;
+            foreach (float h in b.Height) { low = Mathf.Min(low, h); high = Mathf.Max(high, h); }
+            float span = Mathf.Max(1e-6f, high - low);
+
+            var weights = new float[n];
+            float amplitude = ThalliSwayWant;
+
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 p = b.Position[i];
+                Vector3 q = b.Normal[i];
+
+                var o = Vector3.zero;
+                o[axisA] = Mathf.Clamp(half * p.x / box.x, -half, half);
+                o[axis] = Mathf.Clamp(flip * half * p.y / box.y, -half, half);
+                o[axisB] = Mathf.Clamp(half * p.z / box.z, -half, half);
+
+                var m = Vector3.zero;
+                m[axisA] = q.x * box.x;
+                m[axis] = flip * q.y * box.y;
+                m[axisB] = q.z * box.z;
+
+                vertices.Add(o);
+                normals.Add(m.sqrMagnitude > 1e-14f ? m.normalized : Vector3.up);
+                colours.Add(b.Tissue[i]);
+
+                float share = (b.Height[i] - low) / span;
+                weights[i] = Mathf.Pow(Mathf.Clamp01(share), ThalliSwayBend);
+
+                float room = Mathf.Min(half - Mathf.Abs(o[axisA]), half - Mathf.Abs(o[axisB]));
+                if (weights[i] > 1e-4f) amplitude = Mathf.Min(amplitude, Mathf.Max(0f, room) / weights[i]);
+            }
+
+            amplitude = Mathf.Max(0f, amplitude);
+
+            for (int i = 0; i < n; i++)
+            {
+                float share = Mathf.Clamp01((b.Height[i] - low) / span);
+                reach.Add(new Vector4(amplitude * weights[i], ThalliWaveLag * share, 0f, axis));
+            }
+
+            var triangles = new List<int>(b.Triangles.Count);
+            for (int t = 0; t < b.Triangles.Count; t += 3)
+            {
+                int i0 = b.Triangles[t], i1 = b.Triangles[t + 1], i2 = b.Triangles[t + 2];
+                Vector3 facing = Vector3.Cross(vertices[i1] - vertices[i0], vertices[i2] - vertices[i0]);
+
+                if (Vector3.Dot(facing, normals[i0] + normals[i1] + normals[i2]) < 0f)
+                {
+                    int swap = i1; i1 = i2; i2 = swap;
+                }
+
+                triangles.Add(i0); triangles.Add(i1); triangles.Add(i2);
+            }
+
+            Mesh mesh = Finish("Theatre Thallus " + form, vertices, normals, triangles, ThallusFlag(form));
+            mesh.SetUVs(4, reach);
+            mesh.SetColors(colours);
+
+            return mesh;
+        }
+
+        // THALLI end
+        // SNOUT begin
+        // ---------------------------------------------------------------- the snout (EVOSIM_THEATRE_NOSE_SNOUT)
+
+        /// <summary>
+        /// The snout's tip half width over its base half width: a nose narrows to this share of the collider's cross
+        /// section by its free end, where the olfactory pit sits (<c>TheatreNosePit.SnoutOf</c>).
+        /// </summary>
+        public const float SnoutTipShare = 0.5f;
+
+        /// <summary>
+        /// The taper's power: the cross section is <c>1 - (1 - SnoutTipShare) * u^SnoutTaperPower</c> of the collider's, u
+        /// the distance from the base face over the length. Above one the slope is zero at the base, where the skirt's
+        /// flare meets it, and the snout narrows fastest toward the tip.
+        /// </summary>
+        public const float SnoutTaperPower = 1.4f;
+
+        /// <summary>
+        /// The steps the skirt's depth (over the nose's length) and the flare's share are rounded to, so that a few
+        /// meshes serve every nose.
+        /// </summary>
+        public const int SnoutSkirtSteps = 32;
+        public const int SnoutFlareSteps = 8;
+
+        /// <summary>The most snout meshes kept; a nose that would need one more keeps its box.</summary>
+        private const int SnoutMeshCap = 48;
+
+        private static readonly Dictionary<int, Mesh> _snouts = new Dictionary<int, Mesh>();
+        private static readonly HashSet<Mesh> _snoutMeshes = new HashSet<Mesh>();
+
+        /// <summary>True for a snout mesh.</summary>
+        public static bool IsSnout(Mesh mesh) => mesh != null && _snoutMeshes.Contains(mesh);
+
+        /// <summary>
+        /// A nose's rounded cube made into a snout, cached by class. Its tip is at the high end of <paramref name="axis"/>
+        /// when <paramref name="high"/>, else at the low end. In the cube's unit coordinates (the collider is the cube of
+        /// side one) the cross section is the collider's at the base face and narrows to <see cref="SnoutTipShare"/> of it
+        /// at the tip, so that part is inside the collider; below the base face a skirt of depth
+        /// <paramref name="skirt"/> (over the length) widens from the collider's cross section to
+        /// <c>1 + flare</c> times it, tissue across the joint that lies inside the parent.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>How.</b> The cube's own vertices are moved, not rebuilt: the axial coordinate is stretched so the cube's base
+        /// end lands at the bottom of the skirt, and the two cross coordinates are multiplied by the profile at the new
+        /// axial position. The cube's 24 segments to a face edge are kept at the tip face, so the pit has the vertices it
+        /// has on the box. The normal is the inverse transpose of the map's Jacobian on the cube's normal, as the link's
+        /// taper does it in the shader. The map is a rotation of the same cyclic order in every class, so no winding turns.
+        /// </para>
+        /// <para>
+        /// <b>Not a box to the shader.</b> It carries the shape flag of zero (<see cref="Finish"/>), so the shader's box
+        /// taper, bend and clamp do not act on it: the clamp would cut the skirt back into the collider. The carve still
+        /// acts, and only inward.
+        /// </para>
+        /// <para>
+        /// The skirt and the flare are rounded to <see cref="SnoutSkirtSteps"/> and <see cref="SnoutFlareSteps"/> and returned
+        /// as drawn. Null once <see cref="SnoutMeshCap"/> meshes are kept.
+        /// </para>
+        /// <para>
+        /// <b>At EVOSIM_THEATRE_NO_BOX 2</b> the map acts on <see cref="TheatreNoBox.Mesh"/> in place of the rounded cube, so the
+        /// tip is a rounded end with no flat face and the pillow plays no part in the class (the key's bucket is zero).
+        /// </para>
+        /// </remarks>
+        public static Mesh Snout(
+            int axis, bool high, float pillow, float skirt, float flare, out float skirtDrawn, out float flareDrawn)
+        {
+            int qs = Mathf.Clamp(Mathf.RoundToInt(skirt * SnoutSkirtSteps), 0, SnoutSkirtSteps);
+            int qf = qs == 0 ? 0 : Mathf.Clamp(Mathf.RoundToInt(flare * SnoutFlareSteps), 0, SnoutFlareSteps);
+
+            skirtDrawn = qs / (float)SnoutSkirtSteps;
+            flareDrawn = qf / (float)SnoutFlareSteps;
+
+            int bucket = Bucket(pillow);
+            // NOBOX begin
+            // Level 2: the snout is cut from the no-box solid, which has no pillow, so one class serves every cubicness.
+            if (TheatreNoBox.EllipsoidAll) bucket = 0;
+            // NOBOX end
+            int key = axis | ((high ? 1 : 0) << 2) | ((bucket / 4) << 3) | (qs << 7) | (qf << 13);
+
+            if (_snouts.TryGetValue(key, out Mesh mesh) && mesh != null) return mesh;
+            if (_snouts.Count >= SnoutMeshCap) return null;
+
+            mesh = BuildSnout(axis, high, bucket / 100f, skirtDrawn, flareDrawn);
+            _snouts[key] = mesh;
+            _snoutMeshes.Add(mesh);
+
+            return mesh;
+        }
+
+        /// <summary>
+        /// The cross section's multiplier <paramref name="s"/> and its slope <paramref name="ds"/> along the axis at the axial
+        /// coordinate <paramref name="t"/> (the tip at <paramref name="h"/>, the collider's base face at minus a half).
+        /// </summary>
+        private static void SnoutProfile(float t, float skirt, float flare, float h, out float s, out float ds)
+        {
+            if (t >= -0.5f || skirt <= 1e-6f)
+            {
+                float u = Mathf.Clamp01((t + 0.5f) / (h + 0.5f));
+
+                s = 1f - (1f - SnoutTipShare) * Mathf.Pow(u, SnoutTaperPower);
+                ds = -(1f - SnoutTipShare) * SnoutTaperPower * Mathf.Pow(u, SnoutTaperPower - 1f) / (h + 0.5f);
+            }
+            else
+            {
+                float d = Mathf.Clamp01((-0.5f - t) / skirt);
+
+                s = 1f + flare * d * d;
+                ds = -2f * flare * d / skirt;
+            }
+        }
+
+        private static Mesh BuildSnout(int axis, bool high, float pillow, float skirt, float flare)
+        {
+            // NOBOX begin
+            // Level 2: the no-box solid, of the rounded cube's box, takes the rounded cube's place: the same map on its vertices,
+            // a tapered rounded solid with no flat tip face.
+            Mesh source = TheatreNoBox.EllipsoidAll ? TheatreNoBox.Mesh() : RoundedCube(pillow);
+            // NOBOX end
+            Vector3[] sourceVertices = source.vertices;
+            Vector3[] sourceNormals = source.normals;
+
+            int a = axis, b = (axis + 1) % 3, c = (axis + 2) % 3;
+            float h = 0.5f * Inset;
+            float low = -0.5f - skirt;
+            float stretch = (h - low) / (2f * h);
+            float sign = high ? 1f : -1f;
+
+            var vertices = new List<Vector3>(sourceVertices.Length);
+            var normals = new List<Vector3>(sourceVertices.Length);
+
+            for (int i = 0; i < sourceVertices.Length; i++)
+            {
+                Vector3 v = sourceVertices[i];
+                Vector3 n = sourceNormals[i];
+                float pb = v[b], pc = v[c];
+
+                float t = low + (v[a] + h) / (2f * h) * (h - low);
+                SnoutProfile(t, skirt, flare, h, out float s, out float ds);
+
+                // In the frame whose first axis runs base to tip. The normal: the inverse transpose of the Jacobian of
+                // (t, pb, pc) -> (t', pb s, pc s), s a function of t' alone.
+                var turned = new Vector3(
+                    n[a] / stretch - ds * (pb * n[b] + pc * n[c]) / s,
+                    n[b] / s,
+                    n[c] / s).normalized;
+
+                var position = Vector3.zero;
+                var normal = Vector3.zero;
+
+                // A tip at the low end is a half turn about the third axis: the first two components change sign, and the
+                // handedness, so the winding, is kept.
+                position[a] = sign * t;
+                position[b] = sign * pb * s;
+                position[c] = pc * s;
+
+                normal[a] = sign * turned.x;
+                normal[b] = sign * turned.y;
+                normal[c] = turned.z;
+
+                vertices.Add(position);
+                normals.Add(normal);
+            }
+
+            return Finish("Theatre Snout", vertices, normals, new List<int>(source.triangles), 0f);
+        }
+
+        private static void ReleaseSnouts()
+        {
+            foreach (int key in new List<int>(_snouts.Keys))
+            {
+                Mesh snout = _snouts[key];
+                Discard(ref snout);
+            }
+
+            _snouts.Clear();
+            _snoutMeshes.Clear();
+        }
+
+        // SNOUT end
         // ---------------------------------------------------------------- shared
 
         /// <summary>
@@ -791,7 +1834,7 @@ namespace Evosim.Theatre
         /// It is only read when the flag is one.
         /// </para>
         /// </remarks>
-        private static Mesh Finish(
+        internal static Mesh Finish(
             string name, List<Vector3> vertices, List<Vector3> normals, List<int> triangles,
             float boxness)
         {

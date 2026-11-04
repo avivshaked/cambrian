@@ -37,6 +37,14 @@ namespace Evosim.Theatre
         /// </summary>
         ReefGeometry Reefs { get; }
 
+        /// <summary>
+        /// Round 62's branching coral (<c>logbook/specs/coral-build.md</c>), or null with none,
+        /// which is every recording before it and every mushroom world. A live world's is its own;
+        /// a film window's and a reconstruction's is grown as the world grows it
+        /// (<see cref="TheatreCoralRock.PlaceFor"/>).
+        /// </summary>
+        CoralRock Coral { get; }
+
         /// <summary>How many bodies are standing in the world.</summary>
         int BodyCount { get; }
 

@@ -162,6 +162,9 @@ namespace Evosim.Theatre
             Simulation sim = replay.Sim;
             World world = sim.World;
 
+            // D239: both sides are the physics step in PHYSICS seconds (the header's and Simulation's
+            // PhysicsDt), so this comparison needs no pace factor; the factor itself rides in the
+            // config hash, which Compare checks below.
             if (Math.Abs(Header.PhysicsStepSeconds - sim.PhysicsDt) > 1e-9f)
             {
                 throw new InvalidDataException(

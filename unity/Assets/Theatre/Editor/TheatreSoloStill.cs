@@ -42,6 +42,33 @@ namespace Evosim.Theatre.EditorTools
         private const float Margin = 1.12f;
         private static readonly Vector3 Bearing = new Vector3(-0.78f, -0.34f, 1f);
 
+        /// <summary>
+        /// <c>EVOSIM_STILLS_FROM=mouth</c>: each still that has an eating part is drawn facing its main mouth (the largest eating
+        /// part by the product of its half extents, as <c>TheatreMouth2.MouthKind</c> takes it), the eye <see cref="MouthTurn"/> of
+        /// the way from the mouth's outward axis toward the usual bearing, framing that part alone, so the mouth's kind can be seen.
+        /// A body with no eating part, or a mouth at its part's centre, is drawn as usual. Unset, every still is as before.
+        /// <c>EVOSIM_STILLS_FROM=mouthclose</c> faces it the same way and frames a box <see cref="MouthCloseReach"/> mouth radii
+        /// (<c>TheatreMouth2.Measure</c>) each way from the mouth point instead of the part, so a mouth on a thin face, whose
+        /// radius follows that face's smaller half extent, fills the still.
+        /// </summary>
+        private static readonly string StillsFrom = Environment.GetEnvironmentVariable("EVOSIM_STILLS_FROM");
+        private static readonly bool FromMouth = StillsFrom == "mouth" || StillsFrom == "mouthclose";
+        private static readonly bool MouthClose = StillsFrom == "mouthclose";
+
+        /// <summary>
+        /// <c>EVOSIM_STILLS_FRAME_SAVE=&lt;file&gt;</c>: each still's frame (the box the camera holds) and bearing are written there, one
+        /// line a still. <c>EVOSIM_STILLS_FRAME_LOAD=&lt;file&gt;</c>: a still whose name has a line there is framed from it instead of
+        /// its own renderers, so two looks whose meshes differ in size (NO_BOX 0 and 1) are drawn from the same camera.
+        /// </summary>
+        private static readonly string FrameSave = Environment.GetEnvironmentVariable("EVOSIM_STILLS_FRAME_SAVE");
+        private static readonly string FrameLoad = Environment.GetEnvironmentVariable("EVOSIM_STILLS_FRAME_LOAD");
+
+        /// <summary>The share of the way from facing the mouth head on toward the usual bearing, so its rim and depth read.</summary>
+        private const float MouthTurn = 0.3f;
+
+        /// <summary>The close frame's half size in mouth radii: the crown's lobes reach 2.6, and a little body shows round them.</summary>
+        private const float MouthCloseReach = 3.2f;
+
         [Serializable]
         private sealed class Item
         {
@@ -176,11 +203,58 @@ namespace Evosim.Theatre.EditorTools
 
             CreatureInstance body = PhenotypeBuilder.Build(phenotype, Vector3.zero, null, config.Shapes);
             Light back = null;
+            TheatreOneSkin oneSkin = null; // NOBOX
             try
             {
                 var palette = new TheatrePalette { Skin = skin };
-                palette.Paint(1, body.Root.transform, phenotype, 1f, true);
-                Frame(cam, BoundsOf(body.Root));
+
+                // The genome-to-skin map (EVOSIM_THEATRE_SKIN_MAP): the body is painted under its own id, so its vector is its
+                // own and not the first still's, and its genome is registered. With the dial off every still is painted as id 1,
+                // unless EVOSIM_STILLS_OWN_ID=1 paints it under its own id too: the id seeds the carve, so a sheet of the map off
+                // against on compares like with like only when both runs paint under the same id.
+                long paintId = 1;
+                if (TheatrePalette.SkinMapOn || Environment.GetEnvironmentVariable("EVOSIM_STILLS_OWN_ID") == "1")
+                {
+                    long rowId = GenomeJson.ReadId(row);
+                    if (rowId != GenomeJson.NoId) paintId = rowId;
+                }
+                if (TheatrePalette.SkinMapOn) TheatrePalette.RegisterForSkinMap(paintId, genome, config);
+
+                // NOBOX begin
+                // EVOSIM_THEATRE_NO_BOX: the film's one skin on the still, built from the body's part transforms and visuals before the
+                // first paint and dressed after it, as LiveWorldView does. Null with the rule off or the skin's dial off.
+                if (TheatreNoBox.Enabled && body.Bodies.Length == phenotype.PartCount && body.Renderers.Length > 0)
+                {
+                    var partTransforms = new Transform[body.Bodies.Length];
+                    for (int partAt = 0; partAt < partTransforms.Length; partAt++)
+                    {
+                        partTransforms[partAt] = body.Bodies[partAt] != null ? body.Bodies[partAt].transform : null;
+                    }
+
+                    oneSkin = TheatreOneSkin.Build(
+                        paintId, body.Root.transform, partTransforms, TheatreNoBox.VisualsByPart(partTransforms), phenotype, phenotype,
+                        config.Shapes, body.Renderers[0].sharedMaterial, palette);
+                }
+                // NOBOX end
+
+                palette.Paint(paintId, body.Root.transform, phenotype, 1f, true);
+                if (oneSkin != null) oneSkin.Dress(palette, paintId); // NOBOX
+
+                // The main mouth, its kind as painted (TheatreMouth2's code in _MouthRadii.w, stripes + 16 * kind) logged for the
+                // sheet's labels, and with EVOSIM_STILLS_FROM=mouth the frame turned to face it.
+                int mouthPart = MainMouthPart(phenotype);
+                Bounds frame = BoundsOf(body.Root);
+                Vector3 bearing = Bearing;
+                if (mouthPart >= 0)
+                {
+                    LogMouthKind(paintId, body, mouthPart);
+                    if (FromMouth) FaceMouth(body, phenotype, mouthPart, ref frame, ref bearing);
+                }
+
+                PinFrame(item.name, ref frame, ref bearing);
+                Frame(cam, frame, bearing);
+                if (FromMouth && mouthPart >= 0) LogMouthGeometry(paintId, body, phenotype, mouthPart, cam);
+                LogParts(paintId, body, phenotype);
                 skin.Aim(cam.transform.rotation);
                 back = BackLight(cam);
                 Render(cam, item.size, item.png_file);
@@ -188,6 +262,7 @@ namespace Evosim.Theatre.EditorTools
             finally
             {
                 if (back != null) UnityEngine.Object.DestroyImmediate(back.gameObject);
+                if (oneSkin != null) oneSkin.Release(); // NOBOX
                 body.Destroy();
             }
         }
@@ -196,7 +271,7 @@ namespace Evosim.Theatre.EditorTools
         {
             try
             {
-                return RunDirectory.ReadConfig(runDirectory, out _);
+                return RunRecord.ReadConfigFillingProvenOff(runDirectory, out _);
             }
             catch (Exception)
             {
@@ -257,10 +332,191 @@ namespace Evosim.Theatre.EditorTools
             return bounds;
         }
 
-        /// <summary>The close view's bearing, at the distance that holds the whole box in a square frame.</summary>
-        private static void Frame(Camera cam, Bounds bounds)
+        /// <summary>The largest eating part by the product of its half extents, or -1 for a body with none.</summary>
+        private static int MainMouthPart(Phenotype phenotype)
         {
-            Quaternion rotation = Quaternion.LookRotation(Bearing.normalized, Vector3.up);
+            int main = -1;
+            float largest = -1f;
+            for (int i = 0; i < phenotype.PartCount; i++)
+            {
+                PhenotypePart p = phenotype.Parts[i];
+                if (!MouthPoint.IsEatingPart(p)) continue;
+                float volume = Mathf.Abs(p.HalfExtents.X * p.HalfExtents.Y * p.HalfExtents.Z);
+                if (volume > largest) { largest = volume; main = i; }
+            }
+            return main;
+        }
+
+        /// <summary>The main mouth's kind as painted, from its first renderer's <c>_MouthRadii.w</c>: one line per still.</summary>
+        private static void LogMouthKind(long id, CreatureInstance body, int part)
+        {
+            var block = new MaterialPropertyBlock();
+            for (int r = 0; r < body.Renderers.Length; r++)
+            {
+                if (body.RendererPart[r] != part) continue;
+                body.Renderers[r].GetPropertyBlock(block);
+                float w = block.GetVector("_MouthRadii").w;
+                int kind = w >= 16f ? Mathf.FloorToInt(w / 16f) : 0;
+                Debug.Log(string.Format(CultureInfo.InvariantCulture, "TheatreSoloStill: id {0} mouth part {1} code {2:0} kind {3} stripes {4:0}",
+                    id, part, w, kind, w - 16f * kind));
+                return;
+            }
+        }
+
+        /// <summary>
+        /// With <c>EVOSIM_STILLS_PART_LOG=1</c>, one line per renderer as painted: its part, cell and shape, the shader, and the block's
+        /// colours and link values, so a part drawn wrong (the flat white link of 2026-10-31) can be told from its neighbours by number.
+        /// </summary>
+        private static void LogParts(long id, CreatureInstance body, Phenotype phenotype)
+        {
+            if (Environment.GetEnvironmentVariable("EVOSIM_STILLS_PART_LOG") != "1") return;
+
+            var block = new MaterialPropertyBlock();
+            for (int r = 0; r < body.Renderers.Length; r++)
+            {
+                var renderer = body.Renderers[r];
+                int part = body.RendererPart[r];
+                renderer.GetPropertyBlock(block);
+                PhenotypePart p = part >= 0 && part < phenotype.PartCount ? phenotype.Parts[part] : null;
+                Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                    "TheatreSoloStill: id {0} renderer {1} part {2} cell {3} shape {4} shader {5} enabled {6} base {7} color {8} cell colour {9} link shape {10} link axis {11} leaf {12} fade {13}",
+                    id, r, part, p != null ? p.CellTypeId : "-", p != null ? p.ShapeId : "-",
+                    renderer.sharedMaterial != null ? renderer.sharedMaterial.shader.name : "none", renderer.enabled,
+                    block.GetColor("_BaseColor"), block.GetColor("_Color"), block.GetColor("_CellColour"),
+                    block.GetVector("_LinkShape"), block.GetVector("_LinkAxis"), block.GetFloat("_Leaf"), block.GetFloat("_Fade")));
+            }
+        }
+
+        /// <summary>
+        /// With the stills facing the mouth, one line per renderer of the main mouth's part: Core's mouth point taken through the
+        /// part's body (what <see cref="FaceMouth"/> faces), the opening the shader draws (<c>_Mouth</c> through the renderer's own
+        /// transform, and <c>_MouthRadii</c>), the gap between the two, and the angle between the eye's line and the outward axis.
+        /// </summary>
+        private static void LogMouthGeometry(long id, CreatureInstance body, Phenotype phenotype, int part, Camera cam)
+        {
+            Float3 tip = MouthPoint.Local(phenotype, part);
+            var local = new Vector3(tip.X, tip.Y, tip.Z);
+            if (body.Bodies == null || part >= body.Bodies.Length || body.Bodies[part] == null) return;
+            Transform t = body.Bodies[part].transform;
+            Vector3 core = t.TransformPoint(local);
+            Vector3 outward = t.TransformDirection(local.normalized);
+            Float3 h = phenotype.Parts[part].HalfExtents;
+            TheatreMouth2.Measured m = TheatreMouth2.Measure(phenotype, part);
+            var block = new MaterialPropertyBlock();
+            for (int r = 0; r < body.Renderers.Length; r++)
+            {
+                if (body.RendererPart[r] != part) continue;
+                Renderer renderer = body.Renderers[r];
+                renderer.GetPropertyBlock(block);
+                Vector4 mouth = block.GetVector("_Mouth"), radii = block.GetVector("_MouthRadii");
+                Vector3 drawn = renderer.transform.TransformPoint(new Vector3(mouth.x, mouth.y, mouth.z));
+                Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                    "TheatreSoloStill: id {0} mouth geometry part {1} renderer {2} half {3:0.000} {4:0.000} {5:0.000} tip {6:0.000} {7:0.000} {8:0.000} " +
+                    "radius {9:0.000} core {10:0.000} {11:0.000} {12:0.000} drawn {13:0.000} {14:0.000} {15:0.000} gap {16:0.000} " +
+                    "drawnRadii {17:0.000} {18:0.000} {19:0.000} scale {20:0.000} {21:0.000} {22:0.000} eyeToOutward {23:0.0} deg",
+                    id, part, renderer.name, h.X, h.Y, h.Z, local.x, local.y, local.z, m.RadiusMetres, core.x, core.y, core.z,
+                    drawn.x, drawn.y, drawn.z, Vector3.Distance(core, drawn), radii.x, radii.y, radii.z,
+                    renderer.transform.lossyScale.x, renderer.transform.lossyScale.y, renderer.transform.lossyScale.z,
+                    Vector3.Angle(-cam.transform.forward, outward)));
+
+                // The disc's axis and the flat and relief dials as the renderer's block holds them (EVOSIM_THEATRE_MOUTH2_FLAT runs only
+                // on an axis of length over 0.5).
+                Vector4 axis = block.GetVector("_MouthAxis");
+                Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                    "TheatreSoloStill: id {0} mouth disc part {1} renderer {2} axis {3:0.000} {4:0.000} {5:0.000} phase {6:0.000} flat {7:0.###} slack {8:0.###} relief {9:0.###}",
+                    id, part, renderer.name, axis.x, axis.y, axis.z, axis.w, block.GetFloat("_MouthFlat"), block.GetFloat("_MouthFlatSlack"),
+                    block.GetFloat("_MouthRelief")));
+            }
+        }
+
+        /// <summary>
+        /// The frame and bearing that face the main mouth: the part's renderers' box, and the eye on the mouth's outward axis
+        /// (<c>MouthPoint.Local</c>, from the part's centre) turned <see cref="MouthTurn"/> of the way toward the usual bearing.
+        /// Left as they are when the mouth point is at the part's centre.
+        /// </summary>
+        private static void FaceMouth(CreatureInstance body, Phenotype phenotype, int part, ref Bounds frame, ref Vector3 bearing)
+        {
+            Float3 tip = MouthPoint.Local(phenotype, part);
+            var local = new Vector3(tip.X, tip.Y, tip.Z);
+            if (!(local.magnitude > 1e-4f) || body.Bodies == null || part >= body.Bodies.Length || body.Bodies[part] == null) return;
+
+            Vector3 outward = body.Bodies[part].transform.TransformDirection(local.normalized);
+
+            // EVOSIM_THEATRE_MOUTH2_FACE: a sucker on the body's rim is faced along its own axis.
+            float turn = MouthTurn;
+            if (TheatreMouth2.Face && TheatreMouth2.PaintedKind(body.Renderers) == 2 && TheatreMouth2.FacesOnRim(phenotype.Parts[part], local))
+            {
+                turn = 0f;
+                Debug.Log("TheatreSoloStill: mouth face-on: part " + part + " is a sucker on the rim, faced along its axis");
+            }
+
+            Vector3 facing = Vector3.Slerp(-outward, Bearing.normalized, turn);
+            if (Mathf.Abs(Vector3.Dot(facing.normalized, Vector3.up)) > 0.98f) facing = Vector3.Slerp(facing, Bearing.normalized, 0.3f);
+
+            bool any = false;
+            Bounds box = default;
+            for (int r = 0; r < body.Renderers.Length; r++)
+            {
+                if (body.RendererPart[r] != part) continue;
+                if (!any) { box = body.Renderers[r].bounds; any = true; }
+                else box.Encapsulate(body.Renderers[r].bounds);
+            }
+            if (!any) return;
+
+            if (MouthClose)
+            {
+                TheatreMouth2.Measured m = TheatreMouth2.Measure(phenotype, part);
+                if (m.Valid)
+                {
+                    Vector3 at = body.Bodies[part].transform.TransformPoint(local);
+                    box = new Bounds(at, Vector3.one * (2f * MouthCloseReach * m.RadiusMetres));
+                }
+            }
+
+            frame = box;
+            bearing = facing;
+        }
+
+        /// <summary>
+        /// <see cref="FrameLoad"/>'s frame and bearing for this still when it has a line, and <see cref="FrameSave"/>'s line written
+        /// for it; each logged.
+        /// </summary>
+        private static void PinFrame(string name, ref Bounds frame, ref Vector3 bearing)
+        {
+            CultureInfo inv = CultureInfo.InvariantCulture;
+
+            if (!string.IsNullOrEmpty(FrameLoad))
+            {
+                if (!File.Exists(FrameLoad)) throw new FileNotFoundException("EVOSIM_STILLS_FRAME_LOAD names no file", FrameLoad);
+
+                bool found = false;
+                foreach (string line in File.ReadAllLines(FrameLoad))
+                {
+                    string[] f = line.Split(' ');
+                    if (f.Length != 10 || f[0] != name) continue;
+
+                    float N(int k) => float.Parse(f[k], inv);
+                    frame = new Bounds(new Vector3(N(1), N(2), N(3)), 2f * new Vector3(N(4), N(5), N(6)));
+                    bearing = new Vector3(N(7), N(8), N(9));
+                    found = true;
+                }
+
+                Debug.Log(string.Format(inv, "[Theatre] stills frame: {0} {1} from {2}", name, found ? "pinned" : "not listed, its own", FrameLoad));
+            }
+
+            if (!string.IsNullOrEmpty(FrameSave))
+            {
+                Vector3 c = frame.center, e = frame.extents;
+                File.AppendAllText(FrameSave, string.Format(inv, "{0} {1:R} {2:R} {3:R} {4:R} {5:R} {6:R} {7:R} {8:R} {9:R}\n",
+                    name, c.x, c.y, c.z, e.x, e.y, e.z, bearing.x, bearing.y, bearing.z));
+                Debug.Log(string.Format(inv, "[Theatre] stills frame: {0} saved to {1}", name, FrameSave));
+            }
+        }
+
+        /// <summary>The given bearing, at the distance that holds the whole box in a square frame.</summary>
+        private static void Frame(Camera cam, Bounds bounds, Vector3 bearing)
+        {
+            Quaternion rotation = Quaternion.LookRotation(bearing.normalized, Vector3.up);
             Quaternion inverse = Quaternion.Inverse(rotation);
             float tan = Mathf.Tan(0.5f * FieldOfView * Mathf.Deg2Rad);
             float need = 0f, reachZ = 0f;

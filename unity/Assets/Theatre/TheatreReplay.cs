@@ -175,6 +175,19 @@ namespace Evosim.Theatre
                 return null;
             }
 
+            // D239: the pace factor lives in the console farm's solver and the Simulation harness.
+            // This PhysX path steps Ecosystem at a fixed 0.5 s economy, so a world with k above 1
+            // would be played at the wrong time scale and drawn as that world.
+            if (replay.Record.Config.PaceFactor != 1f)
+            {
+                refusal =
+                    "This run has a pace factor of " +
+                    replay.Record.Config.PaceFactor.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) +
+                    " (D239), and the PhysX replay has none: its metabolic step is 0.5 s of physics. " +
+                    "Open it with the console farm's engine.";
+                return null;
+            }
+
             replay.SourceDifference = BuildIdentity.Difference(
                 replay.Record.CoreHash, replay.Record.SimHash, replay.Record.UnityVersion);
             replay.Faithful = replay.SourceDifference == null;
@@ -411,6 +424,9 @@ namespace Evosim.Theatre
 
         /// <inheritdoc />
         public ReefGeometry Reefs => Eco?.World?.Reefs;
+
+        /// <inheritdoc />
+        public CoralRock Coral => Eco?.World?.Coral;
 
         public int BodyCount => Eco?.World?.Living?.Count ?? 0;
 

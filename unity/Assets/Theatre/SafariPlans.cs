@@ -149,7 +149,7 @@ namespace Evosim.Theatre
         /// </param>
         public static string Hidden(Stage stage, Vector3 eye, Vector3 look, float halfTan = 0f)
         {
-            if (stage.World.Reefs == null) return null;
+            if (!stage.World.HasRock) return null;
             float length = (look - eye).magnitude;
             for (int k = 1; k <= 8; k++)
             {
@@ -437,6 +437,16 @@ namespace Evosim.Theatre
             float farthest = Mathf.Max(inside, FilmPlans.PortraitFarthest * length);
             float radius = Mathf.Clamp(FilmPlans.PortraitDistance(length, fov, fill), nearest, farthest);
 
+            // portraitfrom:begin
+            // EVOSIM_THEATRE_PORTRAIT_FROM: the eye on the outward axis of the body's mouth or nose point, looking at it. A body
+            // with no such point falls through to the orbit below, and one log line says so. Unset, nothing here runs.
+            if (FilmPlans.PortraitFrom != null)
+            {
+                Take fromPoint = PortraitFromPoint(stage, id, reach, root0, length, fov, fill, seconds, swimmer);
+                if (fromPoint != null) return fromPoint;
+            }
+            // portraitfrom:end
+
             float turns = swimmer ? 0.4f : 0.25f;
             int family = (cladeHash % 3 + stage.SceneIndex % 3) % 3;      // 0 horizontal, 1 vertical, 2 both
             float sense = ((cladeHash % 2 + (stage.SceneIndex / 3) % 2) % 2 == 0) ? 1f : -1f;
@@ -605,6 +615,477 @@ namespace Evosim.Theatre
             return new Take { Shot = shot, Seconds = seconds, Plan = shot.Plan_, Subject = id };
         }
 
+        // portraitfrom:begin
+        /// <summary>
+        /// A portrait placed by a body point (<c>EVOSIM_THEATRE_PORTRAIT_FROM</c>): the eye on the outward axis of the first eating
+        /// part's <c>MouthPoint.Local</c> (<c>mouth</c>) or of the first nose part's sensing tip (<c>nose</c>), turned off that axis by
+        /// <c>EVOSIM_THEATRE_PORTRAIT_FROM_ANGLE</c> degrees (30 by default, so an opening reads as a cup and not a ring), looking at
+        /// the point, the focus on it. Null, with one log line, when the body has no such point.
+        /// </summary>
+        /// <remarks>
+        /// The point is taken through the part's transform in the view at every frame (a part transform is unit scale, at the part's
+        /// centre, in its own axes), so it follows the pose; the point and the eye's direction are smoothed over 1.5 s, as the
+        /// orbit's followed centre is, and the eye stands off the point by the distance at which the body's drawn box fills
+        /// <c>EVOSIM_THEATRE_PORTRAIT_FILL</c> of the frame's height (the orbit's rule: 1.5 to 3 body lengths, a fifth less fill for
+        /// a swimmer), pushed out to the edge of the body's reach plus the plan's margin when that would put it inside. Which side of
+        /// the axis the eye takes is chosen once, in the part's own frame, from twelve at thirty degrees: one with a clear eye
+        /// (<see cref="Clash"/> and <see cref="Hidden"/>), the fewest bodies across the lens, then the highest. The film's walls,
+        /// pushes and speed limit run on the path as they do on the orbit.
+        /// </remarks>
+        private static Take PortraitFromPoint(
+            Stage stage, long id, float reach, Vector3 root0, float length, float fov, float fill, float seconds, bool swimmer)
+        {
+            CultureInfo inv = CultureInfo.InvariantCulture;
+            string kind = FilmPlans.PortraitFrom;
+            // BLADE begin
+            if (kind == "blade") return BladeFromPoint(stage, id, reach, root0, length, fov, fill, seconds, swimmer);
+            // BLADE end
+            LiveWorldView view = stage.View;
+            Phenotype sized = null;
+            Transform[] parts = null;
+            int part = -1;
+            string cell = "";
+            Vector3 local = Vector3.zero;
+            string none = null;
+
+            if (view == null || !view.TryBody(id, out sized, out parts) || sized == null || parts == null) none = "the body is not drawn";
+            else
+            {
+                for (int i = 0; i < sized.PartCount && i < parts.Length; i++)
+                {
+                    PhenotypePart candidate = sized.Parts[i];
+                    bool wanted = kind == "nose" ? candidate.CellTypeId == CellTypeIds.Nose : MouthPoint.IsEatingPart(candidate);
+                    if (!wanted || parts[i] == null) continue;
+
+                    part = i;
+                    cell = candidate.CellTypeId;
+                    break;
+                }
+
+                if (part < 0) none = kind == "nose" ? "it has no nose part" : "it has no eating part";
+                else
+                {
+                    Float3 tip = MouthPoint.Local(sized, part);
+                    local = new Vector3(tip.X, tip.Y, tip.Z);
+                    if (!(local.magnitude > 1e-4f)) none = "its " + kind + " point is at its part's centre, so it has no outward axis";
+                }
+            }
+
+            if (none != null)
+            {
+                Debug.Log(string.Format(inv,
+                    "[Theatre] portrait from {0}: body {1} has no {0} point ({2}), so its portrait is the usual orbit", kind, id, none));
+                return null;
+            }
+
+            Transform partT = parts[part];
+            Vector3 axisLocal = local.normalized;
+            Vector3 helper = Mathf.Abs(axisLocal.x) < 0.9f ? Vector3.right : Vector3.up;
+            Vector3 sideLocal = Vector3.Cross(axisLocal, helper).normalized;
+            Vector3 upLocal = Vector3.Cross(axisLocal, sideLocal);
+
+            float angleDegrees = FilmPlans.PortraitFromAngle;
+
+            // EVOSIM_THEATRE_MOUTH2_FACE: a sucker on the body's rim is looked at along its own axis.
+            if (kind == "mouth" && TheatreMouth2.Face && TheatreMouth2.FacesOnRim(sized.Parts[part], axisLocal) &&
+                view.RootOf(id) != null && TheatreMouth2.PaintedKind(view.RootOf(id).GetComponentsInChildren<Renderer>(true)) == 2)
+            {
+                angleDegrees = TheatreMouth2.FaceAngle;
+                Debug.Log(string.Format(inv,
+                    "[Theatre] portrait from mouth: body {0} part {1} is a sucker on the rim, faced along its axis ({2} degrees off it)",
+                    id, part, angleDegrees));
+            }
+
+            float cosA = Mathf.Cos(angleDegrees * Mathf.Deg2Rad), sinA = Mathf.Sin(angleDegrees * Mathf.Deg2Rad);
+            float keep = reach + BodyMargin + 0.1f;
+            float wantedDistance = FilmPlans.PortraitDistance(length, fov, fill);
+            float lensTan = Mathf.Tan(0.5f * fov * Mathf.Deg2Rad) * stage.Aspect;
+
+            // The eye's direction from the point, in the world, for a part attitude and a side (phi, radians about the axis).
+            Vector3 Direction3(Quaternion turn, float phi) =>
+                turn * (cosA * axisLocal + sinA * (Mathf.Cos(phi) * sideLocal + Mathf.Sin(phi) * upLocal));
+
+            // The distance wanted, moved out to the far side of the body's reach sphere when it would end inside it.
+            float DistanceFrom(Vector3 point, Vector3 root, Vector3 direction)
+            {
+                Vector3 toPoint = point - root;
+                float along = Vector3.Dot(toPoint, direction);
+                float disc = along * along - (toPoint.sqrMagnitude - keep * keep);
+                float d = wantedDistance;
+                if (disc > 0f)
+                {
+                    float s = Mathf.Sqrt(disc);
+                    if (d > -along - s && d < -along + s) d = -along + s;
+                }
+
+                return d;
+            }
+
+            Quaternion turn0 = partT.rotation;
+            Vector3 point0 = partT.position + turn0 * local;
+
+            // The side: clear first, then the fewest bodies across the lens, then the highest.
+            float bestScore = float.PositiveInfinity, bestPhi = 0f;
+            string bestClash = null;
+            int bestAcross = 0;
+            for (int k = 0; k < 12; k++)
+            {
+                float phi = k * (Mathf.PI / 6f);
+                Vector3 direction = Direction3(turn0, phi);
+                Vector3 eye0 = point0 + DistanceFrom(point0, root0, direction) * direction;
+                string why = Clash(stage, eye0, id, SurfaceMargin) ?? Hidden(stage, eye0, point0, lensTan);
+                int across = FilmPlans.Occluders(stage.Positions, stage.Reaches, stage.Ids, id, eye0, point0);
+                float score = (why != null ? 1000f : 0f) + 10f * across - direction.y;
+                if (!(score < bestScore)) continue;
+
+                bestScore = score;
+                bestPhi = phi;
+                bestClash = why;
+                bestAcross = across;
+            }
+
+            float cosP = Mathf.Cos(bestPhi), sinP = Mathf.Sin(bestPhi);
+            Vector3 sideDirection = cosA * axisLocal + sinA * (cosP * sideLocal + sinP * upLocal);
+            float distance0 = DistanceFrom(point0, root0, turn0 * sideDirection);
+
+            Vector3 followedPoint = point0, followedDirection = turn0 * sideDirection, lastPoint = point0;
+            Quaternion lastTurn = turn0;
+            bool hasFollowed = false;
+
+            FilmPlans.Shot.CameraPath path = (float u, float dt, out Vector3 eye, out Vector3 look) =>
+            {
+                // The part's pose now; the last good one when the part is gone or not finite.
+                if (partT != null && FilmPlans.Shot.Finite(partT.position))
+                {
+                    lastTurn = partT.rotation;
+                    lastPoint = partT.position + lastTurn * local;
+                }
+
+                Vector3 directionNow = lastTurn * sideDirection;
+                float blend = 1f - Mathf.Exp(-Mathf.Max(1e-3f, dt) / 1.5f);
+                if (!hasFollowed)
+                {
+                    followedPoint = lastPoint;
+                    followedDirection = directionNow;
+                    hasFollowed = true;
+                }
+                else
+                {
+                    followedPoint = Vector3.Lerp(followedPoint, lastPoint, blend);
+                    Vector3 mixed = Vector3.Lerp(followedDirection, directionNow, blend);
+                    followedDirection = mixed.sqrMagnitude > 1e-6f ? mixed.normalized : directionNow;
+                }
+
+                Transform rootNow = view.RootOf(id);
+                Vector3 rootAt = rootNow != null && FilmPlans.Shot.Finite(rootNow.position) ? rootNow.position : root0;
+                eye = followedPoint + DistanceFrom(followedPoint, rootAt, followedDirection) * followedDirection;
+                look = followedPoint;
+            };
+
+            string plan = string.Format(inv,
+                "portrait from the {0} of body {1} ({2:0.##} m long, reach {3:0.###} m, {4}): part {5} ({6}), the point ({7:0.###}, {8:0.###}, {9:0.###}) m in the part's own frame, " +
+                "the eye {10:0} deg off its outward axis on the side at {11:0} deg, at {12:0.##} m ({13:0.#} body lengths, {14:0}% of the frame's height), " +
+                "point and axis smoothed over 1.5 s, looking at the point and focused on it, lens {15:0} deg{16}; {17}",
+                kind, id, length, reach, swimmer ? "a swimmer" : "a sitter", part, cell, local.x, local.y, local.z,
+                angleDegrees, bestPhi * Mathf.Rad2Deg, distance0, distance0 / length,
+                100f * length / (2f * distance0 * Mathf.Tan(0.5f * fov * Mathf.Deg2Rad)), fov,
+                bestClash != null ? ", STILL CLASHES at the start (" + bestClash + "): the per-frame walls take it from here"
+                    : bestAcross > 0 ? ", " + bestAcross + " body sighting(s) across the lens" : "",
+                DepthOfField(distance0, fov));
+
+            Debug.Log(string.Format(inv,
+                "[Theatre] portrait from {0}: body {1}, part {2} ({3}), point ({4:0.###}, {5:0.###}, {6:0.###}) m in the part's frame, eye {7:0.##} m out and {8:0} deg off the axis",
+                kind, id, part, cell, local.x, local.y, local.z, distance0, angleDegrees));
+
+            FilmPlans.Shot shot = FilmPlans.Shot.Custom("portrait", stage.World, seconds, fov, true, path, plan);
+            return new Take { Shot = shot, Seconds = seconds, Plan = shot.Plan_, Subject = id };
+        }
+        // portraitfrom:end
+        // BLADE begin
+
+        /// <summary>
+        /// Where on the blade the portrait looks, as a share of the blade's half width past the start of its rounded end along the
+        /// long axis: 0 is the last full-width section, 1 the tip. A half is the middle of the rounded end, the blade's free end.
+        /// </summary>
+        private const float BladePointShare = 0.5f;
+
+        /// <summary>
+        /// A portrait that faces a paddle's blade (<c>EVOSIM_THEATRE_PORTRAIT_FROM</c> <c>blade</c>, with
+        /// <c>EVOSIM_THEATRE_PADDLE_LIMB</c> 1). The limb is the body's longest part the skin drew as a paddle
+        /// (<see cref="TheatreOneSkin.TryBlade"/>), the point the middle of the blade's rounded free end, the axis the blade's face
+        /// normal (the thin axis the skin was marched from), taken through the part's transform at every frame. A paddle seen
+        /// from the side is edge-on, a rod; the eye stands on the face normal, square to the limb and to the hinge, where the stroke
+        /// meets the blade broadside. Null, with one log line, when the dial is off or the body has no paddle, as <c>mouth</c> and
+        /// <c>nose</c> are when their part is missing.
+        /// </summary>
+        /// <remarks>
+        /// The normal has two signs. The sign is chosen with the side, once, at the take's start: the twelve sides are scored for each
+        /// sign as the mouth's are (a clash 1000, 10 for each body across the lens, less the direction's y, so the higher side wins
+        /// among equals), and the lower score takes both; on a tie the sign whose world direction points more upward (the larger y;
+        /// the plus sign on a tie) keeps it, so the eye is not under the bed unless every side of that sign clashes with the surface or
+        /// a body and the other's does not. The sign is held in the part's own frame, as the mouth's side is, so the eye follows the
+        /// limb through its stroke and is not thrown across it. The rest is
+        /// <see cref="PortraitFromPoint"/>'s: the eye <c>EVOSIM_THEATRE_PORTRAIT_FROM_ANGLE</c> degrees off the axis, the side about
+        /// it chosen once from twelve, the usual portrait's distance pushed out to the body's reach, the point and the eye's
+        /// direction smoothed over 1.5 s. One more line is logged at the take's end: the angle between the eye ray and the blade's
+        /// face normal at the start, its median and its largest, as the path plans it and as the film kept it after the walls and the
+        /// smoothing (the previous frame's eye, one frame behind).
+        /// </remarks>
+        private static Take BladeFromPoint(
+            Stage stage, long id, float reach, Vector3 root0, float length, float fov, float fill, float seconds, bool swimmer)
+        {
+            CultureInfo inv = CultureInfo.InvariantCulture;
+            LiveWorldView view = stage.View;
+            Phenotype sized = null;
+            Transform[] parts = null;
+            TheatreOneSkin.BladeFrame blade = default;
+            string none = null;
+
+            if (!TheatreOneSkin.PaddleOn)
+                none = "EVOSIM_THEATRE_PADDLE_LIMB is 0, or the skin is below the rig levels, so no link is drawn as a blade";
+            else if (view == null || !view.TryBody(id, out sized, out parts) || sized == null || parts == null)
+                none = "the body is not drawn";
+            else if (!TheatreOneSkin.TryBlade(id, out blade))
+                none = "no link part of it is drawn as a paddle (its paddle limb line says why each stays round)";
+            else if (blade.Part < 0 || blade.Part >= parts.Length || blade.Part >= sized.PartCount || parts[blade.Part] == null)
+                none = "its blade's part is not drawn";
+
+            if (none != null)
+            {
+                Debug.Log(string.Format(inv,
+                    "[Theatre] portrait from blade: body {0} has no blade ({1}), so its portrait is the usual orbit", id, none));
+                return null;
+            }
+
+            // The drawn part's size over the skin's rest size: the scale the body is drawn at, read again at every frame.
+            float restLength = blade.RestHalf.magnitude;
+            float worldPerRest = 1f;
+
+            float WorldPerRest()
+            {
+                if (restLength > 1e-6f && view.TryBody(id, out Phenotype drawn, out _) && drawn != null && blade.Part < drawn.PartCount)
+                {
+                    Float3 hf = drawn.Parts[blade.Part].HalfExtents;
+                    float size = new Vector3(Mathf.Abs(hf.X), Mathf.Abs(hf.Y), Mathf.Abs(hf.Z)).magnitude;
+                    if (size > 1e-6f) worldPerRest = size / restLength;
+                }
+
+                return worldPerRest;
+            }
+
+            // The point, in the part's own frame and the drawn size: on the long axis, in the middle of the blade's rounded end.
+            Vector3 PointLocal() => blade.Far * ((blade.Span + BladePointShare * blade.Radius) * WorldPerRest());
+
+            Transform partT = parts[blade.Part];
+            Quaternion turn0 = partT.rotation;
+            Vector3 local = PointLocal();
+
+            // The sign of the normal: searched with the side below (the more upward sign first), chosen once and held in the part's frame.
+            float upwardSign = (turn0 * blade.Normal).y >= 0f ? 1f : -1f;
+            float facing = upwardSign;
+            Vector3 axisLocal = Vector3.zero, sideLocal = Vector3.zero, upLocal = Vector3.zero;
+
+            void UseSign(float sign)
+            {
+                facing = sign;
+                axisLocal = (sign * blade.Normal).normalized;
+                Vector3 helper = Mathf.Abs(axisLocal.x) < 0.9f ? Vector3.right : Vector3.up;
+                sideLocal = Vector3.Cross(axisLocal, helper).normalized;
+                upLocal = Vector3.Cross(axisLocal, sideLocal);
+            }
+
+            UseSign(upwardSign);
+
+            float angleDegrees = FilmPlans.PortraitFromAngle;
+            float cosA = Mathf.Cos(angleDegrees * Mathf.Deg2Rad), sinA = Mathf.Sin(angleDegrees * Mathf.Deg2Rad);
+            float keep = reach + BodyMargin + 0.1f;
+            float wantedDistance = FilmPlans.PortraitDistance(length, fov, fill);
+            float lensTan = Mathf.Tan(0.5f * fov * Mathf.Deg2Rad) * stage.Aspect;
+
+            // The eye's direction from the point, in the world, for a part attitude and a side (phi, radians about the axis).
+            Vector3 Direction3(Quaternion turn, float phi) =>
+                turn * (cosA * axisLocal + sinA * (Mathf.Cos(phi) * sideLocal + Mathf.Sin(phi) * upLocal));
+
+            // The distance wanted, moved out to the far side of the body's reach sphere when it would end inside it.
+            float DistanceFrom(Vector3 point, Vector3 root, Vector3 direction)
+            {
+                Vector3 toPoint = point - root;
+                float along = Vector3.Dot(toPoint, direction);
+                float disc = along * along - (toPoint.sqrMagnitude - keep * keep);
+                float d = wantedDistance;
+                if (disc > 0f)
+                {
+                    float s = Mathf.Sqrt(disc);
+                    if (d > -along - s && d < -along + s) d = -along + s;
+                }
+
+                return d;
+            }
+
+            Vector3 point0 = partT.position + turn0 * local;
+
+            // The sign and the side: for each sign (the more upward first), clear first, then the fewest bodies across the lens, then
+            // the highest; the lower score of the two signs' best sides takes both, and a tie keeps the more upward sign.
+            float bestScore = float.PositiveInfinity, bestPhi = 0f, chosenSign = upwardSign;
+            string bestClash = null;
+            int bestAcross = 0;
+            bool otherClashed = false;
+            for (int pass = 0; pass < 2; pass++)
+            {
+                float sign = pass == 0 ? upwardSign : -upwardSign;
+                UseSign(sign);
+                float signScore = float.PositiveInfinity, signPhi = 0f;
+                string signClash = null;
+                int signAcross = 0;
+                for (int k = 0; k < 12; k++)
+                {
+                    float phi = k * (Mathf.PI / 6f);
+                    Vector3 direction = Direction3(turn0, phi);
+                    Vector3 eye0 = point0 + DistanceFrom(point0, root0, direction) * direction;
+                    string why = Clash(stage, eye0, id, SurfaceMargin) ?? Hidden(stage, eye0, point0, lensTan);
+                    int across = FilmPlans.Occluders(stage.Positions, stage.Reaches, stage.Ids, id, eye0, point0);
+                    float score = (why != null ? 1000f : 0f) + 10f * across - direction.y;
+                    if (!(score < signScore)) continue;
+
+                    signScore = score;
+                    signPhi = phi;
+                    signClash = why;
+                    signAcross = across;
+                }
+
+                if (pass == 1) otherClashed = signScore < bestScore ? bestClash != null : signClash != null;   // the sign not taken
+                if (!(signScore < bestScore)) continue;
+
+                bestScore = signScore;
+                bestPhi = signPhi;
+                bestClash = signClash;
+                bestAcross = signAcross;
+                chosenSign = sign;
+            }
+
+            UseSign(chosenSign);
+            string signSaid = (chosenSign > 0f ? "plus" : "minus") + (chosenSign == upwardSign ? ", the more upward" : ", the less upward") +
+                              "; the other sign's best side " + (otherClashed ? "clashed" : "was clear");
+
+            float cosP = Mathf.Cos(bestPhi), sinP = Mathf.Sin(bestPhi);
+            Vector3 sideDirection = cosA * axisLocal + sinA * (cosP * sideLocal + sinP * upLocal);
+            float distance0 = DistanceFrom(point0, root0, turn0 * sideDirection);
+
+            Vector3 followedPoint = point0, followedDirection = turn0 * sideDirection, lastPoint = point0;
+            Quaternion lastTurn = turn0;
+            bool hasFollowed = false;
+
+            // The proof: the angle between the eye ray and the blade's face normal, as planned at every frame and as the film kept it.
+            var plannedAngles = new List<float>();
+            var keptAngles = new List<float>();
+            float plannedU = float.NaN, keptU = float.NaN, previousU = float.NaN;
+            Vector3 previousLook = point0, previousNormal = turn0 * axisLocal;
+            bool hasPrevious = false, angleSaid = false;
+            FilmPlans.Shot shotNow = null;
+
+            FilmPlans.Shot.CameraPath path = (float u, float dt, out Vector3 eye, out Vector3 look) =>
+            {
+                // The part's pose now; the last good one when the part is gone or not finite.
+                if (partT != null && FilmPlans.Shot.Finite(partT.position))
+                {
+                    lastTurn = partT.rotation;
+                    lastPoint = partT.position + lastTurn * PointLocal();
+                }
+
+                Vector3 directionNow = lastTurn * sideDirection;
+                float blend = 1f - Mathf.Exp(-Mathf.Max(1e-3f, dt) / 1.5f);
+                if (!hasFollowed)
+                {
+                    followedPoint = lastPoint;
+                    followedDirection = directionNow;
+                    hasFollowed = true;
+                }
+                else
+                {
+                    followedPoint = Vector3.Lerp(followedPoint, lastPoint, blend);
+                    Vector3 mixed = Vector3.Lerp(followedDirection, directionNow, blend);
+                    followedDirection = mixed.sqrMagnitude > 1e-6f ? mixed.normalized : directionNow;
+                }
+
+                Transform rootNow = view.RootOf(id);
+                Vector3 rootAt = rootNow != null && FilmPlans.Shot.Finite(rootNow.position) ? rootNow.position : root0;
+                eye = followedPoint + DistanceFrom(followedPoint, rootAt, followedDirection) * followedDirection;
+                look = followedPoint;
+
+                // The normal now, from the pose now. The planned ray is this frame's eye from the look; the kept one is the previous
+                // frame's eye, after the walls, the pushes and the smoothing (the shot holds it), from the previous frame's look.
+                Vector3 normalNow = lastTurn * axisLocal;
+                if (hasPrevious && shotNow != null && FilmPlans.Shot.Finite(shotNow.LastEye))
+                    BladeSample(keptAngles, ref keptU, previousU, BladeAngle(shotNow.LastEye - previousLook, previousNormal));
+                BladeSample(plannedAngles, ref plannedU, u, BladeAngle(eye - look, normalNow));
+                previousU = u;
+                previousLook = look;
+                previousNormal = normalNow;
+                hasPrevious = true;
+
+                // The take's last frame, by the director's own rule (the frame is the last once half a frame is all that is left).
+                if (!angleSaid && seconds > 0f && u * seconds + 0.5f * dt >= seconds)
+                {
+                    angleSaid = true;
+                    Debug.Log(string.Format(inv,
+                        "[Theatre] portrait from blade angles: body {0}, part {1}; eye ray against the blade's face normal, wanted {2:0} deg; " +
+                        "as planned: {3}; as the film kept it: {4}",
+                        id, blade.Part, angleDegrees, BladeSummary(plannedAngles), BladeSummary(keptAngles)));
+                }
+            };
+
+            string plan = string.Format(inv,
+                "portrait from the blade of body {0} ({1:0.##} m long, reach {2:0.###} m, {3}): part {4}, the point ({5:0.###}, {6:0.###}, {7:0.###}) m in the part's own frame " +
+                "(the middle of its rounded free end), the eye {8:0} deg off the blade's face normal, whose sign is chosen at the start from both: {9}, " +
+                "on the side at {10:0} deg, at {11:0.##} m ({12:0.#} body lengths, {13:0}% of the frame's height), " +
+                "point and axis smoothed over 1.5 s, looking at the point and focused on it, lens {14:0} deg{15}; {16}",
+                id, length, reach, swimmer ? "a swimmer" : "a sitter", blade.Part, local.x, local.y, local.z,
+                angleDegrees, signSaid, bestPhi * Mathf.Rad2Deg, distance0, distance0 / length,
+                100f * length / (2f * distance0 * Mathf.Tan(0.5f * fov * Mathf.Deg2Rad)), fov,
+                bestClash != null ? ", STILL CLASHES at the start (" + bestClash + "): the per-frame walls take it from here"
+                    : bestAcross > 0 ? ", " + bestAcross + " body sighting(s) across the lens" : "",
+                DepthOfField(distance0, fov));
+
+            Debug.Log(string.Format(inv,
+                "[Theatre] portrait from blade: body {0}, part {1}, point ({2:0.###}, {3:0.###}, {4:0.###}) m in the part's frame, normal's world y {5:0.##}, sign {8}, " +
+                "eye {6:0.##} m out and {7:0} deg off the normal",
+                id, blade.Part, local.x, local.y, local.z, (turn0 * axisLocal).y, distance0, angleDegrees, signSaid));
+
+            FilmPlans.Shot shot = FilmPlans.Shot.Custom("portrait", stage.World, seconds, fov, true, path, plan);
+            shotNow = shot;
+            return new Take { Shot = shot, Seconds = seconds, Plan = shot.Plan_, Subject = id };
+        }
+
+        /// <summary>The angle in degrees between a ray and a normal, or NaN when either has no direction.</summary>
+        private static float BladeAngle(Vector3 ray, Vector3 normal)
+        {
+            if (!(ray.sqrMagnitude > 1e-12f) || !(normal.sqrMagnitude > 1e-12f)) return float.NaN;
+            return Mathf.Acos(Mathf.Clamp(Vector3.Dot(ray.normalized, normal.normalized), -1f, 1f)) * Mathf.Rad2Deg;
+        }
+
+        /// <summary>One angle at a point of the take; a repeat of the point (the warm-up's frames) replaces the last.</summary>
+        private static void BladeSample(List<float> list, ref float lastU, float u, float value)
+        {
+            if (float.IsNaN(value)) return;
+            if (list.Count > 0 && lastU == u) list[list.Count - 1] = value;
+            else list.Add(value);
+            lastU = u;
+        }
+
+        /// <summary>The first, the median and the largest of a take's angles, for the log.</summary>
+        private static string BladeSummary(List<float> values)
+        {
+            if (values.Count == 0) return "no frames";
+
+            var sorted = new List<float>(values);
+            sorted.Sort();
+            int n = sorted.Count;
+            float median = n % 2 == 1 ? sorted[n / 2] : 0.5f * (sorted[n / 2 - 1] + sorted[n / 2]);
+            return string.Format(CultureInfo.InvariantCulture, "start {0:0.#} deg, median {1:0.#} deg, largest {2:0.#} deg over {3} frames",
+                values[0], median, sorted[n - 1], n);
+        }
+        // BLADE end
+
         /// <summary>The portrait's depth of field in words for a plan line.</summary>
         private static string DepthOfField(float distance, float fov) =>
             TheatreGrade.Current != null ? TheatreGrade.Current.DescribePortrait(distance, fov) : "no grade, so no depth of field";
@@ -619,6 +1100,9 @@ namespace Evosim.Theatre
         {
             FilmPlans.WorldBounds w = stage.World;
             float room = stage.Room;
+
+            if (FloorTarget(out Vector3 target, out float stand, out float truck))
+                return FloorToward(stage, seconds, truck >= 0f ? truck : 0.8f * FilmPlans.OrbitSpeedCeiling * seconds, target, stand);
 
             // The hollow: the lowest floor on a two-metre lattice inside four fifths of the room.
             Vector3 hollow = stage.Axis(0f);
@@ -679,6 +1163,66 @@ namespace Evosim.Theatre
                     pass, bearing * Mathf.Rad2Deg, -lowest, FilmPlans.Clearance + 0.6f + lift,
                     pass / seconds / (1f - FilmPlans.EaseShare),
                     lift > 0f ? string.Format(CultureInfo.InvariantCulture, ", lifted {0:0.#} m clear of bodies and sand", lift) : ""));
+
+            return new Take { Shot = shot, Seconds = seconds, Plan = shot.Plan_ };
+        }
+
+        /// <summary>How far short of the floor's named target, across the sand, the truck ends by default, m.</summary>
+        public const float FloorTargetStand = 12f;
+
+        /// <summary>
+        /// <c>EVOSIM_SAFARI_FLOOR_AT=x,y,z[,stand[,truck]]</c>, in the run's metres: a point the floor looks up at in
+        /// place of the hollow, such as an oasis's coral, optionally how far short of it the truck ends
+        /// (<see cref="FloorTargetStand"/> without), and optionally the truck's length, 0 for a held camera at the
+        /// stand (without it, 0.8 of the speed ceiling over the take, which carries a minute's take far off its
+        /// target). Unset, the floor is the plan above.
+        /// </summary>
+        private static bool FloorTarget(out Vector3 target, out float stand, out float truck)
+        {
+            target = Vector3.zero;
+            stand = FloorTargetStand;
+            truck = -1f;
+            string text = System.Environment.GetEnvironmentVariable("EVOSIM_SAFARI_FLOOR_AT");
+            if (string.IsNullOrWhiteSpace(text)) return false;
+            string[] parts = text.Split(',');
+            if (parts.Length < 3 || parts.Length > 5) return false;
+            var v = new float[parts.Length];
+            for (int i = 0; i < parts.Length; i++)
+                if (!float.TryParse(parts[i].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out v[i])) return false;
+            target = new Vector3(v[0], v[1], v[2]);
+            if (parts.Length >= 4 && v[3] > 0f) stand = v[3];
+            if (parts.Length == 5 && v[4] >= 0f) truck = v[4];
+            return true;
+        }
+
+        /// <summary>
+        /// Low over the sand toward a named point, looking up at it. The truck comes from the room's axis
+        /// outward, so the glass is behind the target and far in the fog, and ends <paramref name="stand"/>
+        /// short of it across the sand.
+        /// </summary>
+        private static Take FloorToward(Stage stage, float seconds, float pass, Vector3 target, float stand)
+        {
+            FilmPlans.WorldBounds w = stage.World;
+            Vector3 centre = stage.Axis(0f);
+            var along = new Vector3(target.x - centre.x, 0f, target.z - centre.z);
+            if (along.sqrMagnitude < 1e-4f) along = Vector3.right;
+            along.Normalize();
+
+            Vector3 end = target - along * stand;
+            Vector3 start = end - along * pass;
+            end.y = w.FloorAt(end.x, end.z) + FilmPlans.Clearance + 0.6f;
+            start.y = w.FloorAt(start.x, start.z) + FilmPlans.Clearance + 0.6f;
+
+            FilmPlans.Shot shot = FilmPlans.Shot.Custom("floor", w, seconds, 50f, false,
+                (float u, float dt, out Vector3 eye, out Vector3 at) =>
+                {
+                    eye = Vector3.Lerp(start, end, FilmPlans.Ease(u));
+                    at = target;
+                },
+                string.Format(CultureInfo.InvariantCulture,
+                    "the floor: a {0:0.#} m truck over the sand toward ({1:0.#}, {2:0.#}, {3:0.#}) (EVOSIM_SAFARI_FLOOR_AT), " +
+                    "ending {4:0} m short of it, looking up at it",
+                    pass, target.x, target.y, target.z, stand));
 
             return new Take { Shot = shot, Seconds = seconds, Plan = shot.Plan_ };
         }

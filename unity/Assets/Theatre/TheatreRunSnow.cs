@@ -282,7 +282,7 @@ namespace Evosim.Theatre
 
             try
             {
-                config = RunDirectory.ReadConfig(record.Path, out _);
+                config = RunRecord.ReadConfigFillingProvenOff(record.Path, out _);
             }
             catch (Exception)
             {

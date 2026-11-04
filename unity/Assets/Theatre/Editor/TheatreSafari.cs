@@ -182,9 +182,22 @@ namespace Evosim.Theatre.EditorTools
 
         // ---------------------------------------------------------------- start
 
+        /// <summary>
+        /// A batch safari logs its plain lines without a stack trace. A live world builds a view for every body it restores,
+        /// and the one skin's close level logs two lines a body; with a trace each, 6202's close look of r63s wrote 7,451 of
+        /// them, a 76 MB log, and spent much of its 45 minutes capturing them (2026-10-30). Warnings and errors keep their
+        /// traces, and an interactive Editor's console is left as it is. Set on both sides of the domain reload, since the
+        /// Play-mode side is where the bodies are built.
+        /// </summary>
+        private static void QuietLogs()
+        {
+            if (Application.isBatchMode) Application.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);
+        }
+
         public static void Start(bool check)
         {
             _check = check;
+            QuietLogs();
             if (EditorApplication.isPlayingOrWillChangePlaymode)
             {
                 Debug.LogError("[Theatre] safari: already in Play mode: stop it first.");
@@ -518,6 +531,8 @@ namespace Evosim.Theatre.EditorTools
             string pending = SessionState.GetString(PendingKey, "");
             if (string.IsNullOrEmpty(pending)) return;
 
+            QuietLogs();
+
             string[] f = pending.Split('|');
             if (f.Length < 13) { SessionState.EraseString(PendingKey); return; }
 
@@ -738,6 +753,21 @@ namespace Evosim.Theatre.EditorTools
             else if (!string.IsNullOrEmpty(_story))
             {
                 Debug.Log("[Theatre] safari: the story look is off (EVOSIM_THEATRE_STORY_LOOK=0): the census's dark field, no meter, no lamp");
+            }
+
+            // A diagnostic (EVOSIM_THEATRE_SAFARI_RAW=1): the colliders as the physics has them, the runner's X key, for a
+            // probe of where a skin stands against them. Unset, nothing here runs.
+            if (Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_RAW") == "1")
+            {
+                TheatreRunner rawRunner = _runner != null ? _runner : UnityEngine.Object.FindAnyObjectByType<TheatreRunner>();
+                if (rawRunner != null && rawRunner.Palette != null)
+                {
+                    rawRunner.Palette.RawShapes = true;
+                    TheatreSkin.Current?.ShowRawShapes(true);
+                    rawRunner.Palette.Clear();
+                    Debug.Log("[Theatre] safari: RAW, the colliders as the physics has them (EVOSIM_THEATRE_SAFARI_RAW, a diagnostic)");
+                }
+                else Debug.Log("[Theatre] safari: RAW asked for, but no runner or palette to draw it");
             }
 
             _playAt = 0;

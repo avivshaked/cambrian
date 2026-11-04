@@ -90,6 +90,9 @@ namespace Evosim.Theatre
             public Vector3 At;
             public bool Absorptive;
             public bool Photosynthetic;
+
+            /// <summary>The one skin over the body (EVOSIM_THEATRE_NO_BOX with EVOSIM_THEATRE_ONE_SKIN), or null: always null with the rule off.</summary>
+            public TheatreOneSkin Skin;
         }
 
         // ---------------------------------------------------------------- what is on screen
@@ -100,6 +103,9 @@ namespace Evosim.Theatre
 
         /// <inheritdoc />
         public ReefGeometry Reefs { get; private set; }
+
+        /// <inheritdoc />
+        public CoralRock Coral { get; private set; }
 
         /// <summary>The second being drawn.</summary>
         public double Second { get; private set; }
@@ -185,6 +191,9 @@ namespace Evosim.Theatre
         public bool ColourByCellType = true;
 
         private readonly List<Body> _bodies = new List<Body>();
+
+        /// <summary>The part transforms of the body <see cref="Assemble"/> built last, for the one skin (EVOSIM_THEATRE_NO_BOX). Null with the rule off.</summary>
+        private Transform[] _assembledParts;
         private readonly List<Pending> _queue = new List<Pending>();
         private string[] _rows = new string[0];
         private readonly Dictionary<long, int> _rowOf = new Dictionary<long, int>();
@@ -265,6 +274,10 @@ namespace Evosim.Theatre
                 BuildFloor(world.Record, out BedShape bed, out ReefGeometry reefs);
                 world.Bed = bed;
                 world.Reefs = reefs;
+
+                // Round 62's coral, grown without a World as BuildFloor grows the reefs (null at
+                // the mushrooms and with EVOSIM_THEATRE_CORAL=0).
+                world.Coral = TheatreCoralRock.PlaceFor(world.Record, out _);
             }
             catch (Exception e)
             {
@@ -307,6 +320,10 @@ namespace Evosim.Theatre
                         Rng.SeedFor(record.Seed, World.BedShapeIndex),
                         config.BedShoreDepthMetres, config.BedShoreFadeMetres)
                     : null;
+
+            // D278: a box with relief has the bed the farm stepped, built once and cached, when
+            // EVOSIM_THEATRE_BOX_BED is on. Off, nothing here runs and the floor is as it was.
+            if (bed == null && TheatreBoxBed.Enabled) bed = TheatreBoxBed.For(record);
 
             // The reefs, drawn as World draws them: the same stream of the run's seed over the
             // same floor to the same cover, counted on the same grid columns, so every cap
@@ -902,6 +919,10 @@ namespace Evosim.Theatre
                 }
             }
 
+            // The skin pattern's key, from the genome (EVOSIM_THEATRE_PATTERN; returns at once with it off).
+            TheatrePattern.Register(pending.Id, genome);
+            TheatreSkinMap.Register(pending.Id, genome, Record.Config); // EVOSIM_THEATRE_SKIN_MAP; returns at once with it off
+
             _formats.TryGetValue(format, out int seen);
             _formats[format] = seen + 1;
 
@@ -1003,11 +1024,26 @@ namespace Evosim.Theatre
 
             GameObject root = Assemble(phenotype, pending.Id, pending.At, pose);
 
+            // NOBOX begin
+            // EVOSIM_THEATRE_NO_BOX: the one skin on a reconstructed body, built as the live view builds it (LiveWorldView.Build): from
+            // the part transforms and visuals just assembled, before the palette's first paint, and dressed after it. Null with the rule
+            // off, the skin's dial off, or no palette.
+            TheatreOneSkin oneSkin = null;
+
+            if (TheatreNoBox.Enabled && Palette != null && _assembledParts != null)
+            {
+                oneSkin = TheatreOneSkin.Build(
+                    pending.Id, root.transform, _assembledParts, TheatreNoBox.VisualsByPart(_assembledParts), phenotype, phenotype,
+                    Record.Config.Shapes, PartMaterial, Palette);
+            }
+            // NOBOX end
+
             _bodies.Add(new Body
             {
                 Id = pending.Id,
                 Phenotype = phenotype,
                 At = pending.At,
+                Skin = oneSkin, // NOBOX
 
                 // The row's answer, not the development's: the report's guild counts are the
                 // harness's, and a picture that coloured a body from a second opinion would put
@@ -1017,6 +1053,7 @@ namespace Evosim.Theatre
             });
 
             if (Palette != null) Palette.Paint(pending.Id, root.transform, phenotype, 1f, ColourByCellType);
+            if (oneSkin != null) oneSkin.Dress(Palette, pending.Id); // NOBOX: the paint switches every renderer on; the skin switches its parts' off again
         }
 
         /// <summary>
@@ -1115,6 +1152,8 @@ namespace Evosim.Theatre
                 transforms[i] = go.transform;
 
                 AddVisuals(go.transform, part, Record.Config.Shapes.Resolve(part.ShapeId));
+
+                if (TheatreMouthMarks.Enabled) TheatreMouthMarks.Attach(go.transform, phenotype, i);
             }
 
             // A posed body's arrays are in its own frame with the root link at the origin, and
@@ -1122,6 +1161,8 @@ namespace Evosim.Theatre
             // keeps the rule reconstruction has always used, hung by its volume-weighted centre
             // at the position the row carries.
             root.transform.position = posed ? pose.Root : at - CentreOf(phenotype);
+
+            if (TheatreNoBox.Enabled) _assembledParts = transforms; // NOBOX: for the skin's build, which Add makes next
 
             return root;
         }
@@ -1153,6 +1194,14 @@ namespace Evosim.Theatre
                     AddMesh(part, Sphere, new Vector3(0f, -span, 0f), Vector3.one * (2f * r));
                     break;
                 }
+
+                // FAMILYMESH begin
+                case SuperellipsoidShape _ when TheatreFamilyMesh.Wants(what):
+                {
+                    AddMesh(part, TheatreFamilyMesh.For(what.Family), Vector3.zero, TheatreFamilyMesh.ScaleOf(what));
+                    break;
+                }
+                // FAMILYMESH end
 
                 default:
                 {
@@ -1513,6 +1562,13 @@ namespace Evosim.Theatre
 
         private void Clear()
         {
+            // NOBOX begin
+            if (TheatreNoBox.Enabled)
+            {
+                for (int skinAt = 0; skinAt < _bodies.Count; skinAt++) _bodies[skinAt].Skin?.Release();
+            }
+            // NOBOX end
+
             if (_holder != null)
             {
                 Transform holder = _holder.transform;

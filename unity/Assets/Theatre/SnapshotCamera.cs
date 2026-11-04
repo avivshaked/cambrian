@@ -577,6 +577,8 @@ namespace Evosim.Theatre
             TheatreSkin skin = TheatreSkin.Current;
             bool census = view == View.Side || view == View.End || view == View.Top || view == View.Iso;
             IDisposable held = census && skin != null ? skin.HoldTodaysLook() : null;
+            if (census && TheatreUptake.Enabled) TheatreUptake.Suspend();
+            if (census && TheatreMouth2.Bite > 0f) TheatreMouthBite.Suspend();
 
             // Every other view is drawn in the run's own light at the frame's second (items 3 and
             // 6), with the exposure opened or closed for the light its subject has lost.
@@ -654,6 +656,7 @@ namespace Evosim.Theatre
 
             DrawBodies(frame, view, out int marked, out int outside, out int bodies);
             DrawLabel(_label);
+            DrawCellLegend();
 
             _readback.SetPixels32(_pixels);
             _readback.Apply(false);
@@ -785,6 +788,15 @@ namespace Evosim.Theatre
             // The underwater look's items 3 and 6: the run's light at the frame's second, and the
             // exposure opened for what the subject (the focus, or six metres ahead) has lost.
             if (skin != null) skin.PushFrame(frame, eye, filmSecond);
+            // BOXLOG begin
+            // EVOSIM_THEATRE_BOX_LOG: what this frame draws as a box, counted once per captured frame (a warm-up render has no path).
+            if (TheatreBoxLog.On && path != null)
+            {
+                TheatreBoxLog.Frame(_camera, frame is IFilmWorld filmWorld ? filmWorld.Second : filmSecond);
+            }
+            // BOXLOG end
+            if (skin != null) skin.PushSnowLens(portrait ? focusMetres : 0f, _camera.fieldOfView);
+            TheatreLens.Arm(portrait ? focusMetres : 0f, _camera.fieldOfView);
             float subjectY = (eye + rotation * Vector3.forward * (focusMetres > 0f ? focusMetres : 6f)).y;
             float meterWas = MeterOpen(skin, subjectY, TheatreSkin.MeterView.Subject);
 
@@ -797,6 +809,7 @@ namespace Evosim.Theatre
             finally
             {
                 MeterClose(meterWas);
+                TheatreLens.Disarm();
                 if (grade != null) grade.Unfocus();
                 if (skin != null) skin.Aim(lightsWere);
                 if (back != null) UnityEngine.Object.DestroyImmediate(back.gameObject);
@@ -873,6 +886,7 @@ namespace Evosim.Theatre
             if (Dim > 0f) Darken(0, 0, _width, _height, Dim);
             DrawLabel(_label);
             if (!string.IsNullOrEmpty(Caption)) DrawCaption(Caption);
+            DrawCellLegend();
 
             LastLabelMs = Since(ref mark);
 
@@ -1782,7 +1796,7 @@ namespace Evosim.Theatre
             var light = holder.AddComponent<Light>();
             light.type = LightType.Directional;
             light.color = new Color(0.55f, 0.85f, 1f);
-            light.intensity = TheatreSkin.Dial("EVOSIM_THEATRE_BACK", 2.4f, 0f, 12f);
+            light.intensity = TheatreSkin.Dial("EVOSIM_THEATRE_BACK", TheatreLook.ByLook(2.4f, 0.4f), 0f, 12f);
             light.shadows = LightShadows.None;
             return light;
         }
@@ -2022,8 +2036,14 @@ namespace Evosim.Theatre
             // that says which end is up. So the vertical fit is squeezed into the band left
             // between a label's height at the top and the same at the bottom, which keeps the box
             // centred and its surface line clear of the text.
+            // EVOSIM_THEATRE_LABEL_ROWS (0, the label's own count, by default) holds the clearance
+            // at a fixed count of lines, so a caveat line on one world's picture does not shrink its
+            // box against another's: a series compared by eye keeps one framing.
+            int rows = Mathf.Max(
+                _label != null ? _label.Length : 1,
+                Mathf.RoundToInt(TheatreSkin.Dial("EVOSIM_THEATRE_LABEL_ROWS", 0f, 0f, 8f)));
             float clear =
-                1f - 2f * ((_label != null ? _label.Length : 1) * BarHeight + LabelScale) /
+                1f - 2f * (rows * BarHeight + LabelScale) /
                 (float)_height;
             clear = Mathf.Clamp(clear, 0.25f, 1f);
 
@@ -2555,6 +2575,9 @@ namespace Evosim.Theatre
         /// </remarks>
         private string[] LabelLines(string text)
         {
+            // BEYOND begin
+            if (TheatreOneSkin.BeyondLabel != null) text = string.IsNullOrEmpty(text) ? TheatreOneSkin.BeyondLabel : text + "\n" + TheatreOneSkin.BeyondLabel;
+            // BEYOND end
             var lines = new List<string>(3);
 
             // What fits between the two pads, in glyphs of six cells with the last one's gap back.
@@ -2664,6 +2687,59 @@ namespace Evosim.Theatre
                     Glyph(c, x, top, cell);
                     x += advance;
                     if (x > _width) break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// The cell view's key (<c>EVOSIM_THEATRE_CELL_VIEW</c>): the eight cell types' names, each beside a swatch
+        /// of its colour, in the lower left corner. Drawn whenever the view is on, whether or not the safari burns
+        /// its label and captions in (<c>-NoBurnText</c>); <c>EVOSIM_THEATRE_CELL_VIEW_LEGEND=0</c> hides it for clean
+        /// stills. Off, nothing is drawn. The colours are the palette's (<see cref="TheatrePalette.CellViewColourOf"/>),
+        /// as written to the pixels.
+        /// </summary>
+        private void DrawCellLegend()
+        {
+            if (!TheatrePalette.CellView) return;
+            if (TheatreSkin.Dial("EVOSIM_THEATRE_CELL_VIEW_LEGEND", 1f, 0f, 1f) < 0.5f) return;
+
+            string[] ids =
+            {
+                CellTypeIds.Structural, CellTypeIds.Link, CellTypeIds.Neural, CellTypeIds.Photosynthetic,
+                CellTypeIds.Absorptive, CellTypeIds.Consumer, CellTypeIds.Buoyancy, CellTypeIds.Anchoring
+            };
+
+            int cell = Mathf.Max(LabelScale, _height / 360);
+            int pad = 2 * cell;
+            int rowHeight = 9 * cell;
+            int swatch = 7 * cell;
+
+            int longest = 0;
+            foreach (string id in ids) longest = Mathf.Max(longest, id.Length);
+
+            int plateWidth = pad + swatch + 2 * cell + longest * 6 * cell - cell + pad;
+            int plateHeight = ids.Length * rowHeight + 2 * pad - 2 * cell;
+            int plateX = pad;
+            int plateY = pad;
+
+            // A dark grey plate, not black, so the anchoring type's black swatch shows on it.
+            Fill(plateX, plateY, plateWidth, plateHeight, new Color32(72, 72, 72, 255));
+
+            for (int row = 0; row < ids.Length; row++)
+            {
+                // The first type at the top of the strip; y runs up from the bottom of the frame.
+                int top = plateY + plateHeight - 1 - pad - row * rowHeight;
+                int x = plateX + pad;
+
+                Color c = TheatrePalette.CellViewColourOf(ids[row]);
+                Fill(x, top - swatch + 1, swatch, swatch, new Color32((byte)Mathf.RoundToInt(c.r * 255f),
+                    (byte)Mathf.RoundToInt(c.g * 255f), (byte)Mathf.RoundToInt(c.b * 255f), 255));
+
+                x += swatch + 2 * cell;
+                foreach (char ch in ids[row].ToUpperInvariant())
+                {
+                    Glyph(ch, x, top, cell);
+                    x += 6 * cell;
                 }
             }
         }

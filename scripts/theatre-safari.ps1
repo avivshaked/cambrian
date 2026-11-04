@@ -37,6 +37,10 @@
   -nographics (a picture needs a graphics device), four job workers. It refuses worker 1 (unity/,
   the owner's Editor) and a worker a Unity process already holds or whose lock file is left.
 
+  The look is the agreed film look: scripts/theatre-film-look.json, wide and events, set into the
+  environment through scripts/theatre-film-look.ps1; a dial already in the environment wins, and
+  the launch prints each such dial beside the file's value and ruling.
+
 .PARAMETER Arm
   Arm name, as in <RunsRoot>/<Arm>. The newest run inside it is the one visited.
 .PARAMETER Heuristic
@@ -75,6 +79,11 @@
 .PARAMETER NoBurnText
   Stamp neither the captions nor the label into a trip's frames either
   (EVOSIM_THEATRE_STORY_BURN_TEXT=0): clean frames, the text only in captions.tsv.
+.PARAMETER AllowSourceMismatch
+  Seek the scenes of a run this build did not record, a farm run among them, whose manifest has no
+  simHash and which the runner otherwise refuses (EVOSIM_THEATRE_OVERRIDE=1, for this call only, as
+  theatre-snap.ps1 sets it). What comes out is a cousin of that run, and the runner's banner in
+  every frame says it is not a faithful replay. Playing from -FromWindows needs no switch.
 .PARAMETER Check
   Run the headless check instead of the record.
 .PARAMETER Every
@@ -175,12 +184,14 @@ param(
     [switch]$StoryLook,
     [string]$Folder = '',
     [switch]$BurnText,
-    [switch]$NoBurnText
+    [switch]$NoBurnText,
+    [switch]$AllowSourceMismatch
 )
 
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'theatre-film-look.ps1')
 $unity = 'C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Unity.exe'
 if (-not (Test-Path $unity)) { throw "No Unity at $unity" }
 $invariant = [System.Globalization.CultureInfo]::InvariantCulture
@@ -339,6 +350,8 @@ try {
     if ($BurnText) { $env:EVOSIM_THEATRE_STORY_BURN_TEXT = '1' }
     if ($NoBurnText) { $env:EVOSIM_THEATRE_STORY_BURN_TEXT = '0' }
     $textWord = if ($BurnText -or (-not $storyPath -and -not $NoBurnText)) { 'captions and label stamped into the frames' } else { 'none in the frames: captions.tsv, for scripts/story-assemble.py' }
+    # Set after the names above were cleared, so it holds for this call only and the saved value comes back after it.
+    if ($AllowSourceMismatch) { $env:EVOSIM_THEATRE_OVERRIDE = '1' }
 
     $entry =if ($Check) { 'Evosim.Theatre.EditorTools.TheatreSafariCheck.Run' } else { 'Evosim.Theatre.EditorTools.TheatreSafari.Run' }
 
@@ -353,6 +366,11 @@ try {
     Write-Host "  text     $textWord"
     Write-Host "  entry    $entry"
     Write-Host "  log      $log"
+    if ($AllowSourceMismatch) { Write-Host "  source mismatch allowed: the pictures are of a cousin world, and say so" }
+
+    # The agreed look, last: the names above were cleared, and the look's dials are none of them, so a caller's own
+    # (a pinned dial for a comparison film) stays and is printed. The names it set are restored with the rest below.
+    $names += @(Use-FilmLook -Sections wide, events)
 
     $arguments = @(
         '-projectPath', $proj, '-batchmode',
@@ -371,6 +389,15 @@ try {
     } else {
         $process.WaitForExit()
         $code = $process.ExitCode
+    }
+
+    # The lock is this run's own: the script refused to start over one. A Unity stopped at the wall, or one that quits
+    # abnormally (the package manager's helper dropping its connection), leaves it behind, and the next run on the worker
+    # then refuses (twice on worker 7 on 2026-10-30). Removed only once the Editor this script started has exited.
+    $lock = Join-Path $proj 'Temp/UnityLockfile'
+    if ($process.HasExited -and (Test-Path $lock)) {
+        Remove-Item $lock -Force -ErrorAction SilentlyContinue
+        Write-Host "  the Editor left Temp/UnityLockfile behind; removed, since the Editor that held it has exited"
     }
 } finally {
     foreach ($name in $names) {

@@ -72,9 +72,41 @@ namespace Evosim.Theatre
 
         /// <summary>
         /// How much of the frame's height a portrait's subject fills, by the longest side of its
-        /// drawn box: <c>EVOSIM_THEATRE_PORTRAIT_FILL</c>, 0.3 to 0.5, default 0.4.
+        /// drawn box: <c>EVOSIM_THEATRE_PORTRAIT_FILL</c>, 0.3 to 0.8, default 0.4. Above about 0.65 a swimmer's
+        /// portrait reaches the nearest distance, 1.5 body lengths, and goes no closer.
         /// </summary>
-        public static float PortraitFill => TheatreSkin.Dial("EVOSIM_THEATRE_PORTRAIT_FILL", 0.4f, 0.3f, 0.5f);
+        public static float PortraitFill => TheatreSkin.Dial("EVOSIM_THEATRE_PORTRAIT_FILL", 0.4f, 0.3f, 0.8f);
+
+        // portraitfrom:begin
+        /// <summary>
+        /// A safari portrait placed by a body point: <c>EVOSIM_THEATRE_PORTRAIT_FROM</c>, <c>mouth</c> (the first eating part's
+        /// <c>MouthPoint.Local</c>) or <c>nose</c> (the first nose part's sensing tip). The eye stands on the outward axis of that
+        /// point and looks at it (<c>SafariPlans.PortraitFromPoint</c>). Null, read once, when the variable is unset or says anything
+        /// else, and then nothing here runs.
+        /// </summary>
+        public static readonly string PortraitFrom = ReadPortraitFrom();
+
+        private static string ReadPortraitFrom()
+        {
+            string text = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_PORTRAIT_FROM");
+            if (string.IsNullOrWhiteSpace(text)) return null;
+
+            text = text.Trim().ToLowerInvariant();
+            // BLADE begin
+            if (text == "blade") return text;
+            // BLADE end
+            if (text == "mouth" || text == "nose") return text;
+
+            Debug.LogWarning("[Theatre] EVOSIM_THEATRE_PORTRAIT_FROM is '" + text + "', not mouth or nose; the portrait is the usual orbit.");
+            return null;
+        }
+
+        /// <summary>
+        /// How far off the point's outward axis a portrait from a body point stands, degrees: <c>EVOSIM_THEATRE_PORTRAIT_FROM_ANGLE</c>,
+        /// 5 to 80, default 30, so an opening reads as a cup and not a ring.
+        /// </summary>
+        public static float PortraitFromAngle => TheatreSkin.Dial("EVOSIM_THEATRE_PORTRAIT_FROM_ANGLE", 30f, 5f, 80f);
+        // portraitfrom:end
 
         /// <summary>The nearest and farthest a portrait stands from its subject's centre, in body lengths.</summary>
         public const float PortraitNearest = 1.5f, PortraitFarthest = 3f;
@@ -214,10 +246,13 @@ namespace Evosim.Theatre
             public readonly float Depth;
             /// <summary>The world's reefs, or null: the rock is one more thing the camera keeps off.</summary>
             public readonly ReefGeometry Reefs;
+            /// <summary>The world's branching coral (round 62), or null: more rock for the camera to keep off.</summary>
+            public readonly CoralRock Coral;
 
             public WorldBounds(ITheatreFrame live)
             {
                 Reefs = live.Reefs != null && live.Reefs.Count > 0 ? live.Reefs : null;
+                Coral = live.Coral != null && live.Coral.Count > 0 ? live.Coral : null;
                 RunConfig config = live.Record.Config;
                 Box = SnapshotCamera.BoxOf(live, out _);
                 Bed = live.Bed;
@@ -278,24 +313,50 @@ namespace Evosim.Theatre
                 return eye;
             }
 
-            /// <summary>The signed distance from a place to the nearest reef's rock, m, or infinity with no reef.</summary>
-            public float ReefDistance(Vector3 p) =>
-                Reefs == null ? float.PositiveInfinity : (float)Reefs.SignedDistance(p.x, p.y, p.z);
+            /// <summary>Whether the world has any rock for the camera to keep off: a mushroom reef or a coral.</summary>
+            public bool HasRock => Reefs != null || Coral != null;
 
             /// <summary>
-            /// The nearest place at least <see cref="ReefClearance"/> outside every reef's rock,
-            /// moved along the rock's outward normal, or across it when the normal would carry the
-            /// eye into the surface's clearance (over a shallow table); the count says the rock
-            /// moved it.
+            /// The signed distance from a place to the nearest reef's or coral's rock, m, or
+            /// infinity with neither. Past the coral's look (<see cref="TheatreCoralRock.LookMetres"/>)
+            /// the coral's answer is a bound at or above it, which no clearance asks about.
+            /// </summary>
+            public float ReefDistance(Vector3 p)
+            {
+                float d = Reefs == null ? float.PositiveInfinity : (float)Reefs.SignedDistance(p.x, p.y, p.z);
+                if (Coral == null) return d;
+
+                return Mathf.Min(d, (float)Coral.SignedDistance(
+                    p.x, p.y, p.z, TheatreCoralRock.LookMetres, out _, out ReefGeometry.Distance _));
+            }
+
+            /// <summary>
+            /// The nearest place at least <see cref="ReefClearance"/> outside every reef's and
+            /// coral's rock, moved along the rock's outward normal, or across it when the normal
+            /// would carry the eye into the surface's clearance (over a shallow table); the count
+            /// says the rock moved it.
             /// </summary>
             public Vector3 OffTheReef(Vector3 eye, ref int reef)
             {
-                if (Reefs == null) return eye;
+                if (!HasRock) return eye;
                 bool moved = false;
 
                 for (int pass = 0; pass < 6; pass++)
                 {
-                    double s = Reefs.SignedDistance(eye.x, eye.y, eye.z, ReefClearance + 0.25d, out int nearest, out ReefGeometry.Distance at);
+                    double s = double.PositiveInfinity;
+                    int nearest = -1;
+                    var at = default(ReefGeometry.Distance);
+                    bool coral = false;
+
+                    if (Reefs != null)
+                        s = Reefs.SignedDistance(eye.x, eye.y, eye.z, ReefClearance + 0.25d, out nearest, out at);
+
+                    if (Coral != null)
+                    {
+                        double sc = Coral.SignedDistance(eye.x, eye.y, eye.z, ReefClearance + 0.25d, out int nc, out ReefGeometry.Distance ac);
+                        if (nc >= 0 && (nearest < 0 || sc < s)) { s = sc; nearest = nc; at = ac; coral = true; }
+                    }
+
                     if (nearest < 0 || s >= ReefClearance) break;
 
                     float need = ReefClearance - (float)s + 0.02f;
@@ -307,7 +368,23 @@ namespace Evosim.Theatre
                     {
                         var across = new Vector3(g.x, 0f, g.z);
                         if (across.sqrMagnitude < 1e-8f)
-                            across = new Vector3(eye.x - (float)Reefs.CentreX(nearest), 0f, eye.z - (float)Reefs.CentreZ(nearest));
+                        {
+                            // Away from the nearest reef's axis, or the nearest colony's trunk.
+                            double cx, cz;
+                            if (coral)
+                            {
+                                CoralGeometry.Colony colony = Coral.Coral.ColonyAt(nearest);
+                                cx = colony.X;
+                                cz = colony.Z;
+                            }
+                            else
+                            {
+                                cx = Reefs.CentreX(nearest);
+                                cz = Reefs.CentreZ(nearest);
+                            }
+
+                            across = new Vector3(eye.x - (float)cx, 0f, eye.z - (float)cz);
+                        }
                         if (across.sqrMagnitude < 1e-8f) across = Vector3.right;
                         next = eye + across.normalized * need;
                         next.y = Mathf.Min(next.y, -Clearance);
@@ -386,8 +463,30 @@ namespace Evosim.Theatre
             // close
             private long _subject = -1;
 
+            // The view that draws the subject when it is not the view the shot is given: the remains view, for a named
+            // subject found dead (the death shot's time-lapse). Null for every other shot, which reads the view it is given.
+            private LiveWorldView _subjectView;
+
+            // D279's birth film: a named subject not yet born at the shot's second, whose stand-in is the box of its first
+            // recorded pose (CloseOnUnborn). The plan frames the stand-in, and every pose reads it in place of the drawn box
+            // until the view first draws the body, which then takes over for good. -1 for every other shot.
+            private long _unbornId = -1;
+            private Bounds _unbornBox;
+
             /// <summary>The body the close shot follows, or -1 for any other shot.</summary>
             public long Subject => _subject;
+
+            /// <summary>True for a close shot planned to hold its eye still (<c>EVOSIM_THEATRE_FILM_CLOSE_FOLLOW</c> unset); false for a following one.</summary>
+            public bool IsStill => _still;
+
+            /// <summary>True once a still close shot has its eye and rotation planned (not when nothing was alive to frame).</summary>
+            public bool HasStillEye => _hasStill;
+
+            /// <summary>The still close shot's planned eye, before the per-frame walls and pushes. Read by the dress-set count, which changes nothing.</summary>
+            public Vector3 StillEye => _stillEye;
+
+            /// <summary>The still close shot's planned rotation. Read by the dress-set count, which changes nothing.</summary>
+            public Quaternion StillRotation => _stillRotation;
             private Vector3 _offset;
             private Vector3 _forward;
             private float _standoff;
@@ -492,7 +591,34 @@ namespace Evosim.Theatre
 
                 switch (name)
                 {
-                    case "close": shot.PlanClose(live, view, positions, reaches, ids, aspect, CloseSubject(live)); break;
+                    case "close":
+                    {
+                        Func<long, bool> eligible = CloseSubject(live, out long named);
+                        bool asRemains = shot.CloseOnRemains(live, named, positions, reaches, ids, out FilmRemains remains);
+                        FilmUnborn unborn = default;
+                        bool asUnborn = !asRemains && shot.CloseOnUnborn(live, named, positions, reaches, ids, out unborn);
+                        shot.PlanClose(live, view, positions, reaches, ids, aspect, eligible);
+
+                        if (asRemains && shot._subject == named)
+                        {
+                            Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                                "[Theatre] close subject {0}: framed as remains (died {1:0.###} s, removed {2:0.###} s), {3} parts",
+                                named, remains.Since, remains.Removed, remains.Parts));
+                        }
+                        else if (asUnborn && shot._subject == named)
+                        {
+                            Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                                "[Theatre] close subject {0}: framed at its birth place (born {1:0.###} s, shot opens {2:0.###} s)",
+                                named, unborn.Born, live.Second));
+                        }
+                        else if (named >= 0 && shot._subject < 0)
+                        {
+                            shot.Plan_ += string.Format(CultureInfo.InvariantCulture,
+                                " (subject {0} is neither alive nor among the remains at this second)", named);
+                        }
+
+                        break;
+                    }
                     case "drift": shot.PlanCrowd(positions, reaches, aspect, 0f, true); break;
                     case "canopy": shot.PlanCanopy(positions, reaches, ids, aspect, FilmCanopyMove(), out _); break;
                     default: shot.PlanCrowd(positions, reaches, aspect, turns, false); break;
@@ -507,14 +633,17 @@ namespace Evosim.Theatre
             /// framed. Null when unset: the largest body, as the shot always chose. A subject
             /// named by the dial is framed alone, with no neighbour, as a portrait.
             /// </summary>
-            private static Func<long, bool> CloseSubject(IFilmWorld live)
+            /// <param name="named">The id the dial names, or -1 when it names none or names <c>leaf</c>.</param>
+            private static Func<long, bool> CloseSubject(IFilmWorld live, out long named)
             {
+                named = -1;
                 string pick = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_SUBJECT");
                 if (string.IsNullOrWhiteSpace(pick)) return null;
                 pick = pick.Trim();
 
                 if (long.TryParse(pick, NumberStyles.Integer, CultureInfo.InvariantCulture, out long wanted))
                 {
+                    named = wanted;
                     return id => id == wanted;
                 }
 
@@ -536,6 +665,51 @@ namespace Evosim.Theatre
                 }
 
                 return leafy.Contains;
+            }
+
+            /// <summary>
+            /// The death shot's second film (design note option A): a subject named by id that is not among the living at
+            /// the shot's second but whose remains the world draws then is put among the crowd as the living are, its drawn
+            /// root, its reach and its id, so <see cref="PlanClose"/> frames the remains by the same bearing search, lens and
+            /// distance as it would the body alive. The view that draws them is kept for the plan and every pose to read the
+            /// subject's drawn box from. False, and nothing touched, for any other shot: no id named, the subject alive, or
+            /// no remains under that id.
+            /// </summary>
+            private bool CloseOnRemains(
+                IFilmWorld live, long named, List<Vector3> positions, List<float> reaches, List<long> ids, out FilmRemains remains)
+            {
+                remains = default;
+                if (named < 0 || ids.Contains(named)) return false;
+                if (!live.TryRemains(named, out remains)) return false;
+
+                positions.Add(remains.Root);
+                reaches.Add(remains.Reach);
+                ids.Add(named);
+                _subjectView = remains.View;
+                return true;
+            }
+
+            /// <summary>
+            /// D279's birth film: a subject named by id that is neither alive nor among the remains at the shot's second, but
+            /// whose birth the window holds after it, is put among the crowd as the living are, the root and the reach of its
+            /// first recorded pose and its id, so <see cref="PlanClose"/> frames the place it will be born by the same bearing
+            /// search, lens and distance as it would the body alive. The box that pose fills is kept as its stand-in, which the
+            /// plan frames and every pose reads until the view first draws the body. False, and nothing touched, for any other
+            /// shot: no id named, the subject alive or among the remains, or no birth of it after this second.
+            /// </summary>
+            private bool CloseOnUnborn(
+                IFilmWorld live, long named, List<Vector3> positions, List<float> reaches, List<long> ids, out FilmUnborn unborn)
+            {
+                unborn = default;
+                if (named < 0 || ids.Contains(named)) return false;
+                if (!live.TryUnborn(named, out unborn)) return false;
+
+                positions.Add(unborn.Root);
+                reaches.Add(unborn.Reach);
+                ids.Add(named);
+                _unbornId = named;
+                _unbornBox = unborn.Box;
+                return true;
             }
 
             /// <summary>Every living body's root, its reach and its id, from the drawn scene where it can.</summary>
@@ -757,7 +931,53 @@ namespace Evosim.Theatre
 
                 long id = ids[anchor];
                 float reach = reaches[anchor];
-                Subject(view, id, positions[anchor], reach, out Vector3 centre, out float length);
+
+                // The view that draws the subject: the remains view for a subject found dead (CloseOnRemains), else the one given.
+                LiveWorldView subjectView = _subjectView ?? view;
+
+                // EVOSIM_THEATRE_DRESS_NEAR: the subject's one skin, left unbuilt at its first frame, is built now and dressed as the
+                // palette left it, before its drawn bounds are read. Does nothing unless the view is deferring skins.
+                subjectView?.BuildSkinOf(id);
+
+                Vector3 centre;
+                float length;
+
+                // D279's birth film: a subject not yet born is not drawn, so its stand-in's box is read as a drawn box is.
+                if (id == _unbornId)
+                {
+                    centre = _unbornBox.center;
+                    length = Mathf.Max(0.05f, Mathf.Max(_unbornBox.size.x, Mathf.Max(_unbornBox.size.y, _unbornBox.size.z)));
+                }
+                else
+                {
+                    Subject(subjectView, id, positions[anchor], reach, out centre, out length);
+                }
+
+                // EVOSIM_THEATRE_FILM_CLOSE_LOOK=mouth: the search below starts from the reverse of the
+                // outward normal of the subject's first eating part's mouth, as drawn now, so the camera
+                // looks into the mouth. The forward's height is held to +-0.8 so the camera's up stays usable.
+                string mouthNote = "";
+                if (look == "mouth")
+                {
+                    if (TheatreMouthBite.TryFirstMouthNormal(subjectView, id, out int mouthPart, out Vector3 mouthNormal))
+                    {
+                        Vector3 into = -mouthNormal;
+                        into.y = Mathf.Clamp(into.y, -0.8f, 0.8f);
+                        if (into.sqrMagnitude > 1e-6f)
+                        {
+                            _forward = into.normalized;
+                            mouthNote = string.Format(CultureInfo.InvariantCulture,
+                                ", looking into mouth {0} (normal {1:0.###} {2:0.###} {3:0.###})",
+                                mouthPart, mouthNormal.x, mouthNormal.y, mouthNormal.z);
+                        }
+                    }
+
+                    if (mouthNote.Length == 0)
+                    {
+                        Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                            "[Theatre] film: close look mouth asked, no mouth on body {0}; the three-quarter view kept", id));
+                    }
+                }
 
                 // The distance: the body's longest side two fifths of the frame's height, held
                 // between 1.5 and 3 of its lengths, and never inside the body's own reach from its
@@ -848,7 +1068,36 @@ namespace Evosim.Theatre
                     return false;
                 }
 
-                Search();
+                // A subject just under the surface at a near portrait (the close look's fill of 0.8) leaves
+                // every bearing above the surface's clearance: the eye then stands further off at the same
+                // tilts, up to the farthest portrait, and the fill gives way only there. Looking up more
+                // steeply instead put Snell's window, the sky through the surface, across the top of the
+                // frame as a smooth banded disc, and left a still eye too near to hold a drifting body
+                // (63868 at 22501 s, 2026-11-04). Only when every bearing clashes, so a shot that found a
+                // clear bearing keeps it; and the further bearing replaces the first search's best only if
+                // it breaks fewer rules.
+                if (!Search() && bestClashes > 0)
+                {
+                    int firstScore = bestScore, firstClashes = bestClashes, firstAcross = bestAcross;
+                    string firstWhy = bestWhy;
+                    Vector3 firstForward = bestForward;
+                    float firstDistance = bestDistance, firstTurn = bestTurn, firstTilt = bestTilt;
+
+                    scales = new[] { 1.4f, 1.7f, 2f, 2.5f };
+                    Search();
+
+                    if (bestClashes >= firstClashes)
+                    {
+                        bestScore = firstScore;
+                        bestClashes = firstClashes;
+                        bestAcross = firstAcross;
+                        bestWhy = firstWhy;
+                        bestForward = firstForward;
+                        bestDistance = firstDistance;
+                        bestTurn = firstTurn;
+                        bestTilt = firstTilt;
+                    }
+                }
 
                 _forward = bestForward;
                 _standoff = bestDistance;
@@ -871,13 +1120,34 @@ namespace Evosim.Theatre
                     _hasStill = true;
                 }
 
+                // closeat:begin
+                // EVOSIM_THEATRE_FILM_CLOSE_AT, "x,y,z,bearing,elevation,distance": the still close shot's eye stands
+                // distance metres from the world point (x, y, z), on the bearing (degrees in the x-z plane, from +x
+                // towards +z) and the elevation (degrees, positive looking up), and looks at the point; a diagnostic
+                // for a spot rather than a body, such as where a cloud forms. Unset, nothing changes. The per-frame
+                // walls and pushes still apply.
+                string closeAtNote = "";
+                if (_still && CloseAt(out Vector3 atPoint, out Vector3 atForward, out float atDistance))
+                {
+                    _forward = atForward;
+                    _standoff = atDistance;
+                    _stillEye = atPoint - atForward * atDistance;
+                    _stillRotation = Quaternion.LookRotation(atForward, Vector3.up);
+                    closeAtNote = string.Format(CultureInfo.InvariantCulture,
+                        "; EVOSIM_THEATRE_FILM_CLOSE_AT: the eye at ({0:0.##}, {1:0.##}, {2:0.##}) looks at ({3:0.##}, {4:0.##}, {5:0.##}) " +
+                        "from {6:0.##} m, the subject's planned centre ({7:0.##}, {8:0.##}, {9:0.##}) {10:0.##} m from that point",
+                        _stillEye.x, _stillEye.y, _stillEye.z, atPoint.x, atPoint.y, atPoint.z, atDistance,
+                        target.x, target.y, target.z, (target - atPoint).magnitude);
+                }
+                // closeat:end
+
                 float fill = length / (2f * _standoff * Mathf.Tan(0.5f * FieldOfView * Mathf.Deg2Rad));
                 TheatreGrade grade = TheatreGrade.Current;
 
                 Plan_ = string.Format(CultureInfo.InvariantCulture,
                     "body {0} ({1:0.##} m long, reach {2:0.###} m) at {3:0.##} m, {4:0.#} body lengths, {5:0}% of the frame's height " +
                     "through a {6:0} deg lens; the bearing turned {7:0} deg and tilted {8:0} deg from the three-quarter view, " +
-                    "{9} {10} across the lens{11}; {12}; {13}",
+                    "{9} {10} across the lens{11}; {12}; {13}{14}",
                     id, length, reach, _standoff, _standoff / length, 100f * fill, FieldOfView, bestTurn, bestTilt,
                     bestAcross, bestAcross == 1 ? "body" : "bodies",
                     bestClashes > 0 ? ", STILL CLASHES (" + bestWhy + "): the per-frame walls and push take it from here" : "",
@@ -888,7 +1158,31 @@ namespace Evosim.Theatre
                         : string.Format(CultureInfo.InvariantCulture,
                             "following the subject, dolly in {0:0.##} m ({1:0.###} m/s at its peak)",
                             _dolly, _dolly / _seconds / (1f - EaseShare)),
-                    grade != null ? grade.DescribePortrait(_standoff, FieldOfView) : "no grade, so no depth of field");
+                    grade != null ? grade.DescribePortrait(_standoff, FieldOfView) : "no grade, so no depth of field",
+                    mouthNote) + closeAtNote;
+            }
+
+            /// <summary>
+            /// <c>EVOSIM_THEATRE_FILM_CLOSE_AT</c> read: the point, the eye's look direction and its distance. False when
+            /// the variable is unset or not six numbers with a distance above zero.
+            /// </summary>
+            private static bool CloseAt(out Vector3 point, out Vector3 forward, out float distance)
+            {
+                point = forward = Vector3.zero;
+                distance = 0f;
+                string text = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_CLOSE_AT");
+                if (string.IsNullOrWhiteSpace(text)) return false;
+                string[] parts = text.Split(',');
+                if (parts.Length != 6) return false;
+                var v = new float[6];
+                for (int i = 0; i < 6; i++)
+                    if (!float.TryParse(parts[i].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out v[i])) return false;
+                if (!(v[5] > 0f)) return false;
+                float a = v[3] * Mathf.Deg2Rad, e = v[4] * Mathf.Deg2Rad;
+                point = new Vector3(v[0], v[1], v[2]);
+                forward = new Vector3(Mathf.Cos(e) * Mathf.Cos(a), Mathf.Sin(e), Mathf.Cos(e) * Mathf.Sin(a));
+                distance = v[5];
+                return true;
             }
 
             /// <summary>
@@ -910,7 +1204,7 @@ namespace Evosim.Theatre
                 if (bed > 0) { n++; why = why ?? "in the bed"; }
                 if (_world.ReefDistance(eye) < ReefClearance) { n++; why = why ?? "in the reef"; }
 
-                if (_world.Reefs != null)
+                if (_world.HasRock)
                 {
                     for (int k = 1; k <= 6; k++)
                     {
@@ -1093,7 +1387,7 @@ namespace Evosim.Theatre
                             }
                         }
 
-                        if (broke == null && _world.Reefs != null)
+                        if (broke == null && _world.HasRock)
                         {
                             // The rock across the view, up to the canopy's layer: in the line, or
                             // filling seven tenths of the frame's cone round it.
@@ -1227,12 +1521,19 @@ namespace Evosim.Theatre
                     Vector3 now = _followed;
                     if (_subject >= 0)
                     {
-                        if (DrawnBounds(view, _subject, out Bounds drawn)) now = drawn.center;
+                        LiveWorldView subjectView = _subjectView ?? view;
+                        if (DrawnBounds(subjectView, _subject, out Bounds drawn)) now = drawn.center;
                         else
                         {
-                            Transform root = view?.RootOf(_subject);
+                            Transform root = subjectView?.RootOf(_subject);
                             if (root != null && Finite(root.position)) now = root.position + _offset;
+                            else if (_subject == _unbornId) now = _unbornBox.center;
                         }
+
+                        // D279's birth film: once the view draws the newborn, the live body is the subject for the rest of
+                        // the shot, and the stand-in is never read again (a body that dies in the shot is then held where
+                        // it was last seen, as any subject is).
+                        if (_subject == _unbornId && subjectView?.RootOf(_subject) != null) _unbornId = -1;
                     }
 
                     float k = 1f - Mathf.Exp(-frameSeconds / 1.5f);
@@ -1340,7 +1641,9 @@ namespace Evosim.Theatre
                 {
                     long about = _focusId >= 0 ? _focusId : _subject;
                     Vector3 point = subject;
-                    if (about >= 0 && DrawnBounds(view, about, out Bounds body)) point = body.center;
+                    LiveWorldView aboutView = _subjectView != null && about == _subject ? _subjectView : view;
+                    if (about >= 0 && DrawnBounds(aboutView, about, out Bounds body)) point = body.center;
+                    else if (about >= 0 && about == _unbornId) point = _unbornBox.center;
                     float depth = Vector3.Dot(point - eye, rotation * Vector3.forward);
                     focus = depth > 0.1f ? depth : Mathf.Max(0.1f, (subject - eye).magnitude);
                 }

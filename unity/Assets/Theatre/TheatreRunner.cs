@@ -50,6 +50,13 @@ namespace Evosim.Theatre
             /// B2). Selected by <c>EVOSIM_THEATRE_WINDOW</c> or by <see cref="WindowDirectory"/>.
             /// </summary>
             Window = 3,
+
+            /// <summary>
+            /// A nursery tank's recorded frames played back: every swimmer's and leaf's link poses at every frame
+            /// the nursery's solver recorded, with nothing stepped (<see cref="NurseryEpisodeWorld"/>). Selected by
+            /// <c>EVOSIM_THEATRE_NURSERY</c>, which names the tank folder.
+            /// </summary>
+            Nursery = 4,
         }
 
         [Header("What to show")]
@@ -184,6 +191,10 @@ namespace Evosim.Theatre
         private SnapshotWorld _recon;
         private FilmWindowWorld _window;
         private double _windowClock;
+        private NurseryEpisodeWorld _nursery;
+        private double _nurseryClock;
+        private double _nurseryShownAt = double.NaN;
+        private string _nurseryDirectory = "";
         private readonly CreatureIdMap _map = new CreatureIdMap();
         private readonly TheatrePalette _palette = new TheatrePalette();
 
@@ -270,6 +281,11 @@ namespace Evosim.Theatre
         /// </summary>
         public FilmWindowWorld Window => _window;
 
+        /// <summary>
+        /// The nursery tank on screen, or null when this is not Mode Nursery. Read by <c>TheatreFilm</c>.
+        /// </summary>
+        public NurseryEpisodeWorld Nursery => _nursery;
+
         /// <summary>Why nothing opened, or null. The same string the interface prints.</summary>
         public string Error => _error;
 
@@ -338,6 +354,15 @@ namespace Evosim.Theatre
                 Mode = ViewMode.Window;
             }
 
+            // A nursery tank (EVOSIM_THEATRE_NURSERY names its folder; EVOSIM_THEATRE_NURSERY_ROOT is the repository
+            // root its pool is relative to). Named, it is what opens, and nothing is stepped.
+            string nursery = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_NURSERY");
+            if (!string.IsNullOrEmpty(nursery))
+            {
+                _nurseryDirectory = nursery;
+                Mode = ViewMode.Nursery;
+            }
+
             // A checkpoint to carry on from. Named, it decides which world opens — the run
             // directory beside it is the world's, so EVOSIM_THEATRE_RUN has nothing left to say.
             string checkpoint = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT");
@@ -366,6 +391,8 @@ namespace Evosim.Theatre
             // also why -Chrome is refused there.
             // Nor in the window mode, for the same reason: a film window has frames and a verdict,
             // and no census, audit or ancestry for the panel to read.
+            // Nor in the nursery mode: the statement below is this if's body, and the else after it hides the overlay.
+            if (Mode != ViewMode.Nursery)
             if (Mode != ViewMode.Snapshot && Mode != ViewMode.Window)
             {
                 _ui = TheatreUi.Create();
@@ -375,6 +402,7 @@ namespace Evosim.Theatre
             {
                 ShowOverlay = false;
             }
+            else ShowOverlay = false;
 
             OpenWhateverModeSays();
 
@@ -394,6 +422,7 @@ namespace Evosim.Theatre
                 if (Mode == ViewMode.World) OpenWorld();
                 else if (Mode == ViewMode.Snapshot) OpenSnapshot();
                 else if (Mode == ViewMode.Window) OpenWindow();
+                else if (Mode == ViewMode.Nursery) OpenNursery();
                 else OpenSolo();
             }
             catch (Exception e)
@@ -442,10 +471,11 @@ namespace Evosim.Theatre
             // farm's needs neither and steps Evosim.Dynamics instead. Every manifest written
             // before the second farm existed has no `engine` field and is read as PhysX, so this
             // branch cannot fire on a run in the record and the path below is the one it has
-            // always been.
+            // always been. The card's farm records "gpu" and opens here too, a cousin on the processor
+            // (TheatreDynamicsReplay.CardEngineName).
             string engine = RunRecord.PeekEngine(RunDirectory);
 
-            if (string.Equals(engine, TheatreDynamicsReplay.EngineName, StringComparison.Ordinal))
+            if (TheatreDynamicsReplay.Opens(engine))
             {
                 OpenLive();
                 return;
@@ -620,7 +650,7 @@ namespace Evosim.Theatre
                 ? TankGeometry.RadiusFor(dressed.WorldAreaSquareMetres)
                 : 0f;
 
-            _skin.Dress(SnapshotCamera.BoxOf(frame, out _), frame.Bed, glassRadius, frame.Reefs);
+            _skin.Dress(SnapshotCamera.BoxOf(frame, out _), frame.Bed, glassRadius, frame.Reefs, frame.Coral);
         }
 
         /// <summary>
@@ -740,6 +770,90 @@ namespace Evosim.Theatre
             _window.Show(frame);
         }
 
+        /// <summary>
+        /// Mode Nursery: a nursery tank's frames and its floor, and the first frame, or the frame nearest
+        /// <see cref="SeekToSeconds"/> when that is set.
+        /// </summary>
+        /// <remarks>
+        /// Nothing is stepped. A film, a still or a walk through it asks for a second and the world shows the
+        /// recorded frame on it, or the two around it blended (<see cref="NurseryEpisodeWorld.ShowAt"/>).
+        /// </remarks>
+        private void OpenNursery()
+        {
+            if (string.IsNullOrWhiteSpace(_nurseryDirectory))
+            {
+                _error = "No nursery tank. Launch with EVOSIM_THEATRE_NURSERY pointing at the folder Evosim.Nursery --restep wrote.";
+                return;
+            }
+
+            _nursery = NurseryEpisodeWorld.Open(_nurseryDirectory, out string refusal);
+
+            if (_nursery == null)
+            {
+                _error = refusal;
+                Debug.LogWarning("[Theatre] refused: " + refusal);
+                return;
+            }
+
+            _nursery.Palette = _palette;
+            _nursery.ColourByCellType = ColourByCellType;
+            _nursery.View.RepaintsPerFrame = RepaintsPerFrame;
+
+            Debug.Log(
+                "[Theatre] " + _nursery.ProvenanceLine + " — " + _nursery.Record.ArmName + ", " + _nursery.FrameCount +
+                " frames from " + _nursery.FirstSecond.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) +
+                " s to " + _nursery.LastSecond.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + " s");
+
+            DressTheWorld(_nursery);
+
+            if (_nursery.FrameCount > 0)
+            {
+                ShowNurserySecond(SeekToSeconds > 0f ? SeekToSeconds : _nursery.FirstSecond);
+            }
+        }
+
+        /// <summary>Shows the nursery tank at a second (a recorded frame, or two blended), and holds the playback clock there.</summary>
+        public void ShowNurserySecond(double second)
+        {
+            if (_nursery == null || _nursery.FrameCount == 0) return;
+
+            _nurseryClock = second;
+            _nurseryShownAt = second;
+            _nursery.ColourByCellType = ColourByCellType;
+            _nursery.ShowAt(second);
+        }
+
+        /// <summary>
+        /// The nursery tank's playback: a clock in the recording's seconds, advanced by the pace, and the pose at
+        /// it shown when the second on screen is not the clock. At the end the clock goes back to the start under
+        /// <see cref="LoopWindow"/>, and holds otherwise.
+        /// </summary>
+        private void StepNursery()
+        {
+            if (_nursery.FrameCount == 0) return;
+
+            if (!Paused)
+            {
+                _nurseryClock += Time.unscaledDeltaTime * Mathf.Max(0f, EffectiveRate);
+
+                if (_nurseryClock > _nursery.LastSecond + 1e-6)
+                {
+                    _nurseryClock = LoopWindow ? _nursery.FirstSecond : _nursery.LastSecond;
+                }
+            }
+
+            if (HoldView) return;
+
+            double want = System.Math.Max(_nurseryClock, _nursery.FirstSecond);
+
+            if (want != _nurseryShownAt)
+            {
+                _nurseryShownAt = want;
+                _nursery.ColourByCellType = ColourByCellType;
+                _nursery.ShowAt(want);
+            }
+        }
+
         private void OpenSolo()
         {
             if (string.IsNullOrWhiteSpace(GenomePath))
@@ -759,6 +873,20 @@ namespace Evosim.Theatre
             if (!string.IsNullOrWhiteSpace(RunDirectory))
             {
                 RunRecord record = RunRecord.Load(RunDirectory);
+
+                // D239: the solo viewer is one PhysX body, the Editor's cousin and not the farm's solver, stepping
+                // in its own physics seconds. A paced world under it would be a second approximation on top of the
+                // first, so it refuses by name, as the PhysX replay does; a paced solo body comes from the dynamics
+                // replay. At k = 1, every record to date, this never fires.
+                if (record.Config.PaceFactor != 1f)
+                {
+                    _error =
+                        "This run has a pace factor of " +
+                        record.Config.PaceFactor.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) +
+                        " (D239), and the PhysX solo viewer has none. Watch the body in the dynamics replay instead.";
+                    return;
+                }
+
                 config = record.Config;
                 water = record.ArmName ?? "the run's config";
                 Ecosystem.ConfigurePhysicsStep(record.PhysicsDtSeconds);
@@ -817,6 +945,10 @@ namespace Evosim.Theatre
             _window?.Dispose();
             _window = null;
             _windowClock = 0d;
+            _nursery?.Dispose();
+            _nursery = null;
+            _nurseryClock = 0d;
+            _nurseryShownAt = double.NaN;
             _map.Clear();
             _palette.Clear();
             _skin.Undress();
@@ -861,6 +993,7 @@ namespace Evosim.Theatre
             else if (_solo != null) StepSolo();
             else if (_recon != null) _recon.BuildSome(FrameBudgetSeconds);
             else if (_window != null) StepWindow();
+            else if (_nursery != null) StepNursery();
 
             if (!HoldView) DrawTheInterface();
         }
@@ -908,6 +1041,24 @@ namespace Evosim.Theatre
                 ITheatreFrame frame = _replay != null ? _replay : _live != null ? (ITheatreFrame)_live : _recon;
                 if (frame != null) _skin.PushSnow(frame, FlyCamera.transform.position);
             }
+
+            // The absorptive uptake look (EVOSIM_THEATRE_UPTAKE): the run's uptake at the second on screen.
+            if (TheatreUptake.Enabled && FlyCamera != null)
+            {
+                ITheatreFrame uptakeFrame = _replay != null ? _replay : _live != null ? (ITheatreFrame)_live : _recon != null ? (ITheatreFrame)_recon : _window;
+                if (uptakeFrame != null) TheatreUptake.Frame(uptakeFrame, FlyCamera.transform.position);
+                else TheatreUptake.NoRun("this view is a solo creature, which has no run");
+            }
+
+            // The mouth bite's timers (EVOSIM_THEATRE_MOUTH2_BITE), every frame; the fake onsets need no run.
+            if (TheatreMouth2.Bite > 0f)
+            {
+                ITheatreFrame biteFrame = _replay != null ? _replay : _live != null ? (ITheatreFrame)_live : _recon != null ? (ITheatreFrame)_recon : _window;
+                TheatreMouthBite.Frame(biteFrame);
+            }
+
+            // The kill-contact log (EVOSIM_THEATRE_KILL_CONTACT_LOG), independent of the bite dial: a film window's kills, once each.
+            if (TheatreMouthBite.KillContactLog && _window != null) TheatreMouthBite.LogContacts(_window);
         }
 
         /// <summary>When the Play mode view next reads the run's light (wall clock, seconds).</summary>
@@ -968,7 +1119,11 @@ namespace Evosim.Theatre
                 }
 
                 double vx = body.Velocity[0], vy = body.Velocity[1], vz = body.Velocity[2];
-                return (float)Math.Sqrt(vx * vx + vy * vy + vz * vz);
+                float speed = (float)Math.Sqrt(vx * vx + vy * vy + vz * vz);
+
+                // D239: the solver's velocity is per physics second; the HUD, like the farm's
+                // speed columns, reads metres per world second.
+                return _live.Sim.PaceFactor == 1f ? speed : speed * _live.Sim.PaceFactor;
             }
 
             if (_replay == null) return 0f;
@@ -1006,6 +1161,8 @@ namespace Evosim.Theatre
             {
                 _pending += Time.unscaledDeltaTime * Mathf.Max(0f, EffectiveRate);
 
+                // D239: the PhysX replay (the Unity farm, idle since round 42) has no pace factor;
+                // TheatreReplay.Open refuses a record whose k is not 1, so this is world seconds too.
                 float dt = _replay.Record.PhysicsDtSeconds;
                 double deadline = wallBefore + Mathf.Max(0.005f, FrameBudgetSeconds);
 
@@ -1039,7 +1196,9 @@ namespace Evosim.Theatre
         {
             double before = _live.ElapsedSeconds;
             double wallBefore = _clock.Elapsed.TotalSeconds;
-            float dt = Mathf.Max(1e-4f, _live.Sim.PhysicsDt);
+            // D239: the pacing below spends wall time against the world's clock, so a step is worth
+            // its world seconds (physics dt over k); at k = 1 that is the physics dt itself.
+            float dt = Mathf.Max(1e-4f, _live.Sim.WorldSecondsPerStep);
 
             if (_seeking)
             {
@@ -1188,6 +1347,11 @@ namespace Evosim.Theatre
                     TheatrePalette.Tint(_solo.ReserveSeconds, _solo.Config.EnergyFullScaleSeconds),
                     true);
             }
+
+            if (TheatreMouthMarks.Enabled)
+            {
+                TheatreMouthMarks.Ensure(_solo.Instance.Root.transform, _solo.Phenotype);
+            }
         }
 
         /// <summary>Simulated seconds per wall-clock second, over a window rather than a frame.</summary>
@@ -1235,6 +1399,8 @@ namespace Evosim.Theatre
                 _palette.Paint(
                     creature.Id, root, creature.Phenotype,
                     TheatrePalette.Tint(creature.SecondsOfReserve, scale), ColourByCellType);
+
+                if (TheatreMouthMarks.Enabled) TheatreMouthMarks.Ensure(root, creature.Phenotype);
             }
 
             if (_repaintCursor % 512 == 0) _palette.PurgeDead();
@@ -1254,6 +1420,13 @@ namespace Evosim.Theatre
             if (_window != null)
             {
                 ShowWindowSecond(target);
+                return;
+            }
+
+            // A nursery tank has every frame on disk too.
+            if (_nursery != null)
+            {
+                ShowNurserySecond(target);
                 return;
             }
 

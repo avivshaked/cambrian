@@ -35,7 +35,7 @@ namespace Evosim.Theatre.EditorTools
             "Evosim/Theatre Body", "Evosim/Theatre Bed", "Evosim/Theatre Rock", "Evosim/Theatre Earth",
             "Evosim/Theatre Surface", "Evosim/Theatre Backdrop", "Evosim/Theatre Glass",
             "Evosim/Theatre Shafts", "Evosim/Theatre Snow", "Evosim/Theatre Shaft March",
-            "Evosim/Theatre Snow Shells", "Evosim/Theatre Tone Step",
+            "Evosim/Theatre Snow Shells", "Evosim/Theatre Tone Step", "Evosim/Theatre Lens",
         };
 
         private const string Broken =
