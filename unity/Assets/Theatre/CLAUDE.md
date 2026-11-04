@@ -173,27 +173,37 @@ the clip. A batch import parses a shader without compiling it: `Evosim.Theatre.E
 compiles every theatre pass for d3d11, and its log carries three errors from a shader broken on
 purpose (`Look Check Broken`), which are the check working.
 
-**A film takes the film look, which its launcher sets in the environment.** The dials' defaults stay off. The water and
-light: `EVOSIM_THEATRE_LOOK=4`, `GLASS=0`, `CAUSTIC_SCALE=0.75`, `MOTION_BLUR=0`, `ABSORB=0.6`, and the snow above. The
-tissue: `TISSUE_LOOK=2`, `SSS=1`, `SOFT=1`, `SWAY=1`, `ORGANIC=2`, `MOTTLE_SOFT=1`, `PATTERN=1`. The reef: `CORAL_SHAPE=3`,
-`CORAL_WARM=1`, `CORAL_LIVE=3`. The producers take `ALGA=1` and `ALGA_BLADE=2`, and the owner's rulings of 2026-10-29 on
-them. The blades take `ALGA_RAMP_PHOTO=1` with `ALGA_RAMP_STOP_A` and `_B` from their world's row in
-`scripts/theatre-world-stops.tsv`. Each row is set so that the blades land on the underwater photographs' hue, 102 to 108,
-in that world's own light. A stop chosen on one world's light does not carry to another: trial d's stops, chosen on the
-test stage, read tan at hue 90 in r62cf's light. A world with no row is calibrated before it is filmed.
-`scripts/theatre-blade-stops.py` measures a frame's blades and gives the stops that move them to hue 105, saturation
-0.40 and lightness 0.25. The new stops are rendered, measured again and entered as a row. The small round producers take
-the darker forest green, a different alga from the blades, with `ALGA_ROUND_TARGET=1` and their own stop,
-`ALGA_ROUND_STOP=0.0280,0.0303,0.0068`, which is trial d's mid-green stop, and with `ALGA_ROUND_PHOTO` left at 0. The blades
-bend and flutter as the owner judged them: `ALGA_BEND=0.01`, `ALGA_ARC=2`, `ALGA_ARC_ROOM=0.20`, `ALGA_FLUTTER=0.4` and
-`ALGA_FLUTTER_NOISE=1`. A wide shot's skin is `ONE_SKIN=3`, and
-every shot takes `SHEEN_CAP=2`, `FAMILY_MESH=1` and `FAMILY_SKIN=1`. A portrait or a close shot takes the close look: `ONE_SKIN=6`, `SKIN2=2`, `MOUTH2=2`, `SKIN2_BAND=2`, `PORTRAIT_FILL=0.8`,
-`SKIN_JOIN=1`, `SKIN_SEAT=2`, `NOSE_SNOUT=1`, `ORGAN_SEAT=2` and `PATTERN_AA=2`. The owner liked the portraits of round
-63b's creatures (2026-10-29, `scratch/owner/bloom-round-creature-portraits/`). They were drawn in the wide shot's skin, not
-the close look: the Portrait station from a farm film window, in the film look at `ONE_SKIN=3` with `SKIN2` off, cropped
-and enlarged twice. So a portrait of the film may take either skin, and the two are compared on the same subject before
-one is chosen. `PADDLE_LIMB`, `PADDLE_WIDTH`
-and the diagnostic dials (`DEBUG_TINT`, `JOIN_DEBUG`) stay off in a film.
+**A film takes the agreed film look, whose one source is `scripts/theatre-film-look.json`** (D290). Its `wide` section
+holds for every shot, `close` is added for a portrait or a close shot, and `events` marks births, bites and deaths.
+`trial` lists dials under A/B that no film takes until a ruling moves them up, and `previewOnly` the previews' own. Each
+entry names its ruling, and the values are read there, never from a list kept here. `theatre-film.ps1` and
+`theatre-safari.ps1` set the look through `Use-FilmLook` (`scripts/theatre-film-look.ps1`), which reads the main
+checkout's copy from any worktree. When it cannot find that copy, it reads the worktree's own and warns. It fills only the dials the environment leaves unset, and names each dial a caller
+holds at another value, so that no film departs from the look unseen. A film departs only for a need of its own, such
+as a show filter or a comparison, and says which dial it changes and why. A change to the look is a change to the file,
+with its ruling. Unity's dials not in the file stay at their code defaults, and many of those are not 0.
+
+**The films do what the safari does, unless the owner has ruled otherwise for that one thing** (the owner, 2026-11-03).
+Both read the same file, the safari its `wide` and `events` sections, so a dial entered in either of those reaches
+both. `close` is the films' alone. Some of the safari's looks, dials and effects are set
+elsewhere, in `SafariPlans.cs`, `TheatreSafari.cs` or its launcher. Each is entered in the file too, without asking,
+and the owner is told after. The safari and the films differ only where the owner has ruled it, and the file's entry names
+that ruling.
+
+The blades' two stops are meant to be per world, from their world's row in `scripts/theatre-world-stops.tsv`, but
+nothing reads that table yet. Every film and the safari take the file's stand-in value, and the reader says so on every
+film. Each row is set so
+that the blades land on the underwater photographs' hue, 102 to 108, in that world's own light. A stop chosen on one
+world's light does not carry to another: trial d's stops, chosen on the test stage, read tan at hue 90 in r62cf's light.
+A world with no row is calibrated before it is filmed. `scripts/theatre-blade-stops.py` measures a frame's blades and
+gives the stops that move them to hue 105, saturation 0.40 and lightness 0.25. The new stops are rendered, measured
+again and entered as a row. The small round producers are a different alga from the blades, with a stop of their own
+and `ALGA_ROUND_PHOTO` left at 0.
+
+The owner liked the portraits of round 63b's creatures (2026-10-29, `scratch/owner/bloom-round-creature-portraits/`).
+They were drawn in the wide shot's skin rather than the close look, at the Portrait station from a farm film window.
+That was the film look at `ONE_SKIN=3` with `SKIN2` off, cropped and enlarged twice. So a portrait of the film may take
+either skin, and the two are compared on the same subject before one is chosen.
 A limb seen along its length at a grazing angle draws its maze in a plainer tone even at `PATTERN_AA=2`. That is the
 accepted look: sampling along the footprint's long axis shows no difference at film distance. A rod that still reads as
 plugged into the body needs a different shape at its root, a fillet or a flare. The pattern cannot fix it.
