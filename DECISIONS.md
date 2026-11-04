@@ -302,7 +302,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D278](#d278) | Box-world films draw the true bed, and the skin's thickness cap is 2 | 2026-11-02 | amended by D281 (the cap shapes the outline only at the close look); ruled by the owner on 2026-11-02, on the coordinator's recommendations, after `scratch/owner/floor-drawn-flat-over-a-sloped-bed/` and `scratch/owner/skin-tips-thickness-cap/` |
 | [D279](#d279) | A birth is shown as a spawn cloud that thins to reveal the newborn, and the speck is dropped | 2026-11-02 | partly superseded by D290 (bubbles in place of the cloud); ruled by the owner on 2026-11-02, by question, on the coordinator's recommendation |
 | [D280](#d280) | A mouth feels what is near it, and a bite's reach starts wide and is dialled back | 2026-11-02 | ruled by the owner on 2026-11-02, who took options 1 and 4 of the coordinator's four |
-| [D281](#d281) | A death drains the body to grey and releases a cloud, a wound bleeds into the water, and a bite no longer flashes | 2026-11-02 | amended by D286 (a kill bleeds more than a wound); its grey drain open to trial by D290; ruled by the owner on 2026-11-02 after `scratch/owner/bite-crumbs-birth-cloud-death-caption/`, on the coordinator's recommendations, with the wound's cue the owner's own |
+| [D281](#d281) | A death drains the body to grey and releases a cloud, a wound bleeds into the water, and a bite no longer flashes | 2026-11-02 | amended by D286 (a kill bleeds more than a wound); ⚠ its grey drain and its cloud's drawing superseded by D301 (a pale corpse, a soft haze in the water's colour); ruled by the owner on 2026-11-02 after `scratch/owner/bite-crumbs-birth-cloud-death-caption/`, on the coordinator's recommendations, with the wound's cue the owner's own |
 | [D282](#d282) | A bite's reach applies only between bodies that touch | 2026-11-02 | ruled by the owner on 2026-11-02, confirming the coordinator's reading of D280 (`logbook/specs/mouth-feel-spec.md`, section 9) |
 | [D283](#d283) | Where a mouth sits is heritable | 2026-11-02 | ruled by the owner on 2026-11-02, who asked for it |
 | [D284](#d284) | The nursery trains grazers with the mouth's place evolving, so D280's retrain waits for D283 | 2026-11-02 | ruled by the owner on 2026-11-02 |
@@ -311,7 +311,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D287](#d287) | The channel's opener and closer are remade from the grazer film's creatures, filmed in the theatre | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendation |
 | [D288](#d288) | The titles' look: the creatures in their own colours, glowing in a void, composed from separate layers | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendation for the colours, with the layers the owner's own |
 | [D289](#d289) | A bitten plant throws off its own fragments, more at a kill | 2026-11-02 | ruled by the owner on 2026-11-02, on the coordinator's recommendation |
-| [D290](#d290) | Every film takes the theatre's look; bubbles mark a birth and a bite, and a death's look is open to trial | 2026-11-03 | ruled by the owner on 2026-11-03, after the previews in `scratch/owner/birth-bubbles-first-take/`, `scratch/owner/growth-eased-off-and-on/` and `scratch/owner/plant-kill-fragments-off-and-on/`, on… |
+| [D290](#d290) | Every film takes the theatre's look; bubbles mark a birth and a bite, and a death's look is open to trial | 2026-11-03 | its trial of a death's look closed by D301; ruled by the owner on 2026-11-03, after the previews in `scratch/owner/birth-bubbles-first-take/`, `scratch/owner/growth-eased-off-and-on/` and `scratch/owner/plant-kill-fragments-off-and-on/`, on… |
 | [D291](#d291) | The coordinator develops and builds the forager kit, the hunger sense, a breeding gate and growing plants, under the owner's stance | 2026-11-03 | delegated by the owner on 2026-11-03, who set out their stance on each part and left the development and the build to the coordinator |
 | [D292](#d292) | The mouth feels which way the nearest leaf and the nearest animal lie | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 2 of `logbook/specs/forager-kit/spec.md` |
 | [D293](#d293) | Every brain unit inherits how fast it forgets | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 3 of `logbook/specs/forager-kit/spec.md`; its recorded genomes keep their format by D300 |
@@ -322,6 +322,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D298](#d298) | A bitten module frees its place, so a plant can grow it again | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 3 of `logbook/specs/plants-hold/spec.md` |
 | [D299](#d299) | A birth waits for the brain's urge to breed, read beside a sense of the reserve against the gate | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 1 in form (b) of `logbook/specs/breeding-urge/spec.md` |
 | [D300](#d300) | A recorded genome keeps its format under D293's time constants | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, in review of D293's first build |
+| [D301](#d301) | A corpse turns pale, a death releases a soft haze in the water's colour, and the corpse keeps its markings | 2026-11-04 | ruled by the owner on 2026-11-04 after `scratch/owner/death-look-and-motes/`, on the coordinator's recommendations |
 
 ---
 
@@ -10837,3 +10838,33 @@ nothing that was lost. The rule that loading refuses rather than defaults still 
 
 **Rejected.** Refusing formats 12, 14 and 16 and forwarding every stored genome with `--write-taus`. It rewrites 400
 tracked files to add a value they already have, and leaves the recorded runs unreadable.
+
+### D301
+**A corpse turns pale, a death releases a soft haze in the water's colour, and the corpse keeps its markings** · 2026-11-04
+
+**Status:** ruled by the owner on 2026-11-04 after `scratch/owner/death-look-and-motes/`, on the coordinator's
+recommendations. It supersedes D281's grey drain and the drawing of D281's cloud, and closes D290's trial of a death's
+look.
+
+**Decision.**
+- **A corpse turns pale.** D290's third variant replaces the grey drain. The body's colour leaves first, and then a
+  front crosses it from the tips inward and turns the skin a dull, pale grey that keeps a ghost of its marks. It is set
+  at a key of 0.13, the level that suits the film's camera light.
+- **A death still releases a cloud.** It is drawn as a soft haze in the water's own colour, a little lighter than the
+  water around it, in place of D281's motes in the dead body's paint. It marks an animal's death,
+  and it marks a leaf eaten as well, beside D289's fragments.
+- **The corpse keeps its markings, the mouth's stripes among them.**
+- The theatre's agreed look carries all three, so the safari and every film draw them (D290).
+- How the light falls on the corpse stays open. It is the brightest body in the frame, takes in the water's blue only
+  faintly, and is shaded flat.
+
+**Why.** At full size the grey drain read more like stone than dead tissue, and dead tissue in real water goes pale.
+The pale corpse is about 1.7 times as bright as the grey one, reads as dead tissue and does not glow. D281's motes
+showed as orange coins in dim water, because each mote took the corpse's paint without the light. In the water's colour
+the orange went, and they still read as a haze of identical dots. The soft haze is the only form tried that reads as one
+cloud. Seen against the bed it reads as matter, and seen level with bodies behind it, it can pass for a glow. A real
+body keeps its markings after death, and seen edge-on the mouth's stripes read as a flat pale patch at the top of the
+body.
+
+**Rejected.** The grey drain. D281's motes, in the corpse's paint or in the water's, at either size. A corpse with no
+cloud, which picture 5 showed reads as a death by the pale body alone.
