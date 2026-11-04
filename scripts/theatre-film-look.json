@@ -402,7 +402,15 @@
     },
     "EVOSIM_THEATRE_DEATH_CUE": {
       "value": "1",
-      "ruling": "D281: a death drains the body (grey until D290's trial chooses a variant) and releases a cloud"
+      "ruling": "D281 and D301: a death turns the body pale and releases a cloud"
+    },
+    "EVOSIM_THEATRE_DEATH_LOOK": {
+      "value": "3",
+      "ruling": "D301: a corpse turns pale, D290's third variant in place of D281's grey drain, at the key of 0.13 the code holds (TheatreDeathCue.MilkLuminance3); it keeps its markings, the mouth's stripes among them"
+    },
+    "EVOSIM_THEATRE_DEATH_HAZE": {
+      "value": "2",
+      "ruling": "D301: the cloud is a soft haze in the water's own colour in place of D281's motes, at an animal's death and at a leaf eaten alike; its share 1.1 and boost 2 are the code's defaults"
     },
     "EVOSIM_THEATRE_REMAINS": {
       "value": "1",
@@ -438,7 +446,6 @@
     }
   },
   "trial": {
-    "EVOSIM_THEATRE_DEATH_HAZE": "the death cloud as a murk; under A/B (third pass in phase111)",
     "EVOSIM_THEATRE_WOUND_PLUME_HAZE": "the plume as a murk; under A/B",
     "EVOSIM_THEATRE_CRUMB_FLAKES": "the crumbs as torn flakes; an A/B only (D290)",
     "EVOSIM_THEATRE_BIRTH_BUBBLES_COVER": "the bubbles' cover and cluster; under A/B",
@@ -446,7 +453,6 @@
     "EVOSIM_THEATRE_BIRTH_BUBBLES_RISE2": "under A/B",
     "EVOSIM_THEATRE_BITE_BUBBLES": "D290: a bite releases a few bubbles; first preview in phase112",
     "EVOSIM_THEATRE_PEARLING": "D290's other events: oxygen pearling; first preview in phase112",
-    "EVOSIM_THEATRE_DEATH_LOOK": "D290: the death's look open to trial; milky (1) and blanched (2) beside the grey in phase112",
     "EVOSIM_THEATRE_DEATH_LOOK_HAZE": "D290: the pale haze beside the browns in phase112"
   },
   "previewOnly": {
