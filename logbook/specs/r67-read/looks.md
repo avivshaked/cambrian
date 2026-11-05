@@ -33,3 +33,25 @@ round held 1.40 GB, with 394 GB free.
 Inference: the shaped arm's founders spend more than they eat in the tank, and in these worlds their lines rose
 early, when the first plants were young, and then lost ground. Whether they hold a share or fade is the next looks'
 question.
+
+## 15,000 s, the first window (read at 23:08 on 2026-11-05)
+
+Living animals every 500 s from 12,000 s to 15,000 s, and the two exams' lines at 15,000 s:
+
+| Seed | Fewest in the window | At 15,000 s | the 40-generation exam's | the shaped arm's |
+|---|---|---|---|---|
+| 6201 | 86 (13,500 s) | 346 | 287 | 59 |
+| 6202 | 144 (12,000 s) | 490 | 370 | 120 |
+| 6203 | 103 (13,000 s) | 418 | 289 | 129 |
+| 6204 | 29 (12,000 s), 39 from 12,500 s | 136 | 132 | 4 |
+
+- **Readout 1 holds in three worlds and stands on the line in the fourth.** Seed 6204 counted 29 animals at the
+  window's first sample and 39 or more at every sample after it. Read at 500 s samples, the dip is one sample at the
+  window's edge.
+- **The animals boomed in every world after 13,500 s**, two- to fourfold in 1,500 s.
+- **The shaped arm's lines grew too.** They hold 31 % of the animals on 6203, 24 % on 6202 and 17 % on 6201, and
+  have nearly gone from 6204, at 4 of 136.
+
+**Pace and heat.** The pace fell as the worlds filled, to 1.3 to 2.2 times real time at 23:08 (`pace-check.py`),
+above the line of 0.5. The round's own heat log reads a highest CPU of 82 °C since the resume, during the 12,000 s
+look's reads, and 56 to 60 °C at 23:08, with the card at 50 °C.
