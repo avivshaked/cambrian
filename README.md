@@ -4,14 +4,14 @@
 they can afford to stay alive.**
 
 Creatures are grown from a recursive directed graph that encodes *both* morphology and
-neural control. They are dropped into simulated water where **energy is a conserved
-budget**: they earn it from sunlight, drifting nutrients, or each other, and they spend it on
-tissue, on thinking, and on every movement they make. Run out and you die. Accumulate a
-surplus and you reproduce.
+neural control. They are dropped into simulated water where **every joule is accounted for**:
+they earn energy from sunlight, drifting nutrients or each other, and spend it on tissue, on
+thinking and on every movement they make. Run out and you die. Build up a surplus and you
+reproduce.
 
 **Inside a world there is no fitness function.** No creature in it is scored, and nothing is
-being taught to swim. If swimming is what keeps a creature alive it will appear on its own — and
-if something else appears instead, that is the more interesting answer. A creature made only of
+being taught to swim. If swimming is what keeps a creature alive it will appear on its own. If
+something else appears instead, that is the more interesting answer. A creature made only of
 rigid feeding cells is a plant; one that eats plants is a herbivore; the word "species" appears
 nowhere in the code. The one place a score is used is the nursery, a small tank that breeds
 starting creatures on how much food they eat. Some of its best are released into a world,
@@ -36,9 +36,10 @@ Worlds of a 300 m stretch of simulated ocean, with islands whose plants bloom an
 current. A world holds up to about 13,000 living creatures at once. Each creature grows from
 its genome, moves under its own evolved brain, eats plants or other animals with a mouth, and
 reproduces when it has energy to spare. The simulation is a C#/.NET program with its own
-physics solver. Its runs are deterministic: the same seed and settings give the same world,
+physics engine. Its runs are deterministic: the same seed and settings give the same world,
 bit for bit, on the same build. Three worlds share one graphics card at two to two and a half
-times real time. A Unity viewer films them.
+times real time. A Unity viewer films them, and the project's films are on
+[its YouTube channel](https://www.youtube.com/@cambrian-sa).
 
 ### What has been measured
 
@@ -65,459 +66,128 @@ times real time. A Unity viewer films them.
 The detail is in the [logbook](logbook/) (dated entries), [`DECISIONS.md`](DECISIONS.md) (why
 each choice was made) and the [primer](primer/) (how the mechanisms work).
 
----
+## Run it
 
-## The idea
-
-This is the lineage that starts with Karl Sims' 1994 *Evolving Virtual Creatures* — the
-work that produced the famous videos of blocky creatures teaching themselves to swim, walk
-and jump. Sims needed a Connection Machine CM-5. A modern desktop has rather more to work
-with.
-
-The genome is a **graph, not a list**. Cycles in the graph mean a single node can unfold
-into a five-segment spine; reflection flags mean one mutation can turn a lopsided thing into
-a bilaterally symmetric one. Neurons live *inside* body nodes, so when recursion duplicates
-a segment it duplicates that segment's controller too — which is, structurally, how a
-central pattern generator works. That is why creatures in this family produce coordinated
-travelling-wave gaits instead of noise.
-
-Where this departs from Sims is the **selection**. Sims scored creatures on a fitness
-function and bred the winners. Here nothing is scored: a part is made of a specific tissue,
-each tissue earns and costs energy differently, and a creature that cannot cover its own
-metabolism dies without anything having to judge it. Two consequences fall out rather than
-being designed in:
-
-- **Trophic strategy is morphology.** Photosynthesis, filter-feeding and predation are cell
-  types, so a species is a distribution of cell types over a body plan and speciation is a
-  change in that distribution. Species is otherwise a measured distance between genomes
-  (D057), not a separate concept in the world's rules.
-- **Motion costs a part.** Only a *link* cell may carry a joint, so two parts cannot move
-  relative to each other without one between them — and link tissue is the most expensive
-  there is, charged for its strength whether or not it moves. A creature with no links is a
-  rigid body drifting on the current, which is what a plant is, without "plant" being defined
-  anywhere.
-
-Which of those is the right call is genuinely open. §5A was reasoned from first principles
-and labelled as such; review round 3 (2026-08-29, [logbook/0035](logbook/0035-the-neuron-was-priced-in-1994.md))
-has since searched the artificial-ecosystem and open-ended-evolution literature and
-confirmed several of its bets at the primary sources.
-
----
-
-## Where the design comes from
-
-Most decisions in [`DESIGN.md`](DESIGN.md) cite peer-reviewed literature with page-level
-locators — `[K12 §2.3, p.7]` resolves to an exact page of an exact paper.
-[`research/`](research/) holds the review those citations came from; §7 lists what the review
-did not establish; its status table says which of its eleven questions remain only partly
-answered.
-
-**The ecosystem's part of the design was reasoned first and read later.** Energy, cell
-types, feeding and reproduction were built from first principles with §5A saying so in the
-text; review round 3 then searched the open-ended-evolution and artificial-ecosystem
-literature ([`research/LITERATURE-REVIEW.md`](research/LITERATURE-REVIEW.md) §0, round 3)
-and the food-chain campaign's mechanisms since (excretion, the refuge, species accounting)
-are labelled project inference in their D-entries where the review has not yet reached.
-
-The design was written first and the review run against it. That changed three things, one
-of which was a correction to reasoning rather than to a fact:
-
-- **A missing failure mode.** Co-evolving body and brain is pathological: a morphological
-  mutation invalidates the controller co-adapted to the old body, so selection discards the
-  offspring even when the new body is better. Morphology then stagnates within a few dozen
-  generations. The first draft of the design didn't mention this at all. It now drives the
-  whole search architecture.
-
-- **A wrong cost model.** The draft reasoned that a crude fluid model was fine for making
-  something nice to watch, and only compromised scientific accuracy. Corucci et al. show the
-  opposite is the real problem: simplified fluid dynamics **collapses morphological
-  variety** — no fish, no squid, just a gallery of similar medusoids. Visual variety was the
-  entire goal, so the cheap model was failing at the thing it was supposed to be good at.
-
-- **A threat that dissolved.** CPPN encodings looked like they'd force a genome rewrite.
-  A survey of every published encoding comparison showed that advantage is confined to
-  *soft-body* creatures; on rigid articulated bodies, recursive graph encodings win or tie.
-
-Then building it corrected the specification, which is a different thing from correcting the
-design. Four changes in `DESIGN.md` §0c came from an implementation or from watching
-creatures move, and none could have come from reading:
-
-- A recursion rule that, read literally, developed every non-recursive genome into a single
-  box. Ambiguous rather than wrong, but not implementable as written.
-- Reflection about the wrong axis puts a "mirrored copy" exactly on top of its original.
-  69.7% of random creatures were partly inside themselves, and all of them looked fine.
-- Joint torque applied without a reaction on the parent lets creatures manufacture angular
-  momentum from nothing. Every headless check passed; a person watching spotted it at once.
-- Two anti-exploit checks that are conservation laws rather than thresholds, so they need no
-  tuning and cannot be satisfied by an impressive-looking failure.
-
-The last two were found by looking at the screen after the test suite was green.
-[`logbook/`](logbook/) records how, [`primer/`](primer/) explains what the mechanisms
-actually do.
-
----
-
-## How it started: physics validation
-
-This is history. In September 2026 the simulation moved off Unity's physics onto its own solver
-in .NET, so the numbers below describe the first engine, not today's throughput.
-
-One question had to be answered by running code rather than reading: can Unity's
-`ArticulationBody` handle hundreds of creatures built, simulated and destroyed per minute?
-[Spike 01](spikes/01-articulation-body/) measured it.
-
-| Measurement | Budget | Measured |
-|---|---|---|
-| Build + teardown, 10-part creature | < 15 ms | **0.335 ms** |
-| Step cost @ 64 tiled creatures | 0.15–0.30 ms/creature | **0.0186 ms** |
-| Scaling, 64 creatures vs 1 | must be sub-linear | **0.28×** |
-| Determinism, 10 runs, same seed | < 1e-4 m drift | **bitwise identical** |
-
-Sub-linear scaling means PhysX genuinely parallelises across solver islands, so simulating
-many creatures in one scene works. Extrapolated: **~1,600 evaluations per minute from a
-single process** — the original target was that figure across *ten* processes.
-
-The first run of this spike reported numbers more than an order of magnitude better still,
-because with zero gravity and no actuation the creatures fell asleep and PhysX stopped
-integrating them. The harness now reports mean body speed alongside every timing, so a
-sleeping scene is visible in the results table. Full account in
-[logbook/0002](logbook/0002-the-spike-that-was-too-fast.md).
-
----
-
-## Layout
-
-```
-DESIGN.md                     the specification — start here (§5A is the ecosystem)
-DECISIONS.md                  why things are the way they are, and what was rejected
-primer/                       what was built and why it is interesting — start here to learn
-logbook/                      dated entries on what was tried, and what broke
-CLAUDE.md                     orientation for AI assistants — what will bite you
-LICENSE / LICENSE-DOCS        non-commercial: PolyForm NC 1.0.0 for code, CC BY-NC 4.0 for prose
-COMMERCIAL.md                 what counts as commercial use, and how to ask for a licence
-CONTRIBUTING.md               what a contribution grants, and the checks to run first
-src/
-  Evosim.Core/                no UnityEngine, runs headless in ~1 s
-    Genome/                   the recursive graph: nodes, edges, neurons, reproduction traits
-    Development/              genotype to phenotype — growing a body from the graph
-    Cells/                    what a part is made of, and how it earns and spends energy
-    Mutation/                 the variation operators
-    Serialization/            hand-written JSON; genomes, run settings, the run directory
-    Environment/              fluid model — drag and added mass
-  Evosim.Core.Tests/          xUnit suite over the above
-unity/                        the real Unity project; Evosim.Core is a local package
-  Assets/Evosim/Sim/          phenotype builder, effectors, fluid, sandbox scene
-scripts/
-  core-test.ps1               build + test Evosim.Core without the Editor
-  githooks/                   pre-commit guard (enable with core.hooksPath)
-research/
-  LITERATURE-REVIEW.md        PRISMA-style review; §7 is the honest-limitations section
-  FETCH-RESULTS.md            exact retrieval URL for every paper (reproducibility record)
-  papers/                     NOT COMMITTED — see below
-spikes/
-  01-articulation-body/       disposable Unity project; physics validation
-    results/FINDINGS.md       measured output
-runs/                         NOT COMMITTED — simulation output, see below
-```
-
-**A run is a directory, not a file.** `config.json` holds every tunable and its own hash;
-`lineage.jsonl` holds one row per creature ever born and one per death — a compact
-`{"e":"b",...}` / `{"e":"d",...}` pair per event, drained from the world every report row;
-`stats.jsonl` one row per sample;
-`snapshots/` the genomes of the living, a genome pool and not a world state, since a row
-carries no reserve, age or position. The two high-volume files are append-only and line-oriented, so
-a run killed halfway leaves every completed row valid and readable — and can be watched live
-by tailing it. Creatures are **rows, not files**: a genome measures ~5 KB and the working
-estimate is 40,000 births an hour.
-
-**`research/papers/` is deliberately absent.** It holds copyrighted publisher PDFs and their
-machine extractions; two were obtained through a university subscription. Converting a
-paywalled paper to markdown doesn't make it redistributable. `FETCH-RESULTS.md` records the
-exact source URL for every paper, so anyone with equivalent access can rebuild the set.
-
----
-
-## Getting started
-
-### Requirements
-
-| | |
-|---|---|
-| **OS** | Windows. Unity is cross-platform, but the run scripts here are PowerShell |
-| **Unity** | `6000.5.6f1`. Other Unity 6 versions will very likely work — the Editor offers to upgrade the project on first open |
-| **Disk** | ~15 GB for the Editor |
-| **Git** | any recent version |
-
-**There are no other dependencies.** No third-party libraries: the spike and the project use
-only Unity's built-in physics, and the only lockfile is Unity's own
-`unity/Packages/packages-lock.json`. Nothing to `npm install` or
-`pip install`.
-
-### 1. Install Unity
-
-1. Install [Unity Hub](https://unity.com/download) and sign in (a free Unity account is required).
-2. **Activate a licence** — ⚙ → **Licenses** → **Add** → **Get a free personal license**.
-   *Don't skip this.* Without it the Editor installs fine but silently refuses to open
-   projects, which looks like a broken install.
-3. **Installs** → **Install Editor** → pick **`6000.5.6f1`** (under *Archive* if it's no
-   longer in *Official releases*).
-4. On the modules screen: take **Windows Build Support (IL2CPP)**, and **untick Microsoft
-   Visual Studio Community** if you already have Visual Studio — it installs a second copy.
-   Nothing else is needed.
-
-### 2. Clone
+Needs Windows, PowerShell 7, the .NET 8 SDK and Python 3. No Unity and no graphics card.
 
 ```powershell
 git clone https://github.com/avivshaked/cambrian.git
 cd cambrian
-git config core.hooksPath scripts/githooks   # enable the pre-commit guard
+dotnet build src/Evosim.Farm/Evosim.Farm.csproj -c Release
+./scripts/run-farm.ps1 demo -Seed 6202 -Seconds 600 -Launcher rounds/env-r66-m.ps1
 ```
 
-That last line is worth running. `.git/hooks` isn't tracked, so the guard only applies once
-you point git at the tracked copy. It blocks commits containing copyrighted PDFs, secrets,
-stray email addresses, Unity build output and oversized files — see
-[`scripts/githooks/pre-commit`](scripts/githooks/pre-commit).
-
-### 3. Run the spike
-
-The spike is disposable and answered its question in August (`results/FINDINGS.md`); skip
-to step 4 if you want the project itself.
-
-Auto-detects your Editor rather than hardcoding a path:
+The build makes the simulation. `run-farm.ps1` starts the most recent world design on the
+processor, for ten simulated minutes, and returns once the world is running. The run is written
+to `runs/demo/`: one row for every creature born and every death, samples of the world, and the
+genomes of the living. Its report, `runs/demo.md`, shows how far it has got, and its last lines
+say **Ended** when it has finished. Then
 
 ```powershell
-$unity = Get-ChildItem 'C:\Program Files\Unity\Hub\Editor' -Directory |
-         Sort-Object Name -Descending |
-         ForEach-Object { Join-Path $_.FullName 'Editor\Unity.exe' } |
-         Where-Object { Test-Path $_ } | Select-Object -First 1
-
-$proj = Join-Path $PWD 'spikes\01-articulation-body'
-$log  = Join-Path $env:TEMP 'spike.log'
-
-Start-Process -FilePath $unity -Wait -NoNewWindow -ArgumentList @(
-    '-projectPath', $proj, '-batchmode', '-quit', '-nographics',
-    '-executeMethod', 'Spike.EditorTools.SpikeEntry.Run', '-logFile', $log)
-
-Get-Content (Join-Path $proj 'results\FINDINGS.md')
+python scripts/what-evolved.py runs/demo
 ```
 
-First run takes a few minutes — Unity imports assets and compiles. Later runs are ~30 s.
-
-### What success looks like
-
-`spikes/01-articulation-body/results/FINDINGS.md` reports six measurements, all `**PASS**`,
-plus CSVs of the raw data. Numbers will differ from those quoted above — they were taken on
-an i9-13900K — but the *shape* should hold: build+teardown well under 15 ms, and per-creature
-step cost **falling** as tile count rises. That falling cost is the whole point; it's what
-proves PhysX is parallelising across solver islands.
-
-If the mean-speed column in M3 collapses toward zero, the creatures fell asleep and the
-timings are meaningless. See §M3 in [the spike spec](spikes/01-articulation-body/README.md).
-
-### 4. Run the Core tests
+reports who is alive, which lineages lead and what has changed since the founders.
 
 ```powershell
-./scripts/core-test.ps1
+dotnet test src/Evosim.Core.Tests --filter "Category!=Slow"
 ```
 
-`Evosim.Core` — the genome, the development that grows a creature from it, the cell types,
-mutation and serialization — has no `UnityEngine` dependency, so it builds and tests as
-ordinary C# in about seven minutes (1,939 tests in November 2026; `-All` adds the slow experiments and takes far longer). **No .NET SDK is required:** the script uses a system-wide one
-if you have it and otherwise falls back to the complete .NET 8 SDK that ships inside the
-Unity install.
+runs the core's 1,939 tests (over 2,600 across the core, the physics and the runner) in about
+seven minutes.
 
-The no-dependency rule is enforced by the build, not by memory: the package sets
-`noEngineReferences`, so Unity refuses to compile `Evosim.Core` if anything in it reaches for
-`UnityEngine`. It is also why the JSON layer is hand-written rather than taken from a library.
+## How it works
 
-Add `-Filter` to run one class: `./scripts/core-test.ps1 -Filter MutationTests`, and
-`-ShowOutput` to see what the tests print — several of them report measurements rather than
-just passing.
+### The genome is a graph
 
-### 5. Run the Milestone 1 smoke test
+A creature grows from a recursive directed graph, the encoding Karl Sims used for his 1994
+*Evolving Virtual Creatures*. A cycle in the graph can unfold into a chain of segments, and a
+reflection flag can make a body symmetric in one mutation. Neurons live inside body nodes, so
+when development copies a segment it copies that segment's controller too.
 
-Builds twelve creatures, checks their geometry against the phenotype, actuates them, and
-asserts two conservation laws:
+### Energy does the selecting
 
-```powershell
-$unity = 'C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Unity.exe'
-$log   = Join-Path $env:TEMP 'evosim-smoke.log'
+Each part is made of a tissue that earns and costs energy in its own way. Photosynthetic tissue earns from light, a mouth earns from what it bites, and a link,
+the only tissue that can carry a joint, is the most expensive to keep. A creature that cannot
+cover its costs dies, and one with a surplus reproduces. A plant is a body without links that
+earns from light, and nothing in the code defines one. Sims scored his creatures and bred the
+winners. Here the world does the selecting.
 
-Start-Process -FilePath $unity -Wait -NoNewWindow -ArgumentList @(
-    '-projectPath', (Join-Path $PWD 'unity'), '-batchmode', '-quit', '-nographics',
-    '-executeMethod', 'Evosim.Sim.EditorTools.Milestone1Smoke.Run', '-logFile', $log)
+### The nursery is the one scored search
 
-Get-Content $log | Select-String 'Milestone 1 smoke' -Context 0,140
-```
+Genomes swim in a small tank for half an hour of simulated time and are scored on the food they
+eat. The best are kept and the rest bred by tournament selection. Its best genomes join random
+ones as a world's founders.
 
-**Never run this while the Editor has the project open** — two Unity processes sharing one
-`Library/` corrupt it. A cold run is several minutes of silence either way, so tail the log
-in a second terminal (`Get-Content $log -Wait -Tail 5`) rather than guessing.
+### Reading and building both corrected the design
 
-### 6. Watch a world: the theatre
+The specification was written first and a literature review run against it. The review added a
+failure mode the first draft had missed. A change of body breaks the brain adapted to the old
+one, so a new body tends to lose before its brain catches up. It also showed that a crude fluid model collapses the variety of body
+plans, and that a feared rewrite of the genome's encoding was unnecessary for rigid bodies.
+Building it then corrected the specification in ways no reading could have. Reflection about
+the wrong axis put mirrored copies on top of their originals, and joint torque applied without
+a reaction on the parent let creatures make angular momentum from nothing. A person watching
+the screen found the second after every automated check had passed.
 
-This section predates the farm. Runs since late September 2026 are made by the .NET farm,
-which Unity cannot replay bit for bit, because Mono and .NET round floating point differently. So
-the viewer films recorded windows of a run, and its live play drifts away from the recorded
-run.
+## The film pipeline
 
-The theatre (logbook/0063) is the project's viewer. **It is the simulation, not a video.**
-A run directory stores its configuration, its seed, samples every hundred seconds and
-the genomes of the living at each snapshot and, in a shared world from 2026-09-10, every
-living body's position and guild flags at each sample (`positions.jsonl`); never a state a
-run could resume from. The theatre rebuilds the
-world from the configuration and the seed and runs the same simulation again, live, with
-a camera in it. Because the physics replays bit for bit on one machine and one build, the
-live world reproduces the recorded one, and at every sample the theatre compares its own
-counts and audit against the recorded row and says, in red, if anything differs. A run
-recorded on a different build is refused by name; ticking `Allow Source Mismatch` plays it
-anyway under a banner saying it is not a faithful replay.
+Worlds are hard to read from tables, so the project also turns a run into a short narrated
+film. The pipeline is a Claude Code skill
+([`.claude/skills/create-story-video/`](.claude/skills/create-story-video/)). It runs each step
+in its own subagent, and the steps hand work on only as files:
 
-One caveat, found on 2026-09-06 (D078, logbook/0069). A run made in the shared-space world
-before the physics was put on a single thread does not replay. Two runs of one seed agree for
-about 1,500 simulated seconds and then part. The theatre will follow a cousin of such a run
-rather than the run, and its identity check is what tells you so. Runs made on D078's build,
-with the physics on one thread, replay.
+- One agent gathers the facts from the run's records.
+- A writer drafts the story and the narration from those facts alone. A fact checker, a cold
+  reader and a comparer each judge the draft.
+- A text-to-speech service reads the script, and a shot list is timed to the narration.
+- The simulation records the stretches to film, and the Unity viewer films them. Blender draws
+  the graphics, and DaVinci Resolve assembles the edit.
 
-Since 2026-09-13 the theatre wears the interface designed for it (`design/SPEC.md`,
-logbook/0096): a strip that names the run, its build and how many samples have matched so
-far; a timeline with the record's end and the peak marked; a census with the two identities,
-the energy audit and the matter residual, that goes vermilion if either opens; a provenance
-popover (`P`) with every hash; an inspector for the body under the cursor with its ancestry
-read from the run's lineage file, or withheld when the replay is a cousin and the ids could
-name someone else. An end-to-end check drives every state in Play mode on a worker and
-photographs each at 1920 and at 3840 wide.
+A verdict comes only from a tool, a subagent's answer saved as it came, or a person's decision.
+Each role runs on the cheapest model that can do it, and each step has a time budget. The
+first four steps have run on a real round and the narration has run once. The shot list,
+filming, graphics and edit are built and tested but have not yet run end to end. The pipeline
+needs software outside this repository (Claude Code, a text-to-speech service, Blender,
+DaVinci Resolve Studio and Unity), so it is here to read rather than to run.
 
-1. Open the project at `unity/` in the Unity Editor. Experiment arms run on the worker
-   copies (`unity-w2` …), so they are unaffected — but never run a `-batchmode` command
-   against `unity/` while the Editor has it open.
-2. Open `Assets/Scenes/Theatre.unity`. If it looks empty or broken, run the menu item
-   `Evosim > Rebuild Theatre Scene` and open it again.
-3. Select `Theatre Runner` in the Hierarchy. In the Inspector set `Mode` to `World` and
-   put a run directory in `Run Directory` — an arm directory (its newest run is taken) or
-   the dated directory inside it. `runs/` is not committed, so record one first: with a
-   worker copy from `scripts/new-worker.ps1`, `./rounds/launch-r37b.ps1 -Seed 3 -Worker 2
-   -Dt 0.02 -Seconds 600 -Name demo` records ten minutes of the current world in a few
-   minutes, and `runs/demo` is the directory to name. A run replays only under the
-   build that recorded it, and the farm compiles from the main tree, so every code change
-   orphans the runs before it; the growth build of 2026-09-09 orphaned every run then on
-   disk (HANDOFF item 6b).
-4. Optional: `Seek To Seconds` runs the world unrendered to that simulated second, then
-   renders from there. `K` triggers it again later.
-5. Press Play.
+## Where to look
 
-Keys: `Space` pause · `[` `]` halve / double the pace · `K` seek · `C` colour mode
-(cell type, reserve) · left-click a creature to select and follow it, `F` follow / free,
-`Esc` deselect · `H` hide the overlay · `R` reload. Camera: `WASD` with `Q`/`E` for down
-and up, right-drag to look, wheel for speed, `Shift` to boost. The overlay shows simulated
-time, pace, counts, mean depth, the audit, and the identity check against the recording.
-
-**One creature.** Set `Mode` to `Solo`, point `Genome Path` at any `snapshots/*.jsonl`
-file and choose `Genome Row` or `Genome Id`; press Play. The creature is grown, wired
-to its own brain and sensors, and placed in the reference water at `Solo Depth Metres`.
-`T` swaps the brain for a test sine so you can see what the brain adds; `G` lets its
-reserve run down; `Solo Smell Density` lays food in front of its nose.
-
-The theatre lives under `Assets/Theatre/`, outside the tree the simulation hash covers,
-so editing it never refuses an old recording. It cannot yet start a fresh, unrecorded
-world from a configuration alone; that is a small addition if wanted.
-
-### Troubleshooting
-
-| Symptom | Cause |
+| Document | What it holds |
 |---|---|
-| Unity exits instantly, no log file written | You used `& $unity ...` instead of `Start-Process`. Direct invocation fails silently |
-| `error CS` in the log | Check with `Select-String -Path $env:TEMP\spike.log -Pattern 'error CS'` |
-| Editor opens but won't load the project | Licence not activated — see install step 2 |
-| Unity Hub CLI fails with `Cannot find module '--headless'` | Known bug in Hub 3.14; the Electron wrapper eats the `--` separator. Use the GUI |
+| [`DESIGN.md`](DESIGN.md) | The specification. Its founding sections cite peer-reviewed papers to the page: 121 citations across 37 of its 96 sections, where `[K12 §2.3, p.7]` names one page of one paper (§13 says how to trace one) |
+| [`DECISIONS.md`](DECISIONS.md) | Every design decision, why it was made and what it replaced: 305 so far. Most rest on experiments; 12 cite a paper |
+| [`logbook/`](logbook/) | Dated entries on what was tried and what broke |
+| [`primer/`](primer/) | Explanations of the mechanisms, written for a reader |
+| [`research/`](research/) | The literature review. The papers are not committed; `FETCH-RESULTS.md` gives each one's source |
+| [`CLAUDE.md`](CLAUDE.md) | The working agreement for the agents that build the project |
+| [`unity/README.md`](unity/README.md) | Installing Unity, the viewer, and the first physics tests |
 
-### Rebuilding the research sources
+| Code | What it is |
+|---|---|
+| [`src/Evosim.Core/`](src/Evosim.Core/) | The genome, development, cell types, mutation and the world's rules. No Unity: it builds and tests on its own |
+| [`src/Evosim.Dynamics/`](src/Evosim.Dynamics/) | The physics solver: articulated bodies in water, bit for bit at any thread count |
+| [`src/Evosim.Farm/`](src/Evosim.Farm/) | The program that runs a world, records it and resumes it from checkpoints |
+| [`src/Evosim.Farm.Gpu/`](src/Evosim.Farm.Gpu/) | The same world on an NVIDIA graphics card, through ILGPU |
+| [`src/Evosim.Nursery/`](src/Evosim.Nursery/), [`src/Evosim.NurseryRoom/`](src/Evosim.NurseryRoom/) | The scored nursery, and its room: one service with screens, a JSON API and an MCP endpoint, so that people and Claude sessions run it through the same operations |
+| [`unity/`](unity/) | The Unity project; the viewer is `unity/Assets/Theatre/` |
+| [`scripts/`](scripts/) | Launch, read and check runs (PowerShell and Python) |
+| [`rounds/`](rounds/) | Each experiment's settings and launcher, kept so that it can be rerun |
+| [`.claude/skills/create-story-video/`](.claude/skills/create-story-video/) | The film pipeline |
+| the rest of `src/` | Test projects, two benchmarks, and eight small tools and one-off experiments |
 
-Not needed to run anything. `research/papers/` is gitignored, but
-[`research/FETCH-RESULTS.md`](research/FETCH-RESULTS.md) lists the exact retrieval URL for
-every paper — thirty-five came by open-access routes and two by a university subscription,
-of thirty-seven. Text and figure
-extraction used [PyMuPDF](https://pymupdf.readthedocs.io/) (`pip install pymupdf`).
-
----
-
-## Roadmap
-
-**Revised.** The original plan built a search engine — quality-diversity archive, island
-model — and treated currents and predators as a final sandbox to play in. That got inverted:
-currents and feeding *are* the mechanism, and search is something the world does by itself.
-Milestones 0–2 survived unchanged, because they are physics, and physics does not care how
-selection happens.
-
-| # | Milestone | Ends with | |
-|---|---|---|---|
-| — | Spike 01 — `ArticulationBody` at scale | Measured, six for six | ✅ |
-| 0 | Unity project, assemblies, URP, physics config | Empty scene that builds headless | ✅ |
-| 1 | Genome, development rules, phenotype builder | Spawn a random creature and watch it flop | ✅ |
-| 2 | Physics harness: fixed stepping, config hash, fluid forces, anti-exploit checks, work accounting | Throughput in *simulated seconds per wall-clock second* | ✅ |
-| 3 | Metabolism: per-part upkeep, neural cost, energy as a running balance | **A creature that starves** — the first thing here that can fail on its own | ✅ |
-| 4 | World: current field, light and depth gradient, drifting nutrients | A creature that survives by drifting into food, and one that doesn't | ✅ |
-| 5 | Life cycle: death returns tissue to the water, reproduction on surplus | **A population that persists without intervention** | ✅ |
-| 6 | Perception: photosensors, evolvable colour, closed-loop brain graph | Directed foraging — a creature that moves *toward* something | ← partial: brains read their senses in a closed loop, and in the nursery a sense of where food lies measurably improves foraging; colour does not exist |
-| 7 | Food web: predation, carrion, attack and defence | Trophic levels, or clear evidence of why not | ← partial: animals bite plants, remains and each other with a mouth, and a food chain forms; most of what animals eat is still plants |
-| 8 | Theatre: replay, gallery, charts, lineage, fluid validation harness | Showpiece and research instrument | ← partial: replay with the identity check works; the gallery, the charts and the fluid validation harness do not exist |
-| 9 | Land: contact, gravity | Deferred — the ecosystem is a water design | |
-
-Milestones 2–5 completed out of the listed order — the ecosystem work of `DECISIONS.md`
-D017–D050 is the real sequence, and the logbook is the day-by-day record of it.
-
-**Milestone 3 is the pivot.** Everything before it is a simulator; everything after it is a
-world. It is also the cheapest place to find out that the metabolism-to-photosynthesis ratio
-is wrong, because at that point nothing eats yet and starvation is the only outcome.
-
-The quality-diversity archive is not deleted, but it is **demoted**: it existed to solve a
-problem that exogenous fitness creates, and under endogenous selection that job belongs to
-ecological niches. It survives as an *observatory* — a record of what lived and what it
-looked like — which is what makes a long run legible.
-
-**Known gaps, recorded rather than hidden.** Reproduction is asexual, which leaves the
-design's only recombination operator with no mechanism to fire; several energy-economy
-numbers are still unmeasured (`DESIGN.md` §5A.10 is the honest list — some are now located
-by sweeps, others remain placeholders); and the literature review had never covered
-open-ended evolution or artificial ecosystems when §5A was written — review round 3
-(logbook/0035) has since searched exactly that literature, and the campaign mechanisms
-built after it carry their own ⚠ project-inference labels pending round 4.
-
----
-
-## Reading the citations
-
-Claims in `DESIGN.md` cite `[KEY §section, p.N]`. `p.N` is the **PDF page number**, which
-matches the `### Page N` heading in that paper's extracted `source.md`. Keys resolve in
-[`DESIGN.md` §13](DESIGN.md#13-references-and-source-access).
-
-§13.4 quarantines references that were only ever seen inside *other* papers' bibliographies,
-marked not-independently-verified. Two of them are load-bearing, and nothing should be
-promoted out of that table without checking the source directly.
-
----
+The simulation has its own physics solver and one third-party library, ILGPU, for its
+graphics-card version. The tests use xUnit, the nursery room the official MCP SDK, and the
+viewer needs Unity 6.
 
 ## Licence
 
-Two licences, because this repository is mostly not code, and both are non-commercial.
+Both licences are non-commercial. The code and the genome files under `inocula/` are under
+PolyForm Noncommercial 1.0.0 ([`LICENSE`](LICENSE)), and the written work is under CC BY-NC 4.0
+([`LICENSE-DOCS`](LICENSE-DOCS)). [`COMMERCIAL.md`](COMMERCIAL.md) says what counts as
+commercial use and how to ask for a licence, and [`CONTRIBUTING.md`](CONTRIBUTING.md) what a
+contribution grants. Versions published before 2026-09-07 were MIT and CC BY 4.0, and those
+grants stand for the copies already made.
 
-- **Code and the evolved genomes** — [PolyForm Noncommercial 1.0.0](LICENSE). The spike, the
-  simulator, the scripts, and the genome files under `inocula/`.
-- **Written work** — [CC BY-NC 4.0](LICENSE-DOCS). `DESIGN.md`, `DECISIONS.md`, this README,
-  and everything under `research/`, `logbook/` and `primer/`.
-
-You may run it, change it, share it, teach with it, research with it at a university or a
-public research organisation, cite it and contribute to it. Commercial use, which includes
-use inside a company's product work or research, needs a licence from the author.
-[`COMMERCIAL.md`](COMMERCIAL.md) draws the line and says how to ask; [`CONTRIBUTING.md`](CONTRIBUTING.md)
-says what a contribution grants. Versions published before 2026-09-07 were MIT and CC BY 4.0,
-and those grants stand for the copies already made (D015, D080).
-
-The split is deliberate. A code licence has nothing useful to say about a literature review,
-and the attribution requirement in CC BY-NC matches the norm the written work is already
-following: if you reuse the review's conclusions, cite it — and cite the underlying papers,
-which is what §6 of the review is for.
-
-Quotations from academic papers throughout the documentation are used under fair dealing and
-remain their authors' and publishers' copyright; they're attributed at the point of use. The
-papers themselves aren't distributed here.
+Quotations from papers are used under fair dealing and attributed where they are used. The
+papers themselves are not distributed here.

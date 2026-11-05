@@ -2534,12 +2534,16 @@ complete identity, and `configHash` names the world it obeys).
 >
 > **Retained as an observatory:** an archive recording what lived and what it looked like,
 > which is what makes a long run legible and what the §8.5 metrics measure. That is a much
-> cheaper claim than the one this section originally carried.
+> cheaper claim than the one this section originally carried. No such archive has been built.
+> What a run records (its lineage, samples and snapshots) serves the purpose for now, and
+> `scripts/what-evolved.py` reads it.
 >
 > Everything below remains correct *if* directed search is ever restored — for a benchmark, or
 > to seed a population the ecosystem then has to keep alive. §8.2 (fitness-proportional
 > selection) and §8.3 (two descriptors) are the parts that would be easy to get wrong twice,
-> which is why they are kept rather than deleted.
+> which is why they are kept rather than deleted. The nursery (`src/Evosim.Nursery/`) is the
+> second case: a directed search in a small tank, scored on food eaten, whose best genomes
+> found the worlds. It breeds by tournament with elites, not by the archive described below.
 
 ### 8.1 Why it stays
 
