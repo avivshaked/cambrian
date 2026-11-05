@@ -30,7 +30,7 @@ The changes:
 
 ## The founders come from the nursery in two steps
 
-The 40-generation run, the bearing at 4 m (D303), ended its search at 04:33 today. Its exam runs until about 10:00. The
+The 40-generation run, the bearing at 4 m (D303), ended its search at 04:33 today. Its exam runs until about 09:15, at the pace of the 4 m arm's exam. The
 exam's 45 genomes are already written as a pool. Every one of them shares one body, a box with a capsule tail, because
 the kit's runs evolved brains alone.
 
@@ -81,13 +81,13 @@ from the nearest checkpoint, as c8 filmed round 66. A crash is a story, and evol
 
 | Step | Machine time | When (estimate) |
 |---|---|---|
-| The 40-generation exam ends and is scored against its predictions | | about 10:00 |
-| The tops examined with the bearing held for 50 steps | about 1 h | 10:30 to 11:30 |
-| The shaped arm's smoke test, and its pre-registration committed | about 30 min | to 12:00 |
-| The shaped arm, search and exam | about 9 h | 12:00 to 21:00 |
+| The 40-generation exam ends and is scored against its predictions | | about 09:15 |
+| The tops examined with the bearing held for 50 steps | about 1 h | 09:45 to 10:45 |
+| The shaped arm's smoke test, and its pre-registration committed | about 30 min | to 11:15 |
+| The shaped arm, search and exam | about 9 h | 11:15 to 20:15 |
 | Beside it, the card copies compiled and tested, then the default suites | a few hours | in the day |
-| The card sitting and the group's bench | about 2 h | 21:00 to 23:00 |
-| The four worlds launch | open-ended | about 23:00 |
+| The card sitting and the group's bench | about 2 h | 20:15 to 22:15 |
+| The four worlds launch | open-ended | about 22:15 |
 
 At about 1.5 times real time, 12,000 s takes about two and a quarter hours. So the first look falls in the night of
 2026-11-05, and its pictures reach the owner in the morning.
@@ -100,4 +100,4 @@ off. I recommend it, because the founders evolved under these rules and lose 80 
 risk is that the kit has never run in a world, only in the nursery's tank. The four seeds are the kit's world screen as
 well as the film's material.
 
-Everything before the launch is agent work and goes ahead meanwhile. Nothing waits on the owner until about 23:00.
+Everything before the launch is agent work and goes ahead meanwhile. Nothing waits on the owner until about 22:00.
