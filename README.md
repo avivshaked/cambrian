@@ -87,7 +87,11 @@ say **Ended** when it has finished. Then
 python scripts/what-evolved.py runs/demo
 ```
 
-reports who is alive, which lineages lead and what has changed since the founders.
+reports who is alive, which lineages lead and what has changed since the founders. Ten
+simulated minutes, about six minutes of wall time on eight cores, shows only plants spreading.
+Animals arrive after 3,000 s, when the world stops seeding random founders and starts adding
+creatures from a pool of evolved ones, and the first bites come near 4,000 s. Run with
+`-Seconds 6000` to see them; it takes longer, because the world fills.
 
 ```powershell
 dotnet test src/Evosim.Core.Tests --filter "Category!=Slow"
