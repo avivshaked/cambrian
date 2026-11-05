@@ -55,3 +55,21 @@ Living animals every 500 s from 12,000 s to 15,000 s, and the two exams' lines a
 **Pace and heat.** The pace fell as the worlds filled, to 1.3 to 2.2 times real time at 23:08 (`pace-check.py`),
 above the line of 0.5. The round's own heat log reads a highest CPU of 82 °C since the resume, during the 12,000 s
 look's reads, and 56 to 60 °C at 23:08, with the card at 50 °C.
+
+## 18,000 s, the second window (read at 23:40 on 2026-11-05)
+
+| Seed | Fewest from 15,000 s | Most | At 18,000 s | the 40-generation exam's | the shaped arm's |
+|---|---|---|---|---|---|
+| 6201 | 346 (15,000 s) | 1,070 (17,000 s) | 940 | 850 | 90 |
+| 6202 | 165 (18,000 s) | 490 (15,000 s) | 165 | 100 | 65 |
+| 6203 | 418 (15,000 s) | 833 (16,500 s) | 622 | 513 | 109 |
+| 6204 | 98 (17,500 s) | 163 (15,500 s) | 153 | 105 | 48 |
+
+- **Readout 1 holds in all four worlds** over the second window, at 500 s samples.
+- **Three worlds peaked and are falling.** Seed 6202 fell by two thirds from 15,000 s, and its thrifty lines fell
+  faster than the shaped arm's: the shaped arm's share rose from 24 % to 39 %. On 6204 the shaped arm's lines came
+  back from 3 to 48, a third of the animals.
+- **Pace and heat at 23:40.** 1.46 to 1.63 times real time, CPU 62 °C, card 50 °C.
+
+Inference: a boom and a fall, with the costly foragers losing less in the fall on two seeds. Whether that is a lasting
+share or noise in small numbers is for the 24,000 s look.
