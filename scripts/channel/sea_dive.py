@@ -1,8 +1,8 @@
 """The dive's crossing: the camera passes from above the open sea, through the surface, into the water. The scene
 is the approved still's (sea_still.py's build(): its sky, its water, its view transform and dither), with the sea
-set moving and the camera on one of three paths.
+set moving and the camera on one of four paths.
 
-    blender -b --factory-startup --python sea_dive.py -- <out-prefix> <samples> --path A|B|C [options]
+    blender -b --factory-startup --python sea_dive.py -- <out-prefix> <samples> --path A|B|C|D [options]
 
 Frames are written as <out-prefix>NNNN.png (8-bit, dithered as the still is), and, with --keep-16bit, beside each
 its 16-bit master.
@@ -40,6 +40,19 @@ surface, turns down and levels, and goes on forward at a steady 0.9 m/s in open 
 carries shafts (Shafts): the sun's light refracted through the same moving surface, focused into a net that is
 traced and binned per frame, and laid on the water sun through the surface's shadow switch.
 
+Path D, the glide (13.7 s): C with the fall replaced by a glide. After the same hold the camera moves forward
+and down together, its speed, course and pitch each rising from the hold's along a quintic smoothstep, so that
+none of them, nor their rates, has a step; it reaches 6 m/s on a course 65 degrees below level before the port
+meets the water, and crosses at that steady speed (C crossed at 14 m/s after a free fall). C's 8x and 32x slow
+motion are kept but eased in and out in proportion (D_RAMP); its burst of bubbles is kept; its white water builds
+over the housing's entry (D_WW_ONSET); its spray becomes a fine mist streaked by its own motion (Spray).
+Under water the drag builds as the housing goes in and draws the speed down towards the swim speed smoothly, and
+the course turns level later than C's so that the camera levels at C's depth (path_D's constants, D_*).
+
+--layer matte renders the bubbles as a layer to lay over other footage, by triangulation matting: each frame
+twice over two known backgrounds that stand in for the water behind the bubbles, solved for colour and opacity
+per pixel (setup_matte, solve_matte), written as RGBA PNGs at the frame's exposure.
+
 Above water the exposure is the still's. Under water it is metered as a camera's automatic exposure would meter
 it: each rendered frame's centre-weighted geometric mean luminance is driven towards that of the theatre's shallow
 water as the theatre shows it (AE_TARGET), in proportion to the share of the frame under water, lagging 0.15 s
@@ -57,10 +70,11 @@ Options (defaults in brackets), besides sea_still.py's: --path, --frames (all, o
 0,30,60-90) [all], --step render every nth of them [1], --port [0.12], --shutter fraction of a frame, 0 for none
 [0.5], --ae-track [none], --ae-resume [none], --under-stops a fixed exposure change under water instead of the
 metering [none], --bubbles a multiplier on the burst's count, 0 for none [1], --water-sun off, under or always
-[under], --light trick or caustics [trick], --keep-16bit; for path C, --layer full or bubbles (the bubbles alone on a
-transparent background, RGBA, the water between them clear) [full], --shafts on or off [on], --white-water and
+[under], --light trick or caustics [trick], --keep-16bit (with --layer matte, keep each frame's two EXRs); for paths
+C and D, --layer full, bubbles (the bubbles alone on a transparent background, RGBA, the water between them clear)
+or matte (the triangulation-matted layer) [full], --shafts on or off [on], --white-water and
 --spray multipliers on their density and count, 0 for none [1], --shaft-debug depth (a test pattern by depth
-instead of the traced net), --dry (build the scene and the path, print them, render nothing). Path C writes its
+instead of the traced net), --dry (build the scene and the path, print them, render nothing). Paths C and D write their
 camera, frame by frame, to <out-prefix>-camera.json.
 """
 import json, math, os, sys, time
@@ -88,7 +102,7 @@ AE_TARGET = 0.0526
 
 def parse():
     ap = SS.still_parser("sea_dive.py")
-    ap.add_argument("--path", choices=("A", "B", "C"), required=True)
+    ap.add_argument("--path", choices=("A", "B", "C", "D"), required=True)
     ap.add_argument("--frames", default="all")
     ap.add_argument("--step", type=int, default=1)
     ap.add_argument("--port", type=float, default=0.12)
@@ -100,7 +114,7 @@ def parse():
     ap.add_argument("--light", choices=("trick", "caustics"), default="trick")
     ap.add_argument("--keep-16bit", action="store_true")
     ap.add_argument("--water-sun", choices=("off", "under", "always"), default="under")
-    ap.add_argument("--layer", choices=("full", "bubbles"), default="full")
+    ap.add_argument("--layer", choices=("full", "bubbles", "matte"), default="full")
     ap.add_argument("--shafts", choices=("on", "off"), default="on")
     ap.add_argument("--white-water", type=float, default=1.0)
     ap.add_argument("--spray", type=float, default=1.0)
@@ -437,10 +451,24 @@ def c_ramp(tau):
         below = top
     return k
 
-def c_extra_before():
+def c_extra_before(ramp=None):
     """The film seconds the ramp adds before the crossing."""
-    taus = np.arange(-0.2, 0.0, C_DT)
-    return float(sum(c_ramp(x) - 1.0 for x in taus) * C_DT)
+    ramp = ramp or c_ramp
+    taus = np.arange(-0.4, 0.0, C_DT) if ramp is not c_ramp else np.arange(-0.2, 0.0, C_DT)
+    return float(sum(ramp(x) - 1.0 for x in taus) * C_DT)
+
+# Path D's speed ramp: C's two windows, 8x and 32x, but each rises and falls in proportion (the log of the slowing
+# follows a smoothstep) and over a longer span: the first over the last 1.2 m before the crossing rather than C's
+# last 0.5 m, the second over 15 ms rather than 5. So the speed on film eases down into the slow motion and back out
+# of it over 10 to 20 frames; C's ramps took it from 6 m/s to 0.75 within five frames and to 0.19 within three.
+D_RAMP = (((-0.20, -0.035, 0.030, 0.180), 8.0), ((-0.020, -0.005, 0.005, 0.020), 32.0))
+
+def d_ramp(tau):
+    lk, below = 0.0, 1.0
+    for (a, b, c, d), top in D_RAMP:
+        lk += math.log(top / below) * sstep(a, b, tau) * (1.0 - sstep(c, d, tau))
+        below = top
+    return math.exp(lk)
 
 def path_C(probe, az):
     """The blend: the still's frame held, B's fall, a speed ramp round the crossing, and under water B's braking,
@@ -512,8 +540,114 @@ def path_C(probe, az):
              math.degrees(beta_e), n, F[-1], t_all[-1]), flush=True)
     return states, entry
 
-def make_instancer(name, mat, subdiv=3):
-    """An object whose mesh holds points, each drawn as a sphere scaled by its "bscale" attribute (as the bubbles)."""
+# ---------------------------------------------------------------- path D, the glide
+# Path C with the fall replaced: from the hold the camera glides forward and down, its speed, its course and its
+# pitch each rising from the hold's along a quintic smoothstep (zero rate and zero acceleration at both ends), so
+# that speed, course and pitch, and their rates, are continuous. All three have reached their entry values before
+# the port meets the water, so the camera crosses at a steady D_VE on a straight course. Under water the drag builds
+# over D_DRAG_IN as the housing goes in (no step in the deceleration) and draws the speed down towards the swim
+# speed rather than clipping at it.
+D_VE = 6.0                # m/s: the speed at the crossing
+D_GAMMA_E = 65.0          # deg below level: the course at the crossing
+D_TV, D_TG, D_TP = 2.4, 2.6, 2.8      # s from the glide's start: speed, course and pitch reach their entry values
+D_DRAG_L = 0.9            # m: C's quadratic drag length under water: the burst streams past as in C
+D_DRAG_IN = 0.06          # s: the drag's build-up as the housing goes in
+D_COURSE = (0.15, 4.4)    # s after the crossing over which the course turns level: later than C's, to reach its depth
+D_UNDER = 5.6             # s of simulated time after the crossing
+D_SWIM = [(0.0, 0.6), (2.6, 0.6), (4.6, 0.9), (D_UNDER, 0.9)]
+D_PITCH_UNDER = C_PITCH_UNDER[:-1] + [(D_UNDER, -4.0)]
+D_SPRAY = 1200            # droplets: a mist (see Spray)
+D_WW_ONSET = 0.006        # s: the white water builds over the 6 ms the housing takes to go in, some ten frames in the slow motion
+                          # (C's appears whole in one frame, the shot's one brightness spike)
+
+def quintic(x):
+    x = min(1.0, max(0.0, x))
+    return x * x * x * (x * (6 * x - 15) + 10)
+
+def path_D(probe, az):
+    """The glide: the still's frame held, a glide that steepens into the glitter, C's speed ramp round the crossing,
+    and under water C's turn up to the sun and level course, braked by a drag that builds as the housing goes in.
+    Returns one state a film frame, as path_C does."""
+    fwd = Vector((math.cos(az), math.sin(az), 0.0))
+    above = PORT * math.sin(math.radians(-C_PITCH_E))
+    ge = math.radians(D_GAMMA_E)
+    def glide(hold):
+        x, z, t = 0.0, 10.0, 0.0
+        T, X, Z, V, GA, P = [], [], [], [], [], []
+        while True:
+            s = t - hold
+            v = C_DRIFT + (D_VE - C_DRIFT) * quintic(s / D_TV)
+            g = ge * quintic(s / D_TG)
+            p = -11.0 + (C_PITCH_E + 11.0) * quintic(s / D_TP)
+            T.append(t); X.append(x); Z.append(z); V.append(v); GA.append(g); P.append(p)
+            x += v * math.cos(g) * C_DT
+            z -= v * math.sin(g) * C_DT
+            t += C_DT
+            if z < 1.5 and z <= probe.height(round(t * FPS) / FPS, fwd.x * x, fwd.y * x) + above:
+                T.append(t); X.append(x); Z.append(z); V.append(v); GA.append(g); P.append(p)
+                return [np.array(a) for a in (T, X, Z, V, GA, P)]
+            if t > hold + 8.0:
+                raise SystemExit("path D: the glide never met the surface")
+    extra = c_extra_before(d_ramp)
+    hold = C_HOLD
+    for it in range(3):
+        T = glide(hold)[0]
+        F_e = (T[-1] + extra) * FPS
+        hold += ((math.ceil(F_e) if it == 0 else round(F_e)) - F_e) / FPS
+    T, X, Z, V, GA, P = glide(hold)
+    t_e, x_e, z_e, v_e, beta_e = T[-1], X[-1], Z[-1], V[-1], GA[-1]
+    if t_e - hold < max(D_TV, D_TG, D_TP):
+        print("WARN path D: the port meets the water %.2f s into the glide, before speed, course and pitch have settled"
+              % (t_e - hold), flush=True)
+    # under water
+    n_u = int(round(D_UNDER / C_DT))
+    tu = np.arange(1, n_u + 1) * C_DT
+    tab = np.linspace(0.0, D_UNDER, 1201)
+    tm = tu - 0.5 * C_DT
+    vs = np.interp(tm, tab, [pchip(D_SWIM, x) for x in tab])
+    v = np.empty(n_u)
+    u = v_e - vs[0]
+    for i in range(n_u):
+        w = quintic(tm[i] / D_DRAG_IN)
+        u -= w * u * (u + 2.0 * vs[i]) / D_DRAG_L * C_DT
+        v[i] = vs[i] + u
+    beta = beta_e * (1.0 - np.array([sstep(D_COURSE[0], D_COURSE[1], x) for x in tm]))
+    xu = x_e + np.cumsum(v * np.cos(beta) * C_DT)
+    zu = z_e - np.cumsum(v * np.sin(beta) * C_DT)
+    pitch_under = np.interp(tu, tab, [pchip(D_PITCH_UNDER, x) for x in tab])
+    t_all = np.concatenate([T, t_e + tu])
+    x_all = np.concatenate([X, xu])
+    z_all = np.concatenate([Z, zu])
+    p_all = np.concatenate([P, pitch_under])
+    k_all = np.array([d_ramp(t - t_e) for t in t_all])
+    F_all = np.concatenate([[0.0], np.cumsum(0.5 * (k_all[1:] + k_all[:-1]) * np.diff(t_all))])
+    n = int(math.floor(F_all[-1] * FPS + 1e-9)) + 1
+    F = np.arange(n) / FPS
+    tf = np.interp(F, F_all, t_all)
+    xf, zf, pf = np.interp(tf, t_all, x_all), np.interp(tf, t_all, z_all), np.interp(tf, t_all, p_all)
+    states = [{"t": float(tf[f]), "tf": float(F[f]), "loc": Vector((fwd.x * xf[f], fwd.y * xf[f], zf[f])),
+               "pitch": float(pf[f]), "roll": 0.0} for f in range(n)]
+    f_e = int(np.argmin(np.abs(tf - t_e)))
+    for i in range(n):
+        a, b = states[max(0, i - 1)], states[min(n - 1, i + 1)]
+        states[i]["vel"] = (b["loc"] - a["loc"]) / max(1e-9, b["t"] - a["t"])
+        p = math.radians(states[i]["pitch"])
+        states[i]["dir"] = Vector((math.cos(az) * math.cos(p), math.sin(az) * math.cos(p), math.sin(p)))
+    entry = {"t": t_e, "frame": f_e, "loc": Vector((fwd.x * x_e, fwd.y * x_e, z_e)), "v": v_e, "beta": beta_e,
+             "hold": hold, "dir": Vector((fwd.x * math.cos(beta_e), fwd.y * math.cos(beta_e), -math.sin(beta_e)))}
+    acc = np.gradient(V, C_DT)
+    print("PATH D: hold %.4f s, the glide %.3f s (peak acceleration %.2f m/s2); the port meets the surface at %.4f s simulated,"
+          " %.4f s on film, frame %d (simulated %.5f s, %.2f ms off), %.2f m along the heading; %.2f m/s, %.1f deg below level;"
+          " %d frames, %.2f s of film for %.2f s simulated; under water the speed is %.2f m/s after 0.1 s, %.2f after 1 s, and"
+          " the camera levels %.2f m under the mean surface"
+          % (hold, t_e - hold, float(acc.max()), t_e, F_all[np.searchsorted(t_all, t_e)], f_e, tf[f_e], 1e3 * (tf[f_e] - t_e),
+             x_e, v_e, math.degrees(beta_e), n, F[-1], t_all[-1], float(np.interp(0.1, tm, v)), float(np.interp(1.0, tm, v)),
+             -float(zu[-1])), flush=True)
+    return states, entry
+
+def make_instancer(name, mat, subdiv=3, rotate=False):
+    """An object whose mesh holds points, each drawn as a sphere scaled by its "bscale" attribute (as the bubbles),
+    and with `rotate`, turned by its quaternion attribute "brot"."""
     me = bpy.data.meshes.new(name)
     ob = bpy.data.objects.new(name, me)
     bpy.context.scene.collection.objects.link(ob)
@@ -538,18 +672,26 @@ def make_instancer(name, mat, subdiv=3):
     L.new(gi.outputs[0], iop.inputs[0])
     L.new(ss.outputs[0], SS.sock(iop.inputs, "Instance"))
     L.new(SS.sock(na.outputs, "Attribute", "VECTOR"), SS.sock(iop.inputs, "Scale"))
+    if rotate:
+        nr = N.new("GeometryNodeInputNamedAttribute")
+        nr.data_type = "QUATERNION"
+        nr.inputs["Name"].default_value = "brot"
+        L.new(SS.sock(nr.outputs, "Attribute", "ROTATION"), SS.sock(iop.inputs, "Rotation"))
     L.new(iop.outputs[0], go.inputs[0])
     ob.modifiers.new(name, "NODES").node_group = ng
     no_deform_blur(ob)
     return ob
 
-def set_points(ob, X, scale):
+def set_points(ob, X, scale, rot=None):
     me = bpy.data.meshes.new(ob.name)
     me.vertices.add(len(X))
     if len(X):
         me.vertices.foreach_set("co", X.astype(np.float32).ravel())
         at = me.attributes.new("bscale", "FLOAT_VECTOR", "POINT")
         at.data.foreach_set("vector", scale.astype(np.float32).ravel())
+        if rot is not None:
+            ar = me.attributes.new("brot", "QUATERNION", "POINT")
+            ar.data.foreach_set("value", rot.astype(np.float32).ravel())
     old = ob.data
     ob.data = me
     bpy.data.meshes.remove(old)
@@ -558,8 +700,15 @@ class Spray:
     """The spray the entering camera throws: droplets ejected from the line where its housing meets the water,
     from a few milliseconds before the port's centre crosses, outward and upward, fast and low as the jet a blunt
     body throws at impact, and falling ballistically back to the surface. The camera sees them only while its
-    port is still partly above the water, which the speed ramp stretches to a few frames."""
-    def __init__(self, entry, probe, count, seed=23):
+    port is still partly above the water, which the speed ramp stretches to a few frames.
+
+    With `mist` (path D) the droplets are a fine spray, 0.04 to 0.25 mm, thrown at speeds scaled by the entry's
+    speed over C's 14.14 m/s, starting earlier by the same ratio, and each is drawn stretched along its own velocity
+    by the distance it travels in the shutter (`at`'s `shutter`, simulated seconds): Cycles blurs them only by the
+    camera's motion, since their mesh is rewritten each frame. C's droplets, 0.3 to 2.5 mm a few tenths of a metre
+    from the lens, came out as sharp glass beads smeared by the camera's 7 mm of travel in the shutter: a real lens
+    focused beyond them would have blurred them into discs, and its slow motion would have streaked their own motion."""
+    def __init__(self, entry, probe, count, seed=23, mist=False):
         mat = bpy.data.materials.new("droplet")
         nt = mat.node_tree
         nt.nodes.clear()
@@ -569,27 +718,33 @@ class Spray:
         g.inputs["IOR"].default_value = 1.333
         o = nt.nodes.new("ShaderNodeOutputMaterial")
         nt.links.new(g.outputs[0], o.inputs["Surface"])
-        self.ob = make_instancer("spray", mat, subdiv=2)
+        self.mist = mist
+        self.ob = make_instancer("spray", mat, subdiv=2, rotate=mist)
         rng = np.random.default_rng(seed)
         n = int(count)
         self.n = n
         e = entry["dir"]
         c = entry["loc"] + e * (PORT * math.sin(math.radians(-C_PITCH_E)) / max(0.2, -e.z))
         self.c = np.array(c[:])
+        vk = entry["v"] / 14.14 if mist else 1.0
         th = rng.uniform(0.0, 2 * math.pi, n)
         rad = rng.uniform(0.07, 0.14, n)
         el = np.radians(rng.uniform(6.0, 55.0, n))
-        sp = np.exp(rng.uniform(math.log(3.0), math.log(24.0), n))
-        self.ts = entry["t"] - 0.004 + 0.03 * rng.random(n) ** 2
+        sp = np.exp(rng.uniform(math.log(3.0), math.log(24.0), n)) * vk
+        if mist:
+            self.ts = entry["t"] + (-0.004 + 0.03 * rng.random(n) ** 2) / vk
+        else:
+            self.ts = entry["t"] - 0.004 + 0.03 * rng.random(n) ** 2
         u = np.stack([np.cos(th), np.sin(th), np.zeros(n)], -1)
         self.x0 = self.c[None, :] + u * rad[:, None]
         self.v0 = u * (sp * np.cos(el))[:, None]
         self.v0[:, 2] = sp * np.sin(el)
-        self.r = np.exp(rng.uniform(math.log(3e-4), math.log(2.5e-3), n))
+        rr = (4e-5, 2.5e-4) if mist else (3e-4, 2.5e-3)
+        self.r = np.exp(rng.uniform(math.log(rr[0]), math.log(rr[1]), n))
         self.probe, self.entry = probe, entry
-        print("SPRAY %d droplets, radius %.1f..%.1f mm, %.0f..%.0f m/s, from %.3f s" % (n, 1e3 * self.r.min(), 1e3 * self.r.max(),
-              sp.min(), sp.max(), self.ts.min()), flush=True)
-    def at(self, t, show):
+        print("SPRAY %d droplets, radius %.2f..%.2f mm, %.1f..%.1f m/s, from %.4f s%s" % (n, 1e3 * self.r.min(), 1e3 * self.r.max(),
+              sp.min(), sp.max(), self.ts.min(), ", a mist streaked by its own motion" if mist else ""), flush=True)
+    def at(self, t, show, shutter=0.0):
         tau = t - self.ts
         live = (tau >= 0) & show
         tau = np.maximum(tau, 0.0)[:, None]
@@ -598,7 +753,21 @@ class Spray:
         surf = self.probe.height(round(t * FPS) / FPS, self.c[0], self.c[1])
         live &= X[:, 2] > surf + self.r
         r = self.r[live]
-        set_points(self.ob, X[live], np.stack([r, r, r], -1))
+        if self.mist:
+            V = self.v0[live].copy()
+            V[:, 2] -= G * tau[live, 0]
+            sp = np.linalg.norm(V, axis=1)
+            d = V / np.maximum(sp, 1e-9)[:, None]
+            # the quaternion turning +z onto d (w, x, y, z)
+            ax = np.stack([-d[:, 1], d[:, 0], np.zeros(len(d))], -1)
+            s = np.linalg.norm(ax, axis=1)
+            ang = np.arctan2(s, d[:, 2])
+            ax = ax / np.maximum(s, 1e-12)[:, None]
+            q = np.concatenate([np.cos(ang / 2)[:, None], ax * np.sin(ang / 2)[:, None]], -1)
+            half = r + 0.5 * sp * shutter
+            set_points(self.ob, X[live], np.stack([r, r, half], -1), q)
+        else:
+            set_points(self.ob, X[live], np.stack([r, r, r], -1))
         self.ob.hide_render = not bool(live.any())
         return int(live.sum())
 
@@ -620,7 +789,8 @@ class WhiteWater:
     WW_SIGMA, WW_DEPTH, WW_G, WW_DECAY, WW_DIFFUSE, WW_DIM = 12.0, 0.5, 0.3, 0.8, 0.8, 1.5
     WW_GRAIN = 26.0            # 1/m: the noise's scale, pockets a few centimetres across
     SKY_T = 0.85
-    def __init__(self, entry, probe, strength, wsun=None, sky=None):
+    def __init__(self, entry, probe, strength, wsun=None, sky=None, onset=0.0):
+        self.onset = onset      # s: path D's white water builds over this as the housing goes in (C's starts whole)
         E = [wsun.strength * c * wsun.d.z for c in wsun.ob.data.color] if wsun is not None else [0.0, 0.0, 0.0]
         if sky is not None and sky.get("zenith") is not None and SS.HORIZON is not None:
             Z, H = sky["zenith"], [0.5 * (a + b) for a, b in zip(SS.HORIZON["toward"], SS.HORIZON["away"])]
@@ -684,6 +854,10 @@ class WhiteWater:
         t.feed(nz.inputs["W"], t.m("MULTIPLY", tau, 6.0))
         pockets = t.maprange(nz.outputs["Fac"], 0.3, 0.7, 0.0, 1.0)
         decay = t.m("EXPONENT", t.m("DIVIDE", tau, -self.WW_DECAY))
+        self.build = t.new("ShaderNodeValue")
+        self.build.name = self.build.label = "ww-onset"
+        self.build.outputs[0].default_value = 1.0
+        decay = t.m("MULTIPLY", decay, self.build.outputs[0])
         dens = t.m("MULTIPLY", t.m("MULTIPLY", t.m("MULTIPLY", fr, fs), t.m("ADD", 0.2, t.m("MULTIPLY", pockets, 0.8))),
                    t.m("MULTIPLY", decay, self.WW_SIGMA * strength))
         vc = t.new("ShaderNodeVolumeCoefficients")
@@ -711,6 +885,8 @@ class WhiteWater:
             return 0.0
         self.ob.hide_render = False
         self.light.outputs[0].default_value = light
+        if self.onset > 0.0:
+            self.build.outputs[0].default_value = quintic(tau / self.onset)
         s_cam = (cam - self.o).dot(self.e)
         front = min(self.WW_DEPTH, s_cam + 0.06 + 0.12 * math.exp(-tau / 0.02))
         self.clock.outputs[0].default_value = tau
@@ -1066,6 +1242,145 @@ def gate_camera_rays(mat):
     for name, val in (("Absorption Coefficients", SS.WATER_ABSORB), ("Scatter Coefficients", SS.WATER_SCATTER)):
         t.feed(vc.inputs[name], t.vm("SCALE", t.xyz(*val).outputs[0], scale=keep))
 
+# ---------------------------------------------------------------- the matted bubbles layer (--layer matte)
+# Triangulation matting (Smith and Blinn, 1996): each frame is rendered twice, over two known backgrounds, and each
+# pixel's colour and opacity are solved from the pair. The background here is not a card behind the bubbles but
+# the water itself as the theatre will supply it: every "straight" ray (one that has met only refractions since
+# the camera: a camera ray, or one gone straight through bubbles) sees, in place of Blender's water, a medium with
+# the water's extinction (absorption plus scattering) that emits the background radiance B times that extinction,
+# so that its own radiance tends to B and a ray that meets nothing reads exactly B; the surface emits B to
+# such rays (and the sky is B to them too). A bubble at distance d is then dimmed by the water's transmittance
+# T(d) and veiled by (1 - T(d)) B, the water in front of it, which the solve hands back to the background: over the
+# theatre's footage a far bubble fades into the theatre's water as it fades into Blender's. Every other ray (a
+# reflection off a bubble, a scattering in the white water, a shadow ray) sees Blender's water and light, as in the
+# full render: that light is the layer's colour. With B1 = 0 the colour is the first render itself, and the
+# opacity is 1 - (C2 - C1).B2 / B2.B2.
+MATTE_B2_DISPLAY = (0.008, 0.25, 0.40)    # display-linear: the second background, SHALLOW's hue (sRGB 2, 71, 90) x 4
+
+def straight_ray(t):
+    """1 on a non-shadow ray that has met only transmissions since the camera, else 0."""
+    lp = t.new("ShaderNodeLightPath")
+    turned = t.m("SUBTRACT", lp.outputs["Ray Depth"], lp.outputs["Transmission Depth"])
+    return t.m("MULTIPLY", t.m("LESS_THAN", turned, 0.5), t.m("SUBTRACT", 1.0, lp.outputs["Is Shadow Ray"]))
+
+def setup_matte(sc, mat, world, sea_ob):
+    """Rewire the sea's volume and surface and the world for the matte pass; returns the background's three Value
+    nodes (scene-linear radiance B)."""
+    nt = mat.node_tree
+    t = SS.Tree(nt)
+    vc = next(nd for nd in nt.nodes if nd.bl_idname == "ShaderNodeVolumeCoefficients")
+    st = straight_ray(t)
+    keep = t.m("SUBTRACT", 1.0, st)
+    ext = [a + s for a, s in zip(SS.WATER_ABSORB, SS.WATER_SCATTER)]
+    B = []
+    for c in "rgb":
+        v = t.new("ShaderNodeValue")
+        v.name = v.label = "matte-B-" + c
+        B.append(v)
+    absorb = [t.m("ADD", t.m("MULTIPLY", keep, a), t.m("MULTIPLY", st, e)) for a, e in zip(SS.WATER_ABSORB, ext)]
+    t.feed(vc.inputs["Absorption Coefficients"], t.xyz(*absorb).outputs[0])
+    t.feed(vc.inputs["Scatter Coefficients"], t.vm("SCALE", t.xyz(*SS.WATER_SCATTER).outputs[0], scale=keep))
+    em = [t.m("MULTIPLY", t.m("MULTIPLY", st, e), b.outputs[0]) for e, b in zip(ext, B)]
+    t.feed(vc.inputs["Emission Coefficients"], t.xyz(*em).outputs[0])
+    out = next(nd for nd in nt.nodes if nd.bl_idname == "ShaderNodeOutputMaterial")
+    src = out.inputs["Surface"].links[0].from_socket
+    # The surface ends a straight ray with the background's radiance. (A transparent surface, which let the ray on to a
+    # sky of B, left a bright band over the upper frame once the camera turned level: the world shader did not see
+    # those rays as straight, so they brought back the sky through the water.)
+    tr = t.new("ShaderNodeEmission")
+    t.feed(tr.inputs["Color"], t.xyz(*[b.outputs[0] for b in B]).outputs[0])
+    tr.inputs["Strength"].default_value = 1.0
+    mx = t.new("ShaderNodeMixShader")
+    t.feed(mx.inputs[0], st)
+    t.feed(mx.inputs[1], src)
+    t.feed(mx.inputs[2], tr.outputs[0])
+    nt.links.new(mx.outputs[0], out.inputs["Surface"])
+    # the world: B to straight rays
+    wt = SS.Tree(world.node_tree)
+    wo = next(nd for nd in world.node_tree.nodes if nd.bl_idname == "ShaderNodeOutputWorld")
+    wsrc = wo.inputs["Surface"].links[0].from_socket
+    bg = wt.new("ShaderNodeBackground")
+    bg.inputs["Strength"].default_value = 1.0
+    wB = []
+    for c in "rgb":
+        v = wt.new("ShaderNodeValue")
+        v.name = v.label = "matte-B-" + c
+        wB.append(v)
+    wt.feed(bg.inputs["Color"], wt.xyz(*[v.outputs[0] for v in wB]).outputs[0])
+    wmx = wt.new("ShaderNodeMixShader")
+    wt.feed(wmx.inputs[0], straight_ray(wt))
+    wt.feed(wmx.inputs[1], wsrc)
+    wt.feed(wmx.inputs[2], bg.outputs[0])
+    world.node_tree.links.new(wmx.outputs[0], wo.inputs["Surface"])
+    # every bubble a straight ray may cross: two refractions each
+    sc.cycles.max_bounces = 16
+    sc.cycles.transmission_bounces = 16
+    sc.render.film_transparent = False
+    sc.render.use_compositing = False
+    print("LAYER matte: straight rays see a medium of the water's extinction %s emitting B times it, a surface"
+          " emitting B and a sky of B; max and transmission bounces 16; the compositor off, the render saved scene-linear"
+          % ", ".join("%.3f" % e for e in ext), flush=True)
+    return B + wB
+
+def tone_np(c):
+    """sea_still.neutral_log_view's shoulder and desaturation on display-linear colour (its toe left out: it acts
+    on a whole pixel, not on a layer's share of it)."""
+    k = SS.TONE_KNEE
+    lo_s, hi_s = 1e-4, 4.0
+    for _ in range(80):
+        s = 0.5 * (lo_s + hi_s)
+        lo_s, hi_s = (lo_s, s) if k + s * math.log1p((SS.TONE_WHITE - k) / s) > 1.0 else (s, hi_s)
+    peak = c.max(-1, keepdims=True)
+    over = np.maximum(peak - k, 0.0)
+    newpeak = np.minimum(peak, k) + s * np.log1p(over / s)
+    g = 1.0 - 1.0 / ((peak - newpeak) * SS.TONE_DESAT + 1.0)
+    ratio = newpeak / np.maximum(peak, 1e-6) * (1.0 - g)
+    return c * ratio + newpeak * g
+
+def read_exr(path):
+    img = bpy.data.images.load(path)
+    img.colorspace_settings.name = "Non-Color"
+    W, H, ch = img.size[0], img.size[1], img.channels
+    px = np.empty(W * H * ch, np.float32)
+    img.pixels.foreach_get(px)
+    bpy.data.images.remove(img)
+    return px.reshape(H, W, ch)[..., :3].astype(np.float64)
+
+def solve_matte(p1, p2, B2, gain, dst, seed, keep_exr=False):
+    """Solve the pair rendered over B1 = 0 and B2 (scene-linear), and write the layer as an 8-bit RGBA PNG: straight
+    colour, sRGB-encoded, in the display-linear units of the full render at this frame's exposure `gain`. Light a
+    clear bubble adds (a glint over an opacity near 0) cannot be held as straight colour; the opacity is raised to
+    the colour's brightest channel there, which darkens what is behind a glint by that much."""
+    C1, C2 = read_exr(p1), read_exr(p2)
+    b = np.array(B2)
+    alpha = 1.0 - ((C2 - C1) @ b) / float(b @ b)
+    alpha = np.clip(alpha, 0.0, 1.0)
+    Fd = tone_np(np.maximum(C1, 0.0) * gain)
+    a = np.maximum(alpha, np.clip(Fd.max(-1), 0.0, 1.0))
+    F = np.clip(Fd / np.maximum(a, 1e-6)[..., None], 0.0, 1.0)
+    F = np.where(F <= 0.0031308, F * 12.92, 1.055 * F ** (1 / 2.4) - 0.055)
+    H, W = alpha.shape
+    rgba = np.concatenate([F, a[..., None]], -1)
+    rng = np.random.default_rng(seed)
+    lv = np.clip(np.floor(rgba * 255.0 + 0.5 + rng.random(rgba.shape) - rng.random(rgba.shape)), 0.0, 255.0)
+    lv[..., 3] = np.where(a <= 0.0, 0.0, lv[..., 3])
+    out = bpy.data.images.new("matte", W, H, alpha=True)
+    out.alpha_mode = "CHANNEL_PACKED"
+    out.pixels.foreach_set((lv / 255.0).astype(np.float32).ravel())
+    out.filepath_raw = dst
+    out.file_format = "PNG"
+    out.save()
+    bpy.data.images.remove(out)
+    if not keep_exr:
+        os.remove(p1)
+        os.remove(p2)
+    # the residual in the red channel, which the opacity (fitted on B2's green and blue) does not see
+    corner = alpha[: H // 10, : W // 10]
+    print("MATTE %s: opacity mean %.4f, %.2f%% over 0.5, %.2f%% over 0.05; raised for added light on %.2f%%; the top-left"
+          " tenth's opacity %.4f (0 where nothing is); colour max %.3f"
+          % (os.path.basename(dst), float(alpha.mean()), 100 * float((alpha > 0.5).mean()), 100 * float((alpha > 0.05).mean()),
+             100 * float((a > alpha + 1e-3).mean()), float(corner.mean()), float(Fd.max())), flush=True)
+
 def write_dithered_rgba(src, dst, seed):
     """write_dithered, keeping the alpha channel (straight, as the 16-bit PNG holds it)."""
     img = bpy.data.images.load(src)
@@ -1410,6 +1725,10 @@ def main():
         probe = Probe((math.cos(az) * 2.0, math.sin(az) * 2.0), wind_dir, k, n=81, step=0.25)
         states, entry = path_C(probe, az)
         n = len(states)
+    elif args.path == "D":
+        probe = Probe((math.cos(az) * 9.0, math.sin(az) * 9.0), wind_dir, k, n=113, step=0.25)
+        states, entry = path_D(probe, az)
+        n = len(states)
     else:
         centre = (0.0, 0.0) if args.path == "A" else (math.cos(az) * 1.0, math.sin(az) * 1.0)
         probe = Probe(centre, wind_dir, k)
@@ -1444,23 +1763,33 @@ def main():
             track = {int(k): v for k, v in json.load(fh).items() if k.isdigit()}
         print("AE from the track %s" % args.ae_track, flush=True)
     bubbles = None
-    if args.path in ("B", "C") and args.bubbles > 0:
+    if args.path in ("B", "C", "D") and args.bubbles > 0:
         bubbles = Bubbles(states, entry, probe, 6000 * args.bubbles)
         if wsun is not None:
             wsun.light_bubbles(bubbles.ob)
     ng = sc.compositing_node_group
     glare = [nd for nd in ng.nodes if nd.bl_idname == "CompositorNodeGlare"]
     spray = ww = shafts = fizz = None
-    if args.path == "C":
+    if args.path in ("C", "D"):
         if args.spray > 0 and args.layer == "full":
-            spray = Spray(entry, probe, 2500 * args.spray)
+            if args.path == "C":
+                spray = Spray(entry, probe, 2500 * args.spray)
+            else:
+                spray = Spray(entry, probe, D_SPRAY * args.spray, mist=True)
         if args.white_water > 0:
-            ww = WhiteWater(entry, probe, args.white_water, wsun, ctx["sun"])
+            ww = WhiteWater(entry, probe, args.white_water, wsun, ctx["sun"], D_WW_ONSET if args.path == "D" else 0.0)
             fizz = Fizz(entry, states, probe, 40000 * args.white_water)
             if wsun is not None and getattr(wsun, "glint_coll", None) is not None:
                 wsun.glint_coll.objects.link(fizz.ob)
         if wsun is not None and args.shafts == "on":
             shafts = Shafts(mat, wsun, ctx, args.shaft_debug, args.shaft_medium)
+        matte_B = None
+        if args.layer == "matte":
+            matte_B = setup_matte(sc, mat, ctx["world"]["world"], sea.ob)
+            try:
+                sc.cycles.volume_biased = True
+            except Exception as e:
+                print("WARN volume_biased:", e, flush=True)
         if args.layer == "bubbles":
             # the bubbles alone: the film transparent, the sea unseen by the camera, its water clear to camera rays
             sc.render.film_transparent = True
@@ -1517,6 +1846,12 @@ def main():
     sc.render.image_settings.color_depth = "16"
     if args.layer == "bubbles":
         sc.render.image_settings.color_mode = "RGBA"
+    if args.layer == "matte":
+        SS.set_format(sc.render.image_settings, "OPEN_EXR")
+        sc.render.image_settings.color_depth = "32"
+        sc.render.image_settings.color_mode = "RGB"
+        g0 = 2.0 ** exposure
+        B2 = [c / g0 for c in MATTE_B2_DISPLAY]     # rescaled per frame below
     times, used, ae, f_prev = [], {}, 0.0, None
     metered = {}
     if args.ae_resume:
@@ -1537,8 +1872,11 @@ def main():
             ws = 1.0 if args.water_sun == "always" else st["under"]
             wsun.set(ws)
         extra = ""
-        if args.path == "C":
-            ns = spray.at(st["t"], st["under"] < 1.0) if spray else 0
+        if args.path in ("C", "D"):
+            if spray and spray.mist:
+                ns = spray.at(st["t"], st["under"] < 1.0, args.shutter / FPS / d_ramp(st["t"] - entry["t"]))
+            else:
+                ns = spray.at(st["t"], st["under"] < 1.0) if spray else 0
             front = ww.at(st["t"], st["loc"]) if ww else 0.0
             nf = fizz.at(st["t"]) if fizz else 0
             tsh = shafts.update(st["t"], st["loc"], ws, args.layer == "full") if shafts else 0.0
@@ -1557,6 +1895,24 @@ def main():
                     i.default_value = SS.GLARE_T * 2.0 ** (-e)
         sc.cycles.seed = f
         t1 = time.time()
+        if args.layer == "matte":
+            # the pair: over B1 = 0 and over B2, the second background, held at the same display level every frame
+            g = 2.0 ** e
+            B2 = [c / g for c in MATTE_B2_DISPLAY]
+            pair = []
+            for i, Bk in enumerate(([0.0, 0.0, 0.0], B2)):
+                for j, nd in enumerate(matte_B):
+                    nd.outputs[0].default_value = Bk[j % 3]
+                sc.render.filepath = "%s%04d-B%d.exr" % (prefix, f, i + 1)
+                bpy.ops.render.render(write_still=True)
+                pair.append(sc.render.filepath)
+            t2 = time.time()
+            solve_matte(pair[0], pair[1], B2, g, "%s%04d.png" % (prefix, f), f, keep_exr=args.keep_16bit)
+            t3 = time.time()
+            times.append((t1 - t0, t2 - t1, t3 - t0))
+            print("FRAME %3d t %.3f under %.2f exposure %+.2f bubbles %d: sea %.2f s, two renders %.2f s, all %.2f s%s"
+                  % (f, st["t"], st["under"], used[f], nb, t1 - t0, t2 - t1, t3 - t0, extra), flush=True)
+            continue
         master = "%s%04d-16bit.png" % (prefix, f) if args.keep_16bit else prefix + "-master-16bit.png"
         sc.render.filepath = master
         bpy.ops.render.render(write_still=True)
@@ -1594,7 +1950,7 @@ def main():
         out.update({"next": ae, "last": f_prev})
         with open(prefix + "-exposure-%04d-%04d.json" % (min(used), max(used)), "w") as fh:
             json.dump(out, fh, indent=0)
-    if metered and args.path == "C":
+    if metered and args.path in ("C", "D"):
         # each frame's exposure change, its metering and its share under water, for grading the exposure track
         with open(prefix + "-metered-%04d-%04d.json" % (min(metered), max(metered)), "w") as fh:
             json.dump({str(k): v for k, v in sorted(metered.items())}, fh, indent=0)
