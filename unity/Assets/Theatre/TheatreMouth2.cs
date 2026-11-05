@@ -297,19 +297,42 @@ namespace Evosim.Theatre
 
         /// <summary>
         /// The mouth relief dial (<c>EVOSIM_THEATRE_MOUTH2_RELIEF</c>, 0 to 1, 0 off by default), read once, with any effect only while
-        /// <see cref="Kinds"/> is on, since it shapes three of the kinds: the oral disc (kind 0), the toothed ring (1) and the gape (5) read as
-        /// openings, with a raised lip, an inner wall in a lining colour that the light shapes, and teeth as ridged cones of enamel rather than
-        /// flat pale petals (<c>_MouthRelief</c>, the strength). Shading and colour only, as the lip is: no vertex moves for it (D242). At 0
-        /// nothing is written and every pixel is the one without it.
+        /// <see cref="Kinds"/> or <see cref="Disc"/> is on, since it shapes the oral disc (kind 0, every mouth while the kinds are off), the
+        /// toothed ring (1) and the gape (5): they read as openings, with a raised lip, an inner wall in a lining colour that the light shapes,
+        /// and teeth as ridged cones of enamel rather than flat pale petals (<c>_MouthRelief</c>, the strength). Shading and colour only, as
+        /// the lip is: no vertex moves for it (D242). At 0 nothing is written and every pixel is the one without it.
         /// </summary>
         public static readonly float Relief =
-            Kinds ? TheatreSkin.Dial("EVOSIM_THEATRE_MOUTH2_RELIEF", 0f, 0f, 1f) : 0f;
+            Kinds || Disc ? TheatreSkin.Dial("EVOSIM_THEATRE_MOUTH2_RELIEF", 0f, 0f, 1f) : 0f;
+
+        /// <summary>
+        /// The small-mouth dial (<c>EVOSIM_THEATRE_MOUTH2_SMALL</c>, 0 to 1, 0 off by default), read once, with any effect only while
+        /// <see cref="Disc"/> is on: the disc and every kind's marks fade out as the mouth shrinks on screen (full from a radius of 28 px, gone
+        /// by 10), and the disc's stripes are soft-edged at every size, so a mouth 15 to 25 px across in a world shot is its opening and lip
+        /// rather than a cog's teeth (<c>_MouthSmall</c>, the strength). At 0 nothing is written and every pixel is the one without it.
+        /// </summary>
+        public static readonly float Small =
+            Disc ? TheatreSkin.Dial("EVOSIM_THEATRE_MOUTH2_SMALL", 0f, 0f, 1f) : 0f;
+
+        /// <summary>
+        /// The plain-mouth dial (<c>EVOSIM_THEATRE_MOUTH2_PLAIN</c>, 0 to 1, 0 off by default), read once, with any effect only while
+        /// <see cref="Disc"/> is on: out to the lip's outer edge the mouth is drawn on the body's colour before its chromatophores and
+        /// pattern, so no mark of the skin runs across the lip, the wall or the throat, and the lip takes the body's own hue (its plain
+        /// colour lifted) rather than the mark's, at half its step from the body, so a ring round a dark throat reads as a shaded rim
+        /// rather than an eye (<c>_MouthPlain</c>, the strength). At 0 nothing is written and every pixel is the one without it.
+        /// </summary>
+        public static readonly float Plain =
+            Disc ? TheatreSkin.Dial("EVOSIM_THEATRE_MOUTH2_PLAIN", 0f, 0f, 1f) : 0f;
 
         private static readonly int MouthReliefId = Shader.PropertyToID("_MouthRelief");
+        private static readonly int MouthSmallId = Shader.PropertyToID("_MouthSmall");
+        private static readonly int MouthPlainId = Shader.PropertyToID("_MouthPlain");
 
         private static void SetRelief(MaterialPropertyBlock block)
         {
             if (Relief > 0f) block.SetFloat(MouthReliefId, Relief);
+            if (Small > 0f) block.SetFloat(MouthSmallId, Small);
+            if (Plain > 0f) block.SetFloat(MouthPlainId, Plain);
         }
 
         /// <summary>
@@ -880,9 +903,9 @@ namespace Evosim.Theatre
                         BiteCrumbs ? "on" : "off"));
                 }
             }
-            if (Flat > 0f || Relief > 0f || Face)
-                Debug.Log(string.Format(System.Globalization.CultureInfo.InvariantCulture, "[Theatre] mouth2 dials: flat {0:0.###} slack {1:0.###}, relief {2:0.###}, face {3}",
-                    Flat, FlatSlack, Relief, Face ? 1 : 0));
+            if (Flat > 0f || Relief > 0f || Face || Small > 0f || Plain > 0f)
+                Debug.Log(string.Format(System.Globalization.CultureInfo.InvariantCulture, "[Theatre] mouth2 dials: flat {0:0.###} slack {1:0.###}, relief {2:0.###}, face {3}, small {4:0.###}, plain {5:0.###}",
+                    Flat, FlatSlack, Relief, Face ? 1 : 0, Small, Plain));
         }
 
         /// <summary>

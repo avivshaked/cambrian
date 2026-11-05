@@ -461,6 +461,8 @@ Shader "Evosim/Theatre Body"
         _MouthBiteGape("Mouth gape: share open (part: x; skin: slots x to w)", Vector) = (0, 0, 0, 0)
         // EVOSIM_THEATRE_MOUTH2_RELIEF: the strength of the disc, toothed ring and gape kinds' relief (lip, inner wall, teeth), zero off.
         _MouthRelief("Mouth relief: strength, zero off", Float) = 0
+        _MouthSmall("Mouth disc faded by its size on screen: strength, zero off", Float) = 0
+        _MouthPlain("Mouth in the body's own plain colour: strength, zero off", Float) = 0
     }
 
     SubShader
@@ -601,6 +603,8 @@ Shader "Evosim/Theatre Body"
                 float4 _MouthBiteParams;
                 float4 _MouthBiteGape;
                 float _MouthRelief;
+                float _MouthSmall;
+                float _MouthPlain;
 #endif
 #if defined(_EVO_UPTAKE)
                 float4 _Uptake;
@@ -4785,6 +4789,10 @@ Shader "Evosim/Theatre Body"
             // normal is the smallest axis, which the spot does not depend on, so it shows on both flanks.
             // With _FamilySpot.w over zero (a one skin under EVOSIM_THEATRE_SKIN_MAP_FAMILY_SPOT) it is centred on _FamilySpot.xyz,
             // the body's largest part in the box's units, with that radius in metres.
+            // EVOSIM_THEATRE_FAMILY_SPOT_SOFT (TheatreSkin.FamilySpotSoft): how far the eyespot's black core is filled with the mark's
+            // colour, 0 to 1. A global, outside the buffer, never set with the dial off, so it stays the zero a shader global is.
+            float _EvoFamilySpotSoft;
+
             float FamilyEyeShare(float3 p, float3 he, float3 axisL, float3 axisM, float3 axisS, out float core)
             {
                 float mL = (dot(p, axisL) - 0.30) * 2.0 * dot(he, axisL);
@@ -6989,6 +6997,16 @@ Shader "Evosim/Theatre Body"
             static const float MouthFadeHigh = 4.0;
             static const float MouthSlopeBound = 1.4;
 
+            // The small-mouth dial (EVOSIM_THEATRE_MOUTH2_SMALL): the disc fades out as the mouth's radius on screen falls from
+            // MouthSmallFull pixels to MouthSmallGone, and its stripes' edges are at least this soft at every size.
+            static const float MouthSmallGone = 10.0;
+            static const float MouthSmallFull = 28.0;
+            static const float MouthSmallSoftEdge = 0.4;
+
+            // The plain mouth (EVOSIM_THEATRE_MOUTH2_PLAIN): the lip's step from the body, in the body's own hue, is this share of
+            // its step without the dial, so the ring reads as a shaded rim and not as an eye's iris.
+            static const float MouthPlainLipStep = 0.5;
+
             // Past this many radii nothing is done: beyond the lip and its soft edge.
             static const float MouthReach = 1.35;
 
@@ -7420,11 +7438,27 @@ Shader "Evosim/Theatre Body"
             // How far the albedo is pulled, behind the front, toward the grey of its own luminance, which the water's light then tints.
             static const float MilkTintPull3 = 0.6;
 
+            // The trial dials of the corpse (TheatreDeathCue.PaleShade, PaleWater), globals set only with the death look 3 on, 0 to 1.
+            // _EvoDeathPaleShade: how far the corpse's light falls off on the side away from the key (1 is a plain Lambert key for it,
+            // with the ambient and the fill kept).
+            // _EvoDeathPaleWater: how far the corpse's colour is drawn toward the water's own colour at its height, darker as it goes.
+            // _EvoDeathPaleHue: how much of the water's chroma that colour takes (1 all of it, as pale11b; less leaves it greyer).
+            // _EvoDeathPaleDim: the exponent of the pull toward the water's luminance at PaleWater 1 (0.5 the geometric mean, as
+            // pale11b; less leaves the corpse brighter and its lit and dark sides further apart).
+            float _EvoDeathPaleShade;
+            float _EvoDeathPaleWater;
+            float _EvoDeathPaleHue;
+            float _EvoDeathPaleDim;
+
             // The corpse of variant 3: the light the body took (lit) on the albedo it would have had dead, by the body's clock and the
             // fragment's place on the body. body is the albedo the light read, plain the albedo before the body's marks were laid on it,
             // positionWS the fragment's place in the world, and card the diffuse light that fell on the fragment (the key, wrapped, and
             // the ambient, both at the body's depth): the light a grey card there would take, whose colour is the water's.
-            float3 DeathMilk3(float3 lit, float3 body, float3 plain, float3 positionWS, float3 card)
+            // Two trial terms, both off at 0 (the arithmetic is then today's): keyLoss is the key's light the wrap lends the side away
+            // from it, taken back from the light the body took (0 when _EvoDeathPaleShade is 0), so that side goes darker and keeps
+            // the ambient and the fill; and _EvoDeathPaleWater draws the corpse's colour toward the water's own hue at its height, and
+            // its luminance toward the water's.
+            float3 DeathMilk3(float3 lit, float3 body, float3 plain, float3 positionWS, float3 card, float keyLoss)
             {
                 float age = _DeathMilk.x;
 
@@ -7454,7 +7488,23 @@ Shader "Evosim/Theatre Body"
                 float3 cardLight = max(card, 0.0);
                 float cardLuminance = dot(cardLight, LumaWeights);
                 float3 tint = cardLuminance > 1e-4 ? cardLight / cardLuminance : float3(1.0, 1.0, 1.0);
-                return lerp(lit, max(dead, 0.0) * tint * taken, weight);
+                float3 deadLit = max(dead, 0.0) * tint * max(taken - keyLoss, 0.0);
+                [branch] if (_EvoDeathPaleWater > 0.0)
+                {
+                    // The water's hue, and its luminance as well: a white disk lowered into the sea goes pale blue-green and
+                    // darker, not a bright cyan (the coordinator's note on pale11, 2026-11-04). At 1 the corpse's luminance is
+                    // its own to the power 1 - dim times the water's to the power dim, where it is brighter than the water (dim
+                    // 0.5 the geometric mean); its hue is the water's, carrying _EvoDeathPaleHue of the water's chroma. The hue
+                    // and white both have luminance 1, so the mix keeps the luminance. pale11b's flat cyan ball came from the
+                    // full chroma and from dim 0.5, which halves the lit and dark sides' difference in stops.
+                    float3 water = EvoWaterColour(positionWS.y);
+                    float lumWater = max(dot(water, LumaWeights), 1e-4);
+                    float3 waterHue = lerp(float3(1.0, 1.0, 1.0), water / lumWater, _EvoDeathPaleHue);
+                    float lumDead = dot(deadLit, LumaWeights);
+                    float lumTo = lumDead > lumWater ? lumDead * pow(lumWater / max(lumDead, 1e-4), _EvoDeathPaleDim * _EvoDeathPaleWater) : lumDead;
+                    deadLit = lerp(deadLit, lumTo * waterHue, _EvoDeathPaleWater);
+                }
+                return lerp(lit, deadLit, weight);
             }
 #endif
 
@@ -8256,6 +8306,10 @@ Shader "Evosim/Theatre Body"
                         float discCount = _MouthRadii.w > 0.5 ? (discKind > 0.5 ? _MouthRadii.w - MouthKindStep * discKind : _MouthRadii.w) : MouthDiscStripes;
                         float discEdge = clamp(discCount * pixelMetres / max(mouthRadiusMetres * max(mouthU, 0.25), 1e-6), 0.03, 1.0);
 
+                        // The small-mouth dial (EVOSIM_THEATRE_MOUTH2_SMALL) softens the stripes' edges at every size, so even a portrait's
+                        // read as soft furrows rather than hard pale blocks.
+                        [branch] if (_MouthSmall > 0.0) discEdge = max(discEdge, MouthSmallSoftEdge * saturate(_MouthSmall));
+
                         discStripe = lerp(0.5, smoothstep(-discEdge, discEdge, cos(discCount * discAngle)), 1.0 - smoothstep(0.5, 1.0, discEdge));
 
                         // The relief's slope in the kinds' own frame, (px, py) in radii per radius; turned to the world and applied below.
@@ -8463,6 +8517,11 @@ Shader "Evosim/Theatre Body"
                             reliefE2 *= rsqrt(max(dot(reliefE2, reliefE2), 1e-12));
 
                             float reliefFade = smoothstep(MouthFadeLow, MouthFadeHigh, MouthLipWidth / reliefPix);
+
+                            // The small-mouth dial fades the furrows and ridges by the mouth's size on screen as it fades the disc's colour,
+                            // so a mouth in a world shot shows no teeth in its shading either (phase143's crimson body).
+                            [branch] if (_MouthSmall > 0.0)
+                                reliefFade *= lerp(1.0, smoothstep(MouthSmallGone, MouthSmallFull, mouthRadiusMetres / max(pixelMetres, 1e-7)), saturate(_MouthSmall));
                             float3 reliefTilt = (reliefGx * reliefE1 + reliefGy * reliefE2) * (reliefFade * mouthShare);
                             reliefTilt *= rsqrt(1.0 + dot(reliefTilt, reliefTilt) / (MouthSlopeBound * MouthSlopeBound));
 
@@ -8475,6 +8534,17 @@ Shader "Evosim/Theatre Body"
                         (1.0 - smoothstep(MouthDiscOuter - MouthDiscFade * discWidth, MouthDiscOuter, mouthU));
 
                     mouthDiscMix = (discKindShare >= 0.0 ? discKindShare : discRing * discStripe) * _MouthDisc.a * mouthShare;
+
+                    // The small-mouth dial (EVOSIM_THEATRE_MOUTH2_SMALL): the disc, its stripes and every kind's marks fade out as the mouth
+                    // shrinks on screen, full from a radius of MouthSmallFull pixels and gone by MouthSmallGone, so a mouth in a world shot
+                    // (15 to 25 px across, where the stripes read as a cog's teeth to the owner on 2026-11-04) is its opening and lip alone.
+                    [branch] if (_MouthSmall > 0.0)
+                        mouthDiscMix *= lerp(1.0, smoothstep(MouthSmallGone, MouthSmallFull, mouthRadiusMetres / max(pixelMetres, 1e-7)), saturate(_MouthSmall));
+
+                    // The plain mouth (EVOSIM_THEATRE_MOUTH2_PLAIN) draws no stripes: in the body's plain colour they still showed,
+                    // as dark smudges beside the maze body's mouth where that colour is the maze's ground (phase145's portrait of 38393).
+                    [branch] if (_MouthPlain > 0.0)
+                        mouthDiscMix *= 1.0 - saturate(_MouthPlain);
                 }
 
 #endif
@@ -8718,6 +8788,12 @@ Shader "Evosim/Theatre Body"
 
 #endif
 
+#if defined(_EVO_MOUTH2)
+                // The body's colour before its chromatophores and pattern, which the plain mouth (EVOSIM_THEATRE_MOUTH2_PLAIN)
+                // draws inside the lip below.
+                float3 mouthPlainBody = body;
+#endif
+
                 // The chromatophores (_Chromatophores; Chromatophores): the strength is the tissue's, set per
                 // renderer by the palette. After the rim band, so the discs lie on the pigment, and before the ramp
                 // and the countershade, which grade them as they grade the body.
@@ -8808,6 +8884,16 @@ Shader "Evosim/Theatre Body"
                 // pattern and the margin, so the lip lies on the markings and not under them, and before the ramp and the
                 // countershade, which grade it as they grade the body.
 
+                // The plain mouth (EVOSIM_THEATRE_MOUTH2_PLAIN): out to the lip's outer edge the body's colour before its
+                // chromatophores and pattern, so no mark of the skin runs across the lip, the wall or the throat, where the
+                // throat's darker-of-two would keep a mark's dark stroke as a glyph.
+                [branch] if (_MouthPlain > 0.0 && mouthShare > 0.001)
+                {
+                    float mouthPlainEnd = MouthLipFrom + MouthLipWidth;
+                    float mouthPlain = (1.0 - smoothstep(mouthPlainEnd - MouthLipEdge, mouthPlainEnd + MouthLipEdge, mouthU)) * mouthShare;
+                    body = lerp(body, mouthPlainBody, saturate(_MouthPlain) * mouthPlain);
+                }
+
                 // The relief's lining on the inner wall (EVOSIM_THEATRE_MOUTH2_RELIEF), under the lip, the teeth and the throat.
                 [branch] if (mouthLining > 0.002)
                 {
@@ -8822,6 +8908,15 @@ Shader "Evosim/Theatre Body"
                     // The oral disc (EVOSIM_THEATRE_MOUTH2_DISC): the lip ring takes the mark colour where the body has one.
                     [branch] if (_MouthDisc.a > 0.0 && _FamilyColor.a > 0.0) mouthLipColour = _FamilyColor.rgb;
 
+                    // The plain mouth: the lip in the body's own hue (its plain colour lifted), at MouthPlainLipStep of its step
+                    // from the body; the relief's tilt still shades it.
+                    [branch] if (_MouthPlain > 0.0)
+                    {
+                        float mouthPlainStrength = saturate(_MouthPlain);
+                        mouthLipColour = lerp(mouthLipColour, MouthLifted(mouthPlainBody), mouthPlainStrength);
+                        mouthLipColour = lerp(mouthLipColour, body, (1.0 - MouthPlainLipStep) * mouthPlainStrength);
+                    }
+
                     mouthLipColour *= 1.0 + MouthLipHighlight * mouthOuter;
                     [branch] if (mouthBite > 0.0) mouthLipColour = lerp(mouthLipColour, float3(1.0, 1.0, 1.0), saturate(_MouthBiteParams.y * mouthBite));
                     body = lerp(body, saturate(mouthLipColour), mouthLip * MouthLipOpacity);
@@ -8832,6 +8927,10 @@ Shader "Evosim/Theatre Body"
                 {
                     // The kinds' tone scales the disc colour and their white lifts it; both are one and zero for the stripes (kind 0).
                     float3 mouthDiscColour = saturate(_MouthDisc.rgb * mouthDiscTone);
+
+                    // The plain mouth: the disc in the body's own hue, the lip's colour, where a plain strength under one leaves any
+                    // of it (phase143's portrait of 53866 had dark wedges round the mouth).
+                    [branch] if (_MouthPlain > 0.0) mouthDiscColour = lerp(mouthDiscColour, MouthLifted(mouthPlainBody), saturate(_MouthPlain));
                     [branch] if (mouthDiscWhite > 0.0) mouthDiscColour = lerp(mouthDiscColour, float3(1.0, 1.0, 1.0), mouthDiscWhite);
                     [branch] if (mouthBite > 0.0) mouthDiscColour = lerp(mouthDiscColour, float3(1.0, 1.0, 1.0), saturate(_MouthBiteParams.y * mouthBite));
 
@@ -8876,7 +8975,13 @@ Shader "Evosim/Theatre Body"
                     float familyMask = FamilyMask(input.positionOS, familyDPos, input.normalWS, v, familyBend, familyCore);
 
                     body = lerp(body, _FamilyColor.rgb, saturate(familyMask * _FamilyColor.a));
-                    body = lerp(body, float3(0.02, 0.02, 0.02), saturate(familyCore * _FamilyColor.a));
+
+                    // The eyespot's core filled in the mark's colour rather than black (EVOSIM_THEATRE_FAMILY_SPOT_SOFT), so the spot is
+                    // a mark and not an eye's iris and pupil.
+                    float familySpotSoft = saturate(_EvoFamilySpotSoft);
+                    [branch] if (familySpotSoft > 0.0)
+                        body = lerp(body, _FamilyColor.rgb, saturate(familyCore * _FamilyColor.a * familySpotSoft));
+                    body = lerp(body, float3(0.02, 0.02, 0.02), saturate(familyCore * _FamilyColor.a * (1.0 - familySpotSoft)));
                 }
 
                 // The colour ramp, then the countershade: the body's colour only (see ColourRamp, Countershade).
@@ -9607,7 +9712,17 @@ Shader "Evosim/Theatre Body"
                     [branch] if (_DeathMilk.y > 2.5)
                     {
                         float3 deathCard = keyColour * (Wrapped(n, main.direction) * _KeyGain) + ambient * depthLight;
-                        lit = DeathMilk3(lit, body, deathPlain, input.positionWS, deathCard);
+                        // The shade: the key's light the wrap lends the side away from it, taken back, in light per unit albedo as
+                        // DeathMilk3's taken is. Only the key's: the ambient and the fill a living body keeps on its dark side stay
+                        // (pale11's first trial scaled all of it and drew the underside as a black cut-out).
+                        float keyLoss = 0.0;
+                        [branch] if (_EvoDeathPaleShade > 0.0)
+                        {
+                            float keyWrapped = dot(keyColour, LumaWeights) * Wrapped(n, main.direction) * _KeyGain;
+                            float keyLambert = dot(keyColour, LumaWeights) * saturate(dot(n, main.direction)) * _KeyGain;
+                            keyLoss = _EvoDeathPaleShade * max(keyWrapped - keyLambert, 0.0);
+                        }
+                        lit = DeathMilk3(lit, body, deathPlain, input.positionWS, deathCard, keyLoss);
                     }
                     else
                     {

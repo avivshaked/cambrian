@@ -338,6 +338,66 @@ namespace Evosim.Theatre
                 ? Dial("EVOSIM_THEATRE_ALGA_BEND", 0f, 0f, 4f)
                 : 0f;
 
+        /// <summary>
+        /// The water's edge from below after the dive's take A (<c>EVOSIM_THEATRE_WATER_EDGE</c>, 0 off by default, 1
+        /// full), read once: fine ripples on the ceiling's normal that cut Snell's window into cells, a small bright sun
+        /// they break into sparks, and a mirror lifted toward the lit water (<c>TheatreSurface.shader</c>). It overshoots
+        /// a real sea on purpose (D262) and is dialled back from there. Zero means nothing is pushed, set or read for it.
+        /// </summary>
+        public static readonly float WaterEdge = Dial("EVOSIM_THEATRE_WATER_EDGE", 0f, 0f, 1f);
+
+        /// <summary>
+        /// The window's light through the water above the eye (<c>EVOSIM_THEATRE_WATER_WINDOW</c>, 0 off by default, 1
+        /// full), read once: the sky seen through Snell's window loses its red over the metres between the surface and the
+        /// eye, at the dive's take A's absorption, so a window seen from a metre or two is blue-cyan rather than grey
+        /// (<c>TheatreSurface.shader</c>, WindowKept). Only the part of the path the look's own fade leaves uncounted. Its
+        /// own dial because the safari draws the same window. Zero means nothing is pushed, set or read for it.
+        /// </summary>
+        public static readonly float WaterWindow = Dial("EVOSIM_THEATRE_WATER_WINDOW", 0f, 0f, 1f);
+
+        /// <summary>
+        /// The sun's glow in the water above the eye (<c>EVOSIM_THEATRE_WATER_GLOW</c>, 0 off by default, 1 the first cut's
+        /// strength, up to 4), read once: a soft warm halo round the sun's place in Snell's window, from the light the water
+        /// scatters forward, taken on the eye's own ray so the ripples do not break it up, and laid on the window's facets
+        /// alone so the mirror's patches stay dark (<c>TheatreSurface.shader</c>, EdgeGlow). The dive's take A has it and the
+        /// theatre's window did not. Zero means nothing is pushed, set or read for it.
+        /// </summary>
+        public static readonly float WaterGlow = Dial("EVOSIM_THEATRE_WATER_GLOW", 0f, 0f, 4f);
+
+        /// <summary>
+        /// The eyespot's core filled with the mark's colour rather than black (<c>EVOSIM_THEATRE_FAMILY_SPOT_SOFT</c>, 0 off by
+        /// default, to 1), read once: the pattern family's eyespot (<c>TheatreBody.shader</c>, FamilyEyeShare) is then a ring and a
+        /// spot of one colour, a mark rather than an iris round a pupil. Its size is the shader's rule (0.35 of the body's
+        /// thickness) and has no dial. Zero means nothing is pushed, set or read for it.
+        /// </summary>
+        public static readonly float FamilySpotSoft = Dial("EVOSIM_THEATRE_FAMILY_SPOT_SOFT", 0f, 0f, 1f);
+
+        /// <summary>
+        /// A probe of the water edge's window (<c>EVOSIM_THEATRE_WATER_EDGE_PROBE</c>, 0 off by default): 1 draws the sky
+        /// without its clouds, 2 without its clouds and without the split of the colours at the rim, to find what draws the
+        /// tan blotches near the window's rim; 3 draws the sun's facets with none of the soft sun under them, to see whether
+        /// the shards carry the sun alone; 4 draws the finer facets (the 3 cm ripples at their full slope and 1.5 cm ones
+        /// besides), apart from the sun's facets. A diagnostic, never a look. Zero means nothing is pushed, set or read for it.
+        /// </summary>
+        public static readonly float WaterEdgeProbe = Dial("EVOSIM_THEATRE_WATER_EDGE_PROBE", 0f, 0f, 4f);
+
+        /// <summary>
+        /// The hit cone of the sun's facets under the water edge, in degrees (<c>EVOSIM_THEATRE_WATER_FACET</c>, 0 by default for
+        /// the shader's own EDGE_FACET_HIT, up to 5), read once: a pixel shows the sun where its refracted ray comes within
+        /// this of it, so a wider cone draws larger shards (<c>TheatreSurface.shader</c>, EdgeFacets). Zero means nothing is
+        /// pushed, set or read for it.
+        /// </summary>
+        public static readonly float WaterFacet = Dial("EVOSIM_THEATRE_WATER_FACET", 0f, 0f, 5f);
+
+        /// <summary>
+        /// The surface's keyword for the water edge's fifth cut and those after it (the sun's facets, the glow on the window
+        /// alone, the rim's clouds, the finer facets), enabled once by <see cref="PushLook"/> when <see cref="WaterEdge"/>, <see cref="WaterWindow"/> or
+        /// <see cref="WaterGlow"/> is on. As plain branches the cut moved 28 pixels of the dials-off check by one level (phase144),
+        /// the compiler's doing; behind the keyword the surface without it compiles the text from before the cut.
+        /// </summary>
+        public const string WaterEdge5Keyword = "_EVO_WATER_EDGE5";
+        private static bool _waterEdge5KeywordOn;
+
         // skin2:begin
         /// <summary>
         /// The one skin's second look (<c>EVOSIM_THEATRE_SKIN2</c>, 0 off by default; 1 on), read once: a diffuse sheen, light
@@ -1557,6 +1617,18 @@ namespace Evosim.Theatre
 
             PushSecond(on);
             PushAlgaBend(on);
+            if (WaterEdge > 0f) Shader.SetGlobalFloat("_EvoWaterEdge", on ? WaterEdge : 0f);
+            if (WaterWindow > 0f) Shader.SetGlobalFloat("_EvoWaterWindow", on ? WaterWindow : 0f);
+            if (WaterGlow > 0f) Shader.SetGlobalFloat("_EvoWaterGlow", on ? WaterGlow : 0f);
+            if (FamilySpotSoft > 0f) Shader.SetGlobalFloat("_EvoFamilySpotSoft", on ? FamilySpotSoft : 0f);
+            if (WaterEdgeProbe > 0f) Shader.SetGlobalFloat("_EvoWaterEdgeProbe", on ? WaterEdgeProbe : 0f);
+            if (WaterFacet > 0f) Shader.SetGlobalFloat("_EvoWaterFacet", on ? WaterFacet : 0f);
+            if ((WaterEdge > 0f || WaterWindow > 0f || WaterGlow > 0f) && !_waterEdge5KeywordOn)
+            {
+                Shader.EnableKeyword(WaterEdge5Keyword);
+                _waterEdge5KeywordOn = true;
+                Debug.Log("[Theatre] water edge on: the surface compiles its fifth cut (shader keyword " + WaterEdge5Keyword + ").");
+            }
             if (AlgaBladeOn) EnsureAlgaBladeKeyword();
             if (AlgaBlade2On) EnsureAlgaBlade2Keyword();
             // BLADE3 begin

@@ -140,6 +140,35 @@ namespace Evosim.Theatre
         public static readonly int Look = On ? Mathf.RoundToInt(TheatreSkin.Dial("EVOSIM_THEATRE_DEATH_LOOK", 0f, 0f, 3f)) : 0;
 
         /// <summary>
+        /// The corpse's shade dial, <c>EVOSIM_THEATRE_DEATH_PALE_SHADE</c> (0 to 1, 0 by default), read once and only with the death look
+        /// at 3: how far the corpse's light falls off on the side away from the key. 1 replaces the wrapped key with a plain Lambert one
+        /// for the corpse; 0 leaves it as it was. A trial, set as the shader global <c>_EvoDeathPaleShade</c>.
+        /// </summary>
+        public static readonly float PaleShade = Look == 3 ? TheatreSkin.Dial("EVOSIM_THEATRE_DEATH_PALE_SHADE", 0f, 0f, 1f) : 0f;
+
+        /// <summary>
+        /// The corpse's water dial, <c>EVOSIM_THEATRE_DEATH_PALE_WATER</c> (0 to 1, 0 by default), read once and only with the death look
+        /// at 3: how far the corpse's colour is drawn toward the water's own colour at its height, at the same luminance; 0 leaves it as
+        /// it was. A trial, set as the shader global <c>_EvoDeathPaleWater</c>.
+        /// </summary>
+        public static readonly float PaleWater = Look == 3 ? TheatreSkin.Dial("EVOSIM_THEATRE_DEATH_PALE_WATER", 0f, 0f, 1f) : 0f;
+
+        /// <summary>
+        /// The corpse's hue dial, <c>EVOSIM_THEATRE_DEATH_PALE_HUE</c> (0 to 1, 1 by default), read once and only with the death look at 3:
+        /// how much of the water's chroma the water dial gives the corpse; 1 is all of it, less leaves it greyer. Acts only with
+        /// <see cref="PaleWater"/> above 0. A trial, set as the shader global <c>_EvoDeathPaleHue</c>.
+        /// </summary>
+        public static readonly float PaleHue = Look == 3 ? TheatreSkin.Dial("EVOSIM_THEATRE_DEATH_PALE_HUE", 1f, 0f, 1f) : 1f;
+
+        /// <summary>
+        /// The corpse's dimming dial, <c>EVOSIM_THEATRE_DEATH_PALE_DIM</c> (0 to 1, 0.5 by default), read once and only with the death look
+        /// at 3: the exponent of the water dial's pull toward the water's luminance; 0.5 is the geometric mean, less leaves the corpse
+        /// brighter and its shading deeper. Acts only with <see cref="PaleWater"/> above 0. A trial, set as the shader global
+        /// <c>_EvoDeathPaleDim</c>.
+        /// </summary>
+        public static readonly float PaleDim = Look == 3 ? TheatreSkin.Dial("EVOSIM_THEATRE_DEATH_PALE_DIM", 0.5f, 0f, 1f) : 0.5f;
+
+        /// <summary>
         /// The haze's colour dial, <c>EVOSIM_THEATRE_DEATH_LOOK_HAZE</c> (0 or 1, 0 by default), read once and only with the death look
         /// on: 1 draws the haze in a pale warm grey (<see cref="HazeGreyLuminance"/>) in place of the D281 browns, so it does not
         /// mismatch a white body; 0 leaves the haze as it was.
@@ -739,7 +768,11 @@ namespace Evosim.Theatre
                 // Variant 3's own line, with its own numbers; variants 1 and 2 keep theirs below as they were.
                 if (Look == 3)
                 {
-                    Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                    Shader.SetGlobalFloat("_EvoDeathPaleShade", PaleShade);
+                    Shader.SetGlobalFloat("_EvoDeathPaleWater", PaleWater);
+                    Shader.SetGlobalFloat("_EvoDeathPaleHue", PaleHue);
+                    Shader.SetGlobalFloat("_EvoDeathPaleDim", PaleDim);
+                    string look3Line = string.Format(CultureInfo.InvariantCulture,
                         "[Theatre] death cue: death look 3 (EVOSIM_THEATRE_DEATH_LOOK), the corpse that takes the water; hue leaves over {0:0.##} s " +
                         "(keeps {1:0.#}% of it), then one front per body from the extremities inward over {2:0.##} s, edge {3:0.##} of the reach; " +
                         "luminance {4:0.##}, marks kept at {5:0.#}% of their contrast, pulled {6:0.#}% to grey under the water's own light; drain span " +
@@ -747,7 +780,15 @@ namespace Evosim.Theatre
                         MilkHueSeconds3, MilkKeepSaturation * 100f, MilkFrontSeconds3, MilkFrontEdge3,
                         MilkLuminance3, MilkGhostContrast3 * 100f, MilkTintPull3 * 100f, DrainSpan,
                         MilkSheenLoss * 100f, MilkRimLoss * 100f, MilkTransmissionLoss * 100f, MilkWrap,
-                        HazeGrey ? "a pale grey (EVOSIM_THEATRE_DEATH_LOOK_HAZE)" : "the D281 browns"));
+                        HazeGrey ? "a pale grey (EVOSIM_THEATRE_DEATH_LOOK_HAZE)" : "the D281 browns");
+                    if (PaleShade > 0f || PaleWater > 0f)
+                    {
+                        look3Line += string.Format(CultureInfo.InvariantCulture,
+                            "; trial: shade {0:0.##} (EVOSIM_THEATRE_DEATH_PALE_SHADE), water {1:0.##} (EVOSIM_THEATRE_DEATH_PALE_WATER), " +
+                            "hue {2:0.##} (EVOSIM_THEATRE_DEATH_PALE_HUE), dim {3:0.##} (EVOSIM_THEATRE_DEATH_PALE_DIM)",
+                            PaleShade, PaleWater, PaleHue, PaleDim);
+                    }
+                    Debug.Log(look3Line);
                     return;
                 }
 
