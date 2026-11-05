@@ -9,7 +9,11 @@ it was born at or before T and had not died by T. Reads lineage.jsonl and pool/i
 Round 67's pre-registration (logbook/specs/r67-prereg/predictions.md, readouts 2 and 3) reads this at 12,000 s and
 24,000 s: the share of living animals from a pool founder, and that share split by exam.
 
-Usage: python -I scripts/reads/pool-origins.py <run dir> --at 12000[,24000,...]
+A resumed world's own lineage starts at its resume second, so its founders are in the run it resumed. Name the runs in
+order, the first first: each run's rows are read up to the first row of the run after it, and the last run's whole.
+The pool's index is read from the last run.
+
+Usage: python -I scripts/reads/pool-origins.py [<source run dir> ...] <run dir> --at 12000[,24000,...]
 """
 import argparse
 import collections
@@ -18,10 +22,11 @@ import os
 import sys
 
 ap = argparse.ArgumentParser()
-ap.add_argument("run")
+ap.add_argument("runs", nargs="+")
 ap.add_argument("--at", required=True, help="simulated seconds, comma-separated")
 a = ap.parse_args()
 times = sorted(float(x) for x in a.at.split(","))
+a.run = a.runs[-1]
 
 index_path = os.path.join(a.run, "pool", "index.tsv")
 origin_of = {}
@@ -34,25 +39,51 @@ if os.path.exists(index_path):
             if cells and cells[0] != "":
                 origin_of[int(cells[0])] = cells[col] if col is not None else "pool"
 
+def first_t(run):
+    with open(os.path.join(run, "lineage.jsonl"), encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                return json.loads(line)["t"]
+    return float("inf")
+
+
+torn = []
+
+
+def rows():
+    # A live run's last line may be half written, and a run whose program was ended from outside may end in one: a line
+    # that does not parse is skipped and counted, and the count is printed.
+    for k, run in enumerate(a.runs):
+        cut = first_t(a.runs[k + 1]) if k + 1 < len(a.runs) else float("inf")
+        with open(os.path.join(run, "lineage.jsonl"), encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    torn.append(os.path.basename(os.path.normpath(run)))
+                    continue
+                if r["t"] >= cut:
+                    break
+                yield r
+
+
 parent, born, died, animal, source = {}, {}, {}, {}, {}
-with open(os.path.join(a.run, "lineage.jsonl"), encoding="utf-8") as f:
-    for line in f:
-        if not line.strip():
-            continue
-        r = json.loads(line)
-        e = r.get("e")
-        if e == "b":
-            i = r["id"]
-            parent[i] = r.get("p", -1)
-            born[i] = r["t"]
-            animal[i] = r.get("atk") == 1 and r.get("ink") == 1
-            if parent[i] < 0:
-                src = r.get("src", "?")
-                if src == "pool":
-                    src = "pool:" + origin_of.get(r.get("pool", -1), "?")
-                source[i] = src
-        elif e == "d":
-            died[r["id"]] = r["t"]
+for r in rows():
+    e = r.get("e")
+    if e == "b":
+        i = r["id"]
+        parent[i] = r.get("p", -1)
+        born[i] = r["t"]
+        animal[i] = r.get("atk") == 1 and r.get("ink") == 1
+        if parent[i] < 0:
+            src = r.get("src", "?")
+            if src == "pool":
+                src = "pool:" + origin_of.get(r.get("pool", -1), "?")
+            source[i] = src
+    elif e == "d":
+        died[r["id"]] = r["t"]
 
 root = {}
 
@@ -73,7 +104,8 @@ def root_of(i):
 
 
 last = max(born.values()) if born else 0.0
-print(f"{os.path.basename(os.path.normpath(a.run))}: {len(born)} births to {last:.0f} s; pool origins {sorted(set(origin_of.values()))}")
+print(f"{os.path.basename(os.path.normpath(a.run))}: {len(born)} births to {last:.0f} s; pool origins {sorted(set(origin_of.values()))}"
+      + (f"; {len(torn)} line(s) that did not parse skipped ({', '.join(sorted(set(torn)))})" if torn else ""))
 for t in times:
     if t > last:
         print(f"  t {t:.0f}: past the record's last birth ({last:.0f} s)")
