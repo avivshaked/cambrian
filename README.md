@@ -1,7 +1,7 @@
 # Cambrian
 
-**An evolving aquatic ecosystem in Unity — bodies and brains encoded together, selected by
-whether they can afford to stay alive.**
+**An evolving aquatic ecosystem: bodies and brains encoded together, selected by whether
+they can afford to stay alive.**
 
 Creatures are grown from a recursive directed graph that encodes *both* morphology and
 neural control. They are dropped into simulated water where **energy is a conserved
@@ -9,11 +9,13 @@ budget**: they earn it from sunlight, drifting nutrients, or each other, and the
 tissue, on thinking, and on every movement they make. Run out and you die. Accumulate a
 surplus and you reproduce.
 
-**There is no fitness function.** No creature is scored, and nothing is being taught to swim. If
-swimming is what keeps a creature alive it will appear on its own — and if something else
-appears instead, that is the more interesting answer. A creature made only of rigid feeding
-cells is a plant; one that eats plants is a herbivore; the word "species" appears nowhere in
-the code.
+**Inside a world there is no fitness function.** No creature in it is scored, and nothing is
+being taught to swim. If swimming is what keeps a creature alive it will appear on its own — and
+if something else appears instead, that is the more interesting answer. A creature made only of
+rigid feeding cells is a plant; one that eats plants is a herbivore; the word "species" appears
+nowhere in the code. The one place a score is used is the nursery, a small tank that breeds
+starting creatures on how much food they eat. Some of its best are released into a world,
+where the score no longer applies.
 
 The name is the ambition: the Cambrian explosion was a rapid diversification of **body
 plans**, which is what an open-ended ecosystem is being built to produce.
@@ -22,28 +24,46 @@ The ultimate goal is complex creatures that react to the world through senses an
 they graze, hunt each other, evolve ways to protect themselves, and live out their lives. We
 are still very far from that.
 
-> **Status: the ecosystem runs, and it holds a food chain.**
-> Genomes develop into bodies, bodies build into articulations driven by their own evolved
-> brains, and energy is a conserved budget audited to 0.0000% across the whole food web. A
-> finite competed-for sun, currents and mixing, senescence, one matter in two states
-> (charged and spent, D098), a buoyancy organ, marine snow and a vent are all in and measured
-> ([`DECISIONS.md`](DECISIONS.md) D023–D090). Thirty-seven rounds, each read by a person against a rule written down before launch,
-> ([logbook/0036](logbook/0036-the-floor-gives-back.md) onward) found the constraint one
-> layer at a time — the floor, the drowning, the matter ratchet, the stomach's gearing — and
-> the last of them was the flux: the second trophic level was fed at one percent of the
-> first because producers fed the water only by dying. The standing goal has been met, most
-> recently five seeds of five in round 33, the first world in which bodies are born small and
-> grow (`logbook/0082`; D086, D087), with three genome dials walking the same way in every
-> seed. Then the theatre, pointed at a scored run for the first time, showed every clade as a
-> metre-wide column in a world whose current returned bodies to where it found them
-> (`logbook/0083`); a dispersed birth and a current that carries replaced those rules the same
-> day (D088, `logbook/0085`), and which of the thirty-three rounds' readings survive the
-> three-dimensional world is the open question (`logbook/0084`). The box became a tank with a
-> glass wall (D089, `logbook/0093`) whose water streams rather than swirls (D090), and an
-> outside review then found the grid's transporter making patches from uniform water,
-> repaired for round 37b, so every claim in rounds 32 to 37 about where food sits relative to
-> bodies carries that artefact (logbook/0094). Movement has never paid its energy cost — the cost side is
-> closed, the prize side is open — and throughput binds every remaining question.
+Built by Aviv Shaked working with Claude (Anthropic's model) as coding and research partner.
+Almost every commit is co-authored with it, and [`CLAUDE.md`](CLAUDE.md) is the working
+agreement its sessions follow.
+
+## Where it stands (November 2026)
+
+### What runs
+
+Worlds of a 300 m stretch of simulated ocean, with islands whose plants bloom and fade, and a
+current. A world holds up to about 13,000 living creatures at once. Each creature grows from
+its genome, moves under its own evolved brain, eats plants or other animals with a mouth, and
+reproduces when it has energy to spare. The simulation is a C#/.NET program with its own
+physics solver. Its runs are deterministic: the same seed and settings give the same world,
+bit for bit, on the same build. Three worlds share one graphics card at two to two and a half
+times real time. A Unity viewer films them.
+
+### What has been measured
+
+- Each world keeps an energy account. In one 24,000-second world, with about 82,000 births, it
+  was out by 0.0001 J at the end.
+- A food chain forms: plants, and animals that get over 80 % of the energy they gain by biting
+  from leaves.
+- Senses are used: with the mouth's sense of where food lies switched off, the nursery's best
+  foragers ate about a fifth less.
+- Every experiment's predictions are committed before it runs, and its results are read
+  against them.
+- Over 2,600 automated tests cover the core, the physics and the simulation runner.
+
+### What doesn't work yet
+
+- Bodies are still simple: the nursery's best foragers are all the same two-part body, and the
+  variety of body plans the name refers to has not appeared.
+- Populations can crash: in one of the two most recent worlds the grazers fell to about a dozen
+  before recovering.
+- Reproduction is asexual, so there is no recombination.
+- Some of a world's founding creatures are bred in the scored nursery.
+- Speed limits every experiment: a 24,000-second world takes about three hours.
+
+The detail is in the [logbook](logbook/) (dated entries), [`DECISIONS.md`](DECISIONS.md) (why
+each choice was made) and the [primer](primer/) (how the mechanisms work).
 
 ---
 
@@ -137,7 +157,10 @@ actually do.
 
 ---
 
-## Physics validation
+## How it started: physics validation
+
+This is history. In September 2026 the simulation moved off Unity's physics onto its own solver
+in .NET, so the numbers below describe the first engine, not today's throughput.
 
 One question had to be answered by running code rather than reading: can Unity's
 `ArticulationBody` handle hundreds of creatures built, simulated and destroyed per minute?
@@ -299,7 +322,7 @@ timings are meaningless. See §M3 in [the spike spec](spikes/01-articulation-bod
 
 `Evosim.Core` — the genome, the development that grows a creature from it, the cell types,
 mutation and serialization — has no `UnityEngine` dependency, so it builds and tests as
-ordinary C# in about a minute (592 tests as of 2026-09-09; `-All` adds the slow experiments and takes far longer). **No .NET SDK is required:** the script uses a system-wide one
+ordinary C# in about seven minutes (1,939 tests in November 2026; `-All` adds the slow experiments and takes far longer). **No .NET SDK is required:** the script uses a system-wide one
 if you have it and otherwise falls back to the complete .NET 8 SDK that ships inside the
 Unity install.
 
@@ -333,6 +356,11 @@ in a second terminal (`Get-Content $log -Wait -Tail 5`) rather than guessing.
 
 ### 6. Watch a world: the theatre
 
+This section predates the farm. Runs since late September 2026 are made by the .NET farm,
+which Unity cannot replay bit for bit, because Mono and .NET round floating point differently. So
+the viewer films recorded windows of a run, and its live play drifts away from the recorded
+run.
+
 The theatre (logbook/0063) is the project's viewer. **It is the simulation, not a video.**
 A run directory stores its configuration, its seed, samples every hundred seconds and
 the genomes of the living at each snapshot and, in a shared world from 2026-09-10, every
@@ -351,7 +379,7 @@ about 1,500 simulated seconds and then part. The theatre will follow a cousin of
 rather than the run, and its identity check is what tells you so. Runs made on D078's build,
 with the physics on one thread, replay.
 
-Since 2026-09-13 the theatre wears the interface the owner designed (`design/SPEC.md`,
+Since 2026-09-13 the theatre wears the interface designed for it (`design/SPEC.md`,
 logbook/0096): a strip that names the run, its build and how many samples have matched so
 far; a timeline with the record's end and the peak marked; a census with the two identities,
 the energy audit and the matter residual, that goes vermilion if either opens; a provenance
@@ -430,8 +458,8 @@ selection happens.
 | 3 | Metabolism: per-part upkeep, neural cost, energy as a running balance | **A creature that starves** — the first thing here that can fail on its own | ✅ |
 | 4 | World: current field, light and depth gradient, drifting nutrients | A creature that survives by drifting into food, and one that doesn't | ✅ |
 | 5 | Life cycle: death returns tissue to the water, reproduction on surplus | **A population that persists without intervention** | ✅ |
-| 6 | Perception: photosensors, evolvable colour, closed-loop brain graph | Directed foraging — a creature that moves *toward* something | ← partial: the loop is closed and all seven sensor channels read; photosensors, colour, contact and damage do not exist |
-| 7 | Food web: predation, carrion, attack and defence | Trophic levels, or clear evidence of why not | ← partial: carrion and detritivory work, and a food chain has assembled twice; shared space is built, and contact predation is a proposal in front of the owner |
+| 6 | Perception: photosensors, evolvable colour, closed-loop brain graph | Directed foraging — a creature that moves *toward* something | ← partial: brains read their senses in a closed loop, and in the nursery a sense of where food lies measurably improves foraging; colour does not exist |
+| 7 | Food web: predation, carrion, attack and defence | Trophic levels, or clear evidence of why not | ← partial: animals bite plants, remains and each other with a mouth, and a food chain forms; most of what animals eat is still plants |
 | 8 | Theatre: replay, gallery, charts, lineage, fluid validation harness | Showpiece and research instrument | ← partial: replay with the identity check works; the gallery, the charts and the fluid validation harness do not exist |
 | 9 | Land: contact, gravity | Deferred — the ecosystem is a water design | |
 
