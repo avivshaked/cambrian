@@ -276,7 +276,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D251](#d251) | Each fed island blooms on its own clock, a bloom smells from further, and fat is screened inside that world | 2026-10-28 | ruled by the owner on the morning of 2026-10-28, who proposed islands with cadences of their own and then agreed the coordinator's recommendations for them · partly superseded by D254, D270 |
 | [D252](#d252) | Limbs take richer shapes through D233's family, and the water's push on them is tabulated ahead of time | 2026-10-28 | ruled by the owner on 2026-10-28 |
 | [D253](#d253) | The theatre's leaves may bend past their box, with a noisy flutter, in the photographs' colours | 2026-10-28 | ruled by the owner on 2026-10-28 from `scratch/owner/leaf-bend-past-the-box/` |
-| [D254](#d254) | The work aims at one film of a grazer world, through gates with numbers | 2026-10-28 | ruled by the owner on 2026-10-28, who asked for a plan with thresholds towards that milestone rather than tangents |
+| [D254](#d254) | The work aims at one film of a grazer world, through gates with numbers | 2026-10-28 | ruled by the owner on 2026-10-28, who asked for a plan with thresholds towards that milestone rather than tangents · its combined round G7 partly superseded by D304 (the film's world is four open-ended worlds) |
 | [D255](#d255) | A family limb's push is computed once for each degree of freedom at build, not read from D252's table | 2026-10-28 | accepted by the coordinator on 2026-10-28, on `logbook/specs/shape-build/spec.md` |
 | [D256](#d256) | The bloom rerun judges survival from 12,000 s, and drops fat; the film's blades take a colour set per world | 2026-10-29 | ruled by the owner on 2026-10-29, on the coordinator's recommendations after `r63b` (`logbook/specs/r63b-read/`) and the look sheets in `scratch/owner/r62cf-look-sample/` and… |
 | [D257](#d257) | The nose's nursery test runs at 1/64 of the default noise, and the strength form is not tested now | 2026-10-29 | ruled by the owner on 2026-10-29, on the coordinator's and the nose lane's recommendations |
@@ -323,8 +323,11 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D299](#d299) | A birth waits for the brain's urge to breed, read beside a sense of the reserve against the gate | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 1 in form (b) of `logbook/specs/breeding-urge/spec.md` |
 | [D300](#d300) | A recorded genome keeps its format under D293's time constants | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, in review of D293's first build |
 | [D301](#d301) | A corpse turns pale, a death releases a soft haze in the water's colour, and the corpse keeps its markings | 2026-11-04 | ruled by the owner on 2026-11-04 after `scratch/owner/death-look-and-motes/`, on the coordinator's recommendations |
-| [D302](#d302) | The opener is the dive, made once, and it lands in each video's own world | 2026-11-04 | ruled by the owner on 2026-11-04, on the coordinator's recommendation |
+| [D302](#d302) | The opener is the dive, made once, and it lands in each video's own world | 2026-11-04 | ruled by the owner on 2026-11-04, on the coordinator's recommendation · partly superseded by D305 (the landing travels to the hero) |
 | [D303](#d303) | Nursery arms that are compared run a fixed, equal budget, and the 4 m bearing is rerun to 40 generations | 2026-11-04 | ruled by the owner on 2026-11-04, on the coordinator's recommendation, after the owner asked whether the searches stop before their learning tapers |
+| [D304](#d304) | The four long worlds run round 66's arm M with the shape family and the forager kit on | 2026-11-05 | ruled by the owner on 2026-11-05, on the coordinator's recommendation in `proposals/propose-four-long-worlds.md` |
+| [D305](#d305) | The dive lands by travelling through each film's own water to its hero | 2026-11-05 | ruled by the owner on 2026-11-05, after the dive's third take (`scratch/owner/dive-crossing-third-take/`) |
+| [D306](#d306) | The skin's eyespot loses its pupil, and the skin is shown as a family's label | 2026-11-05 | ruled by the owner on 2026-11-05, on the coordinator's recommendation with the mouth preview (`scratch/owner/mouth-without-the-gear/`) |
 
 ---
 
@@ -10928,3 +10931,72 @@ and Bartz-Beielstein et al. 2020 leave the count to experimental design. On budg
 saying practice compares at equal budgets was too strong. Bartz-Beielstein et al. warn that stopping rules that differ
 between algorithms can bias a comparison. The COCO platform measures the evaluations needed to reach a target and
 does not fix a budget at all. An equal budget with the whole curve reported, as decided here, is one defensible form.
+
+### D304
+**The four long worlds run round 66's arm M with the shape family and the forager kit on** · 2026-11-05
+
+**Status:** ruled by the owner on 2026-11-05, on the coordinator's recommendation in
+`proposals/propose-four-long-worlds.md`. It sets the rules of the worlds under the owner's route of 2026-11-04
+(finish the nursery, found four worlds from its best, run them long, film them). For the film's world it supersedes
+D254's combined round G7, whose three seeds of 48,000 s and gates give way to four open-ended worlds and their looks. The kit's switches (D280, D283, D292, D293) enter a world here for the first time,
+without the separate world screen D291 asks for, so the four worlds are that screen as well as the film's material.
+
+**Decision.**
+- Each world is round 66's arm M: the 300 m open ocean with its edges joined, eleven islands that bloom, a current of
+  0.02 m/s, true-shape contact (D272), a bite that needs the mouth on the food (D275), contact eating and the kill gut.
+- The shape family is on as G5's round 63 ran it: the superellipsoid among the shapes, the fin law
+  (`Fluid.ShapedAddedMass`) and the form genes' walk at 0.08.
+- The forager kit is on as the nursery evolved it: the mouth's feel to 8 mouth radii with a bite reaching 3 (D280), the
+  inherited mouth place (D283), the bearing to 4 m held for 50 steps (D292), and the units' time constants (D293).
+  The log hunger sense (D294) and the breeding urge (D299) are off.
+- Seeds 6201 to 6204 share round 66's islands. The founders are the shaped arm's exam pool at equal weight: half the
+  floor's founders until it closes at 3,000 s, then a trickle of one founder every 30 s, half of them from the pool.
+- They run on the card once its copies of the kit pass their sitting, open-ended, and are looked at from 12,000 s.
+  A world stops only when it is empty with nothing coming back, or under half real time.
+
+**Why.** The founders evolved under exactly these rules. Without the feel the 40-generation run's tops lost 63.5 J of
+the 340.1 J they ate, and without the bearing 67.5 J (`range-g40-predictions.md` on `forager-kit`). Held for 50 steps,
+the only hold the card copies bit for bit, the bearing cost them nothing measurable (`hold50-bench.md`). Hunger and the
+urge were never in the founders' tank.
+
+**Rejected.** The worlds on the CPU farm, which would likely run under half real time with four at once. Leaving the
+kit off in the worlds, which would found them with brains that lean on senses the world does not give.
+
+### D305
+**The dive lands by travelling through each film's own water to its hero** · 2026-11-05
+
+**Status:** ruled by the owner on 2026-11-05, after the dive's third take
+(`scratch/owner/dive-crossing-third-take/`). It supersedes D302's second clause, the handover by a dissolve to a few
+seconds of the world. D302's dive made once, with the titles over the hold, and its eased entry stand.
+
+**Decision.**
+- The Blender dive runs from the sky through the crossing and cuts on the bubble burst, where the frame is all bubbles.
+- Behind the clearing bubbles the theatre takes over. Its camera starts just under the surface above the film's hero
+  and travels down through the world's own water to it, rendered for each film from its own world.
+- It needs the water's edge seen from below (c8's cuts) and a camera path from the surface to a chosen body.
+
+**Why.** The owner found the dive good and the dissolve into the world fake, and proposed going into the water and
+travelling to the hero. A cut hidden in the bubbles needs no dissolve, and the way down introduces the film's
+subject.
+
+**Rejected.** D302's dissolve, which the owner found fake.
+
+### D306
+**The skin's eyespot loses its pupil, and the skin is shown as a family's label** · 2026-11-05
+
+**Status:** ruled by the owner on 2026-11-05, on the coordinator's recommendation with the mouth preview
+(`scratch/owner/mouth-without-the-gear/`). How often the eyespot appears is still open.
+
+**Decision.**
+- The eyespot, a ring of colour round a black centre that reads as an eye, is drawn with its centre filled in the
+  ring's own colour (`EVOSIM_THEATRE_FAMILY_SPOT_SOFT` 1), in the films and the safari alike.
+- The skin's colours and patterns are presented as what they are: drawn from the genome so that viewers can tell
+  families apart, with no effect in the world.
+
+**Why.** No creature in the world has eyes, so no mark is ever seen by one. The owner argued that a viewer would ask why
+an eyespot evolved, and the true answer would be that it was drawn for fun. The skin as a whole, by contrast, can fairly
+be said to mark families. Real eyespots fool predators that see, so the eyespot is the one mark that claims an organ
+and a function our creatures lack. With its pupil filled it is a plain spot, which keeps the beauty the owner noted.
+
+**Rejected, for now.** Removing the eyespot from the pattern families, which the owner was half minded to do. The
+coordinator recommended making it rarer instead, and judging the softened spot again in the four worlds' pictures.
