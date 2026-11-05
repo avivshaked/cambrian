@@ -72,6 +72,15 @@ The root file's rules still apply. The entries below were moved word for word, s
   days, and no reset followed. The card group's watch ended the farm 13 s later, and the render's guard stopped
   Unity; both guards worked as built. The cause is not known. The owner ruled that the render runs once alone
   before card work resumes, so a repeat names the shader and a clean run points back at the pairing.
+  **A second FECS Exception, as the display woke** (2026-11-05). Two `nvlddmkm` id 13 came at 21:49:26 local time
+  while round 67's card group ran and c8's Unity was 70 s into a render step with steeper ripples (edge8d). Kernel-Power
+  566 logged a session change with reason `InputHid` at 21:49:28, and the owner said they had just turned the monitor
+  on. The CPU was at 75 °C and the GPU at 51 °C, and no reset followed. The watch ended the farm at 21:49:42, and the
+  worlds resumed from their 7,500 s checkpoints. Both FECS events so far came with a card group and Unity on the card
+  together, and only this one with a display wake. The display has woken under card groups before with no event, so
+  the wake is read as an occasional trigger, not a rule (inference). The owner uses the machine through the day and
+  will not keep the display fixed. If it happens again, it is debugged against these two. One option then is to drive
+  the display from the processor's own graphics, so the card carries no display; that choice is the owner's.
 - **A farm run started from VS Code gets the fast cores only while VS Code has focus.** The
   machine is an i9-13900K: eight fast cores (logical 0 to 15) and sixteen efficiency cores (16
   to 31). With VS Code in front, round 48's two farm runs sat about 44% on the fast cores and
