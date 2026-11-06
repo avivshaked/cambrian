@@ -171,3 +171,35 @@ second run. If no island holds 20 gripping bodies, four in five of them born aft
 3,000 s on either seed, the settling limit stops a forest even without a winter. Anything between is reported as it
 stands. Read besides: the share of settling children that found no spot, against the second run's 77 and 89 %, and the
 grippers that began and died in each 3,000 s span, against the second run's table.
+
+## What the diagnostic found
+
+The two worlds ran from 19:08 to 20:14 on 2026-11-06 at 2.3 to 5.6 times real time, as
+`scratch/plants-work/runs/plw-6202/2026-11-06-190819-559338ca` and `plw-6203/2026-11-06-190819-559338ca`. The read is
+`read5.py` in `scratch/plants-work/forest-read/`, with its output `read5-plw.out` beside it. It assigns a gripping body
+to the nearest island centre in the farm log's island list, which approximates the placer's column test.
+
+**A forest holds on both seeds.** At 12,000 s, island 9 on 6202 (20 columns, centred at x 219, z 104) carries 25
+gripping bodies, every one born after 3,000 s, and island 6 carries 18. On 6203, island 6 (25 columns, at x 170, z 149)
+carries 26 and island 0 (12 columns, at x 62, z 159) carries 20, every one born after 3,000 s. The test passes, and by
+the reading fixed above, the winter is what stopped the second run.
+
+| Seed | Gripping, living, at 1,500 s | 3,000 s | 4,500 s | 6,000 s | 7,500 s | 9,000 s | 10,500 s | 12,000 s |
+|---|---|---|---|---|---|---|---|---|
+| 6202 | 13 | 20 | 46 | 48 | 63 | 53 | 78 | 58 |
+| 6203 | 14 | 27 | 45 | 53 | 60 | 49 | 82 | 65 |
+
+The most on one island at any 100 s sample was 43, on island 6, on both seeds. The stands start slower than the second
+run's, 13 and 14 against 35 and 41 at 1,500 s, because the second run's first 2,750 s were a summer at 1.6 times the
+mean light. From 2,750 s on, the grippers that began and those that died in each span about balanced: on 6202, 101
+began and 66 died, then 105 and 111, then 165 and 141. Age took about half the dead, against about a third in the
+second run, so plants now lived long enough to age.
+
+**The settling limit is not what stops a forest.** 75 % and 76 % of settling children found no spot, about as in the
+second run, and the forest held regardless. The gripping bodies' median depth at 12,000 s was 3.2 to 6.1 m by island.
+
+**The matter books crossed their line on 6202 at the end.** The largest energy residual was 3.0e-5 J. The matter
+residual on 6202 rose steadily through the run, its largest in each 3,000 s span 2.3e-6, 4.5e-6, 6.5e-6 and 1.0e-5,
+and it passed the 1e-5 line in the last four rows, 11,970 to 12,000 s, at most by 2 %. On 6203 it stayed under 4.5e-6.
+The second run's largest was 7.2e-6. Inference: a rounding error that accumulates with the run and the world's size,
+not one event that lost matter. It is open, and it is probed before any run longer than this one.
