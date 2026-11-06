@@ -333,7 +333,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D309](#d309) | Large plants are allowed, not paid: no price change for growing in the first plant screen | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 3 |
 | [D310](#d310) | Plant varieties are seeded: an anchored frond beside today's drifting blade | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 4 |
 | [D311](#d311) | Round 67 goes to a film if three of its moments read in the theatre | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation · partly superseded by D312 |
-| [D312](#d312) | Round 67's film gets a second chapter, the plants' answer, and falls back to ending on the comeback | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's recommendation, after the owner found an ending on the runaway unsatisfying |
+| [D312](#d312) | Round 67's film gets a second chapter, the plants' answer, and falls back to ending on the comeback | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's recommendation, after the owner found an ending on the runaway unsatisfying · partly superseded by D313 |
+| [D313](#d313) | Round 67's film tells three threads of one world at once, not two chapters in turn | 2026-11-06 | ruled by the owner on 2026-11-06, in the film lane's pick (`scratch/story-video/round-67-202611061206/pick.md`, the owner's answers saved as written) |
 
 ---
 
@@ -11112,3 +11113,18 @@ and the forest run, not for the plant screen.
 **Why.** A world that ends because its plants filled it past the body ceiling is partly a fault of the world, not
 something its creatures did. A problem the world showed, then the first answer to it, is an ending, and it is honest
 about where the work stands.
+
+### D313
+**Round 67's film tells three threads of one world at once, not two chapters in turn** · 2026-11-06
+
+**Status:** ruled by the owner on 2026-11-06, in the film lane's pick (`scratch/story-video/round-67-202611061206/pick.md`,
+the owner's answers saved as written). It supersedes D312's order, a second chapter after the first. D312's fallback,
+the ending on the comeback if no forest holds, is not ruled again here; the film lane puts it to the owner with the
+story draft.
+
+**Decision.** The film interleaves two of the story's angles as threads of one world: the costly shaped arm's comeback,
+and the rounded square's spread, which went mostly through the thrifty lines. The plants run through the film as a
+third thread from the start, the leaves spreading while the animals compete, and it ends on the grips and the forest.
+
+**Why.** The owner found enough in the round for two stories told together, and chose to weave the plants in rather
+than hold them for a second chapter, knowing it makes a busier story.
