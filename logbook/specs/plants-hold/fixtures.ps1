@@ -6,13 +6,15 @@
 # the wall clocks and any column the plants work added (scripts/reads/compare-run-rows.py). This process pins itself
 # to logical 8-11 at BelowNormal with the card hidden before it starts anything, so the farm inherits all three; a
 # peer's Unity renders on 16-19. It builds nothing and commits nothing: the caller names the run in RunFixture.cs and
-# runs the suites. On the coordinator's go (2026-11-06).
+# runs the suites. On the coordinator's go (2026-11-06). -Worktree names a later branch of the plant work built on the
+# merge (plants-build, scratch/wt-plants-build), whose switches are all off by default, for the same comparison.
+param([string]$Worktree = 'D:\Projects\experiments\evolution-simulator\scratch\wt-plants-r67')
 $ErrorActionPreference = 'Continue'
 $me = [System.Diagnostics.Process]::GetCurrentProcess(); $me.ProcessorAffinity = [IntPtr]0xF00; $me.PriorityClass = 'BelowNormal'
 $env:CUDA_VISIBLE_DEVICES = '-1'
 Get-ChildItem Env: | Where-Object { $_.Name -like 'EVOSIM_*' } | ForEach-Object { Remove-Item "Env:$($_.Name)" }
 $Root = 'D:\Projects\experiments\evolution-simulator'
-$w = "$Root\scratch\wt-plants-r67"
+$w = $Worktree
 $runs = "$Root\runs"
 $exe = "$w\artifacts\Evosim.Farm\bin\Release\net8.0\Evosim.Farm.exe"
 if (git -C $w status --porcelain --untracked-files=no) { Write-Host "the worktree is not clean; nothing started"; return }
