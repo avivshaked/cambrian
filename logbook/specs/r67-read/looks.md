@@ -170,7 +170,7 @@ at 36,000 s (`family-census.py`):
 Inference: the shaped arm's lines on 6202 lose less in each fall, as they did at 18,000 s. Two worlds of three run
 near half real time with a crowd like 6201's at its stop, so they may reach the line before 42,000 s.
 
-## Readouts 5 and 6 against the first run's founders (read at 04:50 on 2026-11-06)
+## Readouts 5 and 6 against the first run's founders (read at 04:30 on 2026-11-06)
 
 `scripts/reads/chain-run.py` joins each world's first run, to its resume at 7,500 s, and its resumed run into one
 folder, and `what-evolved.py --at 24000` reads the joined world. Its founders then include the 27 to 36 floor founders
@@ -187,3 +187,22 @@ against 522 to 573 in the resumed run alone. No birth id appears in both runs.
 - **Readouts 5 and 6 hold in all four worlds on the joined read**, as they did on the resumed runs. The one change is on
   6201, where the attack sum falls under one founder standard deviation. The shares of new plans move by half a point
   or less.
+
+## The family against the exams' lines (read at 04:35 on 2026-11-06)
+
+`scripts/reads/family-by-origin.py`, the two runs chained, splits the living jointed animals by their founder's exam and
+by whether their genome carries a superellipsoid node:
+
+| Seed, second | 40-generation exam's lines: animals, with the family | Shaped arm's lines: animals, with the family | Lineages holding the family |
+|---|---|---|---|
+| 6202, 24,000 s | 449, 90.4 % | 395, 24.1 % | 3 |
+| 6202, 30,000 s | 253, 94.5 % | 792, 12.2 % | 2 |
+| 6202, 36,000 s | 638, 82.3 % | 1,342, 11.8 % | 3 |
+| 6203, 36,000 s | 1,744, 11.6 % | 4, none | 7 |
+| 6204, 36,000 s | 1,379, 4.6 % | 42, none | 9 |
+
+- **On 6202 the family is a thrifty line's**, and nearly all of it sits in one lineage of the 40-generation exam's, 406
+  animals of 501 at 24,000 s. In the shaped arm's lines it is one lineage too, 94 animals then and 158 at 36,000 s.
+- **So the family fell on 6202 because its line lost ground to the shaped arm's**, not because it was lost within a
+  line. This settles the inference of 24,000 s against itself: the family did not spread with the shaped arm's lines.
+- On 6203 and 6204 the family is in the thrifty lines only, spread over 7 and 9 lineages.
