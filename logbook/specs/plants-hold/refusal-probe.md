@@ -65,3 +65,32 @@ The living genomes on 6202 at 42,000 s, read with `genome-query.py`'s `reachable
 Inference until counted: the 515 bodies whose chosen node is dormant make most of the refusals, since each fails at
 every growth step for life while a body that grows reaches its ceiling and stops asking. A third build counts the
 refusals whose chosen node is dormant.
+
+The third build, `b4346ce0`, counted the refusals whose chosen node is dormant, and ran the same resume for 300 s
+(`r67rp3-6202`, 42,000 to 42,300 s):
+
+| Cause | Every body | Plants |
+|---|---|---|
+| The chosen node is dormant | 13,275 (52.7 %) | 1,215 (30.1 %) |
+| No larger, with the chosen node reachable | 9,295 (36.9 %) | 1,385 (34.3 %) |
+| The body would stand inside itself | 2,642 (10.5 %) | 1,436 (35.6 %) |
+| All shape refusals | 25,212 | 4,036 |
+
+## A node off every cycle
+
+A body's count of a node caps how many times the node may occur along one path from the root (`Developer.CountFor`,
+`CanEnter`). A node that lies on no cycle occurs at most once on a path, whatever its count, so raising its count adds
+no part. Of the living bodies on 6202 at 42,000 s whose chosen node is reachable, 317 of 352 other bodies have no edge
+from the node to itself, and 143 of 911 plants. Inference: these make most of the 9,295 refusals of a reachable node,
+for the same reason as the dormant ones (a cycle through other nodes was not looked for).
+
+## What follows
+
+Two causes, together about nine refusals in ten, are a fault in the rule. It picks a node whose count can never add a
+part, either a node development never reaches or one on no cycle, and the body then tries the same futile addition at
+every growth step for life. Under D298 a fault is fixed as agent work: the rule picks the lowest indeterminate node
+under its ceiling that development reaches and that lies on a cycle through itself, behind a switch that is off by
+default. Bodies that were stuck would then grow their next node that can grow, and most of those bodies are not plants.
+
+The third cause, a plant's next blade standing inside the plant, is the geometry, and a third of the plants' refusals.
+Fixing it would change what a body may be, so under D298 it comes back to the owner as its own rule.
