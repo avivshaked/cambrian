@@ -2,10 +2,11 @@
 
     python scripts/tests/story-video-check/test_notes.py
 
-A draft fails only on what the voice cannot speak or the science forbids. The habits of model prose
-are noted for the owner and never fail it, since a rule obeyed by rewrite kills good prose faster
-than the habit does (prose.md, "The check"). The sentences below come from a passage the owner
-liked, which the earlier check failed on its contrast of two numbers.
+A draft fails on what the voice cannot speak or the science forbids, and, by the owner's ruling of
+2026-11-06 after round 67's first prose sample, on a split corrective and a stock transition. The
+other habits of model prose are noted for the owner and do not fail it, since a rule obeyed by
+rewrite kills good prose faster than the habit does (prose.md, "The check"). The sentences below
+come from a passage the owner liked, which the earlier check failed on its contrast of two numbers.
 """
 import importlib.util
 import os
@@ -49,6 +50,29 @@ class FailsOrNotes(unittest.TestCase):
         flagged, noted = rules("It was a remarkable creature.")
         self.assertEqual(flagged, {})
         self.assertIn(0, noted)
+
+    def test_a_split_corrective_fails(self):
+        flagged, _ = rules("That's the costly team.", "The tank never counted the cost.")
+        self.assertEqual(sorted(flagged), [1])
+
+    def test_a_stock_transition_fails(self):
+        for line in ("Let's back up.", "Let\u2019s back up."):
+            flagged, _ = rules(line)
+            self.assertIn(0, flagged, line)
+
+
+class Length(unittest.TestCase):
+    def errors_for(self, words):
+        entries = [("beat 1, sentence 1", " ".join(["word"] * words) + ".")]
+        errors = []
+        check.sentence_rules(entries, errors)
+        return errors
+
+    def test_a_long_film_is_not_an_error(self):
+        self.assertEqual(self.errors_for(1200), [])
+
+    def test_a_short_film_is_an_error(self):
+        self.assertTrue(self.errors_for(300))
 
 
 class Sample(unittest.TestCase):

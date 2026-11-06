@@ -35,8 +35,10 @@ In the film's folder, beside `facts.md` and `story.md`. Drafts are numbered from
   draft, at most once a draft.
 - `prose-<n>-check.txt` and `prose-<n>-say.txt`: the check of draft n and its spoken words alone, as the
   tool printed them.
-- `prose-<n>-facts-check.md`, `prose-<n>-cold-read.md` and `prose-<n>-compare.md`: the checks' answers
-  on draft n, saved word for word.
+- `prose-<n>-facts-check.md`, `prose-<n>-line-check.md`, `prose-<n>-cold-read.md` and
+  `prose-<n>-compare.md`: the checks' answers on draft n, saved word for word.
+- `prose-<n>-session-read.md`: the main session's read of draft n (the procedure, "The session's
+  read").
 - `prose-sample-<s>.md`, with its checks named the same way: a sample of a few beats, when the owner
   asks to hear some before a whole draft is written (the procedure, step 0).
 - `prose-<n>-owner.md`: the owner's words and picks on draft n, saved word for word.
@@ -48,10 +50,11 @@ In the film's folder, beside `facts.md` and `story.md`. Drafts are numbered from
 | the prose writer | [prose-brief.md](prose-brief.md) | `story.md`, `facts.md`, the draft before and its fact check, every owner's file with the key lines its picks name, and up to three earlier films' `prose.md` | its passes, `prose-<n>.md` and `prose-<n>-key-lines.md`, or `prose-<n>-questions.md` in place of the draft |
 | the check | [script-check.py](script-check.py) | one draft, its key lines and `story.md` | what it prints |
 | the fact checker | [prose-fact-check-brief.md](prose-fact-check-brief.md) | `facts.md`, one draft and its key lines | its answer |
+| the line checker | [prose-line-check-brief.md](prose-line-check-brief.md) | one draft's spoken words, nothing else | its answer |
 | the cold listener | [prose-cold-listener-brief.md](prose-cold-listener-brief.md) | one draft's spoken words, nothing else | its answer |
 | the comparer | [prose-comparer-brief.md](prose-comparer-brief.md) | `story.md` and one cold read | its answer |
 | the facts gatherer and the source checker | [facts-gathering.md](facts-gathering.md) and [facts-source-check-brief.md](facts-source-check-brief.md) | a file of questions or the owner's words on a draft, and the project's files and runs | a section at the end of `facts.md`, and the check of it |
-| the main session | this file | the files above | the answers, what the tool prints, the owner's words, `prose.md` |
+| the main session | this file | the files above | the answers, what the tool prints, its own read of each draft, the owner's words, `prose.md` |
 | the owner | | a draft, its key lines, and its checks | the picks, the approval or the changes |
 
 ## Launching a subagent
@@ -76,6 +79,7 @@ Your time budget is <minutes> minutes.
 |---|---|---|---|---|---|---|
 | prose writer | general-purpose | opus | prose-brief.md | 30 | folder, version, write | |
 | fact checker | Explore | opus | prose-fact-check-brief.md | 10 | folder, the file | `prose-<n>.md` |
+| line checker | Explore | opus | prose-line-check-brief.md | 5 | the file | `prose-<n>-say.txt` |
 | cold listener | Explore | sonnet | prose-cold-listener-brief.md | 3 | the file | `prose-<n>-say.txt` |
 | comparer | Explore | sonnet | prose-comparer-brief.md | 2 | folder, the file | `prose-<n>-cold-read.md` |
 
@@ -97,8 +101,13 @@ forbids, with the research behind each in `research/story-video/`:
 
 - a file not in the form `prose-brief.md` gives, or beats that differ from `story.md`'s (a sample's
   are some of them, in their order);
-- fewer than 400 or more than 1,000 spoken words, outside a sample. Narration that leaves the
-  pictures room carries 100 to 130 words a minute of film (narration-writing.md §3.4);
+- fewer than 400 spoken words, outside a sample. Above 1,000 it only notes the length: narration that
+  leaves the pictures room carries 100 to 130 words a minute of film (narration-writing.md §3.4), but
+  the owner ruled on 2026-11-06 that a film may run long when it is interesting and the pictures can
+  carry it;
+- two short sentences set against each other, one of them negative, and a stock transition such as
+  "let's back up". The owner ruled on 2026-11-06, after round 67's first prose sample, that these
+  must stop: "The tank never counted the cost." reached the owner after "That's the costly team.";
 - in a spoken sentence, and in every version of a key line, digits, symbols, colons, semicolons,
   brackets, double quotation marks or dashes, which a voice misreads (narration-writing.md §1.3,
   §1.6). Double braces round a name we give are the one exception, and they hold a name of one to three
@@ -108,32 +117,37 @@ forbids, with the research behind each in `research/story-video/`:
 - key lines that are not three different versions of each line, or whose version 1 is not the draft's
   line, and more than one name between braces.
 
-It notes, without failing, the habits of model prose (human-not-llm-prose.md Part 3 and 4): words of
-praise and appraisal, a closing clause that comments, a short question answered at once, very long
-sentences, many numbers in one, a run of sentences of one length, and "not this but that" used often.
-A rule obeyed by rewrite kills good prose faster than the habit does, so a note goes to the owner and
-the writer changes a noted sentence only where it hears it is wrong (tested in
-`scripts/tests/story-video-check/test_notes.py`). It also prints the number of spoken words and the
+It notes, without failing, the other habits of model prose (human-not-llm-prose.md Part 3 and 4):
+words of praise and appraisal, a closing clause that comments, a short question answered at once, very
+long sentences, many numbers in one, a run of sentences of one length, and "not this but that" used
+often. A rule obeyed by rewrite kills good prose faster than the habit does, so a note goes to the owner
+and the writer changes a noted sentence only where it hears it is wrong (tested in
+`scripts/tests/story-video-check/test_notes.py`). The tool cannot tell a short line that carries a fact,
+such as "No children.", from one that only lands, so a sentence that says nothing is the line
+checker's to find, and the session's. It also prints the number of spoken words and the
 spoken time at 145 words a minute.
 
 ## The procedure
 
 0. When the owner asks to hear a few beats before a whole draft is written, launch the prose writer for
    a sample instead, with the prompt's version line reading `You write sample <s>, of beats <list>.`
-   It writes `prose-sample-<s>.md` with only those beats. Run the check and the fact checker on it, and
-   skip the cold listener and the comparer, which need the whole film. Show the owner the sample and
-   its checks, and save their words in `prose-sample-<s>-owner.md`, word for word. The owner's words on
-   a sample hold for every draft after it, as their words on a draft do.
+   It writes `prose-sample-<s>.md` with only those beats. Run the check, the fact checker, the line
+   checker and the session's read on it, and skip the cold listener and the comparer, which need the
+   whole film. A sample fails as a draft does in step 3; then launch the writer for the next sample, and
+   after two failed samples in a row go on. Show the owner the sample and its checks, and save their
+   words in `prose-sample-<s>-owner.md`, word for word. The owner's words on a sample hold for every
+   draft after it, as their words on a draft do.
 1. Launch the prose writer for draft n, starting at draft 1. If it wrote `prose-<n>-questions.md` and
    not `prose-<n>.md`, run [facts-gathering.md](facts-gathering.md)'s procedure on that file, a file of
    questions and then its source check, and launch the writer again for the same draft. A draft asks
    once.
 2. Run the check on the draft and save what it prints in `prose-<n>-check.txt`. Run `say` on it and save
    what it prints in `prose-<n>-say.txt`.
-3. Launch the fact checker on `prose-<n>.md` and the cold listener on `prose-<n>-say.txt`, then the
-   comparer on the cold read. Save each answer word for word. The draft fails when the check's first
-   line is `PROSE CHECK: FAIL`, the fact checker's is `FACTS: FAIL`, or the comparer's is
-   `COLD READ: MISMATCH`.
+3. Launch the fact checker on `prose-<n>.md`, and the line checker and the cold listener on
+   `prose-<n>-say.txt`, then the comparer on the cold read. Save each answer word for word. Write the
+   session's read before you read the line checker's answer. The draft fails when the check's first
+   line is `PROSE CHECK: FAIL`, the fact checker's is `FACTS: FAIL`, the line checker's is
+   `LINES: FAIL`, the session's read is `READ: CUT`, or the comparer's is `COLD READ: MISMATCH`.
 4. If the draft fails, go back to step 1 for the next draft. After two failed drafts in a row, go on to
    step 5 with the latest draft.
 5. Show the owner the draft, its checks, the check's notes and the fact checker's pedantic faults.
@@ -150,6 +164,20 @@ spoken time at 145 words a minute.
      draft back, go back to step 1 for the next draft. The count of failed drafts starts again. If the
      owner's words ask for facts `facts.md` does not hold, first run facts-gathering.md's procedure on
      `prose-<n>-owner.md`, as step 1 does on a writer's questions.
+
+### The session's read
+
+The main session reads every draft and sample before the owner does, and names every line it would
+cut. The owner ruled this on 2026-11-06, after round 67's first prose sample reached them with "The
+tank never counted the cost." in it: a line the session could see was empty, and passed on because
+the flow left quality to the owner alone. It is the one verdict in the flow that is the session's own.
+It judges only whether a line says something. Which of two versions is better stays the owner's, since
+models judge that badly (research/story-video/human-not-llm-prose.md §1.4).
+
+Read `prose-<n>-say.txt` straight through, as a listener would, before reading any check's answer.
+Write `prose-<n>-session-read.md`: the first line `READ: CUT` when you would cut or rewrite any line,
+and `READ: CLEAN` otherwise; then each such line, word for word, with the line checker's kind of flag
+(prose-line-check-brief.md) and what it should say plainly. The writer of the next draft reads it.
 
 The script step sends the owner's words back here when, on a script, they change the spoken words
 (script.md, step 5). The procedure then runs again from step 1 for the next draft after the last one,

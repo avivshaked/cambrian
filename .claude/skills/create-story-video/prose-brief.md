@@ -21,19 +21,44 @@ move on.
 
 Read every sentence aloud in your head before you keep it. If nobody would say it that way, it goes.
 
+## Every sentence says something
+
+Write it plain first. Every sentence carries a fact, a step of reasoning or a picture, and every word
+in it that points at something points at what the listener has already been given. The voice comes
+from which words you choose and the order you tell things in, never from lines added for rhythm or
+attitude. The owner ruled on 2026-11-06 that a sentence which sounds intelligent and says nothing must
+stop.
+
+These lines are from round 67's first sample. Each sounds as if it belongs, and none tells a listener
+anything they can hold:
+
+- "The tank never counted the cost." Which counting, what cost? The point was that the tank scored how
+  much a creature ate, and never whether it ended with more energy than it started. Say that.
+- "Out here, a creature that runs out of energy dies." Out where, and as against what?
+- "And for a while we looked clever." "Ambitious, we know." "We're very far from that." The narrator
+  performing modesty.
+- "Three animals in five." A fragment restating the number before it, as a punchline.
+- "Let's back up." A stock transition.
+- "And all around them, the leaves keep coming." A mood with no fact in it.
+- "The world, not a grade, gets to sort them out." A contrast with nothing inside it.
+
+A short line is welcome when it carries a fact: "It starved." "No children." Ask of every sentence what
+it tells the listener. If the answer is "nothing new", or the sentence would need explaining, it goes.
+
 ## Write it in passes
 
 You won't get it in one go, and nobody does. A writer gets there in passes, each built on the last,
 and so do you.
 
 1. **Skeleton.** For each story, a few lines: its feeling, its moment, and the facts it needs.
-2. **First pass.** Tell it, all the way through, without stopping to polish.
+2. **First pass.** Tell it plainly, all the way through, without stopping to polish.
 3. **Read it as a stranger would, and name what's wrong.** Knowing the faults of model prose doesn't
    stop a model writing them, but a reading afterwards catches them. Look for the teacher, a sentence
    that explains a rule of the world. Look for the clerk: "our records", "at our last look", "by our
    reading". Look for the ledger, a count, an age and a cause in a row that do no work. Look for a
    device borrowed from somewhere, a set-up knocked down, or a line split in two for effect. Look for
-   a phrase from the example above, and for any paragraph shaped like the one before it. And look for
+   a phrase from the example above, and for any paragraph shaped like the one before it. Look for a
+   sentence that sounds clever and says nothing, as in "Every sentence says something". And look for
    the places where you felt nothing.
 4. **Next pass.** Fix what you named by telling that part again, not by patching the sentence. Keep
    what works.
@@ -127,8 +152,10 @@ what a creature did, the first Kurzgesagt film, an investigation told as it happ
 shape. Don't take the voice of any earlier film of ours. Those were written to older briefs, and in a
 voice the owner rejected.
 
-If n is above 1, read the draft before yours, its fact check `prose-<n-1>-facts-check.md`, and what
-the owner said of it. Build on it: keep what the owner liked, and tell again what they didn't. A sample
+If n is above 1, read the draft before yours, its fact check `prose-<n-1>-facts-check.md`, its line
+check `prose-<n-1>-line-check.md`, the session's read `prose-<n-1>-session-read.md`, and what the owner
+said of it. A sample reads the same files of the sample before it. Every line the line check or the
+session's read names is told again or cut. Build on it: keep what the owner liked, and tell again what they didn't. A sample
 does the same with the latest sample before it that the owner has spoken on. Where a sample the owner
 has spoken on is newer than the draft before yours, build each beat it covers on that sample instead.
 
@@ -144,9 +171,11 @@ already exists when you start, ask nothing more.
 ## The film
 
 One YouTube video of about five to seven minutes, for a viewer who has never heard of the project.
-Some will watch muted and read your words as subtitles. Aim for about 800 spoken words; the check
-refuses fewer than 400 or more than 1,000. The pictures need pauses, so never fill a silence just to
-fill it.
+Some will watch muted and read your words as subtitles. Aim for about 800 spoken words, as an aim and
+not a limit: the owner ruled on 2026-11-06 that a film may run longer when it is interesting and the
+pictures can carry it. The check refuses fewer than 400. Every part of the setup earns its place by
+building the story or giving the film a picture; it lays foundations and never lectures. The pictures
+need pauses, so never fill a silence just to fill it.
 
 The narrator is "we", the people who built this world, talking to "you". Use contractions. A joke is
 welcome when it makes the fact itself funny.
@@ -209,9 +238,10 @@ Run the check on your file:
 python <the folder this brief is in>\script-check.py prose <your file>
 ```
 
-Fix every line marked `ERROR`: those are what the voice can't speak, or words of wanting. Lines marked
-`NOTE` are habits of machine prose, shown to the owner. Change a noted sentence only if you hear that
-it is wrong. A sentence that sounds right stays.
+Fix every line marked `ERROR`: those are what the voice can't speak, words of wanting, two short
+sentences set against each other with one negative, and stock transitions. Lines marked `NOTE` are
+other habits of machine prose, shown to the owner. Change a noted sentence only if you hear that it is
+wrong. A sentence that sounds right stays, if it also says something.
 
 If you reach your time budget, write what you have and say so in the notes. Stop when your files are
 written.

@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 # prose.md under "The check" and script-schema.md under "What the check refuses" give the research behind the limits.
-WORDS_MIN, WORDS_MAX = 400, 1000  # the check refuses outside these
+WORDS_MIN, WORDS_MAX = 400, 1000  # the check refuses below the first and notes above the second
 WORDS_TARGET = 800                # what a draft aims at; never cut good prose only to reach it
 PACE = 145                        # words a minute, for the spoken time
 SENTENCE_MAX = 25                 # words in one spoken sentence
@@ -53,10 +53,17 @@ TELLS = [
     (r"\b(?:subtle|shadowy|whispers?|woven|a sense of)\b", "fake subtlety; say the thing itself"),
     (r"\b(?:key turning point|setting the stage|sets the stage)\b", "a claim of significance"),
     (r"\b(?:experts|researchers|scientists|observers|some say)\b", "a vague agent; say who"),
-    (r"\b(?:here['\u2019]s the thing|and honestly)\b", "a hype interjection"),
+    (r"\band honestly\b", "a hype interjection"),
     (r"\b(?:a reminder that|changes everything|the lesson|ultimately)\b",
      "a summary or a moral; stop when the story stops"),
 ]
+# Phrases a model reaches for between one beat and the next; any of them in a sentence fails the check.
+STOCK_TRANSITIONS = [
+    "let's back up", "let's rewind", "here's the thing", "here's the twist", "here's where it gets interesting",
+    "it turns out", "fast forward", "spoiler", "let that sink in", "but wait", "buckle up", "so what happened",
+]
+STOCK = re.compile(
+    r"\b(?:" + "|".join(re.escape(p).replace("'", "['\u2019]") for p in STOCK_TRANSITIONS) + r")\b", re.I)
 PURPOSE = re.compile(
     r"\b(?:in order to|so as to|so that|evolv(?:e|es|ed) to|learn(?:s|ed|t)? to|tr(?:y|ies|ied|ying) to|"
     r"want(?:s|ed)? to|need(?:s|ed)? to|decid(?:e|es|ed) to|figured out|in an effort to|"
@@ -431,9 +438,11 @@ def unmark(text):
 
 
 def sentence_problems(sentence):
-    """Returns (problems, notes). A problem is what the voice cannot speak or the science forbids, and
-    fails the check. A note is a habit of model prose, shown to the owner and never failing: a rule
-    obeyed by rewrite kills good prose faster than the habit does (prose.md, "The check")."""
+    """Returns (problems, notes). A problem is what the voice cannot speak, the science forbids, or a stock
+    transition, and fails the check. A note is a habit of model prose, shown to the owner and not failing
+    it: a rule obeyed by rewrite kills good prose faster than the habit does (prose.md, "The check").
+    Two habits fail all the same, a split corrective (in sentence_rules) and a stock transition, by the
+    owner's ruling of 2026-11-06 after round 67's first prose sample."""
     problems, notes = [], []
     for inner in GIVEN.findall(sentence):
         if not NAME.fullmatch(inner):
@@ -454,6 +463,9 @@ def sentence_problems(sentence):
     m = PURPOSE.search(body)
     if m:
         problems.append(f"'{m.group(0)}': purpose or wanting; tell what happened to the population")
+    m = STOCK.search(body)
+    if m:
+        problems.append(f"'{m.group(0)}': a stock transition; say what comes next instead")
     words = word_count(sentence)
     if words > SENTENCE_MAX:
         notes.append(f"{words} words: a long one for the ear")
@@ -513,16 +525,17 @@ def sentence_rules(entries, errors, sample=False):
     for j in range(1, len(entries)):
         (where_before, before), (where_after, after) = entries[j - 1], entries[j]
         if split_corrective(where_before, before, lengths[j - 1], where_after, after, lengths[j]):
-            noted.setdefault(j, []).append(
-                f"two short sentences set against each other, one of them negative (\"{before}\" then this)")
+            flagged.setdefault(j, []).append(
+                f"two short sentences set against each other, one of them negative (\"{before}\" then this): "
+                "say the point plainly in one sentence")
     for j in range(4, len(entries)):
         run = lengths[j - 4:j + 1]
         if max(run) - min(run) <= SAME_LENGTH:
             noted.setdefault(j, []).append(
                 f"the fifth sentence in a row of about the same length ({', '.join(map(str, run))} words)")
     words = sum(lengths)
-    if not sample and not WORDS_MIN <= words <= WORDS_MAX:
-        errors.append(("length", f"{words} spoken words; the budget is {WORDS_MIN} to {WORDS_MAX}"))
+    if not sample and words < WORDS_MIN:
+        errors.append(("length", f"{words} spoken words; the budget starts at {WORDS_MIN}"))
     return flagged, noted, words
 
 
@@ -670,9 +683,13 @@ def check_prose(path):
             beats = [(b["name"], [s for para in b["paragraphs"] for s in para]) for b in prose["beats"]]
             check_key_lines(read(key_path), beats, errors, key_path.name)
     spoken = words / PACE
+    long = []
+    if not sample and words > WORDS_MAX:
+        long = [f"long: {words} spoken words, over {WORDS_MAX}; the owner allows a longer film when it holds (2026-11-06)"]
     return report("PROSE CHECK", [
-        f"{path.name}: {words} spoken words in {len(entries)} sentences; the budget is {WORDS_MIN} to {WORDS_MAX}, "
+        f"{path.name}: {words} spoken words in {len(entries)} sentences; at least {WORDS_MIN}, "
         f"aiming at about {WORDS_TARGET}",
+        *long,
         f"spoken time about {spoken:.1f} min at {PACE} words a minute, before any pauses",
         f"key lines: {key_note}"], errors, entries, flagged, noted)
 
