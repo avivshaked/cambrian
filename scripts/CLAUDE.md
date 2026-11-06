@@ -166,6 +166,10 @@ belongs to a run that has ended, so it can be stopped by its process id (2026-10
   once, so a card session ran unwatched. Pass anything with a space through a file the script reads
   (or an ISO date with a `T`), send stderr to a file, and read the launched script's first log line
   before trusting it.
+- **`pace-check.py` reads only `runs\` unless told otherwise.** A world launched under another root,
+  such as a screen's `scratch\<work>\runs`, reads as "no running world", and a render guard pointed at
+  `runs\` watched nothing beside the forest run on 2026-11-06. Pass `--runs-root` with the world's
+  root (the render guard takes `EVOSIM_GUARD_PACE_RUNS`), and check the first reading names the world.
 - **`Start-Process -Wait` waits for every process its child starts, the compiler server included.**
   A `dotnet test` or `build` leaves `VBCSCompiler` running for minutes after it ends, so on 2026-11-04 a
   script sat ten minutes on a suite that finished in 38 s, until `dotnet build-server shutdown` ended it.
