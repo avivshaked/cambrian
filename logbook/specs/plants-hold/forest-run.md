@@ -220,3 +220,37 @@ ends, with islands assigned as the diagnostic's read assigns them (`read5.py`). 
 on either seed. If 0.4 passes, a forest survives most of the full winter as the plants stand. If 0.2 passes and 0.4
 fails, the limit lies between them. If 0.2 fails, even a mild winter breaks a forest. Read besides: the grippers that
 began and died in each season, and the matter books on every world against the 1e-5 line.
+
+## What the steps found
+
+The four worlds ran from 20:22 to 22:02 on 2026-11-06 at 1.6 to 3.4 times real time, as
+`scratch/plants-work/runs/plv2-6202/2026-11-06-202245-28abe0fc` and `plv2-6203` at amplitude 0.2, and
+`plv4-6202/2026-11-06-202245-b6330bb3` and `plv4-6203` at 0.4. Every book closed under its line: the largest energy
+residual was 8.5e-5 J and the largest matter residual 8.2e-6. The reads are `read5.py` and `at-end.py` in
+`scratch/plants-work/forest-read/`, with their outputs `read5-plv.out` and `at-end-plv.out` beside them.
+
+**Both steps pass, each on one seed of two.** The test at 12,000 s, with every forest run beside it for comparison:
+
+| Amplitude (winter's light) | 6202's best island | 6203's best island | Test |
+|---|---|---|---|
+| 0 (no winter, the diagnostic) | 25, island 9 | 26, island 6 | passes on both |
+| 0.2 (0.8) | 46, island 6 | 18, island 6 | passes on 6202 |
+| 0.4 (0.6) | 21, island 6 | 5, island 6 or 9 | passes on 6202 |
+| 0.6 (0.4, the second run) | 1 | 1 | fails on both |
+
+Every gripping body counted at 12,000 s in these steps was born after 3,000 s, so the second test, renewal, is met
+wherever the first is. At 0.4, 6202 passes by one plant over the line, and 6203 ends with 16 gripping in the whole
+world.
+
+| Seed, amplitude | Gripping at 1,500 s | 3,000 s | 4,500 s | 6,000 s | 7,500 s | 9,000 s | 10,500 s | 12,000 s |
+|---|---|---|---|---|---|---|---|---|
+| 6202, 0.2 | 9 | 14 | 29 | 25 | 52 | 62 | 82 | 79 |
+| 6203, 0.2 | 29 | 48 | 59 | 39 | 65 | 59 | 54 | 34 |
+| 6202, 0.4 | 17 | 26 | 15 | 11 | 35 | 42 | 53 | 41 |
+| 6203, 0.4 | 27 | 42 | 36 | 25 | 32 | 23 | 26 | 16 |
+
+The winters still cost each stand, and more as the winter deepens: at 0.4, 6203's second winter took 84 grippers while
+57 began. Settling children failed to find a spot in 75 to 80 % of tries at every step, as before.
+
+Inference: a forest as the plants stand now survives a winter at 0.6 of the mean light about half the time, and not one
+at 0.4. D319's bank and rest have to carry a stand across that gap.
