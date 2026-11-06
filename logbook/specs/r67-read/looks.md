@@ -169,3 +169,21 @@ at 36,000 s (`family-census.py`):
 
 Inference: the shaped arm's lines on 6202 lose less in each fall, as they did at 18,000 s. Two worlds of three run
 near half real time with a crowd like 6201's at its stop, so they may reach the line before 42,000 s.
+
+## Readouts 5 and 6 against the first run's founders (read at 04:50 on 2026-11-06)
+
+`scripts/reads/chain-run.py` joins each world's first run, to its resume at 7,500 s, and its resumed run into one
+folder, and `what-evolved.py --at 24000` reads the joined world. Its founders then include the 27 to 36 floor founders
+of 0 s, and the pool and trickle founders that came before 7,500 s. That makes 741 to 793 founder bodies a world,
+against 522 to 573 in the resumed run alone. No birth id appears in both runs.
+
+| Seed | Traits shifted 1 founder SD or more | Living animals in a plan no founder had |
+|---|---|---|
+| 6201 | adult scale, volume, intake, hidden units | 85.0 % |
+| 6202 | lifespan scale, reserve margin | 78.6 % |
+| 6203 | adult scale, volume, hidden units, lifespan scale, brood | 54.3 % |
+| 6204 | adult scale | 59.9 % |
+
+- **Readouts 5 and 6 hold in all four worlds on the joined read**, as they did on the resumed runs. The one change is on
+  6201, where the attack sum falls under one founder standard deviation. The shares of new plans move by half a point
+  or less.
