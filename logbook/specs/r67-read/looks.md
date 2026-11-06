@@ -244,3 +244,13 @@ arm's. The family is in 22.5 % of 3,224 jointed bodies and 18.7 % of 3,062 joint
 
 Inference: both worlds climb toward the ceiling that ended 6203, 6202 at 5,130 bodies short of it and 6204 at 3,564,
 and may end the same way.
+
+## 43,398 s: seed 6204 ran away (06:25 on 2026-11-06)
+
+Seed 6204 ended by itself at 43,398.5 s with 25,004 living bodies, 2,775 of them jointed, and 471,837 J of standing
+tissue, the same runaway as 6203's. It held 21,436 bodies at 42,640 s, so it climbed the last 3,500 in about 750 s. Its
+last checkpoint is at 42,000 s. At 43,000 s it held 3,576 living animals, 3,489 of them in the 40-generation exam's
+lines and 87 in the shaped arm's. The family is in 12.4 % of 3,091 jointed bodies and 8.3 % of 2,943 jointed animals,
+spread over 9 lineages, all but one animal of it in the thrifty lines.
+
+Seed 6202 runs on alone, at 22,012 bodies at 43,150 s.
