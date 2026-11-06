@@ -119,3 +119,15 @@ Inference: on 6202 the shaped arm's lines and the family's animals are about as 
 have spread inside those lines. Whether it did is a lineage read for the morning. `what-evolved.py`'s text report
 fails on a resumed run, at a lineage whose root's birth lies in the earlier run; its JSON is whole. Owed: the fix, and
 a read that chains the two runs for readouts 5 and 6 against the first floor's founders.
+
+## 26,590 s: seed 6201 stopped under half real time (02:34 on 2026-11-06)
+
+Seed 6201 ran at 0.49 times real time at 02:33 (the group's pace line, then `pace-check.py`), and was stopped with
+`scripts/stop-arm.ps1 r67r1-6201 -Reason manual-other`, as the pre-registration and the owner's rule of 2026-10-29
+say. It stopped at 26,590 s with a checkpoint at that second (`checkpoints/000026590.ckpt`). The round has no
+exchange between worlds, so the other three ran on.
+
+The reason is the crowd. The world held 19,874 living bodies at the stop, against 10,936 at 24,000 s; 4,611 of them
+jointed and 15,263 rigid, and 24 bodies a step on the bed or the glass. Its pace fell with the count: 1.5 times real
+time near 15,000 s, 0.86 at 21,000 s, 0.72 at 24,000 s and 0.49 at 26,500 s. The other three held 10,800 to 13,744
+bodies at the same hour, at 0.77 to 1.0 times real time. Whether 6201 resumes, and on what, is the owner's.
