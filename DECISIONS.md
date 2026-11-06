@@ -340,6 +340,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D316](#d316) | Island coral grows taller and varied, its highest crests near the surface | 2026-11-06 | ruled by the owner on 2026-11-06, who suggested that coral could reach almost to the surface and then chose the coordinator's recommended form of it |
 | [D317](#d317) | Round 67's film follows the costly team's comeback with the plants beside it, and shows the first forest run's stand before its ending | 2026-11-06 | ruled by the owner on 2026-11-06, in the film lane's questions after story draft 6 (`scratch/story-video/round-67-202611061206/owner-6.md` and `pick.md`, the owner's answers saved as written) |
 | [D318](#d318) | The winter comes back to the plant work's worlds in steps, while a way through it is designed | 2026-11-06 | ruled by the owner on 2026-11-06, choosing the coordinator's recommendation after the forest diagnostic (`logbook/specs/plants-hold/forest-run.md`, "What the diagnostic found") |
+| [D319](#d319) | A gripping plant may shed its blades and rest through the winter, its ageing slowed, beside a bank of its own | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's proposal for D318's way through the winter (`proposals/propose-plants-winter.md` at `90dd34b2`, absorbed here and deleted) |
 
 ---
 
@@ -11242,3 +11243,39 @@ answer: plants in seasonal water live through the dark months rather than avoidi
 **Rejected.** The steps alone, which leave the question open if forests fail at the full winter. The proposal alone,
 which designs a mechanism without knowing how close the plants already are. A milder season kept for the plant work,
 which makes the ocean less seasonal than the rounds' and would reach the rounds.
+
+### D319
+**A gripping plant may shed its blades and rest through the winter, its ageing slowed, beside a bank of its own** · 2026-11-06
+
+**Status:** ruled by the owner on 2026-11-06, on the coordinator's proposal for D318's way through the winter
+(`proposals/propose-plants-winter.md` at `90dd34b2`, absorbed here and deleted). The owner chose option B and the slowed
+ageing as recommended. Option A goes ahead as agent work under D296, with no objection. Option C is held. It amends
+D106's drop for a resting plant and D128 for a resting body.
+
+**Decision.**
+- **A, the bank (agent work).** The anchored founders draw their reserve margin (D098) from a range of their own, behind
+  a setting, starting at 3,000 s of their upkeep, a winter's cost with no income. Today every founder draws from one
+  range, animals included, which stays as it is. A screen reads whether a bank alone carries a forest through D151's
+  winter.
+- **B, rest (the owner's rule, behind a switch, off by default).**
+  1. A plant, a body with no eating tissue (D206), carries a heritable rest delay in seconds.
+  2. When its income has stood below its upkeep for longer than its delay, it rests. It drops its added blades to its
+     genome's own plan and keeps their share of the reserve, where D106's drop sends that share away.
+  3. While it rests, its upkeep, its income and its ageing clock run at the rest factor, a world dial.
+  4. When the income it would earn at the full rate has stood above its upkeep at the full rate for its delay, it wakes,
+     and the module rule grows its blades again.
+  It starts strong (D262), at a delay of 600 s, longer than a night, and a factor of 0.05, and is dialled back toward
+  0.3. The screen runs it with the drop and without it, and against A's bank as its control.
+- **Ageing in rest.** A resting body's ageing clock runs at the rest factor. That amends D128 for resting bodies only.
+- **C, the young waiting on the rock as resting spores, is held**, as the dearest of the three.
+
+**Why.** In both forest runs the stands starved each winter, and the plants carried a few hundred seconds of reserve
+into a winter of 3,000 s (inference from the first run's stand, 20 of whose 38 died by the end of the ramp into
+winter). Perennial kelps keep holdfast and stipe through the winter and grow a new blade from stores, and seagrass keeps
+its rhizome (general knowledge, uncited). The plant answers its own ledger: no rule reads the world or the season's
+clock. Without slowed ageing, a plant that rests through the winter wakes near the end of its life: in the diagnostic
+without the winter, the plants that died of age had lived a median 1,778 s.
+
+**Rejected.** B with ageing at the full rate, under which most resting plants would wake old and the forest would
+rebuild mainly through their children. A alone, which the coordinator expects to fall short (inference) and which stays
+as B's control.
