@@ -19,8 +19,10 @@ The family is an animal with a grown superellipsoid node on a moving joint. At 2
 | 29177 | 19,603 s | its link's capsule became a superellipsoid | 6 | 157.8, -7.9, 176.2 |
 | three more | 19,998 to 23,877 s | the link's capsule | 1 each | not measured |
 
-The shape entered the line that holds the family once, in body 11563, a child of pool founder 9471 of the thrifty
-40-generation exam, born at 7,423 s at 245.1, -7.8, 237.5. 11563 left 5,599 descendants, 501 of them alive at 24,000 s.
+The shape arose separately at least six times in the lines the family descends from, as the table shows, and once
+before that in 6264 (below). One of those arrivals spread: body 11563, a child of pool founder 9471 of the thrifty
+40-generation exam, born at 7,423 s at 245.1, -7.8, 237.5, is the ancestor of 180 of the 191. The first version of this
+read said the shape entered the family's line once, which reads as one mutation making the shape; it did not. 11563 left 5,599 descendants, 501 of them alive at 24,000 s.
 The first jointed animal to carry the shape at all, 6264 (born 5,073 s at 162.5, -1.5, 130.7), left three descendants,
 the last dead at 7,527 s.
 
