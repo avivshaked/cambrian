@@ -341,6 +341,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D317](#d317) | Round 67's film follows the costly team's comeback with the plants beside it, and shows the first forest run's stand before its ending | 2026-11-06 | ruled by the owner on 2026-11-06, in the film lane's questions after story draft 6 (`scratch/story-video/round-67-202611061206/owner-6.md` and `pick.md`, the owner's answers saved as written) |
 | [D318](#d318) | The winter comes back to the plant work's worlds in steps, while a way through it is designed | 2026-11-06 | ruled by the owner on 2026-11-06, choosing the coordinator's recommendation after the forest diagnostic (`logbook/specs/plants-hold/forest-run.md`, "What the diagnostic found") |
 | [D319](#d319) | A gripping plant may shed its blades and rest through the winter, its ageing slowed, beside a bank of its own | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's proposal for D318's way through the winter (`proposals/propose-plants-winter.md` at `90dd34b2`, absorbed here and deleted) |
+| [D320](#d320) | A prose line that says nothing fails the draft, the session's read among the checks, and a film may run past 800 words | 2026-11-06 | ruled by the owner on 2026-11-06, after round 67's first prose sample (`scratch/story-video/round-67-202611061206/prose-sample-1-owner.md`, the owner's words saved as written), choosing four fixes… |
 
 ---
 
@@ -11279,3 +11280,29 @@ without the winter, the plants that died of age had lived a median 1,778 s.
 **Rejected.** B with ageing at the full rate, under which most resting plants would wake old and the forest would
 rebuild mainly through their children. A alone, which the coordinator expects to fall short (inference) and which stays
 as B's control.
+
+### D320
+**A prose line that says nothing fails the draft, the session's read among the checks, and a film may run past 800 words** · 2026-11-06
+
+**Status:** ruled by the owner on 2026-11-06, after round 67's first prose sample
+(`scratch/story-video/round-67-202611061206/prose-sample-1-owner.md`, the owner's words saved as written), choosing
+four fixes the film lane put; the owner confirmed the CLAUDE.md wording to the coordinator the same day. It amends the
+owner's ruling of 2026-09-26, kept in CLAUDE.md's story-flow paragraph, that no verdict in a skill's flow is the
+session's own, for prose drafts only. The checks are in the `create-story-video` skill at `2b70295b`.
+
+**Decision.**
+- A line checker, a cold Opus subagent, fails any sentence that says nothing.
+- The writer's brief says to write plain first, and lists the moves it bans.
+- The tool fails a split corrective and a stock transition.
+- The main session reads every prose draft before the owner and names each line it would cut because it says nothing,
+  and that read can fail the draft. It judges only whether a line says something, never which of two versions is better.
+- 800 spoken words is an aim, not a limit. A film may run longer when it is interesting and its pictures carry it, and
+  the tool only notes a length above 1,000 words.
+
+**Why.** The owner rejected the first sample as empty model prose: lines such as "The tank never counted the cost.",
+which look as if they belong and tell the viewer nothing (what tank, what cost). The owner observed that any careful
+reader, the session included, sees such a line at once, so the session's read is the check that catches it. On length,
+the owner asked what each part of the setup does for the story and the pictures, rather than how long it runs.
+
+**Rejected.** Leaving every verdict to subagents and tools alone, under which this sample's empty lines passed every
+check before it reached the owner.

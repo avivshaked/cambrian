@@ -306,7 +306,10 @@ actually verifying it.
   decided was not good enough). A step that judges is a tool's check, a subagent's answer saved as it came,
   or the owner's words saved as they wrote them; a note a subagent reads is one of those three and
   never the session's reading; the flow's state records every verdict, and every loop has a limit
-  after which the owner rules. `scripts/story-flow.py` (`next`, `save`, `owner`) is the pattern. A
+  after which the owner rules. One exception, the owner's of 2026-11-06 after round 67's first prose
+  sample: the main session reads every prose draft before the owner and names each line it would cut
+  because it says nothing, and that read can fail the draft. It judges only whether a line says
+  something, never which of two versions is better. `scripts/story-flow.py` (`next`, `save`, `owner`) is the pattern. A
   reader that must know nothing of the project is an `Explore` agent, which is given no CLAUDE.md,
   memory or git status; a `general-purpose` agent is given all three, and they change by the day.
 - **Sample the pictures while a round runs, not only when it is written up** (owner,
