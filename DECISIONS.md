@@ -333,8 +333,9 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D309](#d309) | Large plants are allowed, not paid: no price change for growing in the first plant screen | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 3 |
 | [D310](#d310) | Plant varieties are seeded: an anchored frond beside today's drifting blade | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 4 |
 | [D311](#d311) | Round 67 goes to a film if three of its moments read in the theatre | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation · partly superseded by D312 |
-| [D312](#d312) | Round 67's film gets a second chapter, the plants' answer, and falls back to ending on the comeback | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's recommendation, after the owner found an ending on the runaway unsatisfying · partly superseded by D313 |
+| [D312](#d312) | Round 67's film gets a second chapter, the plants' answer, and falls back to ending on the comeback | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's recommendation, after the owner found an ending on the runaway unsatisfying · superseded by D313 and D314 |
 | [D313](#d313) | Round 67's film tells three threads of one world at once, not two chapters in turn | 2026-11-06 | ruled by the owner on 2026-11-06, in the film lane's pick (`scratch/story-video/round-67-202611061206/pick.md`, the owner's answers saved as written) |
+| [D314](#d314) | Round 67's film ends on the first grip and the open question if no forest holds, and no longer waits for the forest run | 2026-11-06 | ruled by the owner on 2026-11-06, choosing option A as the film lane put it with story draft 2 (`scratch/story-video/round-67-202611061206/owner-2.md`, the owner's answer saved as written) |
 
 ---
 
@@ -11128,3 +11129,20 @@ third thread from the start, the leaves spreading while the animals compete, and
 
 **Why.** The owner found enough in the round for two stories told together, and chose to weave the plants in rather
 than hold them for a second chapter, knowing it makes a busier story.
+
+### D314
+**Round 67's film ends on the first grip and the open question if no forest holds, and no longer waits for the forest run** · 2026-11-06
+
+**Status:** ruled by the owner on 2026-11-06, choosing option A as the film lane put it with story draft 2
+(`scratch/story-video/round-67-202611061206/owner-2.md`, the owner's answer saved as written). It supersedes D312's
+fallback, the ending on the comeback, and its rule that the film waits for the forest run. With D313, which replaced
+D312's order, nothing of D312 stands.
+
+**Decision.** If no forest holds, the film's plant thread ends it: the first grip a world formed, and the question it
+leaves open, whether a forest can hold on the rock. If the forest run (`logbook/specs/plants-hold/forest-run.md`) shows
+a forest holding, the forest becomes the last beat. The film's structure does not depend on the run, so the film may be
+finished before the run reads. Option A said so in the question the owner answered, and the owner did not rule on the
+waiting separately.
+
+**Why.** The plants are a thread from the start (D313), so an ending on the comeback would leave that thread stopped
+partway, at the first grip. An open question is an honest ending for a thread whose answer the next run gives.
