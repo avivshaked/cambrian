@@ -78,8 +78,13 @@ The questions are in <folder>\<file>.                                   (questio
 The source check is in <folder>\sources-check-<k>.md.                   (fix)
 Check only the last section of facts.md.                                (last section)
 Write only under <checkout>\scratch\story-video\. Never write in your session scratchpad or in TEMP.   (write)
+Run every command that reads a run pinned to logical processors <cores> at below-normal priority, one at a time, by setting the PowerShell tool's own ProcessorAffinity and PriorityClass first in the same command (scripts\CLAUDE.md), and stop if scripts\temp-check.ps1 reads <celsius> °C or more.   (limits)
 Your time budget is <minutes> minutes.
 ```
+
+The limits line is kept whenever the machine's coordinator has set limits on reads, which a gatherer's
+reads of a run otherwise ignore; `<cores>` and `<celsius>` are the coordinator's numbers. It was added on
+round 67's film, whose questions were answered beside a card run.
 
 | Run | Role | Agent | Model | Brief | Minutes | Lines kept |
 |---|---|---|---|---|---|---|
