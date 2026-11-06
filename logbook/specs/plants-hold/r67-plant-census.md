@@ -49,3 +49,24 @@ Inference: the worlds hold one variety of plant, the drifting blade, in many siz
 would be a plant that makes its living a different way: one that holds the rock (D296), one that grows tall towards the
 light (D297), or one that keeps its matter in many blades rather than budding them off (the owner's idea of
 2026-11-03). Each is a rule the owner rules on.
+
+## What a part costs against a body: an estimate under load
+
+The owner's second plant idea asks first what a part costs against a body. Round 67's stats rows carry each stage's
+wall time with the body steps and link steps behind it, so the cost can be estimated from the run itself. Over 6202's
+last 6,000 s (38,090 to 44,080 s, 18,415 bodies on average, 113 harness steps a body a simulated second):
+
+| Per simulated second | Machine time |
+|---|---|
+| A body's harness (settling, metabolism, growth, the senses) | 30.6 µs |
+| A body's share of the world's step (births, deaths, fields, the ledger) | 17.9 µs |
+| A link's physics | 21.9 µs |
+
+So a body costs about 48 µs a simulated second before its parts, and each part adds about 22 µs. A plant of four blades
+held as one body would cost about 136 µs, against 280 µs for the same four blades as four bodies. Over the run the
+harness's cost a body step rose with the crowd, from 0.10 µs near 8,500 s to 0.31 µs near 40,500 s. The physics cost a
+link step fell, from 0.59 µs to 0.22 µs, as the card's work grew more parallel.
+
+These are readings under load: four worlds shared one process on logical 20 to 31, and a timing read is taken with
+nothing else running (the root `CLAUDE.md`). They give the size of the saving, about half for a four-blade plant, and
+a quiet timing is still owed before a figure is ruled on. The contact reach of a large part is not measured here.
