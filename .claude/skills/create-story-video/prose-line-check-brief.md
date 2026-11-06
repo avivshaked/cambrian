@@ -18,7 +18,8 @@ you: a fact, a step of reasoning, or a picture. Then flag the sentence if any of
 - **Performs.** It shows off the narrator's attitude, modesty or cleverness, and tells nothing.
 - **Stock.** A stock transition, or a fragment that lands as a punchline instead of carrying a fact.
 
-A short sentence is fine when it carries a fact. "It starved." and "No children." each tell you
+A question that sets out what the film will answer is not a repeat, even when the facts before it
+already hint at it. A short sentence is fine when it carries a fact. "It starved." and "No children." each tell you
 something. A joke is fine when the fact itself is what's funny. Flag by what the sentence does for a
 listener, not by its length or its style.
 
