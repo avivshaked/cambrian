@@ -339,6 +339,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D315](#d315) | A settling plant goes no deeper than its parent, and an anchored founder no deeper than 9 m | 2026-11-06 | ruled by the owner on 2026-11-06, choosing the coordinator's recommendation (option A) after the forest run (`logbook/specs/plants-hold/forest-run.md`) |
 | [D316](#d316) | Island coral grows taller and varied, its highest crests near the surface | 2026-11-06 | ruled by the owner on 2026-11-06, who suggested that coral could reach almost to the surface and then chose the coordinator's recommended form of it |
 | [D317](#d317) | Round 67's film follows the costly team's comeback with the plants beside it, and shows the first forest run's stand before its ending | 2026-11-06 | ruled by the owner on 2026-11-06, in the film lane's questions after story draft 6 (`scratch/story-video/round-67-202611061206/owner-6.md` and `pick.md`, the owner's answers saved as written) |
+| [D318](#d318) | The winter comes back to the plant work's worlds in steps, while a way through it is designed | 2026-11-06 | ruled by the owner on 2026-11-06, choosing the coordinator's recommendation after the forest diagnostic (`logbook/specs/plants-hold/forest-run.md`, "What the diagnostic found") |
 
 ---
 
@@ -11200,8 +11201,10 @@ unchanged, and the first forest run's stand comes before it.
 
 **Decision.** The costly shaped arm's comeback is the film's spine and the plants are its second thread. The story's
 answer, as the owner refined it after draft 8 (`owner-8.md`), is that one late arrival's family saved the costly team:
-body 13929's, which came from the tank at 11,447 s and was nearly all of the shaped arm from 30,000 s on. Why it did
-well was not measured, and the film says so. The story follows that family. The rounded
+body 13929's, which came from the tank at 11,447 s and was nearly all of the shaped arm from 30,000 s on. The answer ends on
+a twist (`owner-9.md`): that family's founder genome was one of the team's lightest eaters in the tank, with only three
+of its 28 eating less, and ended the tank among its most profitable. Whether that is why the family did well was not
+measured, and the film says so. The story follows that family. The rounded
 square's spread is no longer a thread: body 11563's arrival stays as one episode in the thrifty team's story. Before
 the ending, the film shows the first forest run's one-season stand on seed 6202, 37 plants grown from settled children
 at 8,500 s and gone in the lean season after, labelled plainly as a separate test world and not round 67. The second forest run is left out. The film then ends as
@@ -11217,3 +11220,25 @@ ending that almost held, and the second forest run found no forest either (`logb
 **Rejected.** Ending on the first grip without the stand, which leaves out the one time a forest renewed itself. A
 line on the second forest run after the stand: it would say more about how hard the problem is, and the owner chose the
 simpler beat.
+
+### D318
+**The winter comes back to the plant work's worlds in steps, while a way through it is designed** · 2026-11-06
+
+**Status:** ruled by the owner on 2026-11-06, choosing the coordinator's recommendation after the forest diagnostic
+(`logbook/specs/plants-hold/forest-run.md`, "What the diagnostic found"). It sets the plant work's next runs. It changes
+no round's world: round 67's world keeps D151's seasons until the owner rules on the proposal it asks for.
+
+**Decision.** Two things go ahead together. The plant work's test worlds bring the winter back in steps, the season's
+amplitude at 0.2 and 0.4 and then the full 0.6 of the second forest run, to find how much winter a forest survives as
+the plants stand. And the coordinator writes a proposal for a way through the winter at the full season, such as a
+gripping plant that sheds its blades and idles at a lower cost until the light returns, regrowing under D298, as kelp
+and seagrass do.
+
+**Why.** With the winter off, a forest held on both seeds of the diagnostic. With the winter of D151, at 0.4 of the
+mean light for 3,000 s, every stand died each winter, most of its plants starving, in both forest runs. The steps cost
+card time and no build, and say how far the plants are from surviving a real winter. The proposal is the real ocean's
+answer: plants in seasonal water live through the dark months rather than avoiding them.
+
+**Rejected.** The steps alone, which leave the question open if forests fail at the full winter. The proposal alone,
+which designs a mechanism without knowing how close the plants already are. A milder season kept for the plant work,
+which makes the ocean less seasonal than the rounds' and would reach the rounds.
