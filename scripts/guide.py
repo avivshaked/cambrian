@@ -497,6 +497,14 @@ def living_bodies(bodies):
     return [b for b in bodies if len(b) < 5 or not (b[4] & REMAINS_BIT)]
 
 
+def living_pose_bodies(bodies):
+    """A poses row's bodies without the remains of the dead, whose frozen frames would dilute a
+    body's joint-angle spread. A state stream's body carries 'flags', the same bit 8 marking remains
+    (PoseStream.RemainsBit); poses.jsonl and a version 1 stream record none, so their rows come back
+    whole."""
+    return [b for b in bodies if not (b.get('flags') or 0) & REMAINS_BIT]
+
+
 def read_positions(run_dir, clade_of, n_clades, radius, bed, reef_of=None):
     """One pass over the positions (either record, runrec.py): per-clade peaks, success share and
     location histograms.
@@ -1155,7 +1163,7 @@ def read_joints(run_dir):
     if runrec.poses_source(run_dir) is None:
         return None
     for row in runrec.poses(run_dir):
-        for b in row['bodies']:
+        for b in living_pose_bodies(row['bodies']):
             q = b.get('q')
             if not q:
                 continue

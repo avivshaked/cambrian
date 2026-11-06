@@ -124,6 +124,24 @@ def test_the_arrivals_fact_calls_no_pool_founder_random():
     assert guide.arrivals_text(641, 0).startswith("{n} random founders")
 
 
+def test_a_dead_bodys_frozen_frames_are_left_out_of_its_joint_spread():
+    rows = [{"t": t, "bodies": [{"id": 7, "q": [q], "flags": flags}]}
+            for t, q, flags in ((1.0, 0.0, 2), (2.0, 1.0, 2), (3.0, 1.0, 2 | REMAINS), (4.0, 1.0, 2 | REMAINS))]
+    saved = guide.runrec.poses_source, guide.runrec.poses
+    guide.runrec.poses_source = lambda run: "poses.bin"
+    guide.runrec.poses = lambda run: rows
+    try:
+        samples, sd = guide.read_joints("unused")[7]
+    finally:
+        guide.runrec.poses_source, guide.runrec.poses = saved
+    assert samples == 2 and abs(sd - 0.5) < 1e-9
+
+
+def test_poses_that_record_no_flags_come_back_whole():
+    bodies = [{"id": 1}, {"id": 2, "flags": None}, {"id": 3, "flags": 2}, {"id": 4, "flags": 2 | REMAINS}]
+    assert [b["id"] for b in guide.living_pose_bodies(bodies)] == [1, 2, 3]
+
+
 if __name__ == "__main__":
     import inspect
     import tempfile
