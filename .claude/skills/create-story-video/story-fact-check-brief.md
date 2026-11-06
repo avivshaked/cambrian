@@ -10,7 +10,17 @@ In the film's folder named in your prompt: `facts.md`, and the draft your prompt
 
 Every claim in the draft: the question and the answer at the top, who the story follows, and every
 beat. A claim holds when `facts.md` says it at the place the draft cites, and the draft says no more
-than `facts.md` does there. Viewers cannot tell a wrong science story from a right one, so the check
+than `facts.md` does there.
+
+When the draft your prompt names is `angles.md`, check every angle's lines the same way, and name the
+angle each fault is in. An angle's answer is what the film will promise, so check that `facts.md`
+traces it whole. An answer that says what made something happen, or where it began, holds only when
+`facts.md` traced that cause or origin. One case of it found is not enough. Round 67's film picked an
+answer that one mutation made a body shape, from a read that counted one line's carriers. Three
+drafts later a trace showed the shape had arisen many times over.
+
+When `facts.md` corrects one of its earlier facts in a later section, the correction is the place
+that counts. A claim resting on the earlier figure does not hold. Viewers cannot tell a wrong science story from a right one, so the check
 has to be ours (research/story-video/compelling-video-stories.md §6.7).
 
 ## How much a fault weighs

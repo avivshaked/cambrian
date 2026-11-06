@@ -33,6 +33,7 @@ A film is one of two forms, and the owner's words in `pick.md` say which.
 In the film's folder, beside `facts.md`:
 
 - `angles.md`: the angles the owner chooses from.
+- `angles-check.md`: the fact checker's answer on the angles, saved word for word.
 - `pick.md`: the owner's choice, in the owner's words.
 - `story-<n>.md`: the drafts, numbered from 1.
 - `facts-check-<n>.md`, `cold-read-<n>.md` and `compare-<n>.md`: the checks' answers on draft n,
@@ -46,7 +47,7 @@ In the film's folder, beside `facts.md`:
 | the angles writer | [angles-brief.md](angles-brief.md) | `facts.md` | `angles.md` |
 | the story writer | [story-brief.md](story-brief.md) | `facts.md`, `angles.md`, `pick.md`, and what was said about the draft before | `story-<n>.md` |
 | the countdown writer | [countdown-brief.md](countdown-brief.md) | `facts.md`, `pick.md`, and what was said about the draft before | `story-<n>.md` |
-| the fact checker | [story-fact-check-brief.md](story-fact-check-brief.md) | `facts.md` and one draft | its answer |
+| the fact checker | [story-fact-check-brief.md](story-fact-check-brief.md) | `facts.md` and one draft, or `angles.md` | its answer |
 | the cold reader | [story-cold-reader-brief.md](story-cold-reader-brief.md) | one draft, nothing else | its answer |
 | the comparer | [story-comparer-brief.md](story-comparer-brief.md) | `angles.md`, `pick.md` and one cold read | its answer |
 | the main session | this file | the files above | `pick.md`, the answers, the owner's words, `story.md` |
@@ -65,6 +66,7 @@ Your brief is <checkout>\.claude\skills\create-story-video\<brief>. Read it whol
 The film's folder is <folder>.                                         (folder)
 You write draft <n>.                                                   (draft)
 The draft is <folder>\story-<n>.md.                                    (the draft)
+The draft is <folder>\angles.md.                                       (the angles)
 The cold read is <folder>\cold-read-<n>.md.                            (the cold read)
 Write only inside the film's folder. Never write in your session scratchpad or in TEMP.   (write)
 Your time budget is <minutes> minutes.
@@ -76,6 +78,7 @@ Your time budget is <minutes> minutes.
 | story writer | general-purpose | opus | story-brief.md | 15 | folder, draft, write |
 | countdown writer | general-purpose | opus | countdown-brief.md | 15 | folder, draft, write |
 | fact checker | Explore | opus | story-fact-check-brief.md | 10 | folder, the draft |
+| fact checker, on the angles | Explore | opus | story-fact-check-brief.md | 10 | folder, the angles |
 | cold reader | Explore | sonnet | story-cold-reader-brief.md | 3 | the draft |
 | comparer | Explore | sonnet | story-comparer-brief.md | 2 | folder, the cold read |
 
@@ -88,10 +91,14 @@ project. A reader writes nothing: its final answer is saved word for word.
 For a countdown, skip steps 1 and 2: `pick.md` holds the owner's words on the countdown, saved word for
 word as they are given. In steps 3 and 5, launch the countdown writer in place of the story writer.
 
-1. Launch the angles writer. It writes `angles.md`.
+1. Launch the angles writer. It writes `angles.md`. Then launch the fact checker on the angles, and
+   save its answer in `angles-check.md`, word for word.
 2. Ask the owner one question, with one choice for each angle: the angle's name as the label, and its
-   lines copied word for word from `angles.md`. The owner can also answer "Other" with an angle of
-   their own. Save the answer in `pick.md`, word for word.
+   lines copied word for word from `angles.md`, with every misleading fault `angles-check.md` names in
+   that angle. The owner can also answer "Other" with an angle of their own. Save the answer in
+   `pick.md`, word for word. An angle of the owner's own, or a new pick made at step 6, is checked
+   the same way before the next draft. Write it at the end of `angles.md` under a heading naming it as
+   the owner's. Then launch the fact checker on the angles, and show the owner any misleading fault in it.
 3. Launch the story writer for draft 1.
 4. Check the draft: launch the fact checker and the cold reader, then the comparer on the cold read.
    Save each answer word for word. The draft fails when the fact checker's first line is
