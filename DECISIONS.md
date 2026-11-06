@@ -334,10 +334,11 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D310](#d310) | Plant varieties are seeded: an anchored frond beside today's drifting blade | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 4 |
 | [D311](#d311) | Round 67 goes to a film if three of its moments read in the theatre | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation · partly superseded by D312 |
 | [D312](#d312) | Round 67's film gets a second chapter, the plants' answer, and falls back to ending on the comeback | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's recommendation, after the owner found an ending on the runaway unsatisfying · superseded by D313 and D314 |
-| [D313](#d313) | Round 67's film tells three threads of one world at once, not two chapters in turn | 2026-11-06 | ruled by the owner on 2026-11-06, in the film lane's pick (`scratch/story-video/round-67-202611061206/pick.md`, the owner's answers saved as written) |
-| [D314](#d314) | Round 67's film ends on the first grip and the open question if no forest holds, and no longer waits for the forest run | 2026-11-06 | ruled by the owner on 2026-11-06, choosing option A as the film lane put it with story draft 2 (`scratch/story-video/round-67-202611061206/owner-2.md`, the owner's answer saved as written) |
+| [D313](#d313) | Round 67's film tells three threads of one world at once, not two chapters in turn | 2026-11-06 | ruled by the owner on 2026-11-06, in the film lane's pick (`scratch/story-video/round-67-202611061206/pick.md`, the owner's answers saved as written) · partly superseded by D317 |
+| [D314](#d314) | Round 67's film ends on the first grip and the open question if no forest holds, and no longer waits for the forest run | 2026-11-06 | ruled by the owner on 2026-11-06, choosing option A as the film lane put it with story draft 2 (`scratch/story-video/round-67-202611061206/owner-2.md`, the owner's answer saved as written) · amended by D317 |
 | [D315](#d315) | A settling plant goes no deeper than its parent, and an anchored founder no deeper than 9 m | 2026-11-06 | ruled by the owner on 2026-11-06, choosing the coordinator's recommendation (option A) after the forest run (`logbook/specs/plants-hold/forest-run.md`) |
 | [D316](#d316) | Island coral grows taller and varied, its highest crests near the surface | 2026-11-06 | ruled by the owner on 2026-11-06, who suggested that coral could reach almost to the surface and then chose the coordinator's recommended form of it |
+| [D317](#d317) | Round 67's film follows the costly team's comeback with the plants beside it, and shows the first forest run's stand before its ending | 2026-11-06 | ruled by the owner on 2026-11-06, in the film lane's questions after story draft 6 (`scratch/story-video/round-67-202611061206/owner-6.md` and `pick.md`, the owner's answers saved as written) |
 
 ---
 
@@ -11188,3 +11189,28 @@ cost: more structure in the upper water, where the swimmers live.
 
 **Rejected.** Trunks of 12 to 16 m, every colony cresting near the surface, which leaves little deep reef and crowds
 the upper water. Keeping today's height, under which D315's 9 m limit would refuse most anchored founders.
+
+### D317
+**Round 67's film follows the costly team's comeback with the plants beside it, and shows the first forest run's stand before its ending** · 2026-11-06
+
+**Status:** ruled by the owner on 2026-11-06, in the film lane's questions after story draft 6
+(`scratch/story-video/round-67-202611061206/owner-6.md` and `pick.md`, the owner's answers saved as written). It
+supersedes D313's two animal threads; D313's plants, a thread from the start, stand. It amends D314: the ending is
+unchanged, and the first forest run's stand comes before it.
+
+**Decision.** The costly shaped arm's comeback is the film's spine and the plants are its second thread. The rounded
+square's spread is no longer a thread: body 11563's arrival stays as one episode in the thrifty team's story. Before
+the ending, the film shows the first forest run's one-season stand on seed 6202, 37 plants grown from settled children
+at 8,500 s and gone in the lean season after, labelled plainly as a separate test world and not round 67. The second forest run is left out. The film then ends as
+D314 rules, on the first grip and the open question.
+
+**Why.** The second angle's answer, that one mutation in body 11563 made the shape, was wrong: the shape arose separately
+many times (`logbook/specs/r67-read/film-moments.md`). The wrong answer came from the coordinator's read, whose first
+wording said the shape entered the family's line once, and the film lane's story flow recommended the angle built on it.
+The owner had picked that angle on the recommendation. The read was corrected, and the story flow's fact checker now
+checks every angle before the owner picks. The comeback and the plants both hold on the corrected facts. The stand is an
+ending that almost held, and the second forest run found no forest either (`logbook/specs/plants-hold/forest-run.md`).
+
+**Rejected.** Ending on the first grip without the stand, which leaves out the one time a forest renewed itself. A
+line on the second forest run after the stand: it would say more about how hard the problem is, and the owner chose the
+simpler beat.
