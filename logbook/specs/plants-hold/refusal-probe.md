@@ -39,6 +39,29 @@ them plants.
 
 A body is "no larger" when development builds the new module and then drops it, or never builds it. Development drops
 a part for its volume, too small or too large (`Developer.cs`, `PrunedForVolume`), and the rule's test does not ask
-about volume, so a module dropped for volume shows only as "no larger". Inference until counted: the scaled-down
-modules of a repeating node fall under the smallest part volume. The second build, `0e524da6`, splits "no larger" into
-dropped for volume and the rest, and its run follows.
+about volume, so a module dropped for volume shows only as "no larger".
+
+The second build, `0e524da6`, split "no larger" into dropped for volume and the rest, and ran the same resume for
+300 s (`r67rp2-6202`). **No refusal was a module dropped for its volume.** All 22,570 refusals of a body that would be
+no larger, 2,600 of them plants', had another cause. So the guess that scaled-down modules fall under the smallest
+part volume was wrong.
+
+## A dormant node
+
+The rule picks the lowest indeterminate node whose count is under its ceiling. A body's count starts at the node's
+recursive limit, and the ceiling is the larger of that limit and the node's `maxModules`. The rule does not ask whether
+development ever reaches the node from the root along the genome's edges. A node it never reaches is a dormant gene,
+and growing it adds no part, so a body whose chosen node is dormant is refused at every growth step for its life.
+
+The living genomes on 6202 at 42,000 s, read with `genome-query.py`'s `reachable()`:
+
+| | Plants | Other bodies |
+|---|---|---|
+| No indeterminate node | 10,473 (81.3 %) | 2,552 (53.3 %) |
+| Indeterminate, none able to grow past its count | 1,406 (10.9 %) | 1,463 (30.5 %) |
+| The rule's chosen node is reachable | 911 (7.1 %) | 352 (7.3 %) |
+| The rule's chosen node is dormant | 91 (0.7 %) | 424 (8.8 %) |
+
+Inference until counted: the 515 bodies whose chosen node is dormant make most of the refusals, since each fails at
+every growth step for life while a body that grows reaches its ceiling and stops asking. A third build counts the
+refusals whose chosen node is dormant.
