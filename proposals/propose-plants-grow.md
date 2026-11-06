@@ -110,7 +110,7 @@ Another has the rule try the next node that can grow when one would overlap. Bot
 The anchored founders' smoke (`logbook/specs/plants-hold/anchor-smoke.md`) ran D296 and D298 on round 67's world for
 3,000 s on two seeds. Holdfasts set on island coral gripped: 8 of 10 founders on one seed and 12 of 12 on the other held
 a grip at their peak, the first grips in any world. The line bred well, and by 3,000 s carried a holdfast in 256 of 975
-plants on one seed and 155 of 1,941 on the other. But only founders held grips, 4 and 1 at the end. A child is placed
+plants on one seed and 155 of 1,941 on the other. But the grips held followed the founders still alive, 4 and 1 at the end, so at most a few children gripped. A child is placed
 beside its parent at the plants' dispersal (D264, 30 m), in open water at its parent's depth, so a holdfast's child
 never touches rock. Small bodies weigh nothing in the water (D064), so it does not sink to rock either. The forest on
 the coral lasts one generation.

@@ -37,7 +37,8 @@ that is the newborn holdfast growing into the rock as the body grows, as the bui
 | 6203, 600 s | 180 | 37 | 11 | 26 | 11 |
 | 6203, 3,000 s | 1,941 | 155 | 1 | 154 | 1 |
 
-Only founders hold grips. A child is placed beside its parent at the plants' dispersal (D264's 30 m), in open water at
+The grips held follow the founders still alive, 4 grips with 3 founders on 6202 and 1 with 1 on 6203, so at most a
+few of hundreds of children grip. A child is placed beside its parent at the plants' dispersal (D264's 30 m), in open water at
 its parent's depth, so a holdfast born from a holdfast never touches rock. Inference: the anchored founders' line
 spreads as drifting plants that carry an idle holdfast, and the forest on the coral lasts one generation.
 
