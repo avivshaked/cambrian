@@ -143,6 +143,9 @@ GUILD_PLURALS = {
     (1, 1, 1): 'jointed mixotrophs',
 }
 
+# The positions flag bit that marks a row as a dead body's remains (D220; PositionsRow.RemainsBit).
+REMAINS_BIT = 8
+
 FOUNDER_SOURCES = {
     'floor': 'a random founder with no parent, added by the population floor while the world '
              'was small',
@@ -484,6 +487,16 @@ def scorer_clades(births, trait):
     return out
 
 
+def living_bodies(bodies):
+    """A positions sample's rows without the remains of the dead.
+
+    From D220 a sample holds a row for each body's remains as well as for each living body, with
+    flag bit 8 set (RemainsBit, PositionsRow.cs). A run recorded before it never sets the bit, and
+    a row without a flags cell cannot, so such a sample comes back whole.
+    """
+    return [b for b in bodies if len(b) < 5 or not (b[4] & REMAINS_BIT)]
+
+
 def read_positions(run_dir, clade_of, n_clades, radius, bed, reef_of=None):
     """One pass over the positions (either record, runrec.py): per-clade peaks, success share and
     location histograms.
@@ -513,7 +526,7 @@ def read_positions(run_dir, clade_of, n_clades, radius, bed, reef_of=None):
         bed_values, bnx, bnz, bcell = bed
     for row in runrec.positions(run_dir):
         t = row['t']
-        bodies = row['b']
+        bodies = living_bodies(row['b'])
         living = len(bodies)
         samples.append((t, living))
         counts = {}
@@ -696,12 +709,96 @@ def run_ledger(genome_path, config_path, depth):
 
 # ------------------------------------------------------------------------------ the cards
 
+def read_pool_index(run_dir):
+    """{pool index: {'genome', 'run', 'exam'}} from the run's pool/index.tsv, or {} when it has none.
+
+    The file is the weighted pool's list (TricklePoolFiles.IndexFileName): a header of `pool` and
+    `weight` and then the origin columns the list carried, free text. This reads the columns by name,
+    never by place: `id` is the genome's id in its nursery run, `run` (or `origin`, when `run` is
+    absent) is the nursery run, and `exam` is the exam that run was, which no list written so far
+    carries. A cell that is missing or empty reads as None.
+    """
+    path = os.path.join(run_dir, 'pool', 'index.tsv')
+    out = {}
+    if not os.path.isfile(path):
+        return out
+    with open(path, 'r', encoding='utf-8') as f:
+        header = None
+        for line in f:
+            cells = line.rstrip('\r\n').split('\t')
+            if header is None:
+                header = cells
+                continue
+            if not any(cells):
+                continue
+            row = dict(zip(header, cells))
+            try:
+                index = int(row.get('pool'))
+            except (TypeError, ValueError):
+                continue
+            out[index] = {'genome': row.get('id') or None,
+                          'run': row.get('run') or row.get('origin') or None,
+                          'exam': row.get('exam') or None}
+    return out
+
+
+def founder_how(source, pool):
+    """What a founder was, as the card sentence says it (after 'It was'), from the lineage row's `src`
+    and, for a pool founder, its entry in the pool's index (read_pool_index, or None)."""
+    if source in FOUNDER_SOURCES:
+        return FOUNDER_SOURCES[source]
+    if source == 'pool':
+        if pool is None:
+            return ('a founder with no parent, drawn from the nursery pool; the run\'s pool index does '
+                    'not say which genome')
+        what = 'genome %s' % pool['genome'] if pool.get('genome') else 'a genome'
+        if pool.get('run'):
+            what += ' of the nursery run %s' % pool['run']
+        how = 'a founder with no parent, drawn from the nursery pool: %s' % what
+        if pool.get('exam'):
+            how += ', whose exam was %s' % pool['exam']
+        return how
+    if source:
+        return 'a founder with no parent; the lineage gives its source as "%s"' % source
+    return 'a founder with no parent whose source the lineage does not record'
+
+
+def founder_fact_how(source, pool):
+    """The same, as the origin fact's phrase (after 'from')."""
+    if source == 'trickle':
+        return 'a random body that drifted in with the trickle'
+    if source == 'floor':
+        return 'one of the random bodies that seeded the tank'
+    if source == 'pool':
+        if pool is None or not pool.get('genome'):
+            return 'the nursery pool'
+        how = 'the nursery pool, genome %s' % pool['genome']
+        if pool.get('run'):
+            how += ' of the nursery run %s' % pool['run']
+        if pool.get('exam'):
+            how += ', whose exam was %s' % pool['exam']
+        return how
+    if source:
+        return 'a body with no parent, its source given as "%s"' % source
+    return 'a body with no parent whose source is not recorded'
+
+
+def arrivals_text(trickle, pool):
+    """The world's arrivals fact, its slots unfilled. A pool founder is counted where it arrived, the
+    floor or the trickle, and in poolSpawns as well (World.CountFounderAttempt), so with a pool the
+    trickle's founders are not all random."""
+    if pool:
+        return ('{n} founders drifted in with the trickle over the run, and {p} founders in all were '
+                'genomes from the nursery pool')
+    return '{n} random founders drifted in with the trickle over the run'
+
+
 def split_sentences(card, names):
     """What changed at the split, as sentences that state and stop."""
     out = []
     sp = card['split']
     if card['kind'] == 'founder':
-        how = FOUNDER_SOURCES.get(card.get('founder_source'), 'a random founder with no parent')
+        how = founder_how(card.get('founder_source'), card.get('founder_pool'))
         out.append('Body %s founded it at %s. It was %s.'
                    % (card['founder'], fmt_s(card['founded_at']), how))
         return out
@@ -1158,10 +1255,7 @@ def build_facts(ctx, card, cl):
                        'change': ctx['change'][c]}, value=card['founded_at'], unit='s',
                       bonus=0.3 if card['split'] and card['split']['flags_gained'] else 0.2))
     else:
-        how = {'trickle': 'a random body that drifted in with the trickle',
-               'pool': 'a stored body the trickle brought back',
-               'floor': 'one of the random bodies that seeded the tank'}.get(
-            card['founder_source'], 'a random body with no parent')
+        how = founder_fact_how(card['founder_source'], card.get('founder_pool'))
         F.append(fact('origin', 'founder', 'origin', 'It began {at} in, from {how}.',
                       {'at': clock(card['founded_at']), 'how': how}, value=card['founded_at'], unit='s'))
 
@@ -1532,9 +1626,11 @@ def main():
                 port_disagree.append(body)
 
     # The split's difference.
+    pool_index = read_pool_index(run_dir)
     for cl in clades:
         f = births[cl['founder']]
         cl['founder_source'] = f.get('src')
+        cl['founder_pool'] = pool_index.get(f.get('pool')) if cl['founder_source'] == 'pool' else None
         if cl['kind'] != 'split':
             cl['split'] = None
             continue
@@ -1722,6 +1818,7 @@ def main():
             'founder': cl['founder'],
             'founded_at': cl['founded_at'],
             'founder_source': cl['founder_source'],
+            'founder_pool': cl['founder_pool'],
             'parent_body': cl['parent_body'],
             'parent_clade': cl['parent_clade'],
             'parent_clade_name': names.get(cl['parent_clade']) if cl['parent_clade'] is not None else None,
@@ -1928,11 +2025,10 @@ def main():
         tr, pl = last.get('trickleSpawns'), last.get('poolSpawns')
         if tr:
             slots = {'n': fmt_n(tr)}
-            text = '{n} random founders drifted in with the trickle over the run'
             if pl:
                 slots['p'] = fmt_n(pl)
-                text += ', {p} of them stored bodies brought back'
-            world_facts.append(fact('arrivals', 'arrivals', 'world', text + '.', slots, value=tr))
+            world_facts.append(fact('arrivals', 'arrivals', 'world', arrivals_text(tr, pl) + '.', slots,
+                                    value=tr))
         ck = manifest.get('checkpointEverySeconds')
         early = stats_at(stats_rows, float(ck)) if ck else None
         js, je = jointed_share(early), jointed_share(last)
