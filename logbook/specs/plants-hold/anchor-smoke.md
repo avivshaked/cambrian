@@ -24,8 +24,14 @@ largest matter residual 2.9e-6, under the 0.1 J and 1e-5 lines.
 | 6202 | 10 | 1 | 5 | 8 | 8 | 4 |
 | 6203 | 12 | 0 | 8 | 12 | 11 | 1 |
 
-Grips also break and form again often: on 6202 at 900 s the row counts 42 formed and 37 broken against 5 held. Whether
-that is the newborn holdfast growing into the rock as the body grows, as the build's report warned, is not read here.
+Grips also break and form again often: on 6202 at 900 s the living bodies had formed 42 and broken 37, against 5
+held. A grip breaks when the pull its spring demands passes the cell's breaking force times the grip's strength
+(`src/Evosim.Dynamics/Anchor.cs`), and forms again on the next step its part touches rock. The strength decays with a
+time constant of 3,600 s, so decay alone takes about a fifth of it in 900 s and cannot make four breaks a founder. The
+breaking force of a 0.01 m³ holdfast is about 2,700 N, which the spring reaches at under a centimetre of displacement
+(arithmetic from the contact's stiffness). Inference, not measured: the newborn holdfast, which grows a few
+centimetres into the rock as the body grows, is pushed out by the contact and breaks its own grip, then grips again.
+The plants stay on the rock through it, since the grips held follow the founders alive.
 
 **The line breeds**, and its children drift. The table counts living bodies carrying the anchoring cell, from
 `genome-query.py find --cell anchoring`.
