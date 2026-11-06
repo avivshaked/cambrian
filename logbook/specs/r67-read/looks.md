@@ -209,3 +209,38 @@ by whether their genome carries a superellipsoid node:
   24 to 12 % in the shaped arm's, where lines without it grew faster. The family did not spread with the shaped arm's
   lines, which settles the inference of 24,000 s against itself.
 - On 6203 and 6204 the family is in the thrifty lines only, spread over 7 and 9 lineages.
+
+## 38,486 s: seed 6203 ran away (05:23 on 2026-11-06)
+
+Seed 6203 ended by itself at 38,486 s, holding 25,010 living bodies against the config's `maximumPopulation` of 25,000.
+The farm ends such a world as a runaway, and D021 and D058 file it as censored, never a pass. The pre-registration names only two ways a world stops, empty or under
+half real time, and did not foresee the ceiling. Nobody stopped the world, and the other two ran on.
+
+Plants had filled the world: at 38,480 s it held 24,974 bodies, 3,160 of them jointed, with 414,186 J of standing tissue. Its pace
+had fallen to 0.55 times real time with the crowd. Its last checkpoint is at 37,500 s, and a resume from there replays
+to the same runaway, so the world goes on only with the ceiling changed. That is a change to the world, and the
+owner's.
+
+At 38,000 s, its last look: 3,670 living animals, 3,658 of them in the 40-generation exam's lines and 12 in the shaped
+arm's. The family is in 22.5 % of 3,224 jointed bodies and 18.7 % of 3,062 jointed animals, all in the thrifty lines,
+534 of them in one lineage.
+
+## 42,000 s, the two worlds that run on (read at 06:05-06:10 on 2026-11-06)
+
+| Seed | Fewest from 36,000 s | Most | At 42,000 s | the 40-generation exam's | the shaped arm's | Jointed bodies with a superellipsoid | Jointed animals with one |
+|---|---|---|---|---|---|---|---|
+| 6202 | 2,500 (36,000 s) | 4,896 (41,000 s) | 4,791 | 2,242 | 2,549 | 43.3 % of 3,879 | 44.0 % of 3,812 |
+| 6204 | 1,774 (36,000 s) | 4,189 (39,000 s) | 3,281 | 3,199 | 82 | 11.3 % of 2,824 | 7.5 % of 2,692 |
+
+- **Readout 1 holds in both**, at 1,000 s samples.
+- **On 6202 the thrifty lines came back**, from 810 animals at 36,000 s to 2,242, and the two exams' lines stand nearly
+  level. The shaped arm's lines peaked at 3,005 at 39,000 s.
+- **The family rose on 6202 with its line**, from 33.1 % to 43.3 % of jointed bodies. Of the thrifty lines' jointed
+  animals 81 % carry it, 1,437 of them in the one lineage, and of the shaped arm's 10 %.
+- **On 6204 the family holds just above the line**, 11.3 % of jointed bodies, all in the thrifty lines.
+- **Pace, heat and disk.** At 06:07 the worlds ran at 0.65 (6202, 19,870 bodies at 42,430 s) and 0.71 times real time
+  (6204, 21,436 bodies at 42,640 s). Both ran faster once 6203 had ended. The CPU's highest since the 36,000 s look was 79 °C, with
+  no reading at 85 °C, and the card's 53 °C. The round holds about 11 GB, with 385 GB free.
+
+Inference: both worlds climb toward the ceiling that ended 6203, 6202 at 5,130 bodies short of it and 6204 at 3,564,
+and may end the same way.
