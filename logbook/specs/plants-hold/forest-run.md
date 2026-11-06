@@ -60,9 +60,12 @@ fifth at 9 m, and below about 9 m a plant starves within a few hundred seconds, 
 than 3 m below their parent, 79 of 81 starved on 6202 (median life 330 s), and 14 of 16 founders that gripped at 9 to
 18 m starved there (median 148 to 170 s).
 
-**A forest renewed itself for one season on 6202.** After the founders died, settled children grew a second stand: 23
-gripping plants at 7,500 s and 38 at 8,500 s, every one born after 3,000 s, 37 of them in one patch at x 155 to 184 m,
-z 130 to 160 m, 6.5 to 12 m deep. The lean half of the season (period 6,000 s) took it: 3 at 10,500 s and none at
+**A forest renewed itself for one season on 6202.** After the founders set at the start died, settled children grew a
+second stand: 23 gripping plants at 7,500 s and 38 at 8,500 s, every one born after 3,000 s. 37 of the 38 stood in one
+patch at x 155 to 184 m, z 130 to 160 m, 6.5 to 16.8 m deep, and all 37 were children born in the world. The 38th,
+4698, was a founder that arrived with the trickle at 7,885 s and gripped alone at x 102. Such late founders kept
+arriving with a holdfast and gripping through the run, 33 on 6202 and 44 on 6203 from 3,250 to 11,620 s (the film
+lane's count). The lean half of the season (period 6,000 s) took it: 3 at 10,500 s and none at
 12,000 s. Inference: the forest can renew itself through its children in the light, and a stand that started shallower
 might outlast the lean season.
 
