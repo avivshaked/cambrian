@@ -307,4 +307,5 @@ a drift that long runs share, and nothing new in this round.
 
 Every world ended on its plants. In the three that ran away, 19,354 to 20,998 of the 25,000 bodies were photosynthetic,
 and each world held 129 to 223 grown-on modules in all. On 6202, 3,659 module additions went through and 756,984 were
-refused for shape; on 6204, 779 and 148,085. The round holds about 11.6 GB, with 385 GB free.
+refused for shape; on 6204, 779 and 148,085. Most of those refusals were other bodies', not plants'
+(`logbook/specs/plants-hold/refusal-probe.md`). The round holds about 11.6 GB, with 385 GB free.

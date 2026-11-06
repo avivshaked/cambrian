@@ -31,8 +31,8 @@ held by 3,400 plants, 17.7 % of them. On 6203 it is a box 52 by 107 cm and 18 cm
 superellipsoid 74 by 71 cm and 18 cm thick (3,061 plants). The next plans are blades of the same kind, single or
 doubled, 40 to 90 cm across.
 
-Few plants grew by the module rule. Each world held 129 to 223 grown-on modules in all at its end, while the rule
-was refused for shape on nearly every attempt: on 6202, 3,659 additions went through and 756,984 were refused.
+Few bodies grew by the module rule. Each world held 129 to 223 grown-on modules in all at its end. On 6202, 3,659
+additions went through and 756,984 were refused for shape, most of them not plants' (`refusal-probe.md`).
 
 ## What it says about varieties
 
