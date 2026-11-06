@@ -216,7 +216,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D191](#d191) | The coordinator rules the desert's rate on the night's screens and launches round 60 that night | 2026-10-15 | the owner delegated the ruling on the night of 2026-10-15 and asked why the round should wait for the morning |
 | [D192](#d192) | Round 61 plants the nursery's grazers on one fixed map, beside a control on the same seeds | 2026-10-16 | the owner approved the coordinator's design on the morning of 2026-10-16, after round 60's seeds 6001 and 6002 were read (`logbook/specs/r60-read/s6001-s6002.txt`) |
 | [D193](#d193) | The card's contact candidate cap is raised before round 61 | 2026-10-16 | the owner consented on 2026-10-16, after round 60's card check failed on seeds 6002 and 6003 |
-| [D194](#d194) | Branching coral on the oases replaces the mushroom reefs, for round 62 | 2026-10-16 | the owner asked for reefs more complex and more like coral than the mushrooms, with more surface for life, living in the oases, and with a design that weighs the world's needs against the machine's… |
+| [D194](#d194) | Branching coral on the oases replaces the mushroom reefs, for round 62 | 2026-10-16 | the owner asked for reefs more complex and more like coral than the mushrooms, with more surface for life, living in the oases, and with a design that weighs the world's needs against the machine's… · amended by D316 for the plant work |
 | [D195](#d195) | Round 61's third pair and its run past 48,000 s, set before the round is read | 2026-10-16 | ruled by the owner on the evening of 2026-10-16, while round 61 ran and before any of its rows were read |
 | [D196](#d196) | The kelp blades: a self-scale that does not compound, and the drag limiter on at every step | 2026-10-18 | ruled by the owner on the morning of 2026-10-18, after round 61's third pair was stopped twice by its blades |
 | [D197](#d197) | The pace guard keeps its threshold; overflow and divergence never stop a run | 2026-10-18 | ruled by the owner on the morning of 2026-10-18 |
@@ -337,6 +337,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D313](#d313) | Round 67's film tells three threads of one world at once, not two chapters in turn | 2026-11-06 | ruled by the owner on 2026-11-06, in the film lane's pick (`scratch/story-video/round-67-202611061206/pick.md`, the owner's answers saved as written) |
 | [D314](#d314) | Round 67's film ends on the first grip and the open question if no forest holds, and no longer waits for the forest run | 2026-11-06 | ruled by the owner on 2026-11-06, choosing option A as the film lane put it with story draft 2 (`scratch/story-video/round-67-202611061206/owner-2.md`, the owner's answer saved as written) |
 | [D315](#d315) | A settling plant goes no deeper than its parent, and an anchored founder no deeper than 9 m | 2026-11-06 | ruled by the owner on 2026-11-06, choosing the coordinator's recommendation (option A) after the forest run (`logbook/specs/plants-hold/forest-run.md`) |
+| [D316](#d316) | Island coral grows taller and varied, its highest crests near the surface | 2026-11-06 | ruled by the owner on 2026-11-06, who suggested that coral could reach almost to the surface and then chose the coordinator's recommended form of it |
 
 ---
 
@@ -11168,3 +11169,22 @@ the risk with the recommendation: forests may crowd the island tops, a balance f
 
 **Rejected.** B, limiting only the children, which leaves each island's forest resting on its few shallow founders. C,
 changing nothing, where the forest is the shallow remnant the run showed.
+
+### D316
+**Island coral grows taller and varied, its highest crests near the surface** · 2026-11-06
+
+**Status:** ruled by the owner on 2026-11-06, who suggested that coral could reach almost to the surface and then chose
+the coordinator's recommended form of it. It changes D194's coral for the plant work's runs: first the second forest
+run, and the rounds only if that run holds.
+
+**Decision.** A coral trunk grows 6 to 16 m tall instead of 3 to 8 m (`EVOSIM_CORAL_TRUNK_HEIGHT_MIN` 6,
+`EVOSIM_CORAL_TRUNK_HEIGHT_MAX` 16), so the tallest crests reach the line 2 m below the surface that no coral piece may
+pass (`CoralGeometry.SurfaceClearanceMetres`), while others stay deeper: a reef with a depth gradient, lit rock near
+its top and shaded rock below. The world's other coral settings are unchanged.
+
+**Why.** In the forest run most rock a plant could grip lay at 9 to 18 m, where light is too weak to live on, and D315
+holds the anchored founders to the top 9 m. A real reef's crest comes up near the surface. The coordinator named the
+cost: more structure in the upper water, where the swimmers live.
+
+**Rejected.** Trunks of 12 to 16 m, every colony cresting near the surface, which leaves little deep reef and crowds
+the upper water. Keeping today's height, under which D315's 9 m limit would refuse most anchored founders.
