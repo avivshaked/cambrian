@@ -328,6 +328,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D304](#d304) | The four long worlds run round 66's arm M with the shape family and the forager kit on | 2026-11-05 | ruled by the owner on 2026-11-05, on the coordinator's recommendation in `proposals/propose-four-long-worlds.md` |
 | [D305](#d305) | The dive lands by travelling through each film's own water to its hero | 2026-11-05 | ruled by the owner on 2026-11-05, after the dive's third take (`scratch/owner/dive-crossing-third-take/`) |
 | [D306](#d306) | The skin's eyespot loses its pupil, and the skin is shown as a family's label | 2026-11-05 | ruled by the owner on 2026-11-05, on the coordinator's recommendation with the mouth preview (`scratch/owner/mouth-without-the-gear/`) |
+| [D307](#d307) | A gripping plant's child settles on rock near its parent | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 6, after the anchored founders' smoke (`logbook/specs/plants-hold/anchor-smoke.md`) |
 
 ---
 
@@ -11000,3 +11001,23 @@ and a function our creatures lack. With its pupil filled it is a plain spot, whi
 
 **Rejected, for now.** Removing the eyespot from the pattern families, which the owner was half minded to do. The
 coordinator recommended making it rarer instead, and judging the softened spot again in the four worlds' pictures.
+
+### D307
+**A gripping plant's child settles on rock near its parent** · 2026-11-06
+
+**Status:** ruled by the owner on 2026-11-06, on the coordinator's recommendation in `proposals/propose-plants-grow.md`,
+section 6, after the anchored founders' smoke (`logbook/specs/plants-hold/anchor-smoke.md`). It amends D088's placement
+of a newborn, and D264's wider spread of the young, for these children only. It builds on D296 and D268, whose clause
+that no plant must anchor stands.
+
+**Decision.** A child whose parent holds a grip at its birth, and whose own root carries the anchoring cell, is placed
+on rock within its parent's dispersal reach, holdfast down, as D296's anchored founders are placed. With no such spot
+found, it is placed as today. Every other child is placed as today. It ships behind a switch that is off by default.
+
+**Why.** In the smoke, holdfasts set on island coral gripped, the first grips in a world, and the anchored line bred to a
+holdfast in a quarter of one world's plants. But every child was placed in open water and none reached rock, so the
+grips held followed the founders alive and the forest on the coral lasted one generation. A kelp bed spreads from spores
+that settle near the parent, and this lets a forest on an island outlast its founders.
+
+**Rejected.** A holdfast that sinks until it grips, which would amend D064 and land most sinkers on dark bed. Leaving the
+placement as it is, under which the forest dies with its founders.
