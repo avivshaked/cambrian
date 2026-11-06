@@ -144,3 +144,28 @@ bodies at the same hour, at 0.77 to 1.0 times real time. Whether 6201 resumes, a
 - **The family holds above 10 % of jointed bodies in all three**, but fell on 6202 from 56.6 % to 30.3 % while the
   shaped arm's lines grew. So the family did not spread with those lines, and the inference at 24,000 s is not borne
   out.
+
+## 36,000 s (read at 04:24-04:30 on 2026-11-06)
+
+Living animals every 1,000 s from 30,000 s, split by exam (`pool-origins.py`, the two runs chained), and the family
+at 36,000 s (`family-census.py`):
+
+| Seed | Fewest from 30,000 s | Most | At 36,000 s | the 40-generation exam's | the shaped arm's | Jointed bodies with a superellipsoid | Jointed animals with one |
+|---|---|---|---|---|---|---|---|
+| 6202 | 1,324 (30,000 s) | 2,814 (34,000 s) | 2,500 | 810 | 1,690 | 33.1 % of 2,072 | 34.5 % of 1,980 |
+| 6203 | 1,445 (30,000 s) | 2,842 (34,000 s) | 2,184 | 2,175 | 9 | 16.8 % of 1,868 | 11.6 % of 1,748 |
+| 6204 | 984 (30,000 s) | 2,316 (34,000 s) | 1,774 | 1,715 | 59 | 10.2 % of 1,643 | 4.4 % of 1,421 |
+
+- **Readout 1 holds in all three worlds**, at 1,000 s samples.
+- **A second boom and fall.** The animals doubled from 30,000 s to 34,000 s in every world and have been falling since.
+- **On 6202 the shaped arm's lines kept growing through the fall**, from 996 to 1,690, while the thrifty lines rose to
+  1,338 at 33,000 s and fell to 810. They hold two animals in three. On 6203 they are down to 9, and on 6204 to 59.
+- **The family holds above 10 % of jointed bodies in all three**, and stands nearest the line on 6204, at 10.2 %.
+  Among jointed animals it rose on 6203 and 6204, from 8.5 to 11.6 % and from 2.0 to 4.4 %.
+- **Pace, heat and disk.** At 04:24 the worlds held 18,063 bodies (6202, at 38,340 s), 13,653 (6203, at 36,160 s) and
+  20,162 (6204, at 38,320 s). They ran at 0.63, 0.90 and 0.60 times real time (`pace-check.py`). The CPU's highest since
+  the 30,000 s look was 78 °C at 03:49, with no reading at 85 °C, and the card's 53 °C. The round holds about 9.3 GB,
+  with 387 GB free.
+
+Inference: the shaped arm's lines on 6202 lose less in each fall, as they did at 18,000 s. Two worlds of three run
+near half real time with a crowd like 6201's at its stop, so they may reach the line before 42,000 s.
