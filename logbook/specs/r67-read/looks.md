@@ -310,13 +310,31 @@ and each world held 129 to 223 grown-on modules in all. On 6202, 3,659 module ad
 refused for shape; on 6204, 779 and 148,085. Most of those refusals were other bodies', not plants'
 (`logbook/specs/plants-hold/refusal-probe.md`). The round holds about 11.6 GB, with 385 GB free.
 
-## G2's test 2 does not read round 67's grazers (2026-11-06)
+## G2's test 2, read on each grazer's own upkeep (2026-11-06)
 
-G2's read on seed 6202, joined from 0 s (`scratch/four-worlds/chained/g2-6202.txt`), put the grazers' kept income at
-summer starts at 0.05 to 0.12 of their upkeep, in a world whose animals boomed. The upkeep it divides by is a constant,
-0.908 W, round 61's grazer as `scripts/reads/r61-grazer-economy.py` measured it (`--upkeep-w`, read from the code).
-Round 67's grazers are the nursery's trained bodies, other bodies with another upkeep, and neither the stats rows nor
-the snapshots carry a body's upkeep. So test 2's shares are not a reading of this round, and are not reported. Reading
-it needs each living grazer's own upkeep at each summer start, developed from its genome at its body fraction, which
-is a small probe and agent work. The read's other gates stand as printed: the floor holds in every judged window, the
-chain is 18, and gate 2 waits on `--islands-from`.
+G2's read on seed 6202, joined from 0 s (`scratch/four-worlds/chained/g2-6202.txt`), first put the grazers' kept income
+at summer starts at 0.05 to 0.12 of their upkeep, in a world whose animals boomed. The upkeep it divides by is a
+constant, 0.908 W, the standing cost of round 61's pool grazer (`logbook/specs/grazer-breeding-budget.md`). Round 67's
+grazers are other bodies, and upkeep is priced by each cell's volume, so the constant does not read them.
+
+Branch `grazer-upkeep` (`2b14510c`, off `card-kit`) adds each grazer's own standing cost to `Evosim.Farm
+--grazer-traits`, as `Metabolism.StandingWatts` of its adult body under the run's config, at age 0, the call the world
+makes for a newborn. `scripts/reads/grazer-upkeep.py` on that branch weights it by each grazer's seconds alive in a
+window. The kept income per grazer is G2's own, read again with a small divisor for its precision. The four worlds are
+joined from 0 s, and the TSVs and reads are in `scratch/grazer-upkeep/`.
+
+| Seed | 5,500 s | 11,500 s | 17,500 s | 23,500 s |
+|---|---|---|---|---|
+| 6201 | 0.275 / 0.0133 = 20.7 | 0.050 / 0.0108 = 4.7 | 0.047 / 0.0109 = 4.3 | 0.053 / 0.0079 = 6.7 |
+| 6202 | 0.107 / 0.0194 = 5.5 | 0.103 / 0.0132 = 7.8 | 0.050 / 0.0118 = 4.2 | 0.061 / 0.0130 = 4.7 |
+| 6203 | 0.153 / 0.0183 = 8.3 | 0.070 / 0.0132 = 5.3 | 0.071 / 0.0084 = 8.4 | 0.038 / 0.0069 = 5.6 |
+| 6204 | not judged, 6.5 grazers | 0.112 / 0.0303 = 3.7 | 0.233 / 0.0108 = 21.6 | 0.054 / 0.0097 = 5.6 |
+
+Each cell is the kept income per grazer in watts, over the mean standing cost of the grazers alive in that 500 s window,
+and the ratio. A round 67 grazer costs about a hundredth of a watt to keep, against round 61's 0.908 W. On its own
+upkeep, test 2 passes in every judged window on every seed, at 3.7 to 22 times the bar's 0.9.
+
+The reading has two limits. The standing cost leaves out the work of swimming, which the stats rows do not split by body, and in
+the nursery's tanks the shaped arm's work reached 0.725 W. So a grazer's whole balance is not read here, and the boom
+says only that it was positive on average. The kept income also counts every mouth's intake as the grazers'. Inference:
+round 67's grazers pay their standing cost several times over, and whether they pay their swimming is unread.
