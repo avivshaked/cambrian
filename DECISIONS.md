@@ -317,7 +317,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D293](#d293) | Every brain unit inherits how fast it forgets | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 3 of `logbook/specs/forager-kit/spec.md`; its recorded genomes keep their format by D300 |
 | [D294](#d294) | A hunger sense reads the reserve on a log scale, beside D245's | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, on the owner's own request of that day for a log-scale hunger, as rule 4 of `logbook/specs/forager-kit/spec.md` |
 | [D295](#d295) | The nursery evolves the body after the bearing and memory arm, and the reach steps back once aim shows | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 1 of `logbook/specs/forager-kit/spec.md` |
-| [D296](#d296) | Plants may hold the rock at the oases, and half the plant founders start anchored to island coral | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 1 of `logbook/specs/plants-hold/spec.md` |
+| [D296](#d296) | Plants may hold the rock at the oases, and half the plant founders start anchored to island coral | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 1 of `logbook/specs/plants-hold/spec.md` · amended by D315 |
 | [D297](#d297) | Each part of a body earns light and draws matter where it stands | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 2 of `logbook/specs/plants-hold/spec.md` |
 | [D298](#d298) | A bitten module frees its place, so a plant can grow it again | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 3 of `logbook/specs/plants-hold/spec.md` |
 | [D299](#d299) | A birth waits for the brain's urge to breed, read beside a sense of the reserve against the gate | 2026-11-03 | settled by the coordinator on 2026-11-03 under D291, as rule 1 in form (b) of `logbook/specs/breeding-urge/spec.md` |
@@ -328,7 +328,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D304](#d304) | The four long worlds run round 66's arm M with the shape family and the forager kit on | 2026-11-05 | ruled by the owner on 2026-11-05, on the coordinator's recommendation in `proposals/propose-four-long-worlds.md` |
 | [D305](#d305) | The dive lands by travelling through each film's own water to its hero | 2026-11-05 | ruled by the owner on 2026-11-05, after the dive's third take (`scratch/owner/dive-crossing-third-take/`) |
 | [D306](#d306) | The skin's eyespot loses its pupil, and the skin is shown as a family's label | 2026-11-05 | ruled by the owner on 2026-11-05, on the coordinator's recommendation with the mouth preview (`scratch/owner/mouth-without-the-gear/`) |
-| [D307](#d307) | A gripping plant's child settles on rock near its parent | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 6, after the anchored founders' smoke (`logbook/specs/plants-hold/anchor-smoke.md`) |
+| [D307](#d307) | A gripping plant's child settles on rock near its parent | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 6, after the anchored founders' smoke (`logbook/specs/plants-hold/anchor-smoke.md`) · amended by D315 |
 | [D308](#d308) | A module waits for the brain's urge to grow, read beside a sense of the matter at each light-catching part | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 2 |
 | [D309](#d309) | Large plants are allowed, not paid: no price change for growing in the first plant screen | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 3 |
 | [D310](#d310) | Plant varieties are seeded: an anchored frond beside today's drifting blade | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 4 |
@@ -336,6 +336,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D312](#d312) | Round 67's film gets a second chapter, the plants' answer, and falls back to ending on the comeback | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's recommendation, after the owner found an ending on the runaway unsatisfying · superseded by D313 and D314 |
 | [D313](#d313) | Round 67's film tells three threads of one world at once, not two chapters in turn | 2026-11-06 | ruled by the owner on 2026-11-06, in the film lane's pick (`scratch/story-video/round-67-202611061206/pick.md`, the owner's answers saved as written) |
 | [D314](#d314) | Round 67's film ends on the first grip and the open question if no forest holds, and no longer waits for the forest run | 2026-11-06 | ruled by the owner on 2026-11-06, choosing option A as the film lane put it with story draft 2 (`scratch/story-video/round-67-202611061206/owner-2.md`, the owner's answer saved as written) |
+| [D315](#d315) | A settling plant goes no deeper than its parent, and an anchored founder no deeper than 9 m | 2026-11-06 | ruled by the owner on 2026-11-06, choosing the coordinator's recommendation (option A) after the forest run (`logbook/specs/plants-hold/forest-run.md`) |
 
 ---
 
@@ -11146,3 +11147,24 @@ waiting separately.
 
 **Why.** The plants are a thread from the start (D313), so an ending on the comeback would leave that thread stopped
 partway, at the first grip. An open question is an honest ending for a thread whose answer the next run gives.
+
+### D315
+**A settling plant goes no deeper than its parent, and an anchored founder no deeper than 9 m** · 2026-11-06
+
+**Status:** ruled by the owner on 2026-11-06, choosing the coordinator's recommendation (option A) after the forest run
+(`logbook/specs/plants-hold/forest-run.md`). It amends D307, where a gripping plant's child settles, and D296, where
+the anchored founders are set.
+
+**Decision.** A settling child (D307) is set only on coral where its holdfast lies no deeper than its parent's
+anchoring part, within a small tolerance. An anchored founder (D296) is set only where its holdfast lies within 9 m of
+the surface. A child or founder with no such spot falls back or is refused as before, and is counted. Each limit sits
+behind its own switch, off by default, so every earlier world steps as it did.
+
+**Why.** In the forest run settled children gripped, but most were set below their parent, because the coral in the
+parent's reach runs down the island's flanks, and light falls as e^(-d/6): below about 9 m a plant starves, founder or
+newborn. 79 of 81 children set more than 3 m below their parent starved, and 14 of 16 founders that gripped at 9 to 18 m.
+A kelp or seagrass bed keeps to the lit shallows, and D262 asks a new feature to start strong. The coordinator named
+the risk with the recommendation: forests may crowd the island tops, a balance for later screens to dial back.
+
+**Rejected.** B, limiting only the children, which leaves each island's forest resting on its few shallow founders. C,
+changing nothing, where the forest is the shallow remnant the run showed.
