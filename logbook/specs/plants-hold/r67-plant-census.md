@@ -1,0 +1,51 @@
+# Round 67's plants at their end: a census of body plans
+
+The owner started the plant work on 2026-11-06, with plant varieties part of it. This census is its starting point: what
+plants round 67's worlds held when they ran away over the ceiling of 25,000 bodies (`logbook/specs/r67-read/looks.md`).
+
+## How it was read
+
+`genome-query.py plans <run> --at T --cell photosynthetic --top 1000000 --json` groups the living plants by plan, the
+signature of the nodes development reaches. `scripts/reads/plant-census.py` counts the plans and their makeup. The
+worlds are `runs/r67r1-6202` at 44,000 s, `r67r1-6203` at 38,000 s and `r67r1-6204` at 43,000 s, each a few hundred
+seconds before its runaway. The node count is what a genome can build, which bounds the parts a body has from above,
+since development may prune.
+
+## What the worlds held
+
+| | 6202 | 6203 | 6204 |
+|---|---|---|---|
+| Living plants | 19,181 | 18,688 | 18,897 |
+| Distinct plans | 1,657 | 2,495 | 2,482 |
+| Effective number of plans | 16.4 | 19.0 | 21.4 |
+| Genomes that build one node | 46.1 % | 51.4 % | 56.0 % |
+| two nodes | 39.1 % | 28.8 % | 29.9 % |
+| three or more | 14.8 % | 19.7 % | 14.1 % |
+| Root a superellipsoid | 86.2 % | 29.1 % | 51.2 % |
+| Root a box | 12.0 % | 66.1 % | 47.5 % |
+| Light-catching cells only | 91.2 % | 87.7 % | 89.2 % |
+| A moving joint below the root | 0.8 % | 1.5 % | 4.2 % |
+
+The commonest plan in every world is one flat blade, alone. On 6202 it is a superellipsoid 69 by 65 cm and 3 cm thick,
+held by 3,400 plants, 17.7 % of them. On 6203 it is a box 52 by 107 cm and 18 cm thick (3,166 plants), and on 6204 a
+superellipsoid 74 by 71 cm and 18 cm thick (3,061 plants). The next plans are blades of the same kind, single or
+doubled, 40 to 90 cm across.
+
+Few plants grew by the module rule. Each world held 129 to 223 grown-on modules in all at its end, while the rule
+was refused for shape on nearly every attempt: on 6202, 3,659 additions went through and 756,984 were refused.
+
+## What it says about varieties
+
+- **The plans differ in detail, and the plants do not differ in kind.** About nine plants in ten are made of
+  light-catching cells alone, and almost none move a joint. A few carry a second kind of cell: buoyancy on 6203 (4.6 %),
+  link or consumer cells on 6204 (4.6 and 3.5 %), structural cells on 6202 (3.0 %).
+- **The shape family reached the plants.** No founder carried the superellipsoid, random or trained (checked on 6202
+  and 6203), so it entered by mutation. It is the root of 86 % of 6202's
+  plants and half of 6204's, as flat discs, where among jointed bodies it held 35 % on 6202 and 12 % on 6204.
+- **No plant is large.** The largest plans build a few nodes, and the body with the world's largest part on 6203 had
+  two parts.
+
+Inference: the worlds hold one variety of plant, the drifting blade, in many sizes and in two shapes. A second variety
+would be a plant that makes its living a different way: one that holds the rock (D296), one that grows tall towards the
+light (D297), or one that keeps its matter in many blades rather than budding them off (the owner's idea of
+2026-11-03). Each is a rule the owner rules on.
