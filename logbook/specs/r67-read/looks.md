@@ -254,3 +254,32 @@ lines and 87 in the shaped arm's. The family is in 12.4 % of 3,091 jointed bodie
 spread over 9 lineages, all but one animal of it in the thrifty lines.
 
 Seed 6202 runs on alone, at 22,012 bodies at 43,150 s.
+
+## The side reports at 24,000 s (read at 06:30 on 2026-11-06)
+
+The pre-registration's readouts also ask for the busts, the lineages that rose, bites and joules, and the share of
+mouth blows that land. They are read from `what-evolved.py --at 24000` on each world joined from 0 s, and from the
+stats rows' blow counts between 12,000 s and 24,000 s.
+
+| Seed | Animal busts | Lineages that rose from few to many | Kept joules from leaves | Animal deaths: starved, aged, eaten | Blows landing within 3 radii | within 1 radius |
+|---|---|---|---|---|---|---|
+| 6201 | at founding only | 5 | 88.8 % | 4,960, 3,915, 58 | 45.5 % | 13.0 % |
+| 6202 | at founding only | 2 | 88.5 % | 3,090, 1,598, 9 | 38.4 % | 11.5 % |
+| 6203 | at founding, and 292 to 92 from 12,420 s, back by 14,680 s | 2 | 88.7 % | 4,142, 2,474, 22 | 42.4 % | 12.4 % |
+| 6204 | at founding only | 3 | 92.1 % | 2,063, 745, 12 | 47.5 % | 14.1 % |
+
+- **The animals live by grazing.** Of the joules their mouths kept, 88 to 92 % came from leaves, 2 to 5 % from other
+  living bodies and 6 to 7 % from remains. Few animals were eaten, 9 to 58 a world, and most died starved or old.
+- **Every lineage that rose from few to many began with a pool founder**, two to five a world.
+- **The wide reach carries most landed blows.** A blow lands within `biteReachRadii` 3 of its target (D280's reach, set
+  wide to be dialled back), and 70 to 71 % of the landed blows land beyond one radius. Counted at one radius, as D275
+  first ruled, 12 to 14 % of blows land, against round 66's 16 to 17 % with the same rule. So the mouth's aim has not
+  improved on round 66's. The reach is the reason most blows land. The wide share's fall is D280's sign that the reach
+  can come back, and it has not fallen: it stood near 0.70 in every 3,000 s window from 3,000 s on 6201 to 6203, and
+  rose on 6204 from 0.42 to 0.72.
+
+Inference: the kit's senses fed the grazers through the reach rather than through a better aim. Whether the reach can
+be dialled back without starving them is a screen of its own, and the owner's to order.
+
+The leaves against the bloom are not read here. G2's read (`scripts/reads/bloom/g2-read.py`) is the instrument, and it
+is owed to the write-up with the pictures.
