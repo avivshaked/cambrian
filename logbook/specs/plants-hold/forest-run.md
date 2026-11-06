@@ -80,3 +80,17 @@ digest on all 1,201 rows to step 120,000, and the lineage byte-equal on the shor
 (`forest-accept-6202.txt`, `forest-accept-6203.txt`). Settling ran inside that span, 37 and 19 children by 1,200 s, so
 the grip state a conception reads is the same at either group size. Regrowth did not: the first regrowths came later,
 48 on 6203 by 12,000 s and none on 6202, so the check does not cover them.
+
+## The second run (D315, D316), written before it starts
+
+The owner ruled that a settling child goes no deeper than its parent and an anchored founder no deeper than 9 m (D315),
+and that island coral grows taller and varied, trunks 6 to 16 m (D316). The second run is the first run's world with
+both (`rounds/env-plants-forest2.ps1`, `EVOSIM_SETTLE_NO_DEEPER` 1, `EVOSIM_ANCHORED_FOUNDER_MAX_DEPTH` 9 and the coral
+trunk heights), launched by `rounds/launch-plants-forest2.ps1` as `plg-6202` and `plg-6203`, 12,000 s at group 32, then
+the same two worlds at group 64 for 1,200 s. The build is `plants-build` with the depth switches merged.
+
+**What counts** is the first run's test unchanged: at 12,000 s, one island's coral carries at least 20 living gripping
+bodies, at least four in five of them born after 3,000 s. Read besides: the gripping bodies by depth and by island at
+every 1,500 s, whether a stand outlasts a lean half of the season (period 6,000 s), the anchored founders refused for want
+of a spot within 9 m, the children that found no spot no deeper than their parent, and the swimmers' numbers against
+the first run's, since taller coral changes the upper water they live in.
