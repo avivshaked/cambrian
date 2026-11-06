@@ -208,6 +208,10 @@ belongs to a run that has ended, so it can be stopped by its process id (2026-10
   (2026-11-03, the forager kit's fixtures). And `cmd //c start /wait` hands back cmd's exit code, not the program's:
   a `gpu-accept.py` run that way read exit 0 on two worlds it had found different. A check whose exit code is the
   claim runs from the PowerShell tool, which sets its own affinity first and reads `$LASTEXITCODE` (2026-11-03).
+  Every switch is doubled from Git Bash: `cmd //c start "" //b //wait //belownormal //affinity FF …`. Written with
+  single slashes, Git's path conversion turns `/b` into `B:/` and `/wait` into `C:/Program Files/Git/wait`, and the
+  cmd hangs with nothing started; a brief that gave the single-slash form left two such hangs on 2026-11-06. A brief
+  that names this form says it is for Git Bash, or gives the PowerShell route.
 - **A live run's files read 0 bytes in a directory listing.** Windows updates a file's size in the
   directory entry lazily while a writer holds it open, so `ls` and `Get-ChildItem` showed round 58's
   `genomes.jsonl.gz` at 0 bytes when it held 22 MB. Open the file with `FileShare.ReadWrite` and read its
