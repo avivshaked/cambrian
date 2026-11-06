@@ -183,7 +183,12 @@ The root file's rules still apply. The entries below were moved word for word, s
     on the same day, a small job started 36 s after a step ended reached 89 °C and cost the batch two takes. A
     compile ignores the thread count and uses every core in its affinity mask, which is how 14-core masks
     reached 89 °C twice that day. Each job in a HOLD window runs on a mask of four cores (for example
-    `0xF0000` or `0xF00000`), with at most two such lanes at once and their compiles staggered.
+    `0xF0000` or `0xF00000`), with at most two such lanes at once and their compiles staggered. A test run is the
+    same: `-maxcpucount` caps MSBuild's nodes and nothing else, and `dotnet test`'s testhost runs on every core in its
+    mask. On 2026-11-06 at 09:56 a builder's Core suite, briefed with that cap alone, ran its testhost on every logical
+    processor beside a render on 16-19. The CPU went from 79 to 100 °C in 18 s, and the render guard stopped Unity
+    with one step lost. A brief pins its test runs to a four-core mask as it pins its builds, and the coordinator gives
+    a builder its tests only in a HOLD window.
   - **A HOLD window's jobs stay off the fast cores too, and the heat is read through the PowerShell tool.** On
     2026-11-03 from 16:39 to 16:46 the CPU peaked at 97 °C. The coordinator had put two four-thread crowd fixtures
     on logical 8-11 and 12-15, beside the window's two lanes on 16-23 and the gate census. That broke the rule that
