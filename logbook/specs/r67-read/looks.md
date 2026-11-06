@@ -283,3 +283,28 @@ be dialled back without starving them is a screen of its own, and the owner's to
 
 The leaves against the bloom are not read here. G2's read (`scripts/reads/bloom/g2-read.py`) is the instrument, and it
 is owed to the write-up with the pictures.
+
+## 44,084 s: seed 6202 ran away, and the round ends (06:52 on 2026-11-06)
+
+Seed 6202 ended by itself at 44,084 s with 25,007 living bodies, 3,595 of them jointed and 19,354 photosynthetic, the
+same runaway as 6203's and 6204's. Its last checkpoint is at 43,500 s. The card group ended at 06:52. At 44,000 s it held
+5,571 living animals, 3,430 of them in the shaped arm's lines and 2,141 in the 40-generation exam's. The family is in
+35.4 % of 4,491 jointed bodies, three quarters of the thrifty lines' jointed animals and a tenth of the shaped arm's.
+
+The group checks each world's books at its end. The energy books close in all four worlds, within 0.0063 J against
+the line of 0.1 J. The matter books miss their line of 1e-5 in all four, by 1.2e-5 to 6.2e-5. Long worlds of rounds
+62 to 64 missed it too, by 1.1e-5 to 8.5e-5 in the group logs of r62cf, r63b, r63g, r63h and r64. Inference: this is
+a drift that long runs share, and nothing new in this round.
+
+### How the four worlds ended
+
+| Seed | Ended at | How | Last checkpoint |
+|---|---|---|---|
+| 6201 | 26,590 s | stopped under half real time, 19,874 bodies | 26,590 s |
+| 6202 | 44,084 s | ran away over the ceiling of 25,000 bodies | 43,500 s |
+| 6203 | 38,486 s | ran away | 37,500 s |
+| 6204 | 43,398.5 s | ran away | 42,000 s |
+
+Every world ended on its plants. In the three that ran away, 19,354 to 20,998 of the 25,000 bodies were photosynthetic,
+and each world held 129 to 223 grown-on modules in all. On 6202, 3,659 module additions went through and 756,984 were
+refused for shape; on 6204, 779 and 148,085. The round holds about 11.6 GB, with 385 GB free.
