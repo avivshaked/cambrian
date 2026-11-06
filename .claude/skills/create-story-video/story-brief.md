@@ -65,7 +65,10 @@ give each beat what it needs.
 7. **The explanation.** Why it happened, and how we know: what was read in the runs that shows it,
    from `facts.md`. Tell it as selection: the variation was already there, the conditions favoured
    some bodies, those left more young, and the population changed. Nobody wants or tries anything
-   (compelling-video-stories.md §6.10).
+   (compelling-video-stories.md §6.10). Call it selection only where `facts.md` reads what the
+   conditions favoured. Where it reads only who did better, say the setting let selection work, and
+   that whether it did, or place or chance, was not measured. Round 67's film called one family's
+   comeback selection when nothing had read why the family held up, and its fact check failed it.
 8. **The answer.** The hook's question answered, exactly as promised. Then say once, plainly, how far
    it holds: in how many runs, and whether what we followed was typical. One run is one case
    (compelling-video-stories.md §6.4), and stating a limit plainly does not cost the viewer's trust
