@@ -203,3 +203,17 @@ residual on 6202 rose steadily through the run, its largest in each 3,000 s span
 and it passed the 1e-5 line in the last four rows, 11,970 to 12,000 s, at most by 2 %. On 6203 it stayed under 4.5e-6.
 The second run's largest was 7.2e-6. Inference: a rounding error that accumulates with the run and the world's size,
 not one event that lost matter. It is open, and it is probed before any run longer than this one.
+
+## The winter in steps (D318), written before it starts
+
+The owner ruled that the winter comes back to the plant work's test worlds in steps (D318). The diagnostic's world runs
+again with the season's amplitude at 0.2 (winter at 0.8 of the mean light, summer at 1.2) and at 0.4 (0.6 and 1.4). The
+second forest run is the step at 0.6. Four worlds, seeds 6202 and 6203 at each amplitude, run together in one card
+group at group 32 for 12,000 s (`rounds/env-plants-winter2.ps1`, `rounds/env-plants-winter4.ps1`, launched by
+`rounds/launch-plants-winter.ps1` as `plv2-6202`, `plv2-6203`, `plv4-6202` and `plv4-6203` on `plants-build`).
+
+**How it is read.** At each amplitude, the forest test above at 12,000 s, which falls 250 s after the second winter
+ends, with islands assigned as the diagnostic's read assigns them (`read5.py`). An amplitude passes if the test passes
+on either seed. If 0.4 passes, a forest survives most of the full winter as the plants stand. If 0.2 passes and 0.4
+fails, the limit lies between them. If 0.2 fails, even a mild winter breaks a forest. Read besides: the grippers that
+began and died in each season, and the matter books on every world against the 1e-5 line.
