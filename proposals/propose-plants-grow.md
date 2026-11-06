@@ -37,7 +37,7 @@ lie on no cycle back to itself. Either way, raising its count adds no part, and 
 for life. The fix picks the lowest node that can grow, behind a switch that is off by default. It is a fault under D298,
 and it is being built now on branch `module-fix`. It needs no ruling, and nothing below can show until it is in.
 
-## 2. The grow urge and the matter sense (a world rule, yours)
+## 2. The grow urge and the matter sense (ruled by the owner on 2026-11-06 as D308)
 
 **The brain gains** one output, the urge to grow, beside D299's urge to breed. The module rule adds a module only while
 the urge is up and the reserve is over the module's line. That is how a birth under D299 waits for the urge to breed.
@@ -61,7 +61,7 @@ it is one output, one sense channel a part and one comparison a body, with the k
 worse than today's for want of it (inference). The risk runs the other way. Plants that grow and never bud may leave too
 few children to hold the water between the oases, and the screen measures that.
 
-## 3. Large plants rather than many (a question, yours)
+## 3. Large plants rather than many (ruled by the owner on 2026-11-06 as D309)
 
 The owner's aim is a world that holds more matter in fewer, larger plants. That serves the grazers, and a world of
 20,000 small plants runs into the body ceiling. Sections 1 and 2, with D296 to D298, give a large plant its reasons.
@@ -72,7 +72,7 @@ for it, and evolution decides whether it pays.
 The machine side is measured. Four blades as one body cost about half the machine time of four bodies, so a world of
 large plants would run faster at the same tissue (inference until the quiet timing).
 
-## 4. Varieties: seeded kinds that the world sorts (a question, yours)
+## 4. Varieties: seeded kinds that the world sorts (ruled by the owner on 2026-11-06 as D310)
 
 **A variety here** is a plant that makes its living in another way than its neighbours do. A larger or smaller blade of
 the same kind is one variety. The census counts varieties by growth form: drifting or anchored, one blade or many, and
@@ -135,14 +135,8 @@ a drifting parent is placed as today. I ask whether a gripping plant's child may
 
 ## What the owner rules
 
-1. **The grow urge and the matter sense** (section 2). I recommend building both, off by default and overpowered, and
-   screening them together with D299's urge on. A yes adds a world rule and a card build. A no leaves plants one use for
-   a reserve, budding, and the fault fix and D296 to D298 are screened alone. I ask whether plants get an urge to grow
-   and a sense of the matter at their blades.
-2. **Large plants** (section 3). I recommend no price change. The reasons in sections 1 and 2 and D296 to D298 should
-   show whether a large plant pays before any rule makes growing cheaper. I ask whether being allowed to grow large is
-   enough for the first screen, or whether growing should be made cheaper than budding from the start.
-3. **Varieties** (section 4). I recommend seeding them, (b), with the frond and the drifting blade, and the crust only
-   once D204's shoals are built. I ask whether varieties are seeded at the start or left for evolution to find.
+1. **The grow urge and the matter sense** (section 2): ruled by the owner on 2026-11-06 as recommended, D308.
+2. **Large plants** (section 3): ruled by the owner on 2026-11-06 as recommended, D309.
+3. **Varieties** (section 4): ruled by the owner on 2026-11-06 as recommended, D310.
 4. **A holdfast's child settles on rock** (section 6): ruled by the owner on 2026-11-06, option (a), as D307.
 5. **The overlap rule** (section 5) needs nothing now, and comes back with its count.

@@ -329,6 +329,10 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D305](#d305) | The dive lands by travelling through each film's own water to its hero | 2026-11-05 | ruled by the owner on 2026-11-05, after the dive's third take (`scratch/owner/dive-crossing-third-take/`) |
 | [D306](#d306) | The skin's eyespot loses its pupil, and the skin is shown as a family's label | 2026-11-05 | ruled by the owner on 2026-11-05, on the coordinator's recommendation with the mouth preview (`scratch/owner/mouth-without-the-gear/`) |
 | [D307](#d307) | A gripping plant's child settles on rock near its parent | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 6, after the anchored founders' smoke (`logbook/specs/plants-hold/anchor-smoke.md`) |
+| [D308](#d308) | A module waits for the brain's urge to grow, read beside a sense of the matter at each light-catching part | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 2 |
+| [D309](#d309) | Large plants are allowed, not paid: no price change for growing in the first plant screen | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 3 |
+| [D310](#d310) | Plant varieties are seeded: an anchored frond beside today's drifting blade | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 4 |
+| [D311](#d311) | Round 67 goes to a film if three of its moments read in the theatre | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation |
 
 ---
 
@@ -11021,3 +11025,70 @@ that settle near the parent, and this lets a forest on an island outlast its fou
 
 **Rejected.** A holdfast that sinks until it grips, which would amend D064 and land most sinkers on dark bed. Leaving the
 placement as it is, under which the forest dies with its founders.
+
+### D308
+**A module waits for the brain's urge to grow, read beside a sense of the matter at each light-catching part** · 2026-11-06
+
+**Status:** ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in
+`proposals/propose-plants-grow.md`, section 2. It amends D106's module rule as D299 amended D087's gate, and extends the
+brain's outputs as D268 and D299 did. It takes up the owner's idea of 2026-11-03.
+
+**Decision.** The brain gains an output, the urge to grow. The module rule adds a module only while the urge is up and
+the reserve is over the module's line. The brain gains a sense of the matter dissolved in each light-catching part's
+cell, read at each part as D154's light sense reads light, on a log scale as D294's hunger sense reads the reserve. Both
+ship behind switches, off by default, and start overpowered (D262): read every step, free, with the module's line
+lowered until additions are common. They are screened with D299's urge to breed on, so that a plant's brain chooses
+between growing and budding.
+
+**Why.** A plant has one use for a full reserve today, which is to bud. A plant in rich water should be able to hold its
+births and grow, and one in stripped water to send a child into other water. Round 67's worlds ran away over 25,000
+bodies, four in five of them single-blade plants.
+
+### D309
+**Large plants are allowed, not paid: no price change for growing in the first plant screen** · 2026-11-06
+
+**Status:** ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in
+`proposals/propose-plants-grow.md`, section 3.
+
+**Decision.** The first plant screen changes no price to favour growing over budding. A large plant's reasons are the
+module rule's fault fix, D296 to D298, D307 and D308, and the screen shows whether a large plant pays.
+
+**Why.** A price that makes growing cheaper would decide the answer before the world can give it. The machine side is
+measured separately: four blades as one body cost about half the machine time of four bodies (an estimate under load,
+`logbook/specs/plants-hold/r67-plant-census.md`).
+
+**Rejected.** Making growing cheaper than budding from the start.
+
+### D310
+**Plant varieties are seeded: an anchored frond beside today's drifting blade** · 2026-11-06
+
+**Status:** ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in
+`proposals/propose-plants-grow.md`, section 4. The owner made varieties part of the plant work on 2026-11-06.
+
+**Decision.** The plant screen's founders hold two hand-built kinds of plant from the start, in equal numbers: the frond,
+a holdfast of the anchoring cell on island coral with a short stalk and blades that can grow to eight (D296, D298), and
+the drifting blade, today's plant. A third kind, a crust lying on the shallow bed, waits for D204's island shoals,
+ruled and never built. A variety counts as holding when it keeps a tenth or more of plant tissue at 24,000 s on both
+seeds; the pre-registration sets the mark.
+
+**Why.** Round 67 waited 44,000 s and held one kind of plant. Seeding is fast and overpowered (D262), and D296 already
+seeds half the plant founders anchored.
+
+**Rejected.** Waiting for a second kind to appear by mutation. A seeded kind that holds says the world can keep it, not
+that evolution could make it, and the record says so.
+
+### D311
+**Round 67 goes to a film if three of its moments read in the theatre** · 2026-11-06
+
+**Status:** ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation. No round 67 world goes on
+past its ceiling.
+
+**Decision.** Round 67's film is made from what was recorded. It tells the founders' two teams, the thrifty
+40-generation exam and the shaped arm that ate more and spent more; the grazers living on leaves; the rounded-square
+shape no founder carried, which spread through the thrifty lines and became the plants' disc; the shaped arm's lines
+overtaking on seed 6202 from about 19,000 s; and the plant canopy that ran the worlds over their ceiling. It goes ahead
+if a theatre pass shows three moments clearly: the new shape's first appearance, the overtaking on 6202, and the canopy
+at the end. If they do not read, the film waits for the plant round.
+
+**Why.** A resume from a runaway's last checkpoint replays to the same end, so a world goes on only with its ceiling
+changed, and the plant work will change the world it would go on in. The round's story stands on what was recorded.
