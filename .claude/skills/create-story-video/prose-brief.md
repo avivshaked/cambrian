@@ -111,7 +111,8 @@ Truth is a tax the story pays. Pay all of it, and not a word more.
 
 Your prompt names the film's folder and the draft n, or the sample s, that you write.
 
-Read `story.md` and `facts.md`. Read every owner's file in the folder, `prose-<m>-owner.md`,
+Read `story.md` and `facts.md`. Read every owner's file in the folder: `owner-<m>.md`, the owner's
+words on the story's drafts, which hold for the prose too; and `prose-<m>-owner.md`,
 `prose-sample-<m>-owner.md` and `script-<m>-owner.md`, with the `prose-<m>-key-lines.md` whose
 versions their picks name. The owner's words hold until the owner changes them, and they weigh most.
 
