@@ -203,6 +203,9 @@ by whether their genome carries a superellipsoid node:
 
 - **On 6202 the family is a thrifty line's**, and nearly all of it sits in one lineage of the 40-generation exam's, 406
   animals of 501 at 24,000 s. In the shaped arm's lines it is one lineage too, 94 animals then and 158 at 36,000 s.
-- **So the family fell on 6202 because its line lost ground to the shaped arm's**, not because it was lost within a
-  line. This settles the inference of 24,000 s against itself: the family did not spread with the shaped arm's lines.
+- **The family's fall on 6202 has two parts of about equal size.** Among jointed animals it fell from 59.4 % at
+  24,000 s to 34.5 % at 36,000 s. Had each exam's lines kept their 24,000 s share of it, the shift between the lines
+  alone would have left it at 45.5 %. The rest is a fall inside the lines, from 90 to 82 % in the thrifty ones and from
+  24 to 12 % in the shaped arm's, where lines without it grew faster. The family did not spread with the shaped arm's
+  lines, which settles the inference of 24,000 s against itself.
 - On 6203 and 6204 the family is in the thrifty lines only, spread over 7 and 9 lineages.
