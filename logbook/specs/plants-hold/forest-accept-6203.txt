@@ -1,0 +1,14 @@
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 959dba0a99 dirty False dynamics fe071d2ee365 farm cc7640c33278 config c7e97670507541dd
+  pace     1200 s of 1200 in 6.578631751666666 min, 3.040145847186703 x real time, status ended (budget), diverged 0
+B: scratch/plants-work/runs\plf-6203\2026-11-06-134402-c7e97670
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 40746.6503 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 1519f7cd90 dirty False dynamics fe071d2ee365 farm cc7640c33278 config c7e97670507541dd
+  pace     12000 s of 12000 in 73.40533695833334 min, 2.72459753319469 x real time, status ended (budget), diverged 0
+split A  physics 69%, world 30%, harness 1%, writers 1%
+split B  physics 63%, world 28%, harness 8%, writers 1%
+stats    identical on all 120 shared samples to t=1200 (wall clocks left out); 1080 samples in one run only
+digest   identical on all 1201 shared rows to step 120000
+lineage  byte-equal on the shorter run's 935 lines; the other goes on
+positions not in both runs

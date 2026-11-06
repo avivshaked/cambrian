@@ -69,3 +69,11 @@ might outlast the lean season.
 The counters `gripsFormed` and `gripsBroken` are totals over the living bodies and rise and fall with them, so they do
 not show grips forming over time; the positions' grip flag does. A grip released because a body's reserve ran out is
 counted as broken.
+
+**The card check passes.** The same two worlds at group 64 for 1,200 s (`plf-g64-6202` and `plf-g64-6203`, from
+15:01; the first launch refused beside the first group's closing watch, and the launcher now waits) equal the group 32
+worlds' first 1,200 s on both seeds by `scripts/reads/gpu-accept.py`: stats identical on all 120 shared samples, the
+digest on all 1,201 rows to step 120,000, and the lineage byte-equal on the shorter run's 859 and 935 lines
+(`forest-accept-6202.txt`, `forest-accept-6203.txt`). Settling ran inside that span, 37 and 19 children by 1,200 s, so
+the grip state a conception reads is the same at either group size. Regrowth did not: the first regrowths came later,
+48 on 6203 by 12,000 s and none on 6202, so the check does not cover them.
