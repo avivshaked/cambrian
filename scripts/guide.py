@@ -783,6 +783,16 @@ def founder_fact_how(source, pool):
     return 'a body with no parent whose source is not recorded'
 
 
+def arrivals_text(trickle, pool):
+    """The world's arrivals fact, its slots unfilled. A pool founder is counted where it arrived, the
+    floor or the trickle, and in poolSpawns as well (World.CountFounderAttempt), so with a pool the
+    trickle's founders are not all random."""
+    if pool:
+        return ('{n} founders drifted in with the trickle over the run, and {p} founders in all were '
+                'genomes from the nursery pool')
+    return '{n} random founders drifted in with the trickle over the run'
+
+
 def split_sentences(card, names):
     """What changed at the split, as sentences that state and stop."""
     out = []
@@ -2015,11 +2025,10 @@ def main():
         tr, pl = last.get('trickleSpawns'), last.get('poolSpawns')
         if tr:
             slots = {'n': fmt_n(tr)}
-            text = '{n} random founders drifted in with the trickle over the run'
             if pl:
                 slots['p'] = fmt_n(pl)
-                text += ', {p} of them stored bodies brought back'
-            world_facts.append(fact('arrivals', 'arrivals', 'world', text + '.', slots, value=tr))
+            world_facts.append(fact('arrivals', 'arrivals', 'world', arrivals_text(tr, pl) + '.', slots,
+                                    value=tr))
         ck = manifest.get('checkpointEverySeconds')
         early = stats_at(stats_rows, float(ck)) if ck else None
         js, je = jointed_share(early), jointed_share(last)

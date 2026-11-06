@@ -4,10 +4,11 @@ Since D220 a positions sample holds a row for each body's remains as well as for
 flagged with bit 8 (PositionsRow.RemainsBit). The guide counted them all, so round 67's last sample
 read 28,050 bodies where stats.jsonl had 24,988 alive. And a founder whose lineage row says `src`
 `pool` came from the nursery's pool (the run's pool/index.tsv maps its pool index to a genome and a
-nursery run), yet the card called it a random founder with no parent. The fixtures here are built in
-a tmp_path, because runs are gitignored.
+nursery run), yet the card called it a random founder with no parent, and the world's arrivals fact
+called every trickle founder random though the pool's arrive with the trickle. The fixtures here are
+built in a tmp_path, because runs are gitignored.
 
-  python -I -m pytest scripts/tests/guide/test_guide.py
+  python -I scripts/tests/guide/test_guide.py      (or under pytest, where it is installed)
 """
 
 import importlib.util
@@ -115,3 +116,22 @@ def test_an_unknown_source_is_not_called_random():
 def test_the_floor_and_the_trickle_keep_their_wording():
     assert guide.founder_how("floor", None) == guide.FOUNDER_SOURCES["floor"]
     assert guide.founder_how("trickle", None).startswith("a random founder with no parent")
+
+
+def test_the_arrivals_fact_calls_no_pool_founder_random():
+    with_pool = guide.arrivals_text(641, 604)
+    assert "random" not in with_pool and "nursery pool" in with_pool
+    assert guide.arrivals_text(641, 0).startswith("{n} random founders")
+
+
+if __name__ == "__main__":
+    import inspect
+    import tempfile
+    for name, f in list(globals().items()):
+        if name.startswith("test_"):
+            if inspect.signature(f).parameters:
+                with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as d:
+                    f(Path(d))
+            else:
+                f()
+            print("ok", name)
