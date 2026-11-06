@@ -36,3 +36,36 @@ is found.
 At every 1,500 s checkpoint: the gripping bodies by island, the children settled and those that found no spot
 (`childrenSettled`, `childrenSettleFailed`), the regrowths and their refusals, and the living plants and animals. The
 film lane gets the times and places of the thickest forest if one holds.
+
+## What it found
+
+The two worlds ran from 13:41 to 14:57 on 2026-11-06 at 2.3 to 3.9 times real time, as
+`scratch/plants-work/runs/plf-6202/2026-11-06-134402-c7e97670` and `plf-6203/2026-11-06-134402-c7e97670`. Both books
+closed: the largest energy residual was 3.6e-4 J and the largest matter residual 4.6e-6, under the 0.1 J and 1e-5 lines.
+The reads are `scratch/plants-work/forest-read/` and `scratch/plants-work/settle-probe/`.
+
+**No forest holds.** At 12,000 s, 6202 has no gripping body and 6203 has one. The answer, by the test fixed above, is no.
+
+| Seed | Gripping, living, at 1,500 s | 3,000 s | 4,500 s | 6,000 s | 7,500 s | 9,000 s | 10,500 s | 12,000 s |
+|---|---|---|---|---|---|---|---|---|
+| 6202 | 21 | 22 | 6 | 2 | 23 | 17 | 3 | 0 |
+| 6203 | 22 | 11 | 2 | 2 | 1 | 0 | 2 | 1 |
+
+**Settled children grip, and most starve.** Every child set on coral by D307 carries the grip flag by the first sample
+after its birth, 1 to 10 s, and keeps it until it dies; the tracker's counts equal the worlds' `childrenSettled` and
+`childrenSettleFailed` exactly (123 and 45 on 6202, 61 and 44 on 6203, to 6,000 s). No grip was let go. Most children
+were set below their parent: the child's height less the parent's has a median of -4.5 m on 6202 and -2.2 m on 6203,
+because the coral in the parent's reach runs down the island's flanks. Light falls as e^(-d/6) from the surface, to a
+fifth at 9 m, and below about 9 m a plant starves within a few hundred seconds, founder or newborn: of children set more
+than 3 m below their parent, 79 of 81 starved on 6202 (median life 330 s), and 14 of 16 founders that gripped at 9 to
+18 m starved there (median 148 to 170 s).
+
+**A forest renewed itself for one season on 6202.** After the founders died, settled children grew a second stand: 23
+gripping plants at 7,500 s and 38 at 8,500 s, every one born after 3,000 s, 37 of them in one patch at x 155 to 184 m,
+z 130 to 160 m, 6.5 to 12 m deep. The lean half of the season (period 6,000 s) took it: 3 at 10,500 s and none at
+12,000 s. Inference: the forest can renew itself through its children in the light, and a stand that started shallower
+might outlast the lean season.
+
+The counters `gripsFormed` and `gripsBroken` are totals over the living bodies and rise and fall with them, so they do
+not show grips forming over time; the positions' grip flag does. A grip released because a body's reserve ran out is
+counted as broken.
