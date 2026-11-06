@@ -332,7 +332,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D308](#d308) | A module waits for the brain's urge to grow, read beside a sense of the matter at each light-catching part | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 2 |
 | [D309](#d309) | Large plants are allowed, not paid: no price change for growing in the first plant screen | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 3 |
 | [D310](#d310) | Plant varieties are seeded: an anchored frond beside today's drifting blade | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation in `proposals/propose-plants-grow.md`, section 4 |
-| [D311](#d311) | Round 67 goes to a film if three of its moments read in the theatre | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation |
+| [D311](#d311) | Round 67 goes to a film if three of its moments read in the theatre | 2026-11-06 | ruled by the owner on 2026-11-06, agreeing with the coordinator's recommendation · partly superseded by D312 |
+| [D312](#d312) | Round 67's film gets a second chapter, the plants' answer, and falls back to ending on the comeback | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's recommendation, after the owner found an ending on the runaway unsatisfying |
 
 ---
 
@@ -11092,3 +11093,22 @@ at the end. If they do not read, the film waits for the plant round.
 
 **Why.** A resume from a runaway's last checkpoint replays to the same end, so a world goes on only with its ceiling
 changed, and the plant work will change the world it would go on in. The round's story stands on what was recorded.
+
+### D312
+**Round 67's film gets a second chapter, the plants' answer, and falls back to ending on the comeback** · 2026-11-06
+
+**Status:** ruled by the owner on 2026-11-06, on the coordinator's recommendation, after the owner found an ending on
+the runaway unsatisfying. It supersedes D311's condition that the film goes ahead only if three moments read; the
+moments now choose the shots.
+
+**Decision.** The film is made. Its first chapter is D311's story of round 67, from what was recorded. Its second
+chapter is the plants' answer to the canopy that filled the water: holdfasts gripping island coral, the first grips in
+a world (`logbook/specs/plants-hold/anchor-smoke.md`), and, once D307 is built, a short card run in which a gripping
+plant's children settle on the rock. If a forest holds on an island in that run, it ends the film. If it does not, the
+film ends on the comeback instead: around 23,000 to 24,000 s on seed 6202, the shaped arm holding its water level with
+the thrifty exam, with the canopy as a short closing beat, and the record says so. The film waits for the D307 build
+and the forest run, not for the plant screen.
+
+**Why.** A world that ends because its plants filled it past the body ceiling is partly a fault of the world, not
+something its creatures did. A problem the world showed, then the first answer to it, is an ending, and it is honest
+about where the work stands.
