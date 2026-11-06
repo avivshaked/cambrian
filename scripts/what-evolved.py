@@ -1154,23 +1154,30 @@ def print_report(R):
       % (L['founder_bodies'], L['founder_lineages_alive'], L['living_bodies'], L['founder_lineages_with_living_animals'],
          L['living_animals']))
     hdr = '   %9s %-9s %-8s %7s %7s %8s %7s  %s'
+
+    def src_label(r):
+        # A resumed run's roots include the bodies it took over at its resume second, born in the run before, so this
+        # run holds no birth row for them: 'before', not 'bred'.
+        return r['source'] or ('bred' if r['born_t'] is not None else 'before')
+
     p('   the lineages holding the most living animals:')
     p(hdr % ('founder', 'root is', 'source', 'born', 'animals', 'bodies', 'share', 'first seen (size) -> peak, few to many'))
     for r in L['top_by_animals']:
         fs = '%g s (%s)' % (r['first_seen_t'], r['first_seen_size']) if r['first_seen_t'] is not None else '-'
-        p(hdr % (r['root'], r['root_class'], r['source'] or 'bred', num(r['born_t'], '{:g}'), r['animals'], r['bodies'],
+        p(hdr % (r['root'], r['root_class'], src_label(r), num(r['born_t'], '{:g}'), r['animals'], r['bodies'],
                  pct(r['share_of_animals']), '%s -> %d%s' % (fs, r['peak'], '  ROSE' if r['rose'] else '')))
     p('   the lineages holding the most living bodies of any kind:')
     for r in L['top_by_bodies']:
-        p(hdr % (r['root'], r['root_class'], r['source'] or 'bred', num(r['born_t'], '{:g}'), r['animals'], r['bodies'],
+        p(hdr % (r['root'], r['root_class'], src_label(r), num(r['born_t'], '{:g}'), r['animals'], r['bodies'],
                  pct(share(r['bodies'], L['living_bodies'])), '-'))
     if L['rose_few_to_many']:
         p('   animal lineages that rose from few (%d or fewer at the first %g-s look that saw them) to many (%d or more now): %d'
           % (L['few'], (L['grid_seconds'][1] - L['grid_seconds'][0]) if len(L['grid_seconds']) > 1 else 0, L['many'],
              len(L['rose_few_to_many'])))
         for r in L['rose_few_to_many']:
-            p('     founder %d (%s, born %g s): %s animals at %g s -> peak %d -> %d now'
-              % (r['root'], r['source'] or 'bred', r['born_t'], r['first_seen_size'], r['first_seen_t'], r['peak'], r['animals']))
+            p('     founder %d (%s, born %s s): %s animals at %g s -> peak %d -> %d now'
+              % (r['root'], src_label(r), num(r['born_t'], '{:g}'), r['first_seen_size'], r['first_seen_t'], r['peak'],
+                 r['animals']))
     else:
         p('   animal lineages that rose from few to many: none (few = %d or fewer at the first look that saw them, many = %d or more now)'
           % (L['few'], L['many']))
