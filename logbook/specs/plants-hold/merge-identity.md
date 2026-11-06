@@ -40,3 +40,10 @@ its default, the world is the one round 67's code steps.
 config `8a39efce92a91cc4`. Against the plants build's fixture of 0425d88c, its 2,000 stats rows hold the same 340,000
 values with no field in one run only, and its `lineage.jsonl` (10,408 rows) and its snapshot at 20,000 s are
 byte-identical.
+
+## D315's depth limits change nothing with their switches off
+
+`plants-build` at `f74c86fd` merges D315's two placement limits (`depth`, `3710ac8d`, merged `c7c88a4d`), each off by
+default. The same fixture on its Release farm is `runs/cefix-s4/2026-11-06-162944-987efd5c`, config `987efd5cad824929`.
+Against the fixture of `02a57851`, its 2,000 stats rows hold the same 340,000 values with no field in one run only, and
+its `lineage.jsonl` (10,408 rows) and its snapshot at 20,000 s are byte-identical.
