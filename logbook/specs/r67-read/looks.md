@@ -131,3 +131,16 @@ The reason is the crowd. The world held 19,874 living bodies at the stop, agains
 jointed and 15,263 rigid, and 24 bodies a step on the bed or the glass. Its pace fell with the count: 1.5 times real
 time near 15,000 s, 0.86 at 21,000 s, 0.72 at 24,000 s and 0.49 at 26,500 s. The other three held 10,800 to 13,744
 bodies at the same hour, at 0.77 to 1.0 times real time. Whether 6201 resumes, and on what, is the owner's.
+
+## 30,000 s, the three worlds that run on (read at 02:36 on 2026-11-06)
+
+| Seed | Living animals at 30,000 s | the 40-generation exam's | the shaped arm's | Jointed bodies with a superellipsoid | Jointed animals with one |
+|---|---|---|---|---|---|
+| 6202 | 1,324 | 328 | 996 | 30.3 % of 1,111 | 32.2 % of 1,045 |
+| 6203 | 1,445 | 1,433 | 12 | 11.4 % of 1,212 | 8.5 % of 1,156 |
+| 6204 | 984 | 945 | 39 | 13.6 % of 971 | 2.0 % of 767 |
+
+- **On 6202 the shaped arm's lines now hold three animals in four.** On the other two they have nearly gone.
+- **The family holds above 10 % of jointed bodies in all three**, but fell on 6202 from 56.6 % to 30.3 % while the
+  shaped arm's lines grew. So the family did not spread with those lines, and the inference at 24,000 s is not borne
+  out.
