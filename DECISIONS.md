@@ -11198,7 +11198,10 @@ the upper water. Keeping today's height, under which D315's 9 m limit would refu
 supersedes D313's two animal threads; D313's plants, a thread from the start, stand. It amends D314: the ending is
 unchanged, and the first forest run's stand comes before it.
 
-**Decision.** The costly shaped arm's comeback is the film's spine and the plants are its second thread. The rounded
+**Decision.** The costly shaped arm's comeback is the film's spine and the plants are its second thread. The story's
+answer, as the owner refined it after draft 8 (`owner-8.md`), is that one late arrival's family saved the costly team:
+body 13929's, which came from the tank at 11,447 s and was nearly all of the shaped arm from 30,000 s on. Why it did
+well was not measured, and the film says so. The story follows that family. The rounded
 square's spread is no longer a thread: body 11563's arrival stays as one episode in the thrifty team's story. Before
 the ending, the film shows the first forest run's one-season stand on seed 6202, 37 plants grown from settled children
 at 8,500 s and gone in the lean season after, labelled plainly as a separate test world and not round 67. The second forest run is left out. The film then ends as
