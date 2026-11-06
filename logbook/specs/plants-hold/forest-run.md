@@ -201,8 +201,11 @@ second run, and the forest held regardless. The gripping bodies' median depth at
 **The matter books crossed their line on 6202 at the end.** The largest energy residual was 3.0e-5 J. The matter
 residual on 6202 rose steadily through the run, its largest in each 3,000 s span 2.3e-6, 4.5e-6, 6.5e-6 and 1.0e-5,
 and it passed the 1e-5 line in the last four rows, 11,970 to 12,000 s, at most by 2 %. On 6203 it stayed under 4.5e-6.
-The second run's largest was 7.2e-6. Inference: a rounding error that accumulates with the run and the world's size,
-not one event that lost matter. It is open, and it is probed before any run longer than this one.
+The second run's largest was 7.2e-6. The residual grew in step with the matter that passed through the books: by
+12,000 s on 6202, 80,611 units had been buried and 43,442 brought in, against 45,060 standing at the start, so the
+residual of 1.0e-5 is about 1e-10 of that flow (`matter-drift.py` in `scratch/plants-work/forest-read/`). Inference:
+double-precision rounding over a million steps, not a loss of matter. The 1e-5 line is absolute, so any world that
+moves this much matter for this long reaches it.
 
 ## The winter in steps (D318), written before it starts
 
