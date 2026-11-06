@@ -156,3 +156,17 @@ parent, so a stand cannot replace its dead; and the winter starves grippers even
 18:46). They equal the group 32 worlds' first 1,200 s on both seeds, in `forest2-accept-6202.txt` and
 `forest2-accept-6203.txt`: stats identical on all 120 shared samples, the digest on all 1,201 rows to step 120,000, and
 the lineage byte-equal on the shorter run's 779 and 2,484 lines.
+
+## Without the winter: a diagnostic, written before it starts
+
+The second run does not say whether the winter or the settling limit stopped its forest. This run takes the second
+run's world with one setting changed, the season's amplitude at 0, so the light keeps its day of 1,000 s and the
+year's mean but has no winter (`rounds/env-plants-nowinter.ps1`, launched by `rounds/launch-plants-nowinter.ps1` as
+`plw-6202` and `plw-6203`, 12,000 s at group 32 on `plants-build`). It is a diagnostic. The plant work's world keeps
+its seasons unless the owner rules otherwise.
+
+**How it is read.** The forest test is the same as above. If it passes on either seed, the winter is what stopped the
+second run. If no island holds 20 gripping bodies, four in five of them born after 3,000 s, at any 100 s sample after
+3,000 s on either seed, the settling limit stops a forest even without a winter. Anything between is reported as it
+stands. Read besides: the share of settling children that found no spot, against the second run's 77 and 89 %, and the
+grippers that began and died in each 3,000 s span, against the second run's table.
