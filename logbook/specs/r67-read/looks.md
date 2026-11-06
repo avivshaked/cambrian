@@ -309,3 +309,14 @@ Every world ended on its plants. In the three that ran away, 19,354 to 20,998 of
 and each world held 129 to 223 grown-on modules in all. On 6202, 3,659 module additions went through and 756,984 were
 refused for shape; on 6204, 779 and 148,085. Most of those refusals were other bodies', not plants'
 (`logbook/specs/plants-hold/refusal-probe.md`). The round holds about 11.6 GB, with 385 GB free.
+
+## G2's test 2 does not read round 67's grazers (2026-11-06)
+
+G2's read on seed 6202, joined from 0 s (`scratch/four-worlds/chained/g2-6202.txt`), put the grazers' kept income at
+summer starts at 0.05 to 0.12 of their upkeep, in a world whose animals boomed. The upkeep it divides by is a constant,
+0.908 W, round 61's grazer as `scripts/reads/r61-grazer-economy.py` measured it (`--upkeep-w`, read from the code).
+Round 67's grazers are the nursery's trained bodies, other bodies with another upkeep, and neither the stats rows nor
+the snapshots carry a body's upkeep. So test 2's shares are not a reading of this round, and are not reported. Reading
+it needs each living grazer's own upkeep at each summer start, developed from its genome at its body fraction, which
+is a small probe and agent work. The read's other gates stand as printed: the floor holds in every judged window, the
+chain is 18, and gate 2 waits on `--islands-from`.
