@@ -94,3 +94,65 @@ bodies, at least four in five of them born after 3,000 s. Read besides: the grip
 every 1,500 s, whether a stand outlasts a lean half of the season (period 6,000 s), the anchored founders refused for want
 of a spot within 9 m, the children that found no spot no deeper than their parent, and the swimmers' numbers against
 the first run's, since taller coral changes the upper water they live in.
+
+## What the second run found
+
+The two worlds ran from 17:11 to 18:43 on 2026-11-06 at 2.9 and 2.2 times real time, as
+`scratch/plants-work/runs/plg-6202/2026-11-06-171122-1171cc99` and `plg-6203/2026-11-06-171122-1171cc99`. Both books
+closed: the largest energy residual was 3.4e-5 J and the largest matter residual 7.2e-6. The reads are `read2.py`,
+`read3.py` and `read4.py` in `scratch/plants-work/forest-read/`, with their outputs beside them.
+
+**No forest holds.** At 12,000 s, 6202 has two gripping bodies and 6203 has one. The answer, by the test fixed above,
+is no again.
+
+| Seed | Gripping, living, at 1,500 s | 3,000 s | 4,500 s | 6,000 s | 7,500 s | 9,000 s | 10,500 s | 12,000 s |
+|---|---|---|---|---|---|---|---|---|
+| 6202 | 35 | 44 | 32 | 7 | 17 | 15 | 11 | 2 |
+| 6203 | 41 | 35 | 18 | 4 | 6 | 14 | 18 | 1 |
+
+**The depth limits did what they were for.** The gripping bodies' median depth was 3.2 to 4.6 m on 6202 and 3.3 to 6.0 m
+on 6203 at the marks above, against 6.6 to 9.8 m in the first run. A gripping body's median time from its first grip to
+its death rose from 364 to 860 s on 6202 and from 314 to 700 s on 6203. The 9 m limit refused two anchored founders of 51
+on 6202 and one of 51 on 6203, because the taller coral puts rock within 9 m almost everywhere.
+
+**Most children now find no place to settle.** By 12,000 s, 107 children settled and 364 found no spot on 6202, and 80
+settled and 656 found none on 6203: 77 % and 89 % failed, against 23 % and 42 % in the first run. Inference: a parent
+that grips on a crest has little rock in its reach that lies no deeper than it, so a stand cannot spread down its own
+island.
+
+**Each winter takes the stand.** This world has two seasons (D151). Summer runs to 2,750 s and from 5,750 to 8,750 s, at
+1.6 times the year's mean light; winter runs from 2,750 to 5,750 s and from 8,750 to 11,750 s, at 0.4 times. Counting
+every body seen gripping at a 100 s sample:
+
+| Seed | Season | Began gripping (founders) | Grippers died | Of those, starved | Gripping at its end |
+|---|---|---|---|---|---|
+| 6202 | summer 1 | 84 (10) | 30 | 14 | 52 |
+| 6202 | winter 1 | 50 (13) | 97 | 58 | 9 |
+| 6202 | summer 2 | 30 (8) | 18 | 7 | 19 |
+| 6202 | winter 2 | 29 (16) | 47 | 30 | 1 |
+| 6203 | summer 1 | 101 (8) | 56 | 21 | 48 |
+| 6203 | winter 1 | 49 (16) | 92 | 52 | 2 |
+| 6203 | summer 2 | 33 (12) | 20 | 10 | 18 |
+| 6203 | winter 2 | 40 (12) | 54 | 35 | 1 |
+
+The other deaths are of age (D128), and one eaten in each of two seasons on 6203. In each winter about twice as many
+grippers died as began, and most of the dead starved, at 3 to 6 m. The first run's worlds rose and fell with the same
+seasons.
+
+The test's moment, 12,000 s, falls 250 s after the second winter ends, the lowest point of the year, which this file did
+not see when it was written. The answer does not rest on it. After the first winter, the most gripping bodies in the
+whole world at any 100 s sample were 20 on 6202, at 8,500 s, and 18 on 6203, at 8,700 s. No single island reached 20
+even at the end of a summer.
+
+Plants as a whole fell in winter too, by less: on 6202 the photosynthetic bodies went from 768 at 3,000 s to 339 at 6,000
+s while the gripping ones went from 44 to 7. The swimmers' numbers moved both ways against the first run's, larger on
+6202 and smaller on 6203, with no steady difference. Regrowth ran this time on both seeds, 39 and 56 regrowths by
+12,000 s.
+
+Inference: two things now stop a forest, and this run does not separate them. Children cannot settle near a crest
+parent, so a stand cannot replace its dead; and the winter starves grippers even in shallow water.
+
+**The card check passes.** The same two worlds ran at group 64 for 1,200 s (`plg-g64-6202` and `plg-g64-6203`, from
+18:46). They equal the group 32 worlds' first 1,200 s on both seeds, in `forest2-accept-6202.txt` and
+`forest2-accept-6203.txt`: stats identical on all 120 shared samples, the digest on all 1,201 rows to step 120,000, and
+the lineage byte-equal on the shorter run's 779 and 2,484 lines.
