@@ -32,3 +32,11 @@ Release farm (`logbook/specs/plants-hold/fixtures.ps1 -Worktree`) is `runs/cefix
 `013d5f2b506ace55`. Against the merged build's fixture its 2,000 stats rows hold the same 340,000 values with no field
 in one run only, and its `lineage.jsonl` and its snapshot at 20,000 s are byte-identical. So with every plant switch at
 its default, the world is the one round 67's code steps.
+
+## D307's settling and D298's regrowth change nothing with their switches off
+
+`plants-build` at `02a57851` merges D307's settling children (`settle`, `90b0a7b1`) and D298's regrowth (`regrow`,
+`26bd16ef`), each off by default. The same fixture on its Release farm is `runs/cefix-s4/2026-11-06-130222-8a39efce`,
+config `8a39efce92a91cc4`. Against the plants build's fixture of 0425d88c, its 2,000 stats rows hold the same 340,000
+values with no field in one run only, and its `lineage.jsonl` (10,408 rows) and its snapshot at 20,000 s are
+byte-identical.
