@@ -105,7 +105,7 @@ reach other nodes, the overlaps they meet will change. So the count is taken aga
 here moves. If it is still large, one option lets a plant's thin blades pass through each other, as kelp blades do.
 Another has the rule try the next node that can grow when one would overlap. Both change what a body may be.
 
-## 6. A holdfast's child settles on rock (a world rule, yours)
+## 6. A holdfast's child settles on rock (ruled by the owner on 2026-11-06 as D307)
 
 The anchored founders' smoke (`logbook/specs/plants-hold/anchor-smoke.md`) ran D296 and D298 on round 67's world for
 3,000 s on two seeds. Holdfasts set on island coral gripped: 8 of 10 founders on one seed and 12 of 12 on the other held
@@ -144,9 +144,5 @@ a drifting parent is placed as today. I ask whether a gripping plant's child may
    enough for the first screen, or whether growing should be made cheaper than budding from the start.
 3. **Varieties** (section 4). I recommend seeding them, (b), with the frond and the drifting blade, and the crust only
    once D204's shoals are built. I ask whether varieties are seeded at the start or left for evolution to find.
-4. **A holdfast's child settles on rock** (section 6). I recommend (a): a child of a parent that holds a grip is
-   placed on rock within the parent's dispersal reach, behind a switch, off by default. A yes amends D264's placement for
-   these children only, and lets a forest outlast its founders. A no leaves the coral's forest to die with the founders,
-   and anchored lines live on as drifters with an idle holdfast. I ask whether a gripping plant's child may settle on
-   rock near its parent.
+4. **A holdfast's child settles on rock** (section 6): ruled by the owner on 2026-11-06, option (a), as D307.
 5. **The overlap rule** (section 5) needs nothing now, and comes back with its count.
