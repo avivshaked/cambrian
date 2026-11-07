@@ -271,3 +271,32 @@ proposal expected, and the rest's screen decides. Read besides: the grippers tha
 the second run's table, and the reserve margin (`rm` in the lineage) of the gripping plants born in each season, to see
 whether their children keep the bank. The card check passes as before if the group 64 worlds equal the group 32 worlds'
 first 1,200 s on the stats, the digest and the lineage.
+
+## B, rest (D319), written before it starts
+
+The owner ruled D319's rest. A plant whose income has stood below its upkeep for longer than its rest delay rests. While
+it rests, its upkeep, its income and its ageing run at the rest factor. It wakes when the income at the full rate would
+have paid its full upkeep for the same delay. This run is A's world, the bank on, with the rest on at its strong
+defaults (D262). Every founder's delay is 600 s, the factor is 0.05, and a birth steps the delay gene with a chance of
+0.08. One arm sheds
+the added blades on resting (`rounds/env-plants-rest.ps1`) and one keeps them (`rounds/env-plants-restkeep.ps1`), each
+on seeds 6202 and 6203. The four worlds run together in one card group at group 32 for 12,000 s, launched by
+`rounds/launch-plants-rest.ps1` as `plr-6202`, `plr-6203`, `plrk-6202` and `plrk-6203`. A's two worlds are the control.
+The build is `plants-build` as for A, after the re-pin, which moves tests and fixtures and nothing the farm runs. There is
+no group 64 check: A's checks the kernels, and the rest needs nothing on the card.
+
+**How it is read.** The forest test at 12,000 s on each arm, islands assigned as `read5.py` assigns them. An arm passes
+if the test passes on either seed.
+- If A failed and an arm passes, rest carries a forest through the full winter where a bank alone does not, and the
+  passing arm says whether the drop matters.
+- If A failed and neither arm passes, the full winter beats both, and the next step is the owner's: C is held, and the
+  winter's depth is a world rule.
+- If A passed, each arm is read for how much more of the stand it carries: the gripping plants on each island at the end
+  of each season, against A's.
+
+Read besides:
+- the plants resting, the rests begun and the wakes, over the seasons, to see that plants rest in the winter and wake in
+  the summer, rather than resting through a summer or never resting;
+- the ages at death of gripping plants against A's, since a resting plant ages slowly;
+- the rest delay among the living gripping plants at 12,000 s, against the 600 s they started at;
+- the matter and energy books against their lines.
