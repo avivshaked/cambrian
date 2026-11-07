@@ -14,7 +14,10 @@ The log's lines have the form "[Theatre] skin map: id N v ... f ... value X chro
 body and possibly repeated for the same id across takes; each id is counted once, at its first line. A body whose chroma or zone is
 missing or not a finite number is skipped. The score is s = 0.5 * (chroma + (1 - zone)), and a bearer is a body with s above 0.667.
 With k = round(share * bearers) kept, the threshold is halfway between the k-th and (k+1)-th highest scores; with none kept it is the
-highest score, and with all kept it is 0.667. Ties across the cut mean the count kept can differ from k, and the output says so.
+highest score, and with all kept it is 0.667. The cut goes only into a gap between neighbouring scores of 2e-6 or more, since the
+log's six decimals know a score to about 1e-6 and the theatre compares in single precision; when the k-th and (k+1)-th scores are
+closer than that (a family's members often share one score), the cut goes at the nearest wide enough gap, and the output says how
+many that keeps.
 
 --write adds or replaces WORLD's row in theatre-world-spots.tsv beside this script (created with a comment line and a header if
 absent), and keeps every other row and the comment as they were. A film's launcher sets EVOSIM_THEATRE_SKIN_MAP_FAMILY_SPOT_GATE
@@ -27,6 +30,7 @@ import re
 import sys
 
 EYESPOT = 0.667
+RESOLUTION = 2e-6   # two scores this close may swap sides in the theatre: each is known to about 1e-6 from the log's six decimals
 ID_RE = re.compile(r"\bskin map: id (\d+)\b")
 CHROMA_RE = re.compile(r"\bchroma (\S+)")
 ZONE_RE = re.compile(r"\bzone (\S+)")
@@ -86,12 +90,26 @@ def find_gate(bearer_scores, share):
         return bearer_scores[0], 0, "none kept; the threshold is the highest bearer's score"
     if k >= n:
         return EYESPOT, n, "all kept; the threshold stays at %.3f" % EYESPOT
-    return 0.5 * (bearer_scores[k - 1] + bearer_scores[k]), k, ""
+    # The cut goes only where two neighbouring scores are further apart than the log can tell (RESOLUTION): the log gives chroma
+    # and zone to six decimals and the theatre scores in single precision with s > threshold, so a threshold in a narrower gap, or on
+    # a score that relatives share, leaves those bodies to rounding. Of the gaps wide enough, the one nearest the k-th place, the
+    # larger count on a draw (2026-11-07: round 67's worlds have families of 36 to 57 bearers sharing the score at the k-th place,
+    # and with a threshold on that score they kept 31 to 45 % of their bearers rather than half).
+    gaps = [i for i in range(1, n) if bearer_scores[i - 1] - bearer_scores[i] >= RESOLUTION]
+    if not gaps:
+        return (0.5 * (bearer_scores[k - 1] + bearer_scores[k]), k,
+                "no two neighbouring scores are further apart than the log's resolution; the count kept is uncertain")
+    i = min(gaps, key=lambda g: (abs(g - k), -g))
+    gate = 0.5 * (bearer_scores[i - 1] + bearer_scores[i])
+    if i == k:
+        return gate, k, ""
+    return gate, k, ("the scores either side of place %d are closer than the log's six decimals can tell apart (relatives often share "
+                     "one), so the cut goes at the nearest wider gap, with %d kept" % (k, i))
 
 
 def write_row(world, gate, share, bearers, kept, frame, note):
     clean = lambda t: " ".join(str(t).split())
-    row = "\t".join([clean(world), "%.6f" % gate, "%g" % share, str(bearers), str(kept), clean(frame), clean(note)])
+    row = "\t".join([clean(world), "%.7f" % gate, "%g" % share, str(bearers), str(kept), clean(frame), clean(note)])
     lines = []
     if os.path.exists(TABLE):
         with open(TABLE, "r", encoding="utf-8") as f:
@@ -138,6 +156,12 @@ def main():
     n = len(bearer_scores)
     gate, k, why = find_gate(bearer_scores, a.share)
     kept = sum(1 for s in bearer_scores if s > gate)
+    # The log gives chroma and zone to six decimals, so a score is known to about 1e-6, and the theatre scores in single precision.
+    # A threshold nearer a bearer's score than that cannot say on which side the theatre will put that bearer.
+    near = min((abs(s - gate) for s in bearer_scores), default=1.0)
+    if near < 1e-6 and 0 < kept < n:
+        why = (why + "; " if why else "") + ("a bearer's score lies %.1e from the threshold, under the log's six-decimal resolution, "
+                                             "so the theatre may keep a few more or fewer than counted" % near)
 
     print("bodies parsed: %d (lines skipped for a bad chroma or zone: %d; ids whose lines differ across takes: %d)" % (len(scores), skipped, differ))
     print("bearers (s above %.3f): %d" % (EYESPOT, n))
@@ -145,8 +169,8 @@ def main():
     print("kept at the threshold: %d (aimed at %d)%s" % (kept, k, "" if kept == k else "; ties across the cut"))
     if why:
         print("note: " + why)
-    print("threshold: %.6f" % gate)
-    print("EVOSIM_THEATRE_SKIN_MAP_FAMILY_SPOT_GATE=%.6f" % gate)
+    print("threshold: %.7f" % gate)
+    print("EVOSIM_THEATRE_SKIN_MAP_FAMILY_SPOT_GATE=%.7f" % gate)
     old = 1.0 - (1.0 - EYESPOT) * math.sqrt(a.share)
     old_kept = sum(1 for s in bearer_scores if s > old)
     print("share dial at the same share: threshold %.6f keeps %d of %d bearers (%.1f%%)" % (old, old_kept, n, 100.0 * old_kept / n if n else 0.0))
