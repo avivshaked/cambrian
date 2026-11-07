@@ -314,6 +314,18 @@
       "value": "2",
       "ruling": "D324: the mouth kinds, with the sucker, crown, beak and weaker gape, which read as one dim pit at 1, drawn bold (2)"
     },
+    "EVOSIM_THEATRE_MOUTH2_BOLD_WHITE": {
+      "value": "0.65",
+      "ruling": "D324's landed value, held while the owner compares it with the bold kinds tinted toward each body's own colour (the owner chose to see the tint first, 2026-11-07); theatre-look-tint"
+    },
+    "EVOSIM_THEATRE_MOUTH2_BOLD_KEY": {
+      "value": "1",
+      "ruling": "as MOUTH2_BOLD_WHITE"
+    },
+    "EVOSIM_THEATRE_MOUTH2_BOLD_SOFT": {
+      "value": "0",
+      "ruling": "as MOUTH2_BOLD_WHITE"
+    },
     "EVOSIM_THEATRE_SKIN_MAP_FAMILY_MIX": {
       "value": "1",
       "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
