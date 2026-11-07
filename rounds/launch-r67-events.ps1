@@ -8,7 +8,8 @@
 # Each runs as round 67's worlds did: wt-card-kit's Release farm (its Core, Dynamics, Farm and Farm.Gpu unchanged since
 # e79fa0fd, the build r67r1 ran on), the snow's transport on the card, the scent on the host, group 32, no exchange.
 # A resume repeats a card run only on the card; each one's stats are compared with its source's over the span before
-# the film uses it. Runs under scratch/story-video/r67-events. Start it detached and hidden, on the coordinator's go.
+# the film uses it. Runs under runs/, beside their sources, since the film finds every shot's run under one root.
+# Start it detached and hidden, on the coordinator's go.
 param([string]$Only = '')
 $R = 'D:\Projects\experiments\evolution-simulator'
 $kit = "$R\scratch\wt-card-kit"
@@ -25,7 +26,7 @@ foreach ($j in $jobs) {
     $g = @('-NoProfile', '-File', "$kit\scripts\card\card-group.ps1", '-Name', $j.Name, '-Arms', $j.Arm,
            '-At', $j.At, '-Until', $j.Until, '-ResumeFrom', $j.From, '-CheckpointEvery', 1500, '-Group', 32,
            '-WallMinutes', 60, '-Transport', '-Threads', 12, '-Mask', 4293918720, '-HeatStop',
-           '-WaitForManifestSeconds', 600, '-RunsRoot', "$R\scratch\story-video\r67-events", '-Exe', $exe)
+           '-WaitForManifestSeconds', 600, '-RunsRoot', "$R\runs", '-Exe', $exe)
     & pwsh @g
     if ($LASTEXITCODE -ne 0) { "group $($j.Name) ended with exit $LASTEXITCODE; the rest are not started"; exit $LASTEXITCODE }
     "group $($j.Name) ended"
