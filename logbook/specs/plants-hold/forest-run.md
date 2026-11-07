@@ -565,3 +565,23 @@ Read besides:
 Inference, untested: a part that earns light at its own height earns more near the surface, so the plants grow in
 number. Whether gripping plants raise their blades is the height read's question. With the grip already paying
 fivefold and the settling still failing four times in five, nothing here moves the room a forest needs.
+
+**Nearly every blade these worlds try to add is refused for shape**, with the module rule's fix on (`EVOSIM_MODULE_GROWABLE`),
+read from each world's last stats row at 12,000 s. The counts run from the start of the run.
+
+| World | Tries | Added | Refused for shape | Standing at 12,000 s | Living bodies |
+|---|---|---|---|---|---|
+| pldr-6202 | 4,679 | 3.1 % | 95.8 % | 4 | 982 |
+| pldr-6203 | 38,544 | 10.4 % | 78.0 % | 165 | 1,412 |
+| pldrx-6204 | 27,504 | 3.2 % | 95.1 % | 105 | 871 |
+| pldrx-6205 | 12,502 | 6.0 % | 90.2 % | 15 | 814 |
+| plpx-6202 | 6,445 | 17.8 % | 74.1 % | 83 | 1,604 |
+| plpx-6203 | 14,389 | 13.7 % | 70.9 % | 5 | 1,299 |
+| plpx-6204 | 36,996 | 8.6 % | 87.3 % | 506 | 1,469 |
+| plpx-6205 | 11,720 | 4.2 % | 92.3 % | 23 | 424 |
+
+The rest are refused for want of reserve. So D308's urge to grow, which gates an addition on the brain, would gate
+something that seldom happens, and its screen waits for the cause. The stats count a refusal for shape but not why it
+was refused. The refusal probe (`refusal-probe.md`) split the cause on the build before the fix into "no larger" and
+"would stand inside its own body" (D101, the owner's rule). The same split on the fixed build is owed, and it says
+whether the overlap rule is now the limit.
