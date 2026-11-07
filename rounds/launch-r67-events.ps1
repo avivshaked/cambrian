@@ -7,7 +7,8 @@
 #   r67ev-64a-6202: r67-6202 from 7,500 s, the state r67r1-6202 began from, a checkpoint at 8,550 s, before the birth at
 #     8,572 s (shot 6.4a);
 #   r67ev-68a-6202: r67r1-6202 from 10,500 s, a checkpoint at 11,430 s, before the portrait of 13929 at 11,448 s (6.8a).
-# Each runs 1,055 s, so the longest reaches 8,555 s. They run as round 67's worlds did: wt-card-kit's Release farm (its
+# Each runs 1,120 s, to 20,620 s, 8,620 s and 11,620 s, since the film takes a shot's span and lineage from its own
+# run and refuses a run that ends before the shot's end plus its handles (8,581.66 s for 6.4a). They run as round 67's worlds did: wt-card-kit's Release farm (its
 # Core, Dynamics, Farm and Farm.Gpu unchanged since e79fa0fd, the build r67r1 ran on), the snow's transport on the
 # card, the scent on the host, group 32, no exchange. A resume repeats a card run only on the card; each one's stats
 # are compared with its source's over the span before the film uses it. Runs under runs/, beside their sources, since
@@ -18,7 +19,7 @@ $exe = "$kit\artifacts\Evosim.Farm\bin\Release\net8.0\Evosim.Farm.exe"
 $r1 = "$R\runs\r67r1-6202\2026-11-05-220032-029c8c74"
 $r0 = "$R\runs\r67-6202\2026-11-05-210155-029c8c74"
 $g = @('-NoProfile', '-File', "$kit\scripts\card\card-group.ps1", '-Name', 'r67ev',
-       '-Arms', 'r67ev-24b-6202,r67ev-64a-6202,r67ev-68a-6202', '-At', '19500,7500,10500', '-Seconds', 1055,
+       '-Arms', 'r67ev-24b-6202,r67ev-64a-6202,r67ev-68a-6202', '-At', '19500,7500,10500', '-Seconds', 1120,
        '-ResumeFrom', "$r1,$r0,$r1", '-CheckpointEvery', 30, '-Group', 32, '-WallMinutes', 90, '-Transport',
        '-Threads', 12, '-Mask', 4293918720, '-HeatStop', '-WaitForManifestSeconds', 600, '-RunsRoot', "$R\runs",
        '-Exe', $exe)
