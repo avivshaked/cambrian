@@ -532,8 +532,19 @@ is one world.~~ A resume on this build does not repeat its source. That evening 
 its 7,500 s checkpoint on the same build and config. It parted from the source at its first stats row and its first
 deaths, while two copies resumed in one group matched each other row for row (`scripts/reads/resume-match.py`).
 So each joined world is the stopped run to its stop and a cousin after it, one realisation of the same world. Each
-world was read whole, against controls run the same way, so the comparison stands. Inference until its cause is found:
-some state of the plant rules is left out of the checkpoint. Every world kept `partFeedFallbacks` at 0. The largest energy residual was 3.6e-4 J and the largest
+world was read whole, against controls run the same way, so the comparison stands. ~~Inference until its cause is found:
+some state of the plant rules is left out of the checkpoint.~~ The parting is in the grips, not the plant rules (a
+read-only search on 2026-11-07, notes and helpers in `scratch/plants-work/checkpoint-gap/`). At 7,510 s the resume
+had formed 28 more grips than its source and broken 28 more, with the same 22 held, so nearly every grip held at the
+checkpoint broke once and formed again. The 18 bodies whose positions differ at 7,510 s are all among the 23 holding a
+grip at 7,500 s, each 1 to 2 cm higher, and no other body differs. The physics digest already differs one second after
+the resume. The plant rules' own state, the anchored founders' counters, the order of lost parts, the growable-node
+cache and the settling spots, is written to the checkpoint and read back. Card-kit worlds repeat on resume because none
+has a gripping cell, and the grip's checkpoint test restores a gripping world on the CPU only, so no card resume with
+grips held was tested before. Inference: an input the card's grip rule reads differs in the first steps after a restore.
+A break needs a pull of hundreds of newtons, so the input is grossly off, not rounded. The fix is agent work, found with
+the farm's fidelity mode on `plf-6202`'s 7,500 s checkpoint, and proved by a card resume test of a gripping world.
+Every world kept `partFeedFallbacks` at 0. The largest energy residual was 3.6e-4 J and the largest
 matter residual 6.7e-6 (`partlight-read/screen-end.txt`).
 
 **Light at each part does not help the forest by the test written before it.** It passes on one seed of four, as its
