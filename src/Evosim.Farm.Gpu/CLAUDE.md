@@ -183,3 +183,10 @@ The root file's rules still apply. The entries below were moved word for word, s
   pushes the lower organism id along `-X` and the higher along `+X`. The kernel's two sphere loops (`ContactsBody`,
   `ContactLinks`) repeat it behind `cfg.CoincidentApart`, by comparing `gl.Id` of the two slots, so a change to either
   is made in the other in the same change. Under `Spheres` both keep the old `+Y`.
+- **A Unity render beside a card group slows the group's worlds by about a fifth to a third, and no other render
+  runs beside one whose pace is read** (D325's screen, 2026-11-07). A theatre render on logical 16-19 shares the card
+  with the group. While one ran, five of the screen's six worlds stepped at 1.21 to 1.56 times real time. In the minutes
+  after the theatre's guard stopped it, they stepped at 1.51 to 2.04, and one world's pace flag had fired at 1.03 against
+  2.08. The sixth, `plp-6203`, read 1.32 against 1.43. That the render caused it is inference from one stop. A card group's
+  result is the same at any load. What the render costs is its wall time and every pace reading taken meanwhile, so a
+  screen that reads its pace holds Unity until it ends.
