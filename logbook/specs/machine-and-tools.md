@@ -161,9 +161,10 @@ The root file's rules still apply. The entries below were moved word for word, s
     checkpoint and nothing was lost. Held 90 °C for ten minutes is read as a cooling fault and told to the owner.
   - **A Python job that loads a model is not light.** On 2026-11-07 the film lane's narration alignment, which
     starts a fresh process per beat that imports torch and loads a 377 MB model, ran on 16-19 at 4 threads and
-    BelowNormal beside a four-world card group. It started at 71 °C, and its loads reached 84 °C and then 88 °C
-    within two minutes, when its own 85 °C stop ended it. The group was unharmed. Such a job runs after the group,
-    alone.
+    BelowNormal beside a four-world card group. It started at 71 °C, and its loads reached 91 °C within two minutes,
+    with 14 s at 85 °C or more and 3 s at 90 °C or more in Afterburner's log. Its own stop, reading every 30 s, saw
+    88 °C and ended it. The group was unharmed. Such a job runs after the group, alone, and a heat stop for a job that
+    loads a model reads every few seconds.
   - **A group's first minute can burst past the stop unseen.** The launchers read the heat every 15 s, so a burst
     of a few seconds falls between two readings. On 2026-10-30, `r63d`'s three-world group resumed from its
     24,000 s checkpoints beside N0 (16-23). Afterburner's log then held 23 seconds at 95 °C or more, up to 100 °C,
