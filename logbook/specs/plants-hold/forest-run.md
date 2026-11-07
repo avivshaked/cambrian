@@ -518,3 +518,50 @@ Read besides:
 Expected, as inference: the pace falls, and plants that shade one another earn less, so plant numbers fall. Height
 has to evolve, since nothing points growth upward, and 12,000 s is about six lives of a gripping plant, so a rise may
 not show yet.
+
+## What light at each part found
+
+The smoke passed on 2026-11-07 (`partlight-read/smoke-*`). Both worlds parted from `pldr` at their first sample, 10 s,
+no part was fed at its body's centre, and the books closed far under their lines. The screen ran on `plants-build` at
+`e70d870a` from 13:56. At 14:57 the group's heat stop fired at 99 °C, with another project's render on the cores
+beside it (`logbook/specs/machine-and-tools.md`). Every world wrote a checkpoint at its stop, at 4,860 to 6,760 s.
+They resumed at 15:00 from those checkpoints as `plp2-*` and `pldr2-*` (`rounds/launch-plants-partlight-resume.ps1`,
+`8676833f`). All ended by budget at 12,000 s at 16:11, at 1.5 to 1.9 times real time. A resume repeats a card run on
+the card, so each pair is one world. `partlight-read/stitch.py` joins them as `plpx-*` and `pldrx-*`, and the reads
+below read those. Every world kept `partFeedFallbacks` at 0. The largest energy residual was 3.6e-4 J and the largest
+matter residual 6.7e-6 (`partlight-read/screen-end.txt`).
+
+**Light at each part does not help the forest by the test written before it.** It passes on one seed of four, as its
+controls do. On 6202, where the control held 74 gripping bodies on one island, it holds 7.
+
+| Seed | Light at each part, most gripping on one island at 12,000 s | Passes | Control | Passes |
+|---|---|---|---|---|
+| 6202 | 7, on island 10 | no | 74 (`pldr`, D323) | yes |
+| 6203 | 5 | no | 8 (`pldr`, D323) | no |
+| 6204 | 23 on island 6, all born after 3,000 s | yes | 11 (`pldrx`) | no |
+| 6205 | 5 | no | 4 (`pldrx`) | no |
+
+All counts are from `partlight-read/at-end-*.out`. Through the run (`read5-*.out`), the most on one island on 6202 and 6203
+was 17 and 30, on island 6 at 3,200 and 3,100 s. All but one were born before 3,000 s. No later stand came near it. On
+6204 the world held 53 to 61 gripping bodies at every 1,500 s mark from 7,500 s to the end. Of the children that try to settle,
+80 to 84 % find no spot, against 80 to 81 % in the new seeds' controls.
+
+**The height read is owed.** It needs each gripping body's highest part, which no run records. A census will restore the
+checkpoints and read every part where the solver holds it (`scratch/plants-work/height-census/brief.md`). Its build
+waits for the card's group to end, since a build does not run beside one (D258).
+
+Read besides:
+- **The grip pays as before** (`grip-test.out`). Settled children of gripping parents had 4.9 to 7.8 children each,
+  against 0.8 to 1.3 for their drifting siblings. In the controls it was 6.5 and 7.4 against 0.7 and 1.4. Grips whose
+  parent never gripped were 26 to 84 a world, 14 to 27 % of gripping bodies.
+- **The worlds hold somewhat more bodies on three seeds** (`alive.out`). After 3,000 s the mean count of living bodies
+  was 1,486, 1,906 and 987 on 6202 to 6204, against 1,146, 1,690 and 799. On 6205 it was 649 against 787.
+- **The animals ate as before** (`remains-eaten.out`). Mouths kept 13,000 to 95,000 J from living leaves and 2,000 to
+  9,000 J from remains over the run, within the controls' range.
+- **The pace.** The worlds shared one process and one load. Just before the stop, the worlds with light at each part
+  stepped at 1.67 to 2.16 times real time and the controls at 2.25 and 2.39. After the resume they ran at 1.52 to 1.90,
+  and the controls at 1.88. Inference: the rule costs about a tenth to a fifth of the pace, part of it from the extra bodies.
+
+Inference, untested: a part that earns light at its own height earns more near the surface, so the plants grow in
+number. Whether gripping plants raise their blades is the height read's question. With the grip already paying
+fivefold and the settling still failing four times in five, nothing here moves the room a forest needs.

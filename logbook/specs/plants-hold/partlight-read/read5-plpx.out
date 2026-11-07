@@ -1,0 +1,36 @@
+== plpx-6202 (2026-11-07-150253-274b5f36), to 12000 s
+  most gripping on one island after 3,000 s: 17 on island 6 (25 columns, at 170, 149) at 3200 s, 1 of them born after 3,000 s
+  gripping at each 1,500 s: [42, 58, 33, 16, 29, 22, 23, 11]
+  children settled 145, found no spot 588 (80 % failed); anchored founders 47, refused 2
+      0- 2750 s: began 107 (founders 10), died  32 {'aged': 19, 'starved': 13}, gripping at its end  75
+   2750- 5750 s: began  46 (founders  9), died 109 {'starved': 67, 'aged': 42}, gripping at its end  12
+   5750- 8750 s: began  51 (founders  9), died  42 {'aged': 21, 'starved': 20, 'eaten': 1}, gripping at its end  22
+   8750-11750 s: began  30 (founders 13), died  39 {'aged': 12, 'starved': 27}, gripping at its end  12
+  11750-12000 s: began   0 (founders  0), died   1 {'aged': 1}, gripping at its end  11
+== plpx-6203 (2026-11-07-150253-274b5f36), to 12000 s
+  most gripping on one island after 3,000 s: 30 on island 6 (25 columns, at 170, 149) at 3100 s, 1 of them born after 3,000 s
+  gripping at each 1,500 s: [41, 44, 21, 8, 42, 38, 24, 12]
+  children settled 148, found no spot 776 (84 % failed); anchored founders 35, refused 2
+      0- 2750 s: began 109 (founders  8), died  58 {'aged': 34, 'starved': 24}, gripping at its end  53
+   2750- 5750 s: began  42 (founders  9), died  85 {'starved': 44, 'aged': 41}, gripping at its end   9
+   5750- 8750 s: began  83 (founders  9), died  43 {'aged': 19, 'eaten': 3, 'starved': 21}, gripping at its end  48
+   8750-11750 s: began  39 (founders  8), died  78 {'eaten': 2, 'aged': 14, 'starved': 62}, gripping at its end  10
+  11750-12000 s: began   3 (founders  0), died   0 {}, gripping at its end  12
+== plpx-6204 (2026-11-07-150253-274b5f36), to 12000 s
+  most gripping on one island after 3,000 s: 29 on island 6 (25 columns, at 170, 149) at 7000 s, 29 of them born after 3,000 s
+  gripping at each 1,500 s: [29, 60, 62, 29, 54, 54, 61, 53]
+  children settled 238, found no spot 1217 (84 % failed); anchored founders 43, refused 3
+      0- 2750 s: began  95 (founders 11), died  35 {'aged': 14, 'starved': 21}, gripping at its end  61
+   2750- 5750 s: began  66 (founders  8), died  94 {'aged': 37, 'starved': 56, 'eaten': 1}, gripping at its end  31
+   5750- 8750 s: began 136 (founders  9), died 107 {'aged': 48, 'starved': 58, 'eaten': 1}, gripping at its end  63
+   8750-11750 s: began  78 (founders 10), died  95 {'aged': 56, 'starved': 38, 'eaten': 1}, gripping at its end  46
+  11750-12000 s: began  15 (founders  3), died   6 {'aged': 4, 'starved': 2}, gripping at its end  53
+== plpx-6205 (2026-11-07-150253-274b5f36), to 12000 s
+  most gripping on one island after 3,000 s: 12 on island 6 (25 columns, at 170, 149) at 8400 s, 12 of them born after 3,000 s
+  gripping at each 1,500 s: [20, 24, 13, 4, 15, 21, 14, 10]
+  children settled 79, found no spot 332 (81 % failed); anchored founders 27, refused 1
+      0- 2750 s: began  60 (founders  6), died  30 {'aged': 14, 'starved': 16}, gripping at its end  32
+   2750- 5750 s: began  11 (founders  6), died  38 {'aged': 23, 'starved': 15}, gripping at its end   3
+   5750- 8750 s: began  51 (founders  6), died  25 {'aged': 9, 'eaten': 2, 'starved': 14}, gripping at its end  31
+   8750-11750 s: began  25 (founders  7), died  46 {'aged': 17, 'starved': 28, 'eaten': 1}, gripping at its end   8
+  11750-12000 s: began   3 (founders  1), died   1 {'aged': 1}, gripping at its end  10

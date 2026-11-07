@@ -1,0 +1,2 @@
+pldrx-6204 at 12,000 s: by island (n, born after 3,000 s): {0: (11, 11), 2: (1, 1), 3: (3, 3), 6: (9, 9), 7: (3, 3), 9: (3, 2)}; test fails
+pldrx-6205 at 12,000 s: by island (n, born after 3,000 s): {0: (1, 1), 6: (3, 3), 9: (4, 4)}; test fails

@@ -1,0 +1,4 @@
+plpx-6202 at 12,000 s: by island (n, born after 3,000 s): {0: (1, 1), 6: (1, 1), 8: (2, 2), 10: (7, 7)}; test fails
+plpx-6203 at 12,000 s: by island (n, born after 3,000 s): {0: (5, 5), 6: (5, 5), 8: (1, 1), 10: (1, 1)}; test fails
+plpx-6204 at 12,000 s: by island (n, born after 3,000 s): {0: (5, 5), 2: (2, 2), 3: (4, 4), 6: (23, 23), 7: (3, 3), 9: (16, 15)}; test passes
+plpx-6205 at 12,000 s: by island (n, born after 3,000 s): {6: (4, 4), 9: (1, 1), 10: (5, 5)}; test fails

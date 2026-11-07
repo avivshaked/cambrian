@@ -1,8 +1,13 @@
 # The forest test at 12,000 s by island: gripping living bodies per island (nearest centre of the farm log's island
 # list), how many born after 3,000 s, and their median depth. Usage: python -I at-end.py PREFIX [PREFIX ...]
+# --seeds 6202,6204 reads those seeds in place of 6202 and 6203 (D325's screen, 2026-11-07).
 import gzip, json, math, os, re, sys, collections
-for prefix in sys.argv[1:]:
-    for seed in ('6202', '6203'):
+args = sys.argv[1:]
+SEEDS = ('6202', '6203')
+if '--seeds' in args:
+    i = args.index('--seeds'); SEEDS = tuple(args[i + 1].split(',')); del args[i:i + 2]
+for prefix in args:
+    for seed in SEEDS:
         arm = 'scratch/plants-work/runs/%s-%s' % (prefix, seed)
         d = os.path.join(arm, sorted(os.listdir(arm))[-1])
         line = [l for l in open('scratch/wt-plants-build/scratch/logs/%s-%s.log' % (prefix, seed), encoding='utf-8', errors='replace')

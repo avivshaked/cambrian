@@ -1,0 +1,12 @@
+2026-11-07 16:11:03   plp2-6202: ended (budget); t 12000 alive 1604; 47.7 wall min, 1.83 times real time over the 5240 s stepped; run scratch\plants-work\runs\plp2-6202\2026-11-07-150253-274b5f36
+2026-11-07 16:11:03   plp2-6203: ended (budget); t 12000 alive 1299; 62.6 wall min, 1.90 times real time over the 7140 s stepped; run scratch\plants-work\runs\plp2-6203\2026-11-07-150253-274b5f36
+2026-11-07 16:11:03   plp2-6204: ended (budget); t 12000 alive 1469; 68.0 wall min, 1.52 times real time over the 6190 s stepped; run scratch\plants-work\runs\plp2-6204\2026-11-07-150253-274b5f36
+2026-11-07 16:11:03   plp2-6205: ended (budget); t 12000 alive 424; 56.5 wall min, 1.83 times real time over the 6190 s stepped; run scratch\plants-work\runs\plp2-6205\2026-11-07-150253-274b5f36
+2026-11-07 16:11:04   pldr2-6204: ended (budget); t 12000 alive 871; 50.4 wall min, 1.88 times real time over the 5700 s stepped; run scratch\plants-work\runs\pldr2-6204\2026-11-07-150253-27d24592
+2026-11-07 16:11:04   pldr2-6205: ended (budget); t 12000 alive 814; 53.4 wall min, 1.88 times real time over the 6040 s stepped; run scratch\plants-work\runs\pldr2-6205\2026-11-07-150253-27d24592
+2026-11-07 16:11:04   books over 524 stats rows of plp2-6202: max |auditResidual| 8.59290012158453E-05 (under 0.1 J: True); max |matterResidual| 4.52171661891043E-06 (under 1e-5: True)
+2026-11-07 16:11:04   books over 714 stats rows of plp2-6203: max |auditResidual| 6.40313955955207E-05 (under 0.1 J: True); max |matterResidual| 3.94377275370061E-06 (under 1e-5: True)
+2026-11-07 16:11:04   books over 619 stats rows of plp2-6204: max |auditResidual| 0.000363574537914246 (under 0.1 J: True); max |matterResidual| 2.26742122322321E-06 (under 1e-5: True)
+2026-11-07 16:11:05   books over 619 stats rows of plp2-6205: max |auditResidual| 6.0502570704557E-05 (under 0.1 J: True); max |matterResidual| 5.90032141190022E-06 (under 1e-5: True)
+2026-11-07 16:11:05   books over 570 stats rows of pldr2-6204: max |auditResidual| 2.13134335353971E-05 (under 0.1 J: True); max |matterResidual| 6.65821426082402E-06 (under 1e-5: True)
+2026-11-07 16:11:05   books over 604 stats rows of pldr2-6205: max |auditResidual| 9.57645243033767E-05 (under 0.1 J: True); max |matterResidual| 1.4543766155839E-06 (under 1e-5: True)

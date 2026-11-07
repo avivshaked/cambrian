@@ -1,0 +1,8 @@
+plpx-6202: alive at each 1,500 s [697, 1195, 1017, 973, 1998, 1961, 1753, 1604]; mean after 3,000 s 1486
+plpx-6203: alive at each 1,500 s [1800, 2341, 1702, 955, 2142, 2943, 2097, 1299]; mean after 3,000 s 1906
+plpx-6204: alive at each 1,500 s [462, 921, 710, 497, 1046, 1340, 1328, 1469]; mean after 3,000 s 987
+plpx-6205: alive at each 1,500 s [646, 458, 384, 294, 1013, 1113, 731, 424]; mean after 3,000 s 649
+pldr-6202: alive at each 1,500 s [767, 1021, 823, 734, 1622, 1562, 1226, 982]; mean after 3,000 s 1146
+pldr-6203: alive at each 1,500 s [1822, 2067, 1260, 734, 1825, 2596, 2310, 1412]; mean after 3,000 s 1690
+pldrx-6204: alive at each 1,500 s [236, 457, 373, 248, 903, 1383, 1300, 871]; mean after 3,000 s 799
+pldrx-6205: alive at each 1,500 s [562, 329, 237, 194, 1181, 1594, 1072, 814]; mean after 3,000 s 787

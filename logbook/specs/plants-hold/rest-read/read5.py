@@ -21,8 +21,13 @@ def islands(prefix, seed):
     sys.exit('no island line for %s-%s' % (prefix, seed))
 
 
-for prefix in sys.argv[1:]:
-    for seed in ('6202', '6203'):
+# --seeds 6202,6204 reads those seeds in place of 6202 and 6203 (D325's screen, 2026-11-07).
+ARGS = sys.argv[1:]
+SEEDS = ('6202', '6203')
+if '--seeds' in ARGS:
+    _i = ARGS.index('--seeds'); SEEDS = tuple(ARGS[_i + 1].split(',')); del ARGS[_i:_i + 2]
+for prefix in ARGS:
+    for seed in SEEDS:
         arm = os.path.join(ROOT, '%s-%s' % (prefix, seed))
         d = os.path.join(arm, sorted(os.listdir(arm))[-1])
         isl = islands(prefix, seed)
