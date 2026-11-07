@@ -399,3 +399,31 @@ first birth. The arms' differences from their controls therefore carry a realisa
 The rest-only arm leaned above its control on 6203, 10 against 1 gripping at 12,000 s, and matched it on 6202 after the
 first winter. Inference: a lean of that size is within what a new realisation gives. The two bank arms on 6203, which
 part at 1,150 s, end at 2 and 4.
+
+## The rest at a shorter delay (D323), written before it starts
+
+The owner ruled D323 after B: the rest's founders start at a shorter delay. Four worlds run the rest-only world of B,
+the second run's world with the rest on, shedding, and no bank. In `pld-6202` and `pld-6203` every founder's delay is
+150 s (`rounds/env-plants-restshort.ps1`). In `pldr-6202` and `pldr-6203` founders draw theirs from 100 to 600 s
+(`rounds/env-plants-restrange.ps1`). They run in one card group at group 32 for 12,000 s, launched by
+`rounds/launch-plants-restdelay.ps1` on `plants-build` at `83a95ed0`, the commit that adds these three files, which
+changes nothing the farm runs. B's `plro-*` worlds at 600 s are the control. `gpu-accept.py` reads where each arm first parts from
+`plro`, which says how far the comparison is paired. There is no group 64 check, since the delay needs nothing on the
+card.
+
+**How it is read.** The forest test at 12,000 s on each arm, islands assigned as `read5.py` assigns them. An arm passes
+if the test passes on either seed.
+- If an arm passes, the rest at its delay carries a forest through D151's full winter where 600 s did not.
+- If neither passes, the winter's depth or C comes next, and the choice is the owner's (D323).
+
+Read besides, with B's reads in `rest-read/`:
+- the reach: of the gripping plants in each winter, how many rested and how many of each part lived to its end, against
+  `plro`'s 20 that rested, 15 of them living;
+- the rests at night: the rests begun and the wakes in each summer, against `plro`'s none to 7 in the first summer,
+  since a rest on most summer nights would show as rests by the hundred;
+- the delay among the gripping plants alive at 12,000 s on the range arm, against the 100 to 600 s its founders drew;
+- the gripping plants' ages at death, the grippers begun and the children settled, against `plro`;
+- the matter and energy books against their lines, 1e-5 and 0.1 J.
+
+Expected, as inference: at 150 s far more than one gripping plant in twenty rests in a winter, and the plants rest on
+some summer nights.

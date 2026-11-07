@@ -340,10 +340,11 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D316](#d316) | Island coral grows taller and varied, its highest crests near the surface | 2026-11-06 | ruled by the owner on 2026-11-06, who suggested that coral could reach almost to the surface and then chose the coordinator's recommended form of it |
 | [D317](#d317) | Round 67's film follows the costly team's comeback with the plants beside it, and shows the first forest run's stand before its ending | 2026-11-06 | ruled by the owner on 2026-11-06, in the film lane's questions after story draft 6 (`scratch/story-video/round-67-202611061206/owner-6.md` and `pick.md`, the owner's answers saved as written) |
 | [D318](#d318) | The winter comes back to the plant work's worlds in steps, while a way through it is designed | 2026-11-06 | ruled by the owner on 2026-11-06, choosing the coordinator's recommendation after the forest diagnostic (`logbook/specs/plants-hold/forest-run.md`, "What the diagnostic found") |
-| [D319](#d319) | A gripping plant may shed its blades and rest through the winter, its ageing slowed, beside a bank of its own | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's proposal for D318's way through the winter (`proposals/propose-plants-winter.md` at `90dd34b2`, absorbed here and deleted) |
+| [D319](#d319) | A gripping plant may shed its blades and rest through the winter, its ageing slowed, beside a bank of its own | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's proposal for D318's way through the winter (`proposals/propose-plants-winter.md` at `90dd34b2`, absorbed here and deleted) · amended by D323 |
 | [D320](#d320) | A prose line that says nothing fails the draft, the session's read among the checks, and a film may run past 800 words | 2026-11-06 | ruled by the owner on 2026-11-06, after round 67's first prose sample (`scratch/story-video/round-67-202611061206/prose-sample-1-owner.md`, the owner's words saved as written), choosing four fixes… · amended by D322 |
 | [D321](#d321) | Every film's narration says what the picture cannot show, and tells a rule where the story first needs it | 2026-11-07 | ruled by the owner on the night of 2026-11-06 to 2026-11-07, after round 67's third prose sample (`scratch/story-video/round-67-202611061206/prose-sample-3-owner.md`, the owner's answers saved as… |
 | [D322](#d322) | The prose writer reads every earlier check, a line the owner keeps never fails a draft, and a film's answer is not a repeat | 2026-11-07 | ruled by the owner on 2026-11-07, after round 67's prose draft 4 (`scratch/story-video/round-67-202611061206/prose-4-owner.md`, the owner's answers saved as they came), choosing the three fixes the… |
+| [D323](#d323) | The rest's founders start at a delay of 150 s, and in a second arm across 100 to 600 s | 2026-11-07 | ruled by the owner on 2026-11-07, choosing the coordinator's recommendation after D319's rest failed the forest test on every arm and seed (`logbook/specs/plants-hold/forest-run.md`, "What the rest… |
 
 ---
 
@@ -11349,3 +11350,26 @@ never paid off: the cold listener needed it twice, and the last line already lea
 it saves about 60 words.
 
 **Rejected.** Bringing the travel thread back into the film.
+
+### D323
+**The rest's founders start at a delay of 150 s, and in a second arm across 100 to 600 s** · 2026-11-07
+
+**Status:** ruled by the owner on 2026-11-07, choosing the coordinator's recommendation after D319's rest failed the
+forest test on every arm and seed (`logbook/specs/plants-hold/forest-run.md`, "What the rest found"). It amends D319's
+starting delay of 600 s, and leaves the rest's rule, its factor and its slowed ageing as D319 ruled them.
+
+**Decision.**
+- A screen runs the rest on the second forest run's world without the bank, since A's bank cut the anchored plants'
+  breeding. In one arm every founder starts at a rest delay of 150 s. In the other, founders draw theirs from 100 to
+  600 s, so selection has a range to work on. Each arm runs on seeds 6202 and 6203 for 12,000 s, and B's rest-only
+  worlds at 600 s are the control.
+- If neither arm passes, the winter's depth or C comes next, and which is the owner's to choose.
+
+**Why.** In B's screen the rest carried 15 of the 20 gripping plants that rested through their winter, against 27 of
+the 384 that never rested, but only one gripping plant in twenty rested. The coordinator's reading, untested, is that
+most gripping plants cannot run a deficit for 600 s and starve before they rest. A shorter delay goes at the rest's
+reach. D319 set the delay longer than a night so that a plant would not rest every night. The day is 1,000 s, so at
+150 s plants may rest on some nights and lose part of the morning's light while they wake.
+
+**Rejected.** A shallower winter, which would grow a forest from an easier world rather than from plants that cope. C,
+the young waiting as resting spores, still the dearest. Parking the forest work.
