@@ -346,6 +346,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D322](#d322) | The prose writer reads every earlier check, a line the owner keeps never fails a draft, and a film's answer is not a repeat | 2026-11-07 | ruled by the owner on 2026-11-07, after round 67's prose draft 4 (`scratch/story-video/round-67-202611061206/prose-4-owner.md`, the owner's answers saved as they came), choosing the three fixes the… |
 | [D323](#d323) | The rest's founders start at a delay of 150 s, and in a second arm across 100 to 600 s | 2026-11-07 | ruled by the owner on 2026-11-07, choosing the coordinator's recommendation after D319's rest failed the forest test on every arm and seed (`logbook/specs/plants-hold/forest-run.md`, "What the rest… |
 | [D324](#d324) | The films draw eyespots on a true half of their bearers, the outline's gate at 0.5 m, and the mouth fix with its kinds | 2026-11-07 | ruled by the owner on 2026-11-07, accepting the coordinator's three recommendations as the film lane put them in its status that day (`scratch/owner/eyespot-gate-kinds/owner-2026-11-07.md`, the… |
+| [D325](#d325) | The forest screen turns on light and matter at each part, and blade turnover is withdrawn | 2026-11-07 | ruled by the owner on 2026-11-07, choosing the coordinator's recommendation on both questions it put (`proposals/propose-forest-pays.md` at `7af2f5ec`, absorbed here and deleted) |
 
 ---
 
@@ -11396,3 +11397,33 @@ mid-sized bodies in the wide shot. Of 1,032 mouthed bodies on round 66's sheet, 
 gape read; the rest look alike.
 
 **Rejected.** Every eyespot drawn, or 84 % of them. Today's outline gate, and 0.15 m. The mouths as drawn today.
+
+### D325
+**The forest screen turns on light and matter at each part, and blade turnover is withdrawn** · 2026-11-07
+
+**Status:** ruled by the owner on 2026-11-07, choosing the coordinator's recommendation on both questions it put
+(`proposals/propose-forest-pays.md` at `7af2f5ec`, absorbed here and deleted). It applies D297, which the coordinator
+settled under D291 and which had not run in any world. It leaves D204's shoals unbuilt.
+
+**Decision.**
+- The forest world, D323's rest across 100 to 600 s, runs with D297 on: each part earns light at its own height and
+  column, casts its own share of shade, and draws matter from the cell it stands in. A smoke of two worlds for 600 s
+  comes first, then a card screen of four seeds for 12,000 s against D323's worlds
+  (`logbook/specs/plants-hold/forest-run.md`, "Light and matter at each part").
+- Blade turnover, a plant's added blades wearing out on a schedule as drift food for grazers, is withdrawn. The
+  grazers' side is left to the grazer work, its search and its pace of life.
+- D204's shoals stay unbuilt. They return as their own proposal if room still limits the forest after the screen.
+
+**Why.** The owner wants a forest because it is the key to grazers that feed properly without their numbers running
+away, and asked the coordinator to make the grip pay. A grip already pays: a gripping parent's children that settle
+breed about five times their drifting siblings (`logbook/specs/plants-hold/grip-read/`). A body earns light at its
+centre, so a gripping plant gains nothing by growing taller, and a real kelp forest stands on blades that earn by their
+height (`logbook/specs/plants-hold/grip-research.md`). D297 gives height a reason. Blade turnover was meant to feed the
+grazers on the forest's drift, but the forest already sheds more than they eat. In six forest worlds the animals took
+1 to 2 % of the remains' joules, though the remains hang among the living plants at their depth and lie as near the
+animals as the living plants do. The animals are few, 14 to 117 against 900 to 2,400 plant bodies
+(`logbook/specs/plants-hold/remains-read/`).
+
+**Rejected.** Blade turnover now, which would add food to a stream the grazers leave. The shoals before D297's result,
+since they change the islands' water and matter in the same stroke. A rule that grows a plant toward the light: the
+survey found no source for directed growth in kelp, and height should come from evolution once it pays.

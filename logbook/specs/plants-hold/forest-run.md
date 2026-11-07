@@ -479,3 +479,42 @@ luck.
 **Ages at death changed little.** Against `plro`, the gripping plants' median age at death in the second winter was
 2,378 s against 1,290 s across the range on 6202. Every other season and world fell within a few hundred seconds of
 the control.
+
+## Light and matter at each part (D325), written before it starts
+
+The owner ruled D325 on the forest proposal: the forest world runs with D297 on. Each part then earns light at its own
+height and column, casts its own share of shade, and draws matter from the cell it stands in. Until now a body earned
+light at its centre, so a gripping plant gained nothing by growing taller. The world is `pldr`'s, D323's rest across
+100 to 600 s, with `EVOSIM_LIGHT_AT_PARTS` and `EVOSIM_MATTER_AT_PARTS` on (`rounds/env-plants-partlight.ps1`). It is
+launched by `rounds/launch-plants-partlight.ps1` on `plants-build` at `e70d870a`, the commit that adds the two files,
+which changes nothing the farm runs. D297 has never run in a farm or card world, so a smoke comes first.
+
+**The smoke.** `plps-6202` and `plps-6203` run for 600 s on the card. They pass if both end by budget and every book closes
+under its line (1e-5 and 0.1 J). Both worlds must also part from `pldr` by their first samples, since D297 changes what
+every plant earns from the first step. The `partFeedFallbacks` column counts the parts fed at the body's centre for want
+of a point. A count above a few in a hundred parts stops the screen for a look. A world under half of real
+time stops the screen too.
+
+**The screen.** `plp-6202` to `plp-6205` run with D297 on. `pldr-6204` and `pldr-6205` run without it as the new
+seeds' controls, and D323's `pldr-6202` and `pldr-6203` are the first two seeds'. One card group, group 32, for
+12,000 s. D297 changes every body's earnings from the first step, so no pair steps alike: each world is its own
+realisation, and four seeds are the screen's whole sample.
+
+**How it is read.** The forest test at 12,000 s on each world, islands assigned as `read5.py` assigns them.
+- D297 helps the forest if it passes on more of the four seeds than their controls do. The controls pass on 6202 and
+  fail on 6203 today.
+- Height pays if the gripping bodies' highest parts stand higher above their holdfasts at 12,000 s than in the
+  controls. It is read from each run's `poses.bin` at 3,000 s, 6,000 s, 9,000 s and 12,000 s.
+
+Read besides:
+- the parts per gripping body, against the controls;
+- the settled children of gripping parents against their drifting siblings, and the grips whose parent never gripped
+  (`grip-read/grip-test.py`);
+- the animals' count and their bites of leaves and of remains (`remains-read/`), since D297 changes how animals earn
+  as well;
+- the pace against the controls, which is D297's cost per step;
+- the books against their lines.
+
+Expected, as inference: the pace falls, and plants that shade one another earn less, so plant numbers fall. Height
+has to evolve, since nothing points growth upward, and 12,000 s is about six lives of a gripping plant, so a rise may
+not show yet.
