@@ -298,6 +298,22 @@
       "value": "1",
       "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
     },
+    "EVOSIM_THEATRE_MOUTH2_RELIEF": {
+      "value": "1",
+      "ruling": "D324: the films take the pending mouth fix (the relief, the small-mouth fade and the plain mouth) with its kinds"
+    },
+    "EVOSIM_THEATRE_MOUTH2_SMALL": {
+      "value": "1",
+      "ruling": "as MOUTH2_RELIEF"
+    },
+    "EVOSIM_THEATRE_MOUTH2_PLAIN": {
+      "value": "1",
+      "ruling": "as MOUTH2_RELIEF"
+    },
+    "EVOSIM_THEATRE_MOUTH2_KINDS": {
+      "value": "2",
+      "ruling": "D324: the mouth kinds, with the sucker, crown, beak and weaker gape, which read as one dim pit at 1, drawn bold (2)"
+    },
     "EVOSIM_THEATRE_SKIN_MAP_FAMILY_MIX": {
       "value": "1",
       "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
@@ -322,6 +338,13 @@
       "value": "1",
       "ruling": "D306: the eyespot loses its pupil, its core filled with the mark's colour, in the films and the safari alike"
     },
+    "EVOSIM_THEATRE_SKIN_MAP_FAMILY_SPOT_GATE": {
+      "value": "0.845378",
+      "perWorld": "scripts/theatre-world-spots.tsv",
+      "perWorldColumn": "gate",
+      "perWorldTool": "scripts/theatre-spot-gate.py",
+      "ruling": "D324: the eyespot on a true half of the bodies that would carry one, the gate from the world's row (scripts/theatre-spot-gate.py at share 0.5); round 66's r66-m-6203 gate stands for a world with no row, which is calibrated before it is filmed"
+    },
     "EVOSIM_THEATRE_SKIN_MAP_FAMILY_PINK_AWAY": {
       "value": "1",
       "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
@@ -333,6 +356,10 @@
     "EVOSIM_THEATRE_SKIN_MAP_FAMILY_EDGE_BEND": {
       "value": "1",
       "ruling": "the owner's look of 2026-10-31 (genome to skin, carried forward; full colour ruled 2026-10-30), carried by every film since 2026-11-01"
+    },
+    "EVOSIM_THEATRE_SKIN_MAP_FAMILY_EDGE_METRES": {
+      "value": "0.5",
+      "ruling": "D324: the outline gated at 0.5 m of surface bend, after the read against blue water (scratch/theatre-realism/outline-blue, read by the coordinator on 2026-11-07)"
     },
     "EVOSIM_THEATRE_RIM_BAND": {
       "value": "1",

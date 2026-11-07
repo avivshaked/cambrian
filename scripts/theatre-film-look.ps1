@@ -32,9 +32,11 @@
   the file (its path is relative to the repository root), with '#' lines as comments and the first other line as
   the header. A row matches when its 'world' is the arm's name, or the name with a trailing -<digits> removed
   (r65-c-6203 finds r65-c); the exact name wins. A world with no row takes the dial's 'value', the file's
-  stand-in, with a warning, since a world is calibrated before it is filmed (scripts/theatre-blade-stops.py);
-  with no -World the dial takes 'value' and a line says the table was not consulted. A perWorld dial without a
-  'perWorldColumn', a row whose column is missing or empty, and a table that is named but absent all refuse.
+  stand-in, with a warning that names the tool which calibrates it: the entry's 'perWorldTool', or
+  scripts/theatre-blade-stops.py when the entry names none. With no -World the dial takes 'value' and a line says
+  the table was not consulted. Each table is read once, the first time a dial needs it, so dials naming different
+  tables each read their own. A perWorld dial without a 'perWorldColumn', a row whose column is missing or empty,
+  and a table that is named but absent all refuse.
 
   It returns the names of the dials it set, so that a launcher which restores its environment afterwards can
   restore these too; it refuses, rather than carry on without the look, when the file is missing or does not
@@ -124,13 +126,15 @@ function Use-FilmLook {
             if ($null -ne $entry.PSObject.Properties['perWorld']) { $table = [string]$entry.perWorld }
             $column = ''
             if ($null -ne $entry.PSObject.Properties['perWorldColumn']) { $column = [string]$entry.perWorldColumn }
-            $dials[$property.Name] = [pscustomobject]@{ Value = [string]$entry.value; Ruling = $ruling; PerWorld = $table; Column = $column; Section = $section }
+            $tool = 'scripts/theatre-blade-stops.py'
+            if ($null -ne $entry.PSObject.Properties['perWorldTool']) { $tool = [string]$entry.perWorldTool }
+            $dials[$property.Name] = [pscustomobject]@{ Value = [string]$entry.value; Ruling = $ruling; PerWorld = $table; Column = $column; Tool = $tool; Section = $section }
         }
     }
 
-    # ------------------------------------------------------------ the per-world table, read once and only when a dial needs it
+    # ------------------------------------------------------------ the per-world tables, each read once and only when a dial needs it
     $root = Split-Path -Parent (Split-Path -Parent $path)
-    $stops = $null
+    $tables = @{}
     $worldName = $World.Trim()
 
     # ------------------------------------------------------------ the environment
@@ -153,8 +157,8 @@ function Use-FilmLook {
         if ([string]::IsNullOrEmpty($have) -and $dial.PerWorld) {
             if ($worldName) {
                 if (-not $dial.Column) { throw "Use-FilmLook: $path, $($dial.Section).$name names a perWorld table but no 'perWorldColumn'." }
-                if ($null -eq $stops) {
-                    $tablePath = [System.IO.Path]::GetFullPath((Join-Path $root $dial.PerWorld))
+                $tablePath = [System.IO.Path]::GetFullPath((Join-Path $root $dial.PerWorld))
+                if (-not $tables.ContainsKey($tablePath)) {
                     if (-not (Test-Path -LiteralPath $tablePath -PathType Leaf)) { throw "Use-FilmLook: $name names the per-world table $($dial.PerWorld), and there is no file at $tablePath." }
                     $header = $null; $rows = @()
                     foreach ($line in [System.IO.File]::ReadAllLines($tablePath, [System.Text.Encoding]::UTF8)) {
@@ -166,8 +170,9 @@ function Use-FilmLook {
                         $rows += , $row
                     }
                     if ($null -eq $header -or $header -notcontains 'world') { throw "Use-FilmLook: $tablePath has no header with a 'world' column." }
-                    $stops = [pscustomobject]@{ Path = $tablePath; Rows = $rows }
+                    $tables[$tablePath] = [pscustomobject]@{ Path = $tablePath; Rows = $rows }
                 }
+                $stops = $tables[$tablePath]
                 $stripped = $worldName -replace '-\d+$', ''
                 $match = $stops.Rows | Where-Object { $_['world'] -ceq $worldName } | Select-Object -First 1
                 if (-not $match) { $match = $stops.Rows | Where-Object { $_['world'] -ceq $stripped } | Select-Object -First 1 }
@@ -179,7 +184,7 @@ function Use-FilmLook {
                     $worldNote = "look: $name takes '$value' from world $($match['world'])'s row in $($dial.PerWorld)"
                 } else {
                     $worldNote = "stand-in"
-                    Write-Warning "look: $name takes '$value', the look's stand-in: world '$worldName' has no row in $($dial.PerWorld); a world is calibrated before it is filmed (scripts/theatre-blade-stops.py)"
+                    Write-Warning "look: $name takes '$value', the look's stand-in: world '$worldName' has no row in $($dial.PerWorld); a world is calibrated before it is filmed ($($dial.Tool))"
                 }
             }
         }

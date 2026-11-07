@@ -1,0 +1,3 @@
+# The eyespot gate per world, set so a true share of the bodies that would carry an eyespot keep it in that world. A film's launcher sets EVOSIM_THEATRE_SKIN_MAP_FAMILY_SPOT_GATE from its world's row. Computed with scripts/theatre-spot-gate.py from the world's skin map lines.
+world	gate	share	bearers	kept	frame	note
+r66-m-6203	0.845378	0.5	2008	1000	r66-m-6203 21000 s, close shot	
