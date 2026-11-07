@@ -345,6 +345,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D321](#d321) | Every film's narration says what the picture cannot show, and tells a rule where the story first needs it | 2026-11-07 | ruled by the owner on the night of 2026-11-06 to 2026-11-07, after round 67's third prose sample (`scratch/story-video/round-67-202611061206/prose-sample-3-owner.md`, the owner's answers saved as… |
 | [D322](#d322) | The prose writer reads every earlier check, a line the owner keeps never fails a draft, and a film's answer is not a repeat | 2026-11-07 | ruled by the owner on 2026-11-07, after round 67's prose draft 4 (`scratch/story-video/round-67-202611061206/prose-4-owner.md`, the owner's answers saved as they came), choosing the three fixes the… |
 | [D323](#d323) | The rest's founders start at a delay of 150 s, and in a second arm across 100 to 600 s | 2026-11-07 | ruled by the owner on 2026-11-07, choosing the coordinator's recommendation after D319's rest failed the forest test on every arm and seed (`logbook/specs/plants-hold/forest-run.md`, "What the rest… |
+| [D324](#d324) | The films draw eyespots on a true half of their bearers, the outline's gate at 0.5 m, and the mouth fix with its kinds | 2026-11-07 | ruled by the owner on 2026-11-07, accepting the coordinator's three recommendations as the film lane put them in its status that day (`scratch/owner/eyespot-gate-kinds/owner-2026-11-07.md`, the… |
 
 ---
 
@@ -11373,3 +11374,25 @@ reach. D319 set the delay longer than a night so that a plant would not rest eve
 
 **Rejected.** A shallower winter, which would grow a forest from an easier world rather than from plants that cope. C,
 the young waiting as resting spores, still the dearest. Parking the forest work.
+
+### D324
+**The films draw eyespots on a true half of their bearers, the outline's gate at 0.5 m, and the mouth fix with its kinds** · 2026-11-07
+
+**Status:** ruled by the owner on 2026-11-07, accepting the coordinator's three recommendations as the film lane put them
+in its status that day (`scratch/owner/eyespot-gate-kinds/owner-2026-11-07.md`, the owner's answer saved as it came;
+the sheets and their README beside it). It extends D306.
+
+**Decision.**
+- **Eyespots.** A film draws the eyespot on a true half of the bodies that carry one, not on every one. The share dial
+  misreads its share off round 66 (set to a half, it kept 84 %, and a true half needed 0.22), so the theatre lane builds
+  the quantile gate before any round 67 film uses it.
+- **The outline.** The skin's outline is gated at 0.5 m of surface curvature, after one read of it against blue water,
+  since the sheets were drawn on black.
+- **The mouths.** The films take the pending mouth fix with its kinds, and the kinds that read as the same dim pit
+  (the sucker, crown, beak and the weaker gape) are rebuilt bolder.
+
+**Why.** The owner found the eyespots too frequent. Close up, 0.5 m adds the most rim, while 0.15 m takes the rim off
+mid-sized bodies in the wide shot. Of 1,032 mouthed bodies on round 66's sheet, only the toothed ring, the disc and one
+gape read; the rest look alike.
+
+**Rejected.** Every eyespot drawn, or 84 % of them. Today's outline gate, and 0.15 m. The mouths as drawn today.

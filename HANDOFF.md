@@ -152,10 +152,10 @@ The owner launches every agent by hand. Ping the owner's phone when the next age
 
 Each is set out in full, with the options and what each implies, in every message that asks for it.
 
-**Three look picks** are in `scratch/owner/eyespot-gate-kinds/` (its README; r66-m-6203 at 21,000 s), none of them blocking:
-- **How many eyespots.** Every one (2,008 of 12,178 bodies), 84 % or a true half (SPOT_SHARE 0.22 on r66). The coordinator recommends the half. The share dial misreads its share off r66, so the quantile gate is owed before any r67 film uses it (c8).
-- **The outline's gate per metre.** Today's, 0.5 m or 0.15 m. Close up 0.5 m adds the most rim; in the wide shot 0.15 m takes the rim off mid-sized bodies. The coordinator recommends 0.5 m, read once against blue water first.
-- **The mouth fix with the kinds.** The kinds sheet is drawn with the pending fix. Of 1,032 mouthed bodies only the toothed ring, the disc and one gape read, and the sucker, crown, beak and other gape look alike as a dim pit. The coordinator recommends the fix, with the weak kinds rebuilt bolder.
+**The three look picks are ruled (D324; sheets in `scratch/owner/eyespot-gate-kinds/`)**, and the theatre lane builds them:
+- **Eyespots on a true half of their bearers** (SPOT_SHARE 0.22 on r66). The share dial misreads its share off r66, so the quantile gate comes before any r67 film uses it.
+- **The outline's gate at 0.5 m**, after one read against blue water.
+- **The mouth fix with its kinds**, with the sucker, crown, beak and weaker gape rebuilt bolder, since they read as the same dim pit.
 
 **The plant proposal** (`proposals/propose-plants-grow.md`) keeps one question open, the overlap rule (D101 refuses a module that would stand inside its own body, a third of the plants' refusals), which comes back with its count on the build that has the module rule's fix. The owner ruled the rest on 2026-11-06: D307 (a gripping plant's child settles on rock), D308 (the urge to grow with a sense of the matter at each blade), D309 (no price change for size) and D310 (seeded varieties, the frond beside the drifting blade).
 
