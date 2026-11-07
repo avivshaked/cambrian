@@ -272,31 +272,72 @@ the second run's table, and the reserve margin (`rm` in the lineage) of the grip
 whether their children keep the bank. The card check passes as before if the group 64 worlds equal the group 32 worlds'
 first 1,200 s on the stats, the digest and the lineage.
 
+## What the bank found
+
+The two worlds ran from 00:56 to 02:07 on 2026-11-07 at 2.4 to 3.5 times real time, as
+`scratch/plants-work/runs/plb-6202/2026-11-07-005615-08d44003` and `plb-6203`, and the group 64 checks from 02:11 to
+02:19. The card check passes on both seeds: stats, digest and lineage are identical to t = 1,200 s
+(`bank-accept-6202.txt`, `bank-accept-6203.txt` beside this file). So D308's regenerated kernels step these worlds the
+same at both group sizes. Every book closed under its line: the largest energy residual was 3.1e-5 J and the largest
+matter residual 6.9e-6. The reads are `read5.py`, `at-end.py` and `rm-season.py` in `scratch/plants-work/forest-read/`,
+with their outputs `read5-plb.out`, `at-end-plb.out` and `rm-season-plb.out` beside them.
+
+**The forest test fails on both seeds.** At 12,000 s, 6202 has 5 gripping bodies, 4 of them on island 10, and 6203 has
+none. The most on one island after 3,000 s was 6, on island 10 at 8,300 s, and 7 on island 6 at 3,100 s.
+
+The founders carried the bank, and their children kept it. Every anchored founder was born with a margin of 3,000 s,
+and every child of a banked line had at least 2,390 s. The other plant founders drew the shared range. But the banked
+plants hardly bred. Over the run the banked lines had 39 plant children on 6202 and 187 on 6203, against about 11,000
+and 10,500 plant children of the other plants. With fewer children, fewer settled, and the stand never grew:
+
+| Seed | Grippers begun in the first summer | Children settled | Gripping at 3,000 s |
+|---|---|---|---|
+| 6202, the bank | 13 | 11 | 4 |
+| 6202, the second run | 84 | 107 | 44 |
+| 6203, the bank | 20 | 7 | 11 |
+| 6203, the second run | 101 | 80 | 35 |
+
+The winters still starved the banked plants. In the first winter, 14 of 6202's 17 gripping deaths were by starvation
+and 12 of 6203's 23, and in the second winter 25 of 32 and 15 of 20.
+
+Inference: the margin only holds back breeding. It does not make a plant save. A banked plant that cannot breed still
+spends what it earns on upkeep and on the blades the module rule adds. So it enters the winter with no more in hand than
+before, and loses only its breeding. This run measured no reserve, so the inference is untested. A per-body reserve at
+the start of each winter would test it.
+
 ## B, rest (D319), written before it starts
 
 The owner ruled D319's rest. A plant whose income has stood below its upkeep for longer than its rest delay rests. While
 it rests, its upkeep, its income and its ageing run at the rest factor. It wakes when the income at the full rate would
-have paid its full upkeep for the same delay. This run is A's world, the bank on, with the rest on at its strong
+have paid its full upkeep for the same delay. Two arms run A's world, the bank on, with the rest on at its strong
 defaults (D262). Every founder's delay is 600 s, the factor is 0.05, and a birth steps the delay gene with a chance of
-0.08. One arm sheds
-the added blades on resting (`rounds/env-plants-rest.ps1`) and one keeps them (`rounds/env-plants-restkeep.ps1`), each
-on seeds 6202 and 6203. The four worlds run together in one card group at group 32 for 12,000 s, launched by
-`rounds/launch-plants-rest.ps1` as `plr-6202`, `plr-6203`, `plrk-6202` and `plrk-6203`. A's two worlds are the control.
-The build is `plants-build` as for A, after the re-pin, which moves tests and fixtures and nothing the farm runs. There is
-no group 64 check: A's checks the kernels, and the rest needs nothing on the card.
+0.08. One arm sheds the added blades on resting (`rounds/env-plants-rest.ps1`) and one keeps them
+(`rounds/env-plants-restkeep.ps1`), each on seeds 6202 and 6203. A's two worlds are their control. The build is
+`plants-build` as for A, after the re-pin, which moves tests and fixtures and nothing the farm runs. There is no group 64
+check: A's checks the kernels, and the rest needs nothing on the card.
+
+**A third arm, added on 2026-11-07 after A's result and before this run starts.** A's bank cut the anchored plants'
+breeding and failed (above), so a rest arm on the bank's world could fail through the bank alone. The third arm is the
+rest, shedding, on the second run's world without the bank (`rounds/env-plants-restonly.ps1`), on both seeds, and the
+second run's two worlds are its control. The six worlds run together in one card group at group 32 for 12,000 s,
+launched by `rounds/launch-plants-rest.ps1` as `plr-6202`, `plr-6203`, `plrk-6202`, `plrk-6203`, `plro-6202` and
+`plro-6203`. The second run ran on the build before D308's kernels. Until a plant first rests, the third arm should step
+its world as the second run did. `gpu-accept.py` reads the stats sample at which `plro` first differs from `plg`, and a
+difference before the first rest comes from the builds.
 
 **How it is read.** The forest test at 12,000 s on each arm, islands assigned as `read5.py` assigns them. An arm passes
 if the test passes on either seed.
-- If A failed and an arm passes, rest carries a forest through the full winter where a bank alone does not, and the
-  passing arm says whether the drop matters.
-- If A failed and neither arm passes, the full winter beats both, and the next step is the owner's: C is held, and the
+- If an arm on the bank passes, rest carries a forest through the full winter where a bank alone does not, and the
+  two arms on the bank say whether the drop matters.
+- If the third arm passes, rest alone carries one, and the bank is not needed. If it passes and an arm on the bank
+  fails, the bank harms it.
+- If no arm passes, the full winter beats the rest as built, and the next step is the owner's: C is held, and the
   winter's depth is a world rule.
-- If A passed, each arm is read for how much more of the stand it carries: the gripping plants on each island at the end
-  of each season, against A's.
 
 Read besides:
 - the plants resting, the rests begun and the wakes, over the seasons, to see that plants rest in the winter and wake in
   the summer, rather than resting through a summer or never resting;
-- the ages at death of gripping plants against A's, since a resting plant ages slowly;
+- the ages at death of gripping plants against each arm's control, since a resting plant ages slowly;
+- the grippers begun and the children settled in each season against each arm's control, since A's bank cost both;
 - the rest delay among the living gripping plants at 12,000 s, against the 600 s they started at;
 - the matter and energy books against their lines.

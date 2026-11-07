@@ -1,0 +1,16 @@
+A: scratch\plants-work\runs\plb-6203\2026-11-07-005615-08d44003
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 100035.9911 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 167e3496a5 dirty False dynamics 43025f555fd4 farm 68e2b391d72c config 08d44003b4af6b44
+  pace     12000 s of 12000 in 69.02963143166667 min, 2.8973065023240436 x real time, status ended (budget), diverged 0
+B: scratch\plants-work\runs\plb-g64-6203\2026-11-07-021143-08d44003
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 64, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 94236.2277 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 2336cd5016 dirty False dynamics 43025f555fd4 farm 68e2b391d72c config 08d44003b4af6b44
+  pace     1200 s of 1200 in 7.205090086666667 min, 2.775815397091408 x real time, status ended (budget), diverged 0
+split A  physics 67%, world 27%, harness 5%, writers 1%
+split B  physics 69%, world 30%, harness 1%, writers 1%
+stats    identical on all 120 shared samples to t=1200 (wall clocks left out); 1080 samples in one run only
+digest   identical on all 1201 shared rows to step 120000
+lineage  byte-equal on the shorter run's 1033 lines; the other goes on
+positions not in both runs
