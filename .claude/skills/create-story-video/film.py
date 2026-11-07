@@ -7,6 +7,7 @@
     python film.py run <folder> <k>                the detached job itself; only start runs it
     python film.py wait <folder> <k> <minutes>     wait for pass k to end, for at most the minutes given
     python film.py collect <folder> <k>            copy pass k's clips into clips/, make their sheets, write clips.json
+    python film.py slides <folder> <k>             build a deck of pass k's collected takes, film/pass-<k>/slides/index.html
 
 The first line each command prints is its verdict, as filming.md reads it. The last line says how long the
 command took. Exit status: 0 on READY, NOTHING TO FILM, FREE, STARTED, DONE or PASS, 1 otherwise, 2 on a
@@ -17,6 +18,7 @@ import hashlib
 import importlib.util
 import json
 import math
+import os
 import re
 import shutil
 import subprocess
@@ -31,6 +33,7 @@ SETTINGS = "film-settings.json"
 SCHEMA = "create-story-video/clips/1"
 BIRTH_LEAD_S = 8.0                 # the director opens a birth's take this long before it (SafariTripBuilder)
 TAIL_S = 1.0                       # what story-windows.py records after a take's last frame
+ALIVE_AFTER_S = 1.0                # a named body's window opens this long after its birth: two metabolic steps
 EPS = 0.0015
 WORLD = {"Arrival", "Descent", "Floor", "Card"}
 CLOSE = {"Portrait", "Birth"}      # the cameras the theatre focuses on a subject (SafariPlans' focusOn)
@@ -39,9 +42,30 @@ FOCUS_RANGES = {"aperture": (1, 32), "format": (8, 120), "radius": (0.5, 1.5), "
                 "supersample": (1, 3)}
 SLUG = re.compile(r"[A-Za-z0-9._-]+")
 SIZE = re.compile(r"([0-9]+)x([0-9]+)")
+# What the theatre costs a run, measured on round 67's pass 2 at 3840x2160 (2026-11-07): Unity's start and first
+# load, each window's load and skinning, and each frame. cmd_plan estimates a run's time from them.
+THEATRE_COSTS = {"theatre_start_s": 300, "theatre_window_s": 240, "theatre_frame_s": 0.45}
+FRAME_COST_AT = 3840 * 2160        # the pixel count theatre_frame_s is given for
+FRAME_COST_FLOOR = 0.25            # a smaller frame costs a quarter of it at the least
 JUMP_FLAG = 6.0                    # a frame-to-frame change this many times the clip's median is printed
 FOG_RANGE = (0.002, 0.08)          # the story look's fog dial's range, which a far shot's own fog keeps to
+# The snow's dials under the underwater look, each the theatre's own range: the motes' brightness, their
+# number as a multiple of the look's, and the least share of the reference density a column counts as.
+SNOW_RANGES = {"gain": (0, 4), "quantity": (0.25, 3), "least": (0, 1), "ambient": (0, 6)}
+SNOW_ENV = {"gain": "EVOSIM_THEATRE_SHELL_GAIN", "quantity": "EVOSIM_THEATRE_SNOW_QUANTITY",
+            "least": "EVOSIM_THEATRE_SNOW_LEAST", "ambient": "EVOSIM_THEATRE_SNOW_AMBIENT"}
+# The skin's dials a film may set: the tank's glass and the earth at it drawn or not, and the caustic net's
+# strength on the bed, the reef and the bodies as a multiple of the shaders' own.
+CAUSTICS_RANGE = (0, 2)
+SKIN_ENV = {"glass": "EVOSIM_THEATRE_GLASS", "earth": "EVOSIM_THEATRE_EARTH", "caustics": "EVOSIM_THEATRE_CAUSTIC_SCALE"}
 LOOK_RATE = 3                      # frames a second read for a clip's tone and edges
+# A shot's colour: the theatre turns the hue of the bodies a map names, read once when its Editor starts, so a
+# pass films one colour. colours.json in the film's folder names the colours a film may use (filming.md).
+COLOURS = "colours.json"
+COLOUR_NAME = re.compile(r"[a-z0-9-]+")
+COLOUR_FIELDS = {"shows", "file", "sha256", "runs"}
+TEAMS_ENV = "EVOSIM_THEATRE_TEAMS"
+TEAMS_LINE = re.compile(r"\[Theatre\] teams: (\d+) bodies turned from (.+?) \(EVOSIM_THEATRE_TEAMS\)")
 
 
 class Refused(Exception):
@@ -111,6 +135,57 @@ def film_settings(folder, lines):
         problems.append("farm_threads is a whole number, 1 or more")
     if not isinstance(s.get("wall_minutes"), int) or not 10 <= s["wall_minutes"] <= 2880:
         problems.append("wall_minutes is a whole number, 10 to 2880")
+    if s.get("farm_cores") is not None and not re.fullmatch(r"\d+(-\d+)?(,\d+(-\d+)?)*", str(s["farm_cores"])):
+        problems.append("farm_cores is a list of logical processors such as \"16-31\", or null for none")
+    if s.get("theatre_cores") is not None and not re.fullmatch(r"\d+(-\d+)?(,\d+(-\d+)?)*", str(s["theatre_cores"])):
+        problems.append("theatre_cores is a list of logical processors such as \"16-19\", or null for none")
+    if s.get("overlap") is not None and not isinstance(s["overlap"], bool):
+        problems.append("overlap is true or false: false records every window before the theatre films any")
+    tr = s.get("theatre_root")
+    if tr is not None and not (isinstance(tr, str) and tr and (repo_path(tr) / "scripts" / "theatre-safari.ps1").is_file()):
+        problems.append("theatre_root is null (this checkout) or the path of an existing checkout that holds "
+                        "scripts/theatre-safari.ps1, absolute or from the checkout's root")
+    if s.get("guard", "standard") not in ("card terms", "film terms", "standard", None):
+        problems.append("guard is \"card terms\" (D258's stops and the card's wider margin), \"film terms\" (D258's stops and "
+                        "CPU 95 C once or 90 C twice in a row), \"standard\" (D258's own "
+                        "stops) or null for no heat guard")
+    gm = s.get("guard_minutes", 600)
+    if not isinstance(gm, int) or isinstance(gm, bool) or gm < 1:
+        problems.append("guard_minutes is a whole number, 1 or more: how long the heat guard watches")
+    tc = s.get("theatre_commit")
+    if tc is not None and not (isinstance(tc, str) and tc.strip() and not tc.startswith("-")):
+        problems.append("theatre_commit is null or a commit or branch name of the theatre_root checkout")
+    fb = s.get("farm_by_run", {})
+    if not isinstance(fb, dict) or not all(isinstance(k, str) and isinstance(v, str) and v and repo_path(v).is_file()
+                                           for k, v in fb.items()):
+        problems.append("farm_by_run is an object of run names and the paths of an existing Evosim.Farm.exe, "
+                        "absolute or from the checkout's root")
+    rb = s.get("runs_root_by_run", {})
+    if not isinstance(rb, dict) or not all(isinstance(k, str) and isinstance(v, str) and v and repo_path(v).is_dir()
+                                           for k, v in rb.items()):
+        problems.append("runs_root_by_run is an object of run names and the paths of an existing folder that holds "
+                        "the run, absolute or from the checkout's root")
+    for key, default in THEATRE_COSTS.items():
+        v = s.get(key, default)
+        if not number(v) or v < 0:
+            problems.append(f"{key} is seconds, 0 or more (default {default}): what the theatre costs a run, which the "
+                            "plan checks against wall_minutes")
+    if not isinstance(s.get("theatre_look"), int) or not 0 <= s["theatre_look"] <= 4:
+        problems.append("theatre_look is the theatre's underwater look, 0 to 4 (EVOSIM_THEATRE_LOOK): 4 is both "
+                        "batches, the look the owner chose; 0 the old look")
+    sn = s.get("snow")
+    if sn is not None and not (isinstance(sn, dict) and set(sn) <= set(SNOW_RANGES) and sn
+                               and all(number(sn[k]) and SNOW_RANGES[k][0] <= sn[k] <= SNOW_RANGES[k][1] for k in sn)):
+        problems.append("snow is null (the look's own snow) or any of "
+                        + ", ".join(f"{k} {a} to {b}" for k, (a, b) in SNOW_RANGES.items()))
+    for key in ("glass", "earth"):
+        if not isinstance(s.get(key, True), bool):
+            problems.append(f"{key} is true (the theatre draws the tank's {key}, its default) or false")
+    if s.get("caustics") is not None and not (number(s["caustics"]) and CAUSTICS_RANGE[0] <= s["caustics"] <= CAUSTICS_RANGE[1]):
+        problems.append(f"caustics is null (the shaders' own) or a multiple of it, {CAUSTICS_RANGE[0]} to {CAUSTICS_RANGE[1]}")
+    if not isinstance(s.get("theatre_stream", False), bool):
+        problems.append("theatre_stream is true (each take's frames straight to the card's encoder, no PNG; "
+                        "EVOSIM_THEATRE_STREAM=nvenc) or false, the PNG path; a film's settings without it are false")
     for key in ("runs_root", "reference"):
         if not isinstance(s.get(key), str) or not s[key]:
             problems.append(f"{key} is a path, absolute or from the checkout's root")
@@ -128,6 +203,50 @@ def film_settings(folder, lines):
     return s
 
 
+def theatre_cost(s, key):
+    """One of the theatre's cost settings; a film's older copy without it takes the default."""
+    return s[key] if s.get(key) is not None else THEATRE_COSTS[key]
+
+
+def frame_cost_s(s, size):
+    """The theatre's seconds a frame at this size: theatre_frame_s at 3840x2160 scaled by the pixel count, never
+    below a quarter of it."""
+    m = SIZE.fullmatch(str(size))
+    share = int(m.group(1)) * int(m.group(2)) / FRAME_COST_AT if m else 1.0
+    return theatre_cost(s, "theatre_frame_s") * max(share, FRAME_COST_FLOOR)
+
+
+def run_estimates(s, entries, size):
+    """Each run's time in the theatre, in minutes: start + windows x per window + frames x per frame. A run's windows
+    are its shots in the pass and its frames are the sum of each shot's round(seconds x fps) + 1.
+    Returns {run: (windows, frames, minutes)}."""
+    found = {}
+    for e in entries:
+        w, f = found.get(e["arm"], (0, 0))
+        found[e["arm"]] = (w + 1, f + round(e["seconds"] * s["fps"]) + 1)
+    return {arm: (w, f, (theatre_cost(s, "theatre_start_s") + w * theatre_cost(s, "theatre_window_s")
+                         + f * frame_cost_s(s, size)) / 60) for arm, (w, f) in found.items()}
+
+
+def wall_lines(s, entries, size):
+    """The plan's line a run, and the refusals: a run whose estimate is over wall_minutes would time out, and the
+    theatre encodes a run's takes only after Unity exits, so a time-out loses every take of the run."""
+    lines, over = [], []
+    for arm, (w, f, minutes) in sorted(run_estimates(s, entries, size).items()):
+        lines.append(f"theatre {arm}: {w} windows, {f} frames, about {minutes:.0f} min against the wall of "
+                     f"{s['wall_minutes']} min")
+        if minutes > s["wall_minutes"]:
+            over.append(f"run {arm}: the theatre needs about {minutes:.0f} min ({w} windows, {f} frames at {size}), over the "
+                        f"wall of {s['wall_minutes']} min, and a time-out loses every take of the run: raise wall_minutes "
+                        "or split the run's shots across passes")
+    return lines, over
+
+
+def runs_root_for(s, arm):
+    """The folder that holds a run: its entry in the settings' runs_root_by_run, else the settings' runs_root."""
+    return repo_path((s.get("runs_root_by_run") or {}).get(arm) or s["runs_root"])
+
+
 def run_dir(runs_root, arm):
     """The newest directory of a run under the runs root, as story-windows.py takes it."""
     base = runs_root / arm
@@ -141,6 +260,54 @@ def farm_of(rd):
     recorded on that build: a later one refuses the run's config once a tunable has been added since."""
     path = ((read_json(rd / "run.json") or {}).get("source") or {}).get("programPath")
     return str(Path(path) / "Evosim.Farm.exe") if path else None
+
+
+def farm_for(s, arm, rd):
+    """The farm program a pass records a run's windows on: the run's entry in the settings' farm_by_run, else the
+    one its manifest names (farm_of). Every place the pass takes a run's farm takes it here."""
+    own = (s.get("farm_by_run") or {}).get(arm)
+    return str(repo_path(own)) if own else farm_of(rd)
+
+
+SIM_SOURCE = ("src/Evosim.Core", "src/Evosim.Dynamics", "src/Evosim.Farm", "src/Evosim.Farm.Gpu")
+
+
+def git(top, *args):
+    return subprocess.run(["git", "-C", str(top), *args], capture_output=True, text=True, encoding="utf-8")
+
+
+def source_check(arm, rd, farm):
+    """One plan line saying whether the checkout that holds a run's farm program still has the simulation source
+    the run was recorded at, or a Refused. A program path names a folder in a worktree that can be rebuilt after
+    the run, and its windows would then be recorded on another build. The simulation source is compared with the
+    run's commit as the working tree stands, so a moved HEAD and uncommitted edits both show."""
+    source = (read_json(rd / "run.json") or {}).get("source") or {}
+    commit = source.get("gitCommit")
+    if not isinstance(commit, str) or not commit or commit == "unknown":
+        return f"{arm}: the source of {farm} could not be checked, since the run's manifest names no commit"
+    folder = Path(farm).parent
+    top = git(folder, "rev-parse", "--show-toplevel") if folder.is_dir() else None
+    if top is None or top.returncode != 0 or not top.stdout.strip():
+        raise Refused(f"{arm}: the farm program {farm} is in no git checkout, so its source cannot be compared "
+                      f"with the run's commit {commit}")
+    top = top.stdout.strip()
+    if git(top, "cat-file", "-e", f"{commit}^{{commit}}").returncode != 0:
+        raise Refused(f"{arm}: the checkout {top} that holds the farm program {farm} does not hold the run's "
+                      f"commit {commit}")
+    diff = git(top, "diff", "--name-only", commit, "--", *SIM_SOURCE)
+    if diff.returncode != 0:
+        raise Refused(f"{arm}: git could not compare {top} with the run's commit {commit}: "
+                      + (diff.stderr.strip().splitlines() or ["no message"])[-1])
+    files = [f for f in diff.stdout.splitlines() if f.strip()]
+    if files:
+        raise Refused(f"{arm}: the farm program {farm} is not the source the run was recorded at. The checkout {top} "
+                      f"differs from the run's commit {commit} in {len(files)} file(s) of the simulation source "
+                      "(committed since, or edited and not committed), so a window recorded on it could be "
+                      "another realisation:", *("  " + f for f in files[:10]),
+                      *([f"  and {len(files) - 10} more"] if len(files) > 10 else []))
+    return (f"{arm}: the farm program {farm} is at the run's commit {commit}, and its checkout's simulation "
+            "source matches it" + (" (the run was recorded from a tree with uncommitted edits, which the commit "
+                                   "does not hold)" if source.get("gitDirty") is True else ""))
 
 
 def last_second(rd):
@@ -176,6 +343,39 @@ def births(rd, parent, a, b):
     return sorted(out)
 
 
+def born_at(rd, body):
+    """The second a body was born, from the run's lineage, or None when the lineage has no birth row for it."""
+    key = '"id":' + str(body) + ","
+    with open(rd / "lineage.jsonl", encoding="utf-8") as f:
+        for line in f:
+            if key not in line:
+                continue
+            row = json.loads(line)
+            if row.get("e") == "b" and str(row.get("id")) == str(body):
+                return float(row["t"])
+    return None
+
+
+def lead_in(rd, shot, h):
+    """Where a shot's take opens, with its handle h before the stretch, and why it cannot be filmed, or None.
+
+    A shot of a named body opens no earlier than two metabolic steps after the body's birth: the director finds
+    no subject in a window that opens before the body is drawn, and misses the scene. Round 57's founder, body
+    11630, has its birth row at 5,177.5 s and is first drawn at 5,178.04 s, the frame after the step that placed
+    it: its portrait's window opened at 5,177 s in the look test and at 5,178 s, one step after the birth, in the
+    4K pass, and both missed it (2026-10-10)."""
+    a = shot["run_from_s"]
+    start = a - min(h, a)
+    borns = [t for t in (born_at(rd, body) for body in shot.get("bodies") or []) if t is not None]
+    if borns:
+        alive = max(borns) + ALIVE_AFTER_S
+        if a < alive - EPS:
+            return start, (f"its stretch starts at {a:g} s, before its body is alive in a window, at {alive:g} s "
+                           f"(born at {max(borns):g} s)")
+        start = max(start, alive)
+    return start, None
+
+
 def far_fog(shot, s):
     """The fog a shot is filmed in when it is not the look's: a far shot's, when the settings give one."""
     return s.get("far_fog") if shot["camera"] in WORLD else None
@@ -202,16 +402,29 @@ def handle_of(shot, s):
     return (s.get("handles_by_shot") or {}).get(shot["id"], s["handles_s"])
 
 
-def shot_key(shot, s):
+def shot_key(shot, s, colours=None):
     """What a clip was filmed from: a clip whose key differs from its shot's is filmed again. A far shot's own
     fog is in its key, so setting far_fog films the far shots again and no others."""
     fields = {k: shot[k] for k in ("run", "bodies", "camera", "run_from_s", "run_to_s")}
     fields.update({k: s[k] for k in ("handles_s", "fps", "size")})
     fields["handles_s"] = handle_of(shot, s)
     fields["size"] = size_of(shot, s)
-    take = (s.get("takes_by_shot") or {}).get(shot["id"])
+    fields["look"] = s["theatre_look"]
+    take =(s.get("takes_by_shot") or {}).get(shot["id"])
     if take is not None:
         fields["take"] = take          # raised to film a shot again when nothing in its key changed, a camera's fix
+    if s.get("theatre_stream"):
+        fields["stream"] = "nvenc"     # only when on, so a film filmed before the switch keeps its keys
+    if s.get("snow"):
+        fields["snow"] = s["snow"]     # only when set, so a film filmed before the setting keeps its keys
+    skin = skin_of(s)
+    if skin:
+        fields["skin"] = skin          # likewise: only what differs from the theatre's defaults
+    if shot.get("colour") is not None:
+        if shot["colour"] not in (colours or {}):
+            raise Refused(f"shot {shot['id']}: colour '{shot['colour']}' is not a colour {COLOURS} names")
+        fields["colour"] = shot["colour"]      # likewise: a shot with no colour keeps its key
+        fields["colour_sha256"] = colours[shot["colour"]]["sha256"]
     if far_fog(shot, s) is not None:
         fields["fog"] = far_fog(shot, s)
     if close_focus(shot, s) is not None:
@@ -219,6 +432,164 @@ def shot_key(shot, s):
     if side_of(shot) is not None:
         fields["side"] = side_of(shot)
     return hashlib.sha256(json.dumps(fields, sort_keys=True).encode()).hexdigest()[:16]
+
+
+def skin_of(s):
+    """The skin's settings that differ from the theatre's defaults (glass and earth on, caustics as the shaders')."""
+    skin = {}
+    if s.get("glass", True) is False:
+        skin["glass"] = False
+    if s.get("earth", True) is False:
+        skin["earth"] = False
+    if s.get("caustics") is not None and s["caustics"] != 1:
+        skin["caustics"] = s["caustics"]
+    return skin
+
+
+def skin_env(s):
+    """The environment the theatre reads the skin's settings from."""
+    skin = skin_of(s)
+    env = {}
+    for key in ("glass", "earth"):
+        if key in skin:
+            env[SKIN_ENV[key]] = "0"
+    if "caustics" in skin:
+        env[SKIN_ENV["caustics"]] = str(skin["caustics"])
+    return env
+
+
+def skin_pattern(s):
+    """What the theatre's skin line says when the settings reached it (TheatreSkin's dress)."""
+    skin = skin_of(s)
+    glass = "off" if "glass" in skin else "on"
+    earth = "off" if "earth" in skin else "on"
+    scale = dial_text(skin.get("caustics", 1))
+    return re.escape(f"skin: glass {glass}, earth {earth}, caustic scale x{scale}") + r"(?!\d|\.\d)"
+
+
+def dial_text(v):
+    """A dial as the theatre's log writes it (C#'s 0.##)."""
+    return f"{v:.2f}".rstrip("0").rstrip(".")
+
+
+def read_colours(folder):
+    """The film's colours.json as (colours, problems). colours is None when the film has none, else the entries
+    that are sound, name by name; problems is every way the file departs from its form, as lines."""
+    path = folder / COLOURS
+    if not path.is_file():
+        return None, []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
+    except ValueError as exc:
+        return {}, [f"{COLOURS} is not JSON: {exc}"]
+    if not isinstance(data, dict):
+        return {}, [f"{COLOURS} is an object of colour names"]
+    colours, problems = {}, []
+    for name, entry in data.items():
+        where = f"{COLOURS}, colour '{name}'"
+        if not COLOUR_NAME.fullmatch(name):
+            problems.append(f"{where}: a name is lower-case letters, digits and hyphens")
+            continue
+        if not isinstance(entry, dict) or set(entry) != COLOUR_FIELDS:
+            problems.append(f"{where}: holds exactly shows, file, sha256 and runs")
+            continue
+        runs = entry["runs"]
+        if not all(isinstance(entry[k], str) and entry[k].strip() for k in ("shows", "file")):
+            problems.append(f"{where}: shows and file are words and a path")
+        elif not (isinstance(runs, list) and runs and all(isinstance(r, str) and r for r in runs)):
+            problems.append(f"{where}: runs is a list of at least one run")
+        elif not (isinstance(entry["sha256"], str) and re.fullmatch("[0-9a-f]{64}", entry["sha256"])):
+            problems.append(f"{where}: sha256 is 64 lower-case hex digits")
+        elif not repo_path(entry["file"]).is_file():
+            problems.append(f"{where}: its file {entry['file']} is not there")
+        elif sha256_of(repo_path(entry["file"])) != entry["sha256"]:
+            problems.append(f"{where}: its sha256 is not the file's: the map changed after it was named")
+        else:
+            colours[name] = entry
+    return colours, problems
+
+
+def colour_faults(shot, colours):
+    """Why a shot's colour cannot be filmed, as lines without the shot's name; none when it has none or is sound."""
+    if "colour" not in shot:
+        return []
+    name = shot["colour"]
+    if not isinstance(name, str):
+        return ["colour is the name of a colour in colours.json, a string"]
+    out = []
+    if "run" not in shot:
+        out.append(f"colour '{name}' is on a shot with no footage; only footage is coloured")
+    if colours is None:
+        out.append(f"colour '{name}' is given and the film has no {COLOURS}")
+    elif name not in colours:
+        out.append(f"colour '{name}' is not a colour {COLOURS} names")
+    elif "run" in shot and shot["run"] not in colours[name]["runs"]:
+        out.append(f"colour '{name}' is not for run {shot['run']}, only for " + ", ".join(colours[name]["runs"]))
+    return out
+
+
+def colours_of(folder, shots):
+    """The film's colours, read for filming: refuses on a fault in the file or in any shot's colour."""
+    colours, problems = read_colours(folder)
+    for x in shots:
+        problems += [f"shot {x.get('id')}: {m}" for m in colour_faults(x, colours)]
+    if problems:
+        raise Refused(*problems)
+    return colours
+
+
+def colour_of(shot, colours):
+    """What a pass of this shot records of its colour: {name, file, sha256}, or None."""
+    name = shot.get("colour")
+    if name is None:
+        return None
+    return {"name": name, "file": colours[name]["file"], "sha256": colours[name]["sha256"]}
+
+
+def same_path(a, b):
+    return str(a).replace(chr(92), "/").lower() == str(b).replace(chr(92), "/").lower()
+
+
+def colour_log_fault(colour, log):
+    """Why a theatre log does not show the colour its pass asked for, or None. A coloured pass's log has a teams
+    line naming its file with bodies turned; an uncoloured pass's has none (the theatre's TEAMS line)."""
+    lines = TEAMS_LINE.findall(log)
+    if colour is None:
+        return "the theatre's log has a teams line, and this pass was asked for none" if lines else None
+    want = repo_path(colour["file"])
+    if not any(int(n) > 0 and same_path(path, want) for n, path in lines):
+        return (f"the theatre's log does not show colour '{colour['name']}': no teams line with bodies turned "
+                f"from {want}")
+    return None
+
+
+LOOK_WARNINGS = (
+    ("the main checkout's theatre-film-look.json was not found",
+     "the look was not the main checkout's: the launcher read its own copy of theatre-film-look.json"),
+    ("has no row in scripts/theatre-world-spots.tsv",
+     "the eyespot gate is the look's stand-in: the world has no row in scripts/theatre-world-spots.tsv"),
+    ("has no row in scripts/theatre-world-stops.tsv",
+     "the blade stops are the look's stand-in: the world has no row in scripts/theatre-world-stops.tsv"),
+)
+
+
+def look_log_fault(log):
+    """Why a take's logs show a look other than the main checkout's calibrated one, or None. theatre-film-look.ps1
+    warns when it falls back to its own copy of the dials, and when a world has no row in a per-world table."""
+    for text, why in LOOK_WARNINGS:
+        if text in log:
+            return why
+    return None
+
+
+def snow_text(snow):
+    return ", ".join(f"{k} {dial_text(v)}" for k, v in sorted(snow.items()))
+
+
+def snow_patterns(snow):
+    """What the theatre's look line says when each snow dial reached it (TheatreLook.Describe)."""
+    words = {"gain": "shell gain ", "quantity": "quantity x", "least": "least ", "ambient": "ambient "}
+    return [re.escape(words[k] + dial_text(v)) + r"(?!\d|\.\d)" for k, v in snow.items()]
 
 
 def fog_text(fog):
@@ -236,14 +607,46 @@ def tree_hash(root):
     return h.hexdigest()
 
 
+def theatre_root(s):
+    """The checkout that holds the render worker and the theatre-safari.ps1 a pass runs: the settings' theatre_root,
+    else the repository's root."""
+    return repo_path(s["theatre_root"]) if s.get("theatre_root") else REPO
+
+
 def stale_worker(s):
     """Why the render worker cannot film this pass, or None: missing, or carrying another theatre."""
-    worker = REPO / f"unity-w{s['worker']}"
+    root = theatre_root(s)
+    worker = root / f"unity-w{s['worker']}"
     if not worker.is_dir():
-        return f"there is no render worker {worker.name}"
-    if tree_hash(REPO / "unity" / "Assets" / "Theatre") != tree_hash(worker / "Assets" / "Theatre"):
+        return f"there is no render worker {worker.name}" + (f" in {root}" if root != REPO else "")
+    if tree_hash(root / "unity" / "Assets" / "Theatre") != tree_hash(worker / "Assets" / "Theatre"):
+        if root != REPO:
+            return (f"{worker.name} carries another theatre than {root}'s unity/Assets/Theatre; its seat is the lane's "
+                    "that keeps it")
         return (f"{worker.name} carries another theatre than unity/Assets/Theatre; refresh it from PowerShell with "
                 f"./scripts/new-worker.ps1 -Workers {s['worker']}")
+    return None
+
+
+def commit_fault(s):
+    """Why the theatre_root checkout is not at the settings' theatre_commit, or None: the lane reseats that checkout
+    between films, and both its workers compile its src."""
+    want = s.get("theatre_commit")
+    if not want:
+        return None
+    root = theatre_root(s)
+
+    def rev(name):
+        r = subprocess.run(["git", "-C", str(root), "rev-parse", "--verify", "-q", name + "^{commit}"],
+                           capture_output=True, text=True, encoding="utf-8")
+        return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else None
+
+    head, named = rev("HEAD"), rev(want)
+    if head is None or named is None:
+        return (f"theatre_commit {want}: git could not name {'HEAD' if head is None else want} in {root}"
+                f" (HEAD {head}, {want} {named})")
+    if head != named:
+        return f"the theatre checkout {root} is at {head}, and theatre_commit {want} is {named}"
     return None
 
 
@@ -258,8 +661,8 @@ def pass_dir(folder, k):
     return folder / "film" / f"pass-{k}"
 
 
-def safari_dir(folder, k, arm):
-    return REPO / "scratch" / "safari" / arm / f"{folder.name}-film{k}"
+def safari_dir(folder, k, arm, s=None):
+    return theatre_root(s or {}) / "scratch" / "safari" / arm / f"{folder.name}-film{k}"
 
 
 def cmd_plan(folder, k):
@@ -270,11 +673,14 @@ def cmd_plan(folder, k):
         raise Refused("the film has no shots.json; the shot list step writes it")
     if (pass_dir(folder, k) / "plan.json").is_file():
         raise Refused(f"pass {k} is planned already; plan the next pass")
-    runs_root = repo_path(s["runs_root"])
+    fault = commit_fault(s)
+    if fault:
+        raise Refused(fault)
     clips = (read_json(folder / "clips.json") or {}).get("clips", [])
     filmed = {c["shot"]: c["key"] for c in clips if (folder / c["file"]).is_file() and sha256_of(folder / c["file"]) == c["sha256"]}
+    colours = colours_of(folder, [x for x in shots["shots"] if isinstance(x, dict)])
     runs = [x for x in shots["shots"] if "run" in x]           # every shot with footage, graphics' included
-    todo = [x for x in runs if filmed.get(x["id"]) != shot_key(x, s)]
+    todo = [x for x in runs if filmed.get(x["id"]) != shot_key(x, s, colours)]
     if not todo:
         return "FILM PLAN: NOTHING TO FILM", lines + [f"every one of the {len(runs)} shots with footage has its clip"]
     errors, scenes, entries, dirs = [], [], [], {}
@@ -285,13 +691,62 @@ def cmd_plan(folder, k):
         raise Refused("a pass films at one size, and these shots ask " + ", ".join(sizes) + ": film the shots of "
                       "one size first, by leaving the others' size_by_shot as it was filmed")
     pass_size = sizes[0]
+    filmed_count = len(runs) - len(todo)
+    # A window is recorded on the farm build that recorded its run, and one pass records on one build. So a film
+    # whose runs come from several builds films one build's shots a pass, the build with the most shots first,
+    # and the next passes take the rest; collect keeps every pass's clips (round 57's film, 2026-10-10).
+    for arm in {x["run"] for x in todo}:
+        dirs[arm] = run_dir(runs_root_for(s, arm), arm)
+        if dirs[arm] is None:
+            raise Refused(f"no run directory for {arm} under {runs_root_for(s, arm)}")
+    build = {arm: farm_for(s, arm, rd) or "" for arm, rd in dirs.items()}
+    counts = {}
+    for x in todo:
+        counts[build[x["run"]]] = counts.get(build[x["run"]], 0) + 1
+    if len(counts) > 1:
+        chosen = sorted(counts, key=lambda b: (-counts[b], b))[0]
+        later = [x for x in todo if build[x["run"]] != chosen]
+        todo = [x for x in todo if build[x["run"]] == chosen]
+        dirs = {arm: rd for arm, rd in dirs.items() if build[arm] == chosen}
+        lines.append(f"{len(later)} shots on runs of {len(counts) - 1} other farm build(s) wait for the next passes: "
+                     + ", ".join(sorted({x['run'] for x in later})))
+    # The theatre reads its colour map once, when its Editor starts, so a pass films one colour: the colour with
+    # the most shots first (no colour counts as one), ties by name with none first, and the rest wait.
+    by_colour = {}
+    for x in todo:
+        by_colour[x.get("colour")] = by_colour.get(x.get("colour"), 0) + 1
+    pass_colour = None
+    if len(by_colour) > 1:
+        first = sorted(by_colour, key=lambda c: (-by_colour[c], c is not None, c or ""))[0]
+        pass_colour = first
+        waiting = [x for x in todo if x.get("colour") != first]
+        todo = [x for x in todo if x.get("colour") == first]
+        dirs = {arm: rd for arm, rd in dirs.items() if arm in {x["run"] for x in todo}}
+        lines.append(f"{len(waiting)} shots of other colours ("
+                     + ", ".join(sorted({x.get("colour") or "none" for x in waiting}))
+                     + ") wait for the next passes: a pass films one colour")
+    else:
+        pass_colour = next(iter(by_colour))
+    # story-windows.py takes one runs root for the whole story, so a pass films the runs under one root: the root
+    # with the most shots first, ties by its path, and the rest wait (round 67's film, 2026-11-07).
+    by_root = {}
+    for x in todo:
+        r = str(runs_root_for(s, x["run"]))
+        by_root[r] = by_root.get(r, 0) + 1
+    pass_root = sorted(by_root, key=lambda r: (-by_root[r], r))[0]
+    if len(by_root) > 1:
+        waiting = [x for x in todo if str(runs_root_for(s, x["run"])) != pass_root]
+        todo = [x for x in todo if str(runs_root_for(s, x["run"])) == pass_root]
+        dirs = {arm: rd for arm, rd in dirs.items() if arm in {x["run"] for x in todo}}
+        lines.append(f"{len(waiting)} shots on runs under {len(by_root) - 1} other runs root(s) wait for the next "
+                     "passes: " + ", ".join(sorted({x['run'] for x in waiting})) + "; a pass films the runs under one root")
     for n, shot in enumerate(todo, 1):
         h = handle_of(shot, s)
         where, arm = f"shot {shot['id']}", shot["run"]
         if arm not in dirs:
-            dirs[arm] = run_dir(runs_root, arm)
+            dirs[arm] = run_dir(runs_root_for(s, arm), arm)
             if dirs[arm] is None:
-                raise Refused(f"no run directory for {arm} under {runs_root}")
+                raise Refused(f"no run directory for {arm} under {runs_root_for(s, arm)}")
         rd = dirs[arm]
         end, a, b = last_second(rd), shot["run_from_s"], shot["run_to_s"]
         after = min(h, end - TAIL_S - b)
@@ -310,7 +765,10 @@ def cmd_plan(folder, k):
                               f"{start:g} s, after the stretch starts at {a:g} s")
                 continue
         else:
-            start = a - min(h, a)
+            start, why_not = lead_in(rd, shot, h)
+            if why_not:
+                errors.append(f"{where}: {why_not}")
+                continue
         before = a - start
         seconds = b + after - start
         fog = far_fog(shot, s)
@@ -325,7 +783,7 @@ def cmd_plan(folder, k):
         if side is not None:
             scene["side"] = side
         scenes.append(scene)
-        entries.append({"n": n, "shot": shot["id"], "key": shot_key(shot, s), "arm": arm, "camera": shot["camera"],
+        entries.append({"n": n, "shot": shot["id"], "key": shot_key(shot, s, colours), "arm": arm, "camera": shot["camera"],
                         "clip_start_s": round(start, 3), "seconds": round(seconds, 3),
                         "action_in_s": round(before, 3), "action_out_s": round(before + b - a, 3),
                         "handle_before_s": round(before, 3), "handle_after_s": round(after, 3),
@@ -334,6 +792,7 @@ def cmd_plan(folder, k):
         why = []
         if before < h - EPS:
             why.append(f"{before:.1f} s before" + (" (a birth's take opens 8 s before it)" if shot["camera"] == "Birth"
+                                                     else " (its body is born)" if start > a - min(h, a) + EPS
                                                      else " (the run starts)"))
         if after < h - EPS:
             why.append(f"{after:.1f} s after (the run ends at {end:g} s)")
@@ -344,7 +803,11 @@ def cmd_plan(folder, k):
                      + (f"; short: {', '.join(why)}" if why else ""))
     if errors:
         raise Refused(*errors)
-    farms = {arm: farm_of(rd) for arm, rd in dirs.items()}
+    wall, over = wall_lines(s, entries, pass_size)
+    if over:
+        raise Refused(*over)
+    lines.extend(wall)
+    farms = {arm: farm_for(s, arm, rd) for arm, rd in dirs.items()}
     named = sorted({f for f in farms.values() if f})
     if len(named) > 1:
         raise Refused("the pass's runs were recorded by different farm programs, which one pass cannot record:",
@@ -353,11 +816,14 @@ def cmd_plan(folder, k):
     if farm and not Path(farm).is_file():
         raise Refused(f"the farm program that recorded the runs is gone: {farm}. A window recorded on a later build "
                       "can refuse the run's config")
+    for arm, rd in sorted(dirs.items()):
+        if farms[arm]:
+            lines.append(source_check(arm, rd, farms[arm]))
     out = pass_dir(folder, k)
     story = {"title": folder.name, "run": scenes[0]["run"], "scenes": scenes}
     write_json(out / "story.json", story)
     r = subprocess.run([sys.executable, str(REPO / "scripts" / "story-windows.py"), str(out / "story.json"), "--out",
-                        str(out / "windows"), "--runs-root", str(runs_root), "--fps", str(s["fps"])],
+                        str(out / "windows"), "--runs-root", pass_root, "--fps", str(s["fps"])],
                        capture_output=True, text=True, encoding="utf-8", cwd=REPO)
     (out / "windows-plan.txt").write_text(r.stdout + r.stderr, encoding="utf-8")
     windows = read_json(out / "windows" / "windows.json")
@@ -381,17 +847,89 @@ def cmd_plan(folder, k):
     if errors:
         shutil.rmtree(out)
         raise Refused(*errors)
+    reused = reuse_windows(folder, k, windows)
+    if reused:
+        lines.append(f"windows: {reused} of {len(windows['windows'])} reused from this film's earlier passes, so the farm "
+                     "records only the rest")
     write_json(out / "plan.json", {"pass": k, "planned": now(), "shots_sha256": sha256_of(folder / "shots.json"),
-                                   "settings": s, "size": pass_size, "farm": farm, "scenes": entries})
+                                   "settings": s, "size": pass_size, "farm": farm, "scenes": entries,
+                                   "colour": colour_of({"colour": pass_colour}, colours) if pass_colour else None})
     footage = sum(e["seconds"] for e in entries)
-    head = [f"pass {k}: {len(entries)} shots to film on {len(dirs)} run(s), {len(runs) - len(todo)} filmed already, "
+    head = [f"pass {k}: {len(entries)} shots to film on {len(dirs)} run(s), {filmed_count} filmed already, "
             f"{footage:.0f} s of footage with handles",
-            f"farm: {farm}, the program that recorded the runs" if farm else
+            (f"farm: {farm}, named for the pass's runs in farm_by_run"
+             if any((s.get("farm_by_run") or {}).get(arm) for arm in dirs) else
+             f"farm: {farm}, the program that recorded the runs") if farm else
             "farm: the checkout's own build, since the runs' manifests name none"]
+    if s.get("theatre_root"):
+        head.append(f"theatre root: the render worker and theatre-safari.ps1 are taken from {theatre_root(s)}")
+    head.append(guard_text(s))
+    if s.get("overlap") is False:
+        head.append("overlap: off, the pass records every window first and films after, with no farm beside Unity")
+    if pass_colour:
+        head.append(f"colour: {pass_colour}, {colours[pass_colour]['shows']}")
     stale = stale_worker(s)
     if stale:
         head.append(f"warning: {stale}")
     return "FILM PLAN: READY", head + lines
+
+
+def guard_text(s):
+    mode = s.get("guard", "standard")
+    if mode is None:
+        return "heat guard: none, the settings' guard is null"
+    return (f"heat guard: {mode}, film-guard.ps1 for {s.get('guard_minutes', 600)} minutes beside the job"
+            + (" (CPU 90 C once or 85 C twice in a row, and D258's stops)" if mode == "card terms" else
+               " (CPU 95 C once or 90 C twice in a row, and D258's stops)" if mode == "film terms" else " (D258's stops)"))
+
+
+def window_verdict(d):
+    """A recorded window's last verdict row (story-windows.ps1's Read-Verdict), or None when it did not finish."""
+    identity = d / "identity.jsonl"
+    if not (d / "film.poses.bin").is_file() or not identity.is_file():
+        return None
+    last = None
+    for line in identity.read_text(encoding="utf-8", errors="replace").splitlines():
+        t = line.strip()
+        if t.endswith("}") and '"verdict"' in t:
+            last = t
+    try:
+        return json.loads(last) if last else None
+    except ValueError:
+        return None
+
+
+def reuse_windows(folder, k, windows):
+    """Links into pass k each window an earlier pass of this film recorded over the same run, seconds and frame
+    rate, so the farm records only what is new. A change to the render (the look, the snow, the glass, a camera)
+    changes nothing a window holds, and the owner asked on 2026-10-11 that a re-render never record again.
+    The files are hard links where the disk allows, copies otherwise; story-windows.ps1 then skips each one, as
+    it skips any window already recorded over its plan's span."""
+    recorded = []
+    for p in sorted((folder / "film").glob("pass-*/windows/*")):
+        if p.is_dir() and p.parent.parent.name != f"pass-{k}":
+            v = window_verdict(p)
+            if v is not None:
+                recorded.append((p, v))
+    reused = 0
+    for w in windows["windows"]:
+        target = pass_dir(folder, k) / "windows" / w["out"]
+        if target.exists():
+            continue
+        asked = Path(str(w["run"]).rstrip("/\\")).name
+        for p, v in recorded:
+            if (abs(float(v.get("from", -1)) - float(w["from"])) <= 1e-6 and abs(float(v.get("to", -1)) - float(w["to"])) <= 1e-6
+                    and abs(float(v.get("fps", -1)) - float(w["fps"])) <= 1e-6 and (not v.get("run") or v["run"] == asked)):
+                target.mkdir(parents=True)
+                for f in p.iterdir():
+                    if f.is_file():
+                        try:
+                            os.link(f, target / f.name)
+                        except OSError:
+                            shutil.copyfile(f, target / f.name)
+                reused += 1
+                break
+    return reused
 
 
 def narration_tool():
@@ -407,7 +945,7 @@ def cmd_machine(folder):
     verdict, found = narration_tool().cmd_machine()
     busy = verdict.endswith("BUSY")
     lines += found
-    lock = REPO / f"unity-w{s['worker']}" / "Temp" / "UnityLockfile"
+    lock = theatre_root(s) / f"unity-w{s['worker']}" / "Temp" / "UnityLockfile"
     if lock.exists():
         busy = True
         lines.append(f"the render worker's lock is held: {lock}")
@@ -423,10 +961,82 @@ def alive(pid):
     return str(pid) in r.stdout
 
 
+def stop_file(folder):
+    """The file film-guard.ps1 writes when it stops a pass for heat: the time and the reason inside."""
+    return folder / "film" / "STOP"
+
+
+def stop_text(folder):
+    """The stop file's text, or None while there is no stop file."""
+    f = stop_file(folder)
+    if not f.is_file():
+        return None
+    return f.read_text(encoding="utf-8", errors="replace").strip() or "(the stop file is empty)"
+
+
+def path_regex(path):
+    """A regex that accepts a path with either slash."""
+    return r"[\\/]".join(re.escape(x) for x in re.split(r"[\\/]+", str(path)) if x)
+
+
+def workers_regex(s):
+    """Matches the render worker's folder in a command line: the theatre root's path from the repository when it is
+    under it, the repository's own name for the repository, else the root's whole path."""
+    root = theatre_root(s)
+    try:
+        rel = root.relative_to(REPO)
+        base = path_regex(rel) if rel.parts else re.escape(REPO.name)
+    except ValueError:
+        base = path_regex(root)
+    return base + r"[\\/]" + re.escape(f"unity-w{s['worker']}")
+
+
+def guard_args(folder, k, plan, job_pid):
+    """The arguments of film-guard.ps1 for pass k, or None when the settings' guard is null."""
+    s = plan["settings"]
+    mode = s.get("guard", "standard")
+    if mode is None:
+        return None
+    out = pass_dir(folder, k)
+    args = ["-NoProfile", "-File", str(HERE / "film-guard.ps1"), "-Done", str(out / "done.json"),
+            "-Log", str(out / "guard.log"), "-StopFile", str(stop_file(folder)), "-KillTree", str(job_pid),
+            "-Workers", workers_regex(s), "-Minutes", str(s.get("guard_minutes", 600))]
+    if plan.get("farm"):
+        args += ["-FarmExe", path_regex(Path(plan["farm"]).parent)]
+    if mode == "card terms":
+        args.append("-CardTerms")
+    elif mode == "film terms":
+        args.append("-FilmTerms")
+    return args
+
+
+def start_hidden(program, args, stdout, stderr, said):
+    """Start-Process, hidden, its output to files; the new process's id. PowerShell's own output goes to a file too."""
+    quoted = ", ".join(("'\"" + a + "\"'") if " " in a else f"'{a}'" for a in args)
+    command = (f"$p = Start-Process -FilePath '{program}' -ArgumentList @({quoted}) -WorkingDirectory '{REPO}' "
+               f"-RedirectStandardOutput '{stdout}' -RedirectStandardError '{stderr}' -WindowStyle Hidden -PassThru; $p.Id")
+    with open(said, "w", encoding="utf-8") as f:
+        r = subprocess.run(["pwsh", "-NoProfile", "-Command", command], stdin=subprocess.DEVNULL, stdout=f,
+                           stderr=subprocess.STDOUT)
+    text = said.read_text(encoding="utf-8", errors="replace").strip()
+    pid = text.splitlines()[-1].strip() if text else ""
+    if r.returncode != 0 or not pid.isdigit():
+        raise Refused("PowerShell did not start the process:", text)
+    return int(pid)
+
+
 def cmd_start(folder, k):
     out = pass_dir(folder, k)
+    stopped = stop_text(folder)
+    if stopped is not None:
+        raise Refused(f"the heat guard stopped a pass: {stop_file(folder)} says: {stopped}",
+                      "wait until scripts/temp-check.ps1 reads the CPU under 75 °C, tell the machine's coordinator, "
+                      "and delete the file")
     if read_json(out / "plan.json") is None:
         raise Refused(f"pass {k} has no plan; run plan first")
+    fault = commit_fault(read_json(out / "plan.json")["settings"])
+    if fault:
+        raise Refused(fault)
     if (out / "started.json").is_file():
         raise Refused(f"pass {k} was started already, at {read_json(out / 'started.json')['started']}")
     if (out / "run.log").is_file():
@@ -453,13 +1063,64 @@ def cmd_start(folder, k):
     pid = text.splitlines()[-1].strip() if text else ""
     if r.returncode != 0 or not pid.isdigit():
         raise Refused("PowerShell did not start the job:", text)
-    write_json(out / "started.json", {"pass": k, "pid": int(pid), "started": now()})
-    return "FILM START: STARTED", [f"pass {k} runs detached as process {pid}; its log is film/pass-{k}/run.log"]
+    plan = read_json(out / "plan.json")
+    gargs = guard_args(folder, k, plan, int(pid))
+    gpid = None
+    if gargs is not None:
+        try:
+            gpid = start_hidden("pwsh", gargs, out / "guard.out.log", out / "guard.err.log", out / "guard-start.log")
+        except Refused as e:
+            subprocess.run(["taskkill", "/PID", pid, "/T", "/F"], capture_output=True)    # no job runs unguarded
+            for name in ("run.log", "run.err.log"):
+                try:
+                    (out / name).unlink()
+                except OSError:
+                    pass
+            raise Refused("the heat guard did not start, so the job (process " + pid + ") was stopped:", *e.lines)
+    write_json(out / "started.json", {"pass": k, "pid": int(pid), "guard": gpid, "started": now()})
+    return "FILM START: STARTED", [f"pass {k} runs detached as process {pid}; its log is film/pass-{k}/run.log",
+                                   f"heat guard: process {gpid}, its log film/pass-{k}/guard.log" if gpid else
+                                   "heat guard: none, the settings' guard is null"]
 
 
-def launch(args, sink=None):
-    """One child of the pass's job, its output to the job's own log or to sink. Tests stand in for it."""
-    return subprocess.run(args, cwd=REPO, stdout=sink, stderr=subprocess.STDOUT if sink else None).returncode
+def cores_mask(text):
+    """The affinity mask of a list of logical processors such as "16-31" or "0-3,8", or None for none given."""
+    if not text:
+        return None
+    mask = 0
+    for part in str(text).split(","):
+        low, _, high = part.strip().partition("-")
+        for n in range(int(low), int(high or low) + 1):
+            mask |= 1 << n
+    return mask
+
+
+def pin(pid, cores):
+    """Hold a process to the given logical processors at below-normal priority; its children inherit both. The
+    machine's coordinator moved the farm's window recordings to the efficiency cores on 2026-10-10, after the
+    farm and the theatre together took the performance cores to 92 °C."""
+    mask = cores_mask(cores)
+    if mask is None or os.name != "nt":
+        return
+    import ctypes
+    kernel = ctypes.windll.kernel32
+    handle = kernel.OpenProcess(0x0200 | 0x0400, False, pid)   # PROCESS_SET_INFORMATION | QUERY_INFORMATION
+    if not handle:
+        raise Refused(f"could not open process {pid} to pin it to {cores}")
+    try:
+        if not kernel.SetProcessAffinityMask(handle, ctypes.c_size_t(mask)):
+            raise Refused(f"could not pin process {pid} to {cores}")
+        kernel.SetPriorityClass(handle, 0x4000)                  # BELOW_NORMAL_PRIORITY_CLASS
+    finally:
+        kernel.CloseHandle(handle)
+
+
+def launch(args, sink=None, cores=None):
+    """One child of the pass's job, its output to the job's own log or to sink, pinned to cores when given (before
+    it has started anything of its own, so its children inherit the pin). Tests stand in for it."""
+    proc = subprocess.Popen(args, cwd=REPO, stdout=sink, stderr=subprocess.STDOUT if sink else None)
+    pin(proc.pid, cores)
+    return proc.wait()
 
 
 def cmd_run(folder, k):
@@ -472,7 +1133,23 @@ def cmd_run(folder, k):
     out = pass_dir(folder, k)
     plan = read_json(out / "plan.json")
     s = plan["settings"]
-    done = {"pass": k, "started": now(), "record_exit": 0, "recorded": {}, "render_exit": {}, "safari": {}}
+    # The theatre's underwater look is a switch read from the environment, off by default
+    # (unity/Assets/Theatre/CLAUDE.md), so the job sets it for every theatre it starts.
+    os.environ["EVOSIM_THEATRE_LOOK"] = str(s["theatre_look"])
+    for name, env in SNOW_ENV.items():
+        os.environ.pop(env, None)      # never one left from the shell: the settings say the whole snow
+        if (s.get("snow") or {}).get(name) is not None:
+            os.environ[env] = str(s["snow"][name])
+    for env in SKIN_ENV.values():
+        os.environ.pop(env, None)
+    os.environ.update(skin_env(s))
+    os.environ.pop(TEAMS_ENV, None)    # never a map left from the shell: the pass names its colour or none
+    if plan.get("colour"):
+        os.environ[TEAMS_ENV] = str(repo_path(plan["colour"]["file"]))
+    done = {"pass": k, "started": now(), "look": s["theatre_look"], "stream": bool(s.get("theatre_stream")),
+            "snow": s.get("snow"), "colour": plan.get("colour"),
+            "overlap": s.get("overlap") is not False, "stopped": None, "record_exit": 0, "recorded": {},
+            "render_exit": {}, "safari": {}}
     scenes = {}
     for e in plan["scenes"]:
         scenes.setdefault(e["arm"], []).append(e["n"])
@@ -483,49 +1160,70 @@ def cmd_run(folder, k):
         with lock:
             print(line, flush=True)
 
+    def note_stop():
+        """True while the stop file exists, keeping the first text seen in done.json."""
+        text = stop_text(folder)
+        if text is not None and done["stopped"] is None:
+            done["stopped"] = text
+            say(f"{now()} the stop file {stop_file(folder)} exists: {text}")
+        return text is not None
+
     def films(todo):
         while True:
             arm = todo.get()
             if arm is None:
                 return
-            done["safari"][arm] = str(safari_dir(folder, k, arm))
-            args = ["pwsh", "-NoProfile", "-File", str(REPO / "scripts" / "theatre-safari.ps1"), arm,
+            if note_stop():
+                continue       # the heat guard's stop file: nothing more is filmed
+            done["safari"][arm] = str(safari_dir(folder, k, arm, s))
+            args = ["pwsh", "-NoProfile", "-File", str(theatre_root(s) / "scripts" / "theatre-safari.ps1"), arm,
                     "-Story", str(out / "story.json"), "-FromWindows", str(out / "windows"), "-StoryRun", arm,
-                    "-Worker", str(s["worker"]), "-RunsRoot", str(repo_path(s["runs_root"])),
+                    "-Worker", str(s["worker"]), "-RunsRoot", str(runs_root_for(s, arm)),
                     "-Folder", f"{folder.name}-film{k}", "-DeleteFrames", "-WallMinutes", str(s["wall_minutes"]),
                     "-Fps", str(s["fps"]), "-Size", plan.get("size", s["size"])]
+            if s.get("theatre_stream"):
+                args.append("-Stream")     # the takes straight to the card's encoder (theatre-safari.ps1 -Stream)
             say(f"{now()} {arm}: filming, its log film/pass-{k}/film-{arm}.log: {' '.join(args)}")
             with open(out / f"film-{arm}.log", "w", encoding="utf-8") as sink:
-                done["render_exit"][arm] = launch(args, sink)
+                done["render_exit"][arm] = launch(args, sink, cores=s.get("theatre_cores"))
             # The theatre's own log, kept beside the pass: the next run's filming writes over it, and collect
             # reads each far take's fog from it.
-            log = REPO / "scratch" / "logs" / f"theatre-safari-{arm}.log"
+            log = theatre_root(s) / "scratch" / "logs" / f"theatre-safari-{arm}.log"
             if log.is_file():
                 shutil.copyfile(log, out / f"theatre-{arm}.log")
             say(f"{now()} {arm}: filmed, exit {done['render_exit'][arm]}")
 
     todo = queue.Queue()
+    held = []      # overlap false: the runs recorded with exit 0, filmed once every run is recorded
     theatre = threading.Thread(target=films, args=(todo,))
     theatre.start()
     try:
         for arm in order:
+            if note_stop():
+                break          # nothing more is recorded
             args = (["pwsh", "-NoProfile", "-File", str(REPO / "scripts" / "story-windows.ps1"), str(out / "windows"),
                      "-Threads", str(s["farm_threads"]), "-Scenes", ",".join(str(n) for n in scenes[arm])]
                     + (["-Exe", plan["farm"]] if plan.get("farm") else []))
             say(f"{now()} {arm}: recording {len(scenes[arm])} window(s): {' '.join(args)}")
-            code = launch(args)
+            code = launch(args, cores=s.get("farm_cores"))
             done["recorded"][arm] = code
             say(f"{now()} {arm}: recorded, exit {code}")
             if code == 0:
-                todo.put(arm)
+                if done["overlap"]:
+                    todo.put(arm)
+                else:
+                    held.append(arm)
             elif done["record_exit"] == 0:
                 done["record_exit"] = code
     finally:
+        for arm in held:
+            todo.put(arm)
         todo.put(None)
         theatre.join()
     done["finished"] = now()
+    note_stop()
     write_json(out / "done.json", done)
-    ok = done["record_exit"] == 0 and all(v == 0 for v in done["render_exit"].values())
+    ok = done["stopped"] is None and done["record_exit"] == 0 and all(v == 0 for v in done["render_exit"].values())
     return ("FILM RUN: DONE" if ok else "FILM RUN: FAILED"), [json.dumps(done)]
 
 
@@ -620,10 +1318,11 @@ def sheet(path, out, frame_numbers):
 
 def reference(folder, s):
     """The reference film's mean luma and its sheet, made once a film."""
-    ref = read_json(folder / "film" / "reference.json")
-    if ref is not None and "tone_p10" in ref:
-        return ref
     path = repo_path(s["reference"])
+    ref = read_json(folder / "film" / "reference.json")
+    # The cache holds for the file the settings name now; a different file is measured again.
+    if ref is not None and "tone_p10" in ref and same_path(ref.get("file", ""), str(path)):
+        return ref
     if not path.is_file():
         raise Refused(f"the reference film {path} is not there; the settings name the last film the owner accepted")
     (folder / "film").mkdir(parents=True, exist_ok=True)
@@ -650,6 +1349,7 @@ def cmd_collect(folder, k):
     if plan is None or done is None:
         raise Refused(f"pass {k} has not been planned and run to its end")
     s, shots = plan["settings"], read_json(folder / "shots.json")
+    colours = colours_of(folder, [x for x in shots["shots"] if isinstance(x, dict)])
     ref = reference(folder, s)
     clips_dir = folder / "clips"
     clips_dir.mkdir(exist_ok=True)
@@ -658,11 +1358,20 @@ def cmd_collect(folder, k):
     lines, new, errors = [], [], []
     logs = {arm: (out / f"theatre-{arm}.log").read_text(encoding="utf-8", errors="replace")
             for arm in done["safari"] if (out / f"theatre-{arm}.log").is_file()}
+    # The look's launcher warns in PowerShell's stream, which the pass keeps in film-<arm>.log.
+    launcher = {arm: (out / f"film-{arm}.log").read_text(encoding="utf-8", errors="replace")
+                for arm in done["safari"] if (out / f"film-{arm}.log").is_file()}
     for e in plan["scenes"]:
         where = f"shot {e['shot']}"
         row = next((r for r in tables.get(e["arm"], []) if r.get("slug", "").startswith(f"story-{e['n']:02d}-")), None)
         if row is None or row.get("outcome") != "played":
             errors.append(f"{where}: the director did not film it ({row.get('outcome') if row else 'no row in scenes.tsv'})")
+            continue
+        # The director files a scene it cannot film as asked under another station, with only a warning in its log:
+        # round 67's 6.4a, a Birth whose body it could not place in a clade on a resumed run, came back an Arrival.
+        if row.get("station") and row["station"] != e["camera"]:
+            errors.append(f"{where}: the theatre filmed it as {row['station']}, not the plan's {e['camera']}; its log "
+                          f"film/pass-{k}/theatre-{e['arm']}.log says why")
             continue
         source = Path(done["safari"][e["arm"]]) / (row["slug"] + ".mp4")
         if not source.is_file():
@@ -702,6 +1411,20 @@ def cmd_collect(folder, k):
             continue
         focus, side = e.get("focus"), e.get("side")
         log = logs.get(e["arm"], "")
+        if s.get("snow") and not all(re.search(pattern, log) for pattern in snow_patterns(s["snow"])):
+            errors.append(f"{where}: the theatre's log does not show the snow it was asked for ({snow_text(s['snow'])})")
+            continue
+        look_fault = look_log_fault(log + "\n" + launcher.get(e["arm"], ""))
+        if look_fault:
+            errors.append(f"{where}: {look_fault}")
+            continue
+        colour_fault = colour_log_fault(plan.get("colour"), log)
+        if colour_fault:
+            errors.append(f"{where}: {colour_fault}")
+            continue
+        if skin_of(s) and not re.search(skin_pattern(s), log):
+            errors.append(f"{where}: the theatre's log does not show the skin it was asked for ({skin_of(s)})")
+            continue
         if focus is not None and not re.search("take [0-9]+ of " + re.escape(row["slug"]) + ": focus "
                                                + re.escape(focus["mode"]) + ".*, the scene's own", log):
             errors.append(f"{where}: the theatre's log does not say its takes were focused {focus['mode']}, the scene's own")
@@ -717,13 +1440,26 @@ def cmd_collect(folder, k):
                   "handle_after_s": e["handle_after_s"], "provenance": row.get("provenance", ""),
                   "luma": round(sum(luma) / len(luma), 2) if luma else None, "jump_ratio": ratio,
                   "tone": tone, "edges": edges, "rgb": rgb, "fog": fog, "focus": focus, "side": side,
-                  "sheet": f"clips/{e['shot']}-sheet.png", "sheet_times_s": [round(f / fps, 2) for f in sorted(set(frames))]}
+                  "look": plan["settings"].get("theatre_look"), "stream": bool(plan["settings"].get("theatre_stream")),
+                  "snow": plan["settings"].get("snow"), "skin": skin_of(plan["settings"]) or None,
+                  "colour": (plan.get("colour") or {}).get("name"),
+                  "sheet":f"clips/{e['shot']}-sheet.png", "sheet_times_s": [round(f / fps, 2) for f in sorted(set(frames))]}
         new.append(record)
-        notes = []
+        notes, flags = [], []
         if record["provenance"] != "FAITHFUL":
             notes.append(f"provenance {record['provenance'] or 'none'}")
+            flags.append("provenance")
         if ratio is not None and ratio >= JUMP_FLAG:
             notes.append(f"a frame-to-frame change {ratio} times the clip's median")
+            flags.append("jump")
+        if record["luma"] is not None and record["luma"] < ref["luma"]:
+            flags.append("dark")
+            notes.append(f"dark: its luma {record['luma']:g} is under the reference's, {ref['luma']:g}")
+        if tone is not None and tone < ref["tone_p10"]:
+            flags.append("flat")
+        if edges is not None and edges < ref["edges_p10"]:
+            flags.append("soft")
+        record["flags"] = flags
         if tone is not None and tone < ref["tone_p10"]:
             notes.append(f"flat: its tone spread {tone:g} is under the reference's tenth percentile, {ref['tone_p10']:g}")
         if edges is not None and edges < ref["edges_p10"]:
@@ -733,7 +1469,7 @@ def cmd_collect(folder, k):
                      + (f", fog {fog_text(fog)}" if fog is not None else "")
                      + f", largest change {ratio} times the median" + (f"; look: {', '.join(notes)}" if notes else ""))
     known = {x["id"] for x in shots["shots"] if "run" in x}
-    keys = {x["id"]: shot_key(x, s) for x in shots["shots"] if "run" in x}
+    keys = {x["id"]: shot_key(x, s, colours) for x in shots["shots"] if "run" in x}
     old = (read_json(folder / "clips.json") or {}).get("clips", [])
     fresh = {c["shot"] for c in new}
     kept = [c for c in old if c["shot"] in known and c["shot"] not in fresh]
@@ -747,12 +1483,113 @@ def cmd_collect(folder, k):
     return ("CLIPS: FAIL" if errors else "CLIPS: PASS"), head + lines + [f"ERROR {x}" for x in errors]
 
 
+# The bar a take is judged against, word for word as the machine's coordinator wrote it (2026-11-07).
+BAR = [
+    "0. Amazing, judged by eye at full size: light that draws the eye, colour, depth, a subject worth looking at, a composition that holds as a nature-film still. \"As good as the last film\" fails.",
+    "1. Light: luminous. As a floor, mean luma no lower than rounds-50-57 v3's, 60 to 70. The surface glows above, never a dark ceiling. Shadow sides lit by the water. Shafts kept.",
+    "2. Water: clear teal, not navy-black. Haze only far off.",
+    "3. Subject: every take has one. For a portrait or event it fills at least a fifth of the width, at the centre or on a third, never cut by the frame. The event happens in frame.",
+    "4. Camera: toward or across the light. Never down into empty dark water or level over an empty floor. A descent ends on life.",
+    "5. Test takes first: every shot at 960x540 before any 4K pass. Slides of each take, its sheet and a full-size frame, judged against this bar by eye first, directed and refilmed until it passes. The owner sees only passing takes, with their slides.",
+]
+SLIDE_CSS = """:root { --bg: #0e1418; --panel: #172128; --ink: #e8eef2; --dim: #9fb0bb; --flag: #ef7b6b; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.5 system-ui, Segoe UI, sans-serif; }
+.slide { display: none; min-height: 100vh; padding: 28px 40px 70px; }
+.slide.on { display: block; }
+h1 { font-size: 30px; margin: 0 0 6px; } h2 { font-size: 24px; margin: 0 0 4px; }
+.sub { color: var(--dim); margin: 0 0 16px; }
+.row { display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; }
+.col { flex: 1 1 520px; min-width: 0; }
+img { width: 100%; height: auto; border-radius: 4px; display: block; }
+.cap { color: var(--dim); font-size: 14px; margin: 4px 0 14px; }
+.panel { background: var(--panel); border-radius: 6px; padding: 14px 18px; margin-bottom: 14px; }
+.flag { display: inline-block; padding: 2px 10px; border-radius: 4px; font-weight: 600; font-size: 14px; margin-right: 6px; background: var(--flag); color: #10161a; }
+table { border-collapse: collapse; width: 100%; } td, th { padding: 6px 10px; border-bottom: 1px solid #2a3740; text-align: left; }
+nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 10px 40px; background: #0b1013; color: var(--dim); font-size: 14px; }
+nav button { background: #22313a; color: var(--ink); border: 0; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 14px; }"""
+SLIDE_JS = """var s = document.querySelectorAll('.slide'), i = 0, c = document.getElementById('count');
+function show(n) { i = Math.max(0, Math.min(s.length - 1, n)); s.forEach(function (e, j) { e.classList.toggle('on', j === i); });
+  c.textContent = (i + 1) + ' / ' + s.length; window.scrollTo(0, 0); }
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') show(i + 1);
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') show(i - 1);
+  else if (e.key === 'Home') show(0); else if (e.key === 'End') show(s.length - 1); });
+document.getElementById('prev').onclick = function () { show(i - 1); };
+document.getElementById('next').onclick = function () { show(i + 1); };
+show(0);"""
+
+
+def esc(x):
+    return str(x).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+
+def cmd_slides(folder, k):
+    """A deck of pass k's collected takes: a first slide, one slide a take in the shot list's order, and the bar last.
+    Its images are copies, so the deck survives a later collect."""
+    out = pass_dir(folder, k)
+    plan = read_json(out / "plan.json")
+    if plan is None or read_json(out / "done.json") is None:
+        raise Refused(f"pass {k} has not been planned and run to its end")
+    data, shots = read_json(folder / "clips.json"), read_json(folder / "shots.json")
+    mine = {c["shot"]: c for c in (data or {}).get("clips", []) if c.get("pass") == k}
+    if not mine:
+        raise Refused(f"pass {k} is not collected: clips.json holds no clip of it; collect it first")
+    ref = data.get("reference") or {}
+    deck, img = out / "slides", out / "slides" / "img"
+    order = [x for x in shots["shots"] if isinstance(x, dict) and x.get("id") in mine]
+    for x in order:
+        c = mine[x["id"]]
+        for what in ("file", "sheet"):
+            if not (folder / c[what]).is_file():
+                raise Refused(f"shot {x['id']}: {c[what]} is not there; collect pass {k} again")
+    if deck.exists():
+        shutil.rmtree(deck)
+    img.mkdir(parents=True)
+    slides = []
+    for x in order:
+        sid, c = x["id"], mine[x["id"]]
+        shutil.copyfile(folder / c["sheet"], img / f"{sid}-sheet.png")
+        ffmpeg(["-ss", f"{(c['action_in_s'] + c['action_out_s']) / 2:.3f}", "-i", str(folder / c["file"]), "-frames:v", "1",
+                str(img / f"{sid}-frame.png")])
+        rows = [("luma", f"{c['luma']} (reference {ref.get('luma')})"), ("tone", f"{c['tone']} (reference {ref.get('tone')})"),
+                ("edges", f"{c['edges']} (reference {ref.get('edges')})"),
+                ("largest change", f"{c['jump_ratio']} times the median"),
+                ("provenance", c.get("provenance") or "none"), ("size", f"{c['width']}x{c['height']}")]
+        table = "".join(f"<tr><th>{esc(a)}</th><td>{esc(b)}</td></tr>" for a, b in rows)
+        tags = "".join(f'<span class="flag">{esc(f)}</span>' for f in (c.get("flags") or [])) or "no flags"
+        slides.append(
+            f'<section class="slide">\n<h2>{esc(sid)} &middot; {esc(x.get("camera", ""))}</h2>\n'
+            f'<p class="sub">run {esc(c["run"])}, from {c["clip_start_s"]:g} s of the run; the action lies at '
+            f'{c["action_in_s"]:g} to {c["action_out_s"]:g} s of the clip</p>\n'
+            f'<div class="panel"><b>The viewer should see:</b> {esc(x.get("see", ""))}</div>\n'
+            f'<div class="row"><div class="col"><img src="img/{esc(sid)}-sheet.png" alt="the sheet of {esc(sid)}">'
+            f'<p class="cap">The sheet: eight frames, the first, the action in five steps, the handle after, the last.</p></div>\n'
+            f'<div class="col"><img src="img/{esc(sid)}-frame.png" alt="a full-size frame of {esc(sid)}">'
+            f'<p class="cap">A full-size frame, the action\'s middle, at {c["width"]}x{c["height"]}.</p>\n'
+            f'<table>{table}</table><p>{tags}</p></div></div>\n</section>')
+    first = (f'<section class="slide">\n<h1>{esc(folder.name)}</h1>\n<p class="sub">Pass {k}, {esc(plan.get("size", ""))}, '
+             f'{len(order)} takes, {esc(now()[:10])}</p>\n<div class="panel">Each slide holds a take: what the viewer should '
+             "see, the take's sheet, a full-size frame and its numbers. The last slide is the bar. Arrow keys move.</div>\n</section>")
+    last = ('<section class="slide">\n<h2>The bar</h2>\n<div class="panel"><ul>'
+            + "".join(f"<li>{esc(b)}</li>" for b in BAR) + "</ul></div>\n</section>")
+    html = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+            f"<title>{esc(folder.name)} pass {k}</title>\n<style>\n{SLIDE_CSS}\n</style>\n</head>\n<body>\n"
+            + first + "\n" + "\n".join(slides) + "\n" + last
+            + '\n<nav><button id="prev">Previous</button><span id="count"></span><button id="next">Next</button></nav>\n'
+            f"<script>\n{SLIDE_JS}\n</script>\n</body>\n</html>\n")
+    (deck / "index.html").write_text(html, encoding="utf-8")
+    return "SLIDES: READY", [f"pass {k}: {len(order)} takes, {len(order) + 2} slides", f"deck: {deck / 'index.html'}"]
+
+
 COMMANDS = {"plan": (cmd_plan, "FILM PLAN: REFUSED", ["folder", "n"]),
             "machine": (cmd_machine, "MACHINE: BUSY", ["folder"]),
             "start": (cmd_start, "FILM START: REFUSED", ["folder", "n"]),
             "run": (cmd_run, "FILM RUN: FAILED", ["folder", "n"]),
             "wait": (cmd_wait, "FILMING: FAILED", ["folder", "n", "n"]),
-            "collect": (cmd_collect, "CLIPS: REFUSED", ["folder", "n"])}
+            "collect": (cmd_collect, "CLIPS: REFUSED", ["folder", "n"]),
+            "slides": (cmd_slides, "SLIDES: REFUSED", ["folder", "n"])}
 PASSING = ("READY", "NOTHING TO FILM", "FREE", "STARTED", "DONE", "PASS")
 
 

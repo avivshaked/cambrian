@@ -106,6 +106,30 @@ def rel(path):
         return Path(path).resolve().as_posix()
 
 
+def seat_problems(s):
+    """What is wrong with the settings that say where the stills are drawn and how a render waits its turn."""
+    problems = []
+    tr = s.get("theatre_root")
+    if tr is not None and not (isinstance(tr, str) and tr and (repo_path(tr) / "scripts" / "theatre-safari.ps1").is_file()):
+        problems.append("theatre_root is null (this checkout) or the path of an existing checkout that holds "
+                        "scripts/theatre-safari.ps1, absolute or from the checkout's root")
+    tc = s.get("theatre_commit")
+    if tc is not None and not (isinstance(tc, str) and tc.strip() and not tc.startswith("-")):
+        problems.append("theatre_commit is null or a commit or branch name of the theatre_root checkout")
+    if not isinstance(s.get("render_lock", False), bool):
+        problems.append("render_lock is true or false: true holds the film's graphics/work/render.lock for each "
+                        "Blender run, one render at a time")
+    for key, low, high, default in (("render_lock_minutes", 1, 720, 30), ("render_heat_minutes", 1, 720, 20)):
+        v = s.get(key, default)
+        if not isinstance(v, int) or isinstance(v, bool) or not low <= v <= high:
+            problems.append(f"{key} is a whole number of minutes, {low} to {high}")
+    heat = s.get("render_heat_c")
+    if heat is not None and (not number(heat) or isinstance(heat, bool) or not 30 <= heat <= 110):
+        problems.append("render_heat_c is null or a CPU temperature in degrees C, 30 to 110, at or above which a "
+                        "render waits")
+    return problems
+
+
 def settings_of(folder, lines):
     """The film's graphics settings, first copied from the skill's (with the style) if the film has none."""
     if not (folder / SETTINGS).is_file():
@@ -141,6 +165,9 @@ def settings_of(folder, lines):
     for key in ("blender", "blender_version", "unity", "runs_root", "style"):
         if not isinstance(s.get(key), str) or not s[key]:
             problems.append(f"{key} is text: a path, absolute or from the checkout's root, or a version")
+    if s.get("render_cores") is not None and not re.fullmatch(r"\d+(-\d+)?(,\d+(-\d+)?)*", str(s["render_cores"])):
+        problems.append("render_cores is a list of logical processors such as \"24-31\", or null for none")
+    problems += seat_problems(s)
     if not problems and not (folder / s["style"]).is_file():
         problems.append(f"style names {s['style']}, which is not in the film's folder or the skill's")
     if problems:
@@ -308,6 +335,11 @@ def cmd_plan(folder):
     head = (f"{len(plan['graphics'])} graphics ({todo['graphics']} to render), {len(plan['stills'])} stills "
             f"({todo['stills']} to draw), {len(plan['words'])} word cards ({todo['words']} to draw)")
     verdict = "GRAPHICS PLAN: READY" if any(todo.values()) else "GRAPHICS PLAN: NOTHING TO DRAW"
+    if not any(todo.values()) and (folder / "graphics.json").is_file():
+        # Every record holds for this shot list, so graphics.json is stamped with it: only a render stamped it
+        # before, and a redraft that changed no graphic left the edit refusing it (round 57's draft 7, 2026-10-11).
+        save_records(folder, records)
+        lines.append("graphics.json: every record holds for this shot list, and it is stamped with it")
     return verdict, [head, "plan: " + rel(folder / "graphics" / "plan.json")] + lines
 
 
@@ -517,18 +549,210 @@ def blender_ready(s):
     return m.group(1), None
 
 
-def run_blender(s, folder, item, work):
+def cores_mask(text):
+    """The affinity mask of a list of logical processors such as "24-31" or "0-3,8", or None for none given."""
+    if not text:
+        return None
+    mask = 0
+    for part in str(text).split(","):
+        low, _, high = part.strip().partition("-")
+        for n in range(int(low), int(high or low) + 1):
+            mask |= 1 << n
+    return mask
+
+
+def pin(pid, cores):
+    """Hold a Blender render to the settings' render_cores at below-normal priority, as the machine's coordinator
+    asks for a job beside a filming pass (2026-10-10). Without render_cores Windows places it, at normal priority."""
+    mask = cores_mask(cores)
+    if mask is None or os.name != "nt":
+        return
+    import ctypes
+    kernel = ctypes.windll.kernel32
+    handle = kernel.OpenProcess(0x0200 | 0x0400, False, pid)   # PROCESS_SET_INFORMATION | QUERY_INFORMATION
+    if not handle:
+        raise Refused(f"could not open Blender's process {pid} to pin it to {cores}")
+    try:
+        if not kernel.SetProcessAffinityMask(handle, ctypes.c_size_t(mask)):
+            raise Refused(f"could not pin Blender's process {pid} to {cores}")
+        kernel.SetPriorityClass(handle, 0x4000)                  # BELOW_NORMAL_PRIORITY_CLASS
+    finally:
+        kernel.CloseHandle(handle)
+
+
+RENDER_LOCK = "render.lock"
+LOCK_POLL_S = 15                   # how often a render waiting on the lock looks again
+HEAT_POLL_S = 30                   # how often a render waiting on the heat reads the CPU again
+HEAT_READER = """$ast = [System.Management.Automation.Language.Parser]::ParseFile('__GUARD__', [ref]$null, [ref]$null)
+$fn = $ast.Find({ param($n) $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'CpuTemp' }, $true)
+if ($null -eq $fn) { 'none'; exit 0 }
+Add-Type -AssemblyName System.IO.MemoryMappedFiles -ErrorAction SilentlyContinue
+. ([scriptblock]::Create($fn.Extent.Text))
+CpuTemp"""
+
+
+def pause(seconds):
+    time.sleep(seconds)
+
+
+def clock():
+    return time.monotonic()
+
+
+def pid_alive(pid):
+    """Whether a process with this id runs."""
+    if os.name == "nt":
+        import ctypes
+        kernel = ctypes.windll.kernel32
+        handle = kernel.OpenProcess(0x1000, False, int(pid))      # PROCESS_QUERY_LIMITED_INFORMATION
+        if not handle:
+            return ctypes.GetLastError() == 5                      # access denied: it runs, and is not ours
+        try:
+            code = ctypes.c_ulong()
+            return bool(kernel.GetExitCodeProcess(handle, ctypes.byref(code))) and code.value == 259   # STILL_ACTIVE
+        finally:
+            kernel.CloseHandle(handle)
+    try:
+        os.kill(int(pid), 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def read_cpu_temp():
+    """The CPU's temperature in degrees C as the machine's heat watch reads it, or None with why it could not be
+    read. It is film-guard.ps1's own CpuTemp (MSI Afterburner's shared memory, the hottest CPU sensor), lifted out of
+    that script by its syntax tree so that there is one reader and not two; tests replace this function."""
+    guard = HERE / "film-guard.ps1"
+    try:
+        done = subprocess.run(["pwsh", "-NoProfile", "-Command", HEAT_READER.replace("__GUARD__", str(guard).replace("'", "''"))],
+                              capture_output=True,
+                              text=True, encoding="utf-8", errors="replace", timeout=60)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return None, f"pwsh could not read it: {type(exc).__name__}: {exc}"
+    said = done.stdout.strip().splitlines()
+    if done.returncode != 0 or not said:
+        return None, "pwsh failed: " + (done.stderr.strip().splitlines() or ["no message"])[-1]
+    if said[-1] == "none":
+        return None, f"{rel(guard)} defines no CpuTemp"
+    try:
+        value = float(said[-1])
+    except ValueError:
+        return None, f"CpuTemp said {said[-1]!r}"
+    if value < 0:
+        return None, "CpuTemp read -1: MSI Afterburner's shared memory is not there or holds no CPU temperature"
+    return value, None
+
+
+def lock_holder(path):
+    """The process id and time a lock file holds, or (None, None) when it is unreadable."""
+    try:
+        said = json.loads(path.read_text(encoding="utf-8"))
+        return int(said["pid"]), said.get("time")
+    except (OSError, ValueError, KeyError, TypeError):
+        return None, None
+
+
+def take_lock(path, minutes, say):
+    """Create the lock file exclusively, holding this process's id and the time. A lock whose process no longer runs
+    is taken over. Otherwise wait, looking every LOCK_POLL_S, for at most the minutes."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    deadline = clock() + minutes * 60
+    waited = False
+    while True:
+        try:
+            fd = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            pid, since = lock_holder(path)
+            if pid is None and time.time() - path.stat().st_mtime > 60:
+                say(f"lock: {rel(path)} is unreadable and over a minute old; taking it over")
+                path.unlink(missing_ok=True)
+                continue
+            if pid is not None and not pid_alive(pid):
+                say(f"lock: {rel(path)} was held by process {pid} (since {since}), which no longer runs; taking it over")
+                path.unlink(missing_ok=True)
+                continue
+            if clock() >= deadline:
+                raise Refused(f"another render held the lock for {minutes} minutes: {rel(path)} is held by process "
+                              f"{pid} since {since}")
+            if not waited:
+                say(f"lock: {rel(path)} is held by process {pid} since {since}; waiting, looking every "
+                    f"{LOCK_POLL_S} s for up to {minutes} minutes")
+                waited = True
+            pause(LOCK_POLL_S)
+            continue
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump({"pid": os.getpid(), "time": now()}, f)
+        say(f"lock: took {rel(path)}" + (" after waiting" if waited else ""))
+        return
+
+
+def drop_lock(path):
+    """Remove the lock if this process still holds it."""
+    pid, _ = lock_holder(path)
+    if pid == os.getpid():
+        path.unlink(missing_ok=True)
+
+
+def wait_for_heat(limit, minutes, say):
+    """Read the CPU's temperature until it is under the limit, for at most the minutes, printing each reading. A
+    reading that fails refuses the render: it never renders unread."""
+    deadline = clock() + minutes * 60
+    while True:
+        value, why = read_cpu_temp()
+        if value is None:
+            raise Refused(f"the CPU's temperature could not be read ({why}); render_heat_c is {limit}, so the render "
+                          "does not start unread")
+        if value < limit:
+            say(f"heat: CPU {value:g} C, under the limit of {limit:g} C")
+            return
+        if clock() >= deadline:
+            raise Refused(f"the CPU still read {value:g} C, at or above render_heat_c {limit:g} C, after waiting "
+                          f"{minutes} minutes")
+        say(f"heat: CPU {value:g} C, at or above the limit of {limit:g} C; waiting, reading every {HEAT_POLL_S} s "
+            f"for up to {minutes} minutes")
+        pause(HEAT_POLL_S)
+
+
+def run_blender(s, folder, item, work, notes=None):
+    """Render the scene's frames in Blender as a numbered, transparent PNG sequence in work/frames, in its turn when
+    the settings ask for one: render_lock holds the film's lock, and render_heat_c waits for the CPU to cool."""
+    say = (notes if notes is not None else []).append
+    path = folder / "graphics" / "work" / RENDER_LOCK
+    locked = False
+    try:
+        if s.get("render_lock"):
+            take_lock(path, s.get("render_lock_minutes", 30), say)
+            locked = True
+        if s.get("render_heat_c") is not None:
+            wait_for_heat(s["render_heat_c"], s.get("render_heat_minutes", 20), say)
+        return blender_run(s, folder, item, work)
+    except Refused as exc:
+        return exc.lines[0]
+    finally:
+        if locked:
+            drop_lock(path)
+
+
+def blender_run(s, folder, item, work):
     """Render the scene's frames in Blender as a numbered, transparent PNG sequence in work/frames."""
     (work / "frames").mkdir()
     command = [str(repo_path(s["blender"])), "-b", "--factory-startup", "--python-exit-code", "1",
                "--python", str(HERE / "storyblender.py"), "--", str(folder / "graphics" / "plan.json"), item["id"],
                str(folder), str(folder / item["scene"]), str(work / "frames"), str(s["width"]), str(s["height"]),
                str(s["render_threads"])]
+    proc = subprocess.Popen(command, cwd=str(folder), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                            encoding="utf-8", errors="replace")
+    pin(proc.pid, s.get("render_cores"))
     try:
-        done = subprocess.run(command, cwd=str(folder), capture_output=True, text=True, encoding="utf-8",
-                              errors="replace", timeout=s["render_minutes"] * 60)
+        out, err = proc.communicate(timeout=s["render_minutes"] * 60)
     except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.communicate()
         return f"the render took longer than {s['render_minutes']} minutes and was stopped"
+    done = subprocess.CompletedProcess(command, proc.returncode, out, err)
     (work / "blender.log").write_text(done.stdout + NL + done.stderr, encoding="utf-8")
     if done.returncode != 0:
         said = [x for x in (done.stdout + NL + done.stderr).splitlines() if x.startswith("SCENE ERROR:")]
@@ -590,7 +814,7 @@ def cmd_render(folder, graphic_id, final=False):
     shutil.rmtree(work, ignore_errors=True)
     work.mkdir(parents=True)
     scene_sha = sha256_of(scene)
-    failed = run_blender(s, folder, item, work)
+    failed = run_blender(s, folder, item, work, lines)
     if failed:
         return "RENDER: FAIL", lines + [f"ERROR graphic {graphic_id}: {failed}"]
     frames = rendered_frames(work)
@@ -704,19 +928,45 @@ def genome_row(rd, body, second, tries=30):
     return None, None
 
 
-def launch_stills(s, folder, items, listing):
-    """Draw the listed stills in the theatre: one Editor launch on the render worker. Returns why it failed, or None."""
+STILLS_LOOK = "wide, close, events"     # theatre-film.ps1's sections for a close shot; a still is a close view
+
+
+def stills_command(root, unity, unity_args, world):
+    """The PowerShell that launches the stills' Editor for one run: the theatre root's film look set into the
+    environment as theatre-safari.ps1 sets it, then Unity."""
+    quoted = ", ".join("'" + a.replace("'", "''") + "'" for a in unity_args)
+    look = str(root / "scripts" / "theatre-film-look.ps1").replace("'", "''")
+    return ("$ErrorActionPreference = 'Stop'; "
+            f". '{look}'; "
+            f"$null = @(Use-FilmLook -Sections {STILLS_LOOK} -World '{world.replace(chr(39), chr(39) * 2)}'); "
+            "$ErrorActionPreference = 'Continue'; "
+            f"$p = Start-Process -FilePath '{unity}' -ArgumentList @({quoted}) -NoNewWindow -PassThru -Wait; "
+            "exit $p.ExitCode")
+
+
+def launch_stills(s, folder, items, listing, notes=None):
+    """Draw the listed stills in the theatre: one Editor launch a run, on the render worker of the settings' theatre
+    root, each in the film look of that root's scripts. Returns why it failed, or None."""
+    notes = notes if notes is not None else []
     tool = film_tool()
-    worker = REPO / f"unity-w{s['worker']}"
+    root = tool.theatre_root(s)
+    where = f" in {root}"
+    worker = root / f"unity-w{s['worker']}"
     entry = worker / Path(SOLO_FILE).relative_to("unity")
-    if not (REPO / SOLO_FILE).is_file():
-        return f"the theatre has no stills entry: {SOLO_FILE} is not in the tree"
+    if not (root / SOLO_FILE).is_file():
+        return f"the theatre has no stills entry: {SOLO_FILE} is not in the tree of {root}"
+    if not (root / "scripts" / "theatre-film-look.ps1").is_file():
+        return f"the theatre has no film look: scripts/theatre-film-look.ps1 is not in {root}"
     if not entry.is_file():
-        return (f"{worker.name} has no stills entry; refresh it from PowerShell with "
-                f"./scripts/new-worker.ps1 -Workers {s['worker']}")
+        return (f"{worker.name} has no stills entry{where}; " + (
+            f"refresh it from PowerShell with ./scripts/new-worker.ps1 -Workers {s['worker']}" if root == REPO
+            else "its seat is the lane's that keeps it"))
     stale = tool.stale_worker(s)
     if stale:
         return stale
+    faulty = tool.commit_fault(s)
+    if faulty:
+        return faulty
     if (worker / "Temp" / "UnityLockfile").exists():
         return f"the render worker's lock is held: {worker / 'Temp' / 'UnityLockfile'}"
     verdict, found = tool.narration_tool().cmd_machine()
@@ -726,24 +976,35 @@ def launch_stills(s, folder, items, listing):
     log.parent.mkdir(parents=True, exist_ok=True)
     unity_args = ["-projectPath", str(worker), "-batchmode", "-executeMethod", SOLO_ENTRY, "-job-worker-count", "4",
                   "-logFile", str(log)]
-    quoted = ", ".join("'" + a.replace("'", "''") + "'" for a in unity_args)
-    command = (f"$p = Start-Process -FilePath '{s['unity']}' -ArgumentList @({quoted}) -NoNewWindow -PassThru -Wait; "
-               "exit $p.ExitCode")
-    env = dict(os.environ)
-    env["EVOSIM_STILLS_LIST"] = str(listing)
-    env["EVOSIM_THEATRE_WALL_MINUTES"] = str(s["still_wall_minutes"])
-    env["EVOSIM_REPO_ROOT"] = str(REPO)
-    try:
-        done = subprocess.run(["pwsh", "-NoProfile", "-Command", command], env=env, capture_output=True, text=True,
-                              timeout=(s["still_wall_minutes"] + 10) * 60)
-    except subprocess.TimeoutExpired:
-        return (f"the Editor ran past its wall of {s['still_wall_minutes']} minutes and ten more; it may still be "
-                f"running on {worker.name}, so look for it before anything else launches there (log: {rel(log)})")
-    result = read_json(listing.parent / "result.json")
-    if done.returncode != 0 or result is None:
-        whys = [f"{x['name']}: {x['why']}" for x in (result or {}).get("items", []) if not x.get("drawn")]
-        return (f"the Editor exited with code {done.returncode}; its log is {rel(log)}"
-                + ("; " + "; ".join(whys) if whys else ""))
+    runs = []
+    for x in items:
+        if x["run"] not in runs:
+            runs.append(x["run"])
+    for n, run in enumerate(runs, 1):
+        mine = [x for x in items if x["run"] == run]
+        here = listing.parent / safe(run) / listing.name
+        write_json(here, {"schema": "create-story-video/stills-list/1", "background": "transparent",
+                          "items": [{"name": x["name"], "genome_file": x["genome_file"], "run_dir": x["run_dir"],
+                                     "png_file": x["out"], "size": x["size"]} for x in mine]})
+        notes.append(f"launch {n} of {len(runs)}: run {run}, {len(mine)} stills: " + ", ".join(x["name"] for x in mine))
+        env = dict(os.environ)
+        env["EVOSIM_STILLS_LIST"] = str(here)
+        env["EVOSIM_THEATRE_WALL_MINUTES"] = str(s["still_wall_minutes"])
+        env["EVOSIM_REPO_ROOT"] = str(REPO)       # the main checkout, which holds runs/: the stills entry itself reads it not
+        try:
+            done = subprocess.run(["pwsh", "-NoProfile", "-Command", stills_command(root, s["unity"], unity_args, run)],
+                                  env=env, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                  timeout=(s["still_wall_minutes"] + 10) * 60)
+        except subprocess.TimeoutExpired:
+            return (f"the Editor ran past its wall of {s['still_wall_minutes']} minutes and ten more; it may still be "
+                    f"running on {worker.name}, so look for it before anything else launches there (log: {rel(log)})")
+        notes.extend("look: " + x.strip() for x in done.stdout.splitlines() if x.strip())
+        result = read_json(here.parent / "result.json")
+        if done.returncode != 0 or result is None:
+            whys = [f"{x['name']}: {x['why']}" for x in (result or {}).get("items", []) if not x.get("drawn")]
+            tail = [x.strip() for x in done.stderr.splitlines() if x.strip()][-3:]
+            return (f"the Editor exited with code {done.returncode} for run {run}; its log is {rel(log)}"
+                    + ("; " + "; ".join(whys) if whys else "") + ("; " + " | ".join(tail) if tail else ""))
     return None
 
 
@@ -808,7 +1069,7 @@ def cmd_stills(folder):
     write_json(listing, {"schema": "create-story-video/stills-list/1", "background": "transparent",
                          "items": [{"name": x["name"], "genome_file": x["genome_file"], "run_dir": x["run_dir"],
                                     "png_file": x["out"], "size": x["size"]} for x in listed]})
-    failed = launch_stills(s, folder, listed, listing)
+    failed = launch_stills(s, folder, listed, listing, lines)
     if failed:
         return "STILLS: FAIL", lines + [f"ERROR {failed}"]
     from PIL import Image
@@ -841,6 +1102,11 @@ def cmd_setup(folder):
                                          f"{s['blender_version']}"]
 
 
+def planned_ids(plan):
+    """The ids the plan holds, by kind of record."""
+    return {"graphics": {g["id"] for g in plan["graphics"]}, "words": {w["id"] for w in plan["words"]}}
+
+
 def cmd_check(folder):
     lines, errors = [], []
     s = settings_of(folder, lines)
@@ -867,10 +1133,16 @@ def cmd_check(folder):
     head = (f"{len(plan['graphics'])} graphics, {len(plan['stills'])} stills and {len(plan['words'])} word cards "
             f"planned; graphics.json holds {len(records['graphics'])}, {len(records['stills'])} and "
             f"{len(records['words'])}")
-    drafts = sorted(i for kind in ("graphics", "words") for i, r in records[kind].items() if r.get("draft"))
+    planned = planned_ids(plan)
+    drafts = sorted(i for kind in ("graphics", "words") for i, r in records[kind].items()
+                    if r.get("draft") and i in planned[kind])
     if drafts:
         lines.append(f"drafts: {len(drafts)} drawn at the draft size, which finish renders at {s['size']} before "
                      f"the final edit: " + ", ".join(drafts))
+    unplanned = sorted(i for kind in ("graphics", "words") for i in records[kind] if i not in planned[kind])
+    if unplanned:
+        lines.append("in graphics.json but not in the shot list, so left out of the finish and the edit: "
+                     + ", ".join(unplanned))
     return ("GRAPHICS: FAIL" if errors else "GRAPHICS: PASS"), [head] + lines + [f"ERROR {e}" for e in errors]
 
 
@@ -893,12 +1165,16 @@ def cmd_finish(folder):
         if verdict != "RENDER: PASS":
             errors += [f"graphic {g['id']}: {x}" for x in said if x.startswith("ERROR")] or [f"graphic {g['id']}: {verdict}"]
         records = records_of(folder)
-    if any(r.get("draft") for r in records["words"].values()):
+    # A record the shot list no longer asks for (a word card a redraft dropped) is neither finished nor counted:
+    # the edit takes only what the plan holds (round 57's 5.1a-w1, 5.4b-w1 and 6.7b-w1, 2026-10-10).
+    planned = planned_ids(plan)
+    if any(r.get("draft") for i, r in records["words"].items() if i in planned["words"]):
         verdict, said = cmd_words(folder, final=True)
         lines.append(f"words: {verdict}")
         errors += [x[6:] for x in said if x.startswith("ERROR")]
     records = records_of(folder)
-    left = sorted(i for kind in ("graphics", "words") for i, r in records[kind].items() if r.get("draft"))
+    left = sorted(i for kind in ("graphics", "words") for i, r in records[kind].items()
+                  if r.get("draft") and i in planned[kind])
     if left:
         errors.append("still at the draft size: " + ", ".join(left))
     lines.append(f"{len(plan['graphics'])} graphics and {len(plan['words'])} word cards at {s['size']}")

@@ -75,6 +75,11 @@ faulted.
   row labels measured 102 pixels where round 48's measured 103.
 - At eight threads, `render` took 41 seconds for a graphic of 226 frames at 1920x1080 and 105 seconds at
   3840x2160, checks and clip included. The 4K clip, with its 10 s handles, is 41 MB.
+- **The stills are drawn on the film's seat and in its look** (round 67's film found on 2026-11-07 that they were
+  not). `launch_stills` took the worker, its stills entry and the theatre tree from the repository root while the
+  film was shot on a worker in another checkout, and launched Unity with no film look set at all, so a still would
+  have come out in a skin the film did not have. It now reads `theatre_root` and `theatre_commit` as `film.py`
+  does, and launches the Editor once a run under that root's `Use-FilmLook`.
 - Blender's dither is off. Its faint noise broke the clip's runs of equal pixels, and the same 4K clip was
   920 MB with it on. PNG and ProRes 4444 were larger than QuickTime Animation on the same frames (82 and
   281 MB).
@@ -94,10 +99,17 @@ into the film's folder the first time, and from then on reads the copies.
 | `blender` | `C:/Program Files/Blender Foundation/Blender 5.1/blender.exe` | The Blender the owner installed. |
 | `blender_version` | `5.1.1` | The version `setup` asks for. |
 | `render_threads` | 8 | The threads a render may take, a quarter of the machine. |
+| `render_cores` | null | The logical processors each Blender render is pinned to, at below-normal priority, such as `"24-31"`; null leaves it to Windows. Round 57's film ran its renders on 24-31 beside a filming pass, on the coordinator's terms (`scripts/tests/story-video-check/test_render_cores.py`). |
 | `render_minutes` | 10 | How long one graphic's render may take before it is stopped. |
 | `fade_s` | 0.3 | How long a line of words takes to fade in and out. |
+| `render_lock` | false | True makes `render` (and `finish`, which renders) hold the film's `graphics/work/render.lock` for each Blender run, so that one render runs at a time. The file is created exclusively and holds the process id and the time. A lock whose process no longer runs is taken over, with a line saying so; otherwise the render waits, looking every 15 s, for `render_lock_minutes`, then fails with "another render held the lock for N minutes". It is released in a `finally`. |
+| `render_lock_minutes` | 30 | How long a render waits on the lock. |
+| `render_heat_c` | null | A CPU temperature in degrees C, or null for no heat read. Before each Blender run, after the lock is taken, the CPU is read the way the heat watch reads it (`CpuTemp` in `film-guard.ps1`), and the render waits, reading every 30 s, while it reads at or above the limit. Each reading is printed. A reading that fails refuses the render: it never renders unread. The coordinator's term beside a filming pass is 80. |
+| `render_heat_minutes` | 20 | How long a render waits on the heat before it fails with the last reading. |
 | `unity` | the project's Editor | The Unity Editor the stills are drawn with. |
-| `worker` | 6 | The render worker, `unity-w<n>`. |
+| `worker` | 6 | The render worker, `unity-w<n>`, in the theatre root. |
+| `theatre_root` | null | The checkout that holds the render worker and the theatre the stills are drawn in, as for `film.py`: null is this checkout, otherwise the path of one that holds `scripts/theatre-safari.ps1`. The stills entry is looked for in that root's tree and in its worker, and the Editor is launched under that root's `scripts/theatre-film-look.ps1`. The runs and the Editor's log stay in this checkout. |
+| `theatre_commit` | null | A commit or branch name that the `theatre_root` checkout must be at, as for `film.py`; the stills refuse otherwise. |
 | `runs_root` | `runs` | Where the runs are, from the checkout's root. |
 | `still_size` | 1600 | A still's side, in pixels. |
 | `still_wall_minutes` | 30 | How long the stills' Editor may run before it stops itself. |
@@ -205,9 +217,12 @@ nothing of the project but its brief.
 
 The step may run beside a filming pass, since it reads the shot list and not the clips (the owner chose
 this over waiting on 2026-09-28). Start the stills and the animators once the pass's windows are
-recorded. In the film's copy of the settings, set `worker` to one the filming does not hold and
-`render_threads` to 4. Launch one animator at a time, and hold the next while the machine's Utility
-counter reads above about 65%.
+recorded. In the film's copy of the settings, set `worker` to one the filming does not hold,
+`render_threads` to 4, `render_cores` to the logical processors the coordinator names (such as `"24-31"`),
+`render_lock` to true, so that one render runs at a time, and `render_heat_c` to 80, so that a render
+waits while the CPU reads that or more. Where the film is shot on another checkout's seat, set
+`theatre_root` and `theatre_commit` to the same values as the film's own settings. Launch one animator at a
+time, and hold the next while the machine's Utility counter reads above about 65%.
 
 1. If the film's folder has no `shots.json`, stop: the shot list step writes it first.
 2. Run `plan <folder>` and save what it prints in `graphics-<k>-plan.txt`. On `NOTHING TO DRAW`, go to
@@ -233,6 +248,9 @@ counter reads above about 65%.
    An animator that has written nothing for twenty minutes, with no Blender running, has stopped: an
    interrupted turn of the main session ends its agents without an answer (round 49's 4.2a, 2026-09-28). Record
    that it gave none, in `graphics-<k>-animator-<id>-lost.txt`, and launch it again; it reads its last printout.
+   A shot list redrafted while animators work makes `render` refuse every graphic until `plan` runs again,
+   since the plan is keyed on `shots.json` (round 57's 2.6a, 2026-10-10). Redraft the shot list between runs,
+   or run `plan` and `words` again straight after it.
 7. Run `check <folder>` and save what it prints in `graphics-<k>-check.txt`. On `GRAPHICS: FAIL`, the items
    it names go back to step 4, 5 or 6, once. After that the owner rules.
 8. Launch the reviewer for run k. Save its answer in `graphics-<k>-review.md`, word for word.
@@ -245,7 +263,14 @@ counter reads above about 65%.
 9. Run `finish <folder>` in the background and save what it prints in `graphics-<k>-finish.txt`. On
    `FINISH: PASS`, run `check <folder>` again and save it in `graphics-<k>-check-final.txt`; the step is done.
    On `FINISH: FAIL`, show the owner the lines. A rough draft of the edit may carry drafts; the final edit
-   refuses them.
+   refuses them. A record the shot list no longer asks for, such as a word card a redraft dropped, stays in
+   `graphics.json`; finish and the edit leave it out, and `check` names it (round 57's three dropped cards
+   failed the finish until 2026-10-10).
+   After a shot list redraft that changes no graphic, run `plan` again: on `NOTHING TO DRAW` it stamps
+   `graphics.json` with the new shot list, which the edit checks (round 57's draft 7 left the edit refusing it
+   until 2026-10-11).
+   Run the tool with the plain `python` its first line names: it needs Pillow, which another environment
+   may lack (round 57's first finish stopped at its first graphic's check).
 
 Tell the owner when an answer says it stopped at its time budget.
 

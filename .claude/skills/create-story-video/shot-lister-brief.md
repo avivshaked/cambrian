@@ -16,6 +16,8 @@ In the film's folder, and nothing else: no runs, no code, no logbook, no other f
   (`sentences[].from_s`, `to_s`), and each passage's hold. Its form is in `narration-schema.md` beside this
   brief. On the owner's own files a sentence has no times; then time by the passage.
 - `facts.md`: the only source for any run, body, second, number or claim you use.
+- `colours.json`, if the folder has one: the colours a shot may take, what each shows and the runs each can be
+  used on. Its form is in `shots-schema.md`.
 - `shots-schema.md` beside this brief: the form you write. Read it whole.
 - For draft 2 and on, `shots-<n-1>-check.txt`: what the check found in your last draft. Fix every `ERROR`
   line and keep the rest. If there is a `shots-<n-1>-owner.md`, the owner's words on it; do what they ask.
@@ -75,6 +77,15 @@ body with the same camera show a jump at the cut. Change the camera, the body or
 | `Birth` | A held frame on a parent, with the place its child lands in view. The director opens its take 8 seconds before the birth. | the parent; the stretch starts no more than 8 seconds before the birth and holds it at least a second in |
 | `Colony` | A pull-back from one body until its family fills the frame. | a body of a family of at least two |
 | `Card` | A slow drift sideways in front of the densest crowd: a calm picture to hold words over. | none |
+
+The director draws every body in its own colours: no highlight or outline on a family, and no tint but a shot's
+`colour`. A `see` that asks for any other is filmed without it. If the film's folder has `colours.json`, it
+names the colours this film can use, what each shows and the runs each can be used on. Set a shot's `colour`
+where the script's picture asks to tell apart what that colour shows, as two teams or one family, and say in
+`see` what the colour shows. A colour that tells groups apart shows them only where they share the frame, so
+choose a body, a camera and a stretch where `facts.md` places them together. Without `colours.json`, no shot
+has a colour. To make a family stand out without one, choose a camera and a stretch where it fills the frame,
+as `Floor` low over a bed it covers.
 
 **A graphic is drawn to the words, beside the event.** Over footage, the drawing keeps to the corner card
 at the right, at most a third of the frame, and never darkens the picture. So choose footage whose event

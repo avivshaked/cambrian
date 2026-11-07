@@ -11,6 +11,8 @@
   "fade_s": 0.3,
   "unity": "C:/Program Files/Unity/Hub/Editor/6000.5.6f1/Editor/Unity.exe",
   "worker": 6,
+  "theatre_root": null,
+  "theatre_commit": null,
   "runs_root": "runs",
   "still_size": 1600,
   "still_wall_minutes": 30,

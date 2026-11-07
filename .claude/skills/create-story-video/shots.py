@@ -134,6 +134,41 @@ def check_footage(shot, where, facts, errors):
     if abs(stretch - length) > FRAME_S:
         errors.append(f"{where}: plays {stretch:.2f} s of the run in a shot of {length:.2f} s; footage plays at "
                       "the speed of life")
+    end = run_end(shot["run"]) if isinstance(shot["run"], str) else None
+    if end is not None and b > end - RUN_TAIL_S + EPS:
+        errors.append(f"{where}: plays to {b:g} s, and filming records {RUN_TAIL_S:g} s past a stretch's end, so it "
+                      f"ends by {end - RUN_TAIL_S:g} s, the run's last second ({end:g}) less that")
+
+
+_FILM = []
+
+
+def film_tool():
+    """film.py, loaded once: colours.json is read and held to its form by the one function filming uses."""
+    if not _FILM:
+        spec = importlib.util.spec_from_file_location("film_tool", HERE / "film.py")
+        _FILM.append(importlib.util.module_from_spec(spec))
+        spec.loader.exec_module(_FILM[0])
+    return _FILM[0]
+
+
+RUN_TAIL_S = 1.0                   # film.py's TAIL_S: what story-windows.py records after a take's last frame
+_ENDS = {}
+
+
+def run_end(arm):
+    """The last recorded second of a run under the checkout's runs/, as filming reads it, or None when the run
+    is not on this machine (the tests' films have none); filming refuses a missing run itself."""
+    if arm not in _ENDS:
+        spec = importlib.util.spec_from_file_location("film_tool", HERE / "film.py")
+        film = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(film)
+        rd = film.run_dir(HERE.parents[2] / "runs", arm)
+        try:
+            _ENDS[arm] = film.last_second(rd) if rd is not None else None
+        except film.Refused:
+            _ENDS[arm] = None
+    return _ENDS[arm]
 
 
 def good_beat(beat):
@@ -214,6 +249,8 @@ def check_shots(data, folder):
         errors.append("narration_sha256 is not the current narration.json's: it is timed to another narration")
     if narration.get("source") == "estimate":
         notes.append("timed on an estimate: every time moves when a real narration replaces it")
+    colours, colour_problems = film_tool().read_colours(folder)
+    errors += [x for x in colour_problems]
     shots = data["shots"]
     if not isinstance(shots, list) or not shots:
         return errors + ["shots is a list of at least one shot"], notes
@@ -222,7 +259,7 @@ def check_shots(data, folder):
     order, by_passage, ids = [p["id"] for p in narration["passages"]], {}, []
     for i, shot in enumerate(shots, 1):
         where = f"shot {shot.get('id')}" if isinstance(shot, dict) and shot.get("id") else f"shot {i}"
-        if not isinstance(shot, dict) or shot.get("kind") not in KEYS or set(shot) not in KEYS[shot["kind"]]:
+        if not isinstance(shot, dict) or shot.get("kind") not in KEYS or set(shot) - {"colour"} not in KEYS[shot["kind"]]:
             errors.append(f"{where}: kind is run or graphic, and the shot holds exactly its kind's fields: a run "
                           "shot the footage's, and a graphic its beats and stills and either the footage's or alone")
             continue
@@ -245,6 +282,7 @@ def check_shots(data, folder):
             errors.append(f"{where}: see says what the viewer sees")
         check_places(shot["places"], lines, where, errors)
         check_text(shot, where, lines, given, errors)
+        errors += [f"{where}: {x}" for x in film_tool().colour_faults(shot, colours)]
         if "run" in shot:
             check_footage(shot, where, facts, errors)
         if shot["kind"] == "graphic":
@@ -315,6 +353,7 @@ def cmd_sheet(path):
     for s in data["shots"]:
         what = f"{s['camera']} on {', '.join(s['bodies']) or 'the world'}" if "run" in s else "no footage"
         what = ("graphic over " + what if "run" in s else "graphic alone") if s["kind"] == "graphic" else what
+        what += f", {s['colour']} colour" if "colour" in s else ""
         words = s["see"].split()
         lines.append(f"{s['id']:>7}  {minutes(s['from_s']):>7}  {s['to_s'] - s['from_s']:5.1f} s  {what:<36}  "
                      + " ".join(words[:9]) + (" ..." if len(words) > 9 else ""))

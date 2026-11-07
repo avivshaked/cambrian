@@ -70,6 +70,22 @@ Every shot has these fields:
 | `camera` | The director's camera move: `Arrival`, `Descent`, `Portrait`, `Floor`, `Birth`, `Colony` or `Card`. [shot-lister-brief.md](shot-lister-brief.md) says what each does. |
 | `run_from_s`, `run_to_s` | The stretch of the run the shot plays, in simulated seconds. It is the action; the handles are added by filming. |
 
+**A colour.** A shot with footage may also carry `colour`, the name of a colour in the film's `colours.json`.
+The theatre turns the hue of the bodies that colour's map names, so two teams or one family can be told apart
+in the picture. Without it the shot is filmed in the bodies' own colours. `colours.json` sits in the film's
+folder. The main session writes it, never the tools:
+
+```json
+{"teams": {"shows": "the two teams, one turned each way round the wheel",
+           "file": "scratch/theatre-realism/r67-teams/r67-6202-turns-teams.tsv",
+           "sha256": "<64 hex, the file's>", "runs": ["r67-6202", "r67r1-6202"]}}
+```
+
+A name is lower-case letters, digits and hyphens. `shows` says in plain words what the colour shows. `file` is
+the map, from the repository's root: a line a body, `id`, a tab and a turn, a signed fraction of the colour
+wheel added to that body's hue. `runs` lists the runs whose body ids the file is written for. A film that
+needs no colour has no `colours.json`.
+
 **The drawing.** A graphic has two more:
 
 | Field | What it holds |
@@ -95,6 +111,9 @@ footage, in a few words. The edit lays it over the plate, a flat colour.
 - A graphic that stands alone says why.
 - Words on screen are at most four words, hold their places unless they are only a name we give, and
   show inside their shot.
+- A shot's `colour` is a string, and sits on a shot with footage whose `run` is one the colour lists. The
+  film has a `colours.json` that names it, in its form, whose files are there and whose `sha256` is each
+  file's. A film with neither a `colours.json` nor a `colour` is checked as it always was.
 
 The check prints each graphic that stands alone, with its length and why, so the owner sees every second
 the film goes without footage. It also prints, without refusing, where the shot list departs from the
