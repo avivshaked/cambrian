@@ -1,0 +1,2 @@
+first parts at t 10 on 47 columns, e.g. ['workJoulesPerSecond', 'spendJoules', 'lightJoules', 'foodJoules', 'detritusJoules', 'shading']
+at t 600 {'births': (644, 705), 'deaths': (84, 81), 'partFeedFallbacks': (0, None)}

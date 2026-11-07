@@ -1,0 +1,4 @@
+2026-11-07 13:47:46   plps-6202: ended (budget); t 600 alive 249; 4.0 wall min, 2.47 times real time over the 600 s stepped; run scratch\plants-work\runs\plps-6202\2026-11-07-134307-274b5f36
+2026-11-07 13:47:46   plps-6203: ended (budget); t 600 alive 633; 4.4 wall min, 2.26 times real time over the 600 s stepped; run scratch\plants-work\runs\plps-6203\2026-11-07-134307-274b5f36
+2026-11-07 13:47:46   books over 60 stats rows of plps-6202: max |auditResidual| 1.87344994628802E-06 (under 0.1 J: True); max |matterResidual| 5.66318703931756E-07 (under 1e-5: True)
+2026-11-07 13:47:46   books over 60 stats rows of plps-6203: max |auditResidual| 1.33377398015E-05 (under 0.1 J: True); max |matterResidual| 1.04515311249997E-06 (under 1e-5: True)
