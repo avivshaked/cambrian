@@ -347,6 +347,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D323](#d323) | The rest's founders start at a delay of 150 s, and in a second arm across 100 to 600 s | 2026-11-07 | ruled by the owner on 2026-11-07, choosing the coordinator's recommendation after D319's rest failed the forest test on every arm and seed (`logbook/specs/plants-hold/forest-run.md`, "What the rest… |
 | [D324](#d324) | The films draw eyespots on a true half of their bearers, the outline's gate at 0.5 m, and the mouth fix with its kinds | 2026-11-07 | ruled by the owner on 2026-11-07, accepting the coordinator's three recommendations as the film lane put them in its status that day (`scratch/owner/eyespot-gate-kinds/owner-2026-11-07.md`, the… |
 | [D325](#d325) | The forest screen turns on light and matter at each part, and blade turnover is withdrawn | 2026-11-07 | ruled by the owner on 2026-11-07, choosing the coordinator's recommendation on both questions it put (`proposals/propose-forest-pays.md` at `7af2f5ec`, absorbed here and deleted) |
+| [D326](#d326) | The bold mouth kinds are drawn tinted toward the body's own colour | 2026-11-07 | ruled by the owner on 2026-11-07 in two choices through the question tool, each the coordinator's recommendation (`scratch/owner/mouth-kinds-three-tints/owner-2026-11-07.md`, saved as they came; the… |
 
 ---
 
@@ -11427,3 +11428,26 @@ animals as the living plants do. The animals are few, 14 to 117 against 900 to 2
 **Rejected.** Blade turnover now, which would add food to a stream the grazers leave. The shoals before D297's result,
 since they change the islands' water and matter in the same stroke. A rule that grows a plant toward the light: the
 survey found no source for directed growth in kelp, and height should come from evolution once it pays.
+
+### D326
+**The bold mouth kinds are drawn tinted toward the body's own colour** · 2026-11-07
+
+**Status:** ruled by the owner on 2026-11-07 in two choices through the question tool, each the coordinator's
+recommendation (`scratch/owner/mouth-kinds-three-tints/owner-2026-11-07.md`, saved as they came; the sheets beside it
+and in `../eyespots-and-mouth-kinds-as-landed/`). It amends D324's mouths.
+
+**Decision.**
+- The sucker, crown, beak and gape that D324 rebuilt bolder are drawn tinted toward the body's own colour, with no dark
+  keyline and soft edges. The values are `MOUTH2_BOLD_WHITE` 0.1, `MOUTH2_BOLD_KEY` 0 and `MOUTH2_BOLD_SOFT` 0.06
+  radii, on the theatre lane's dials (`theatre-look-tint`, `f9ca9140`), whose defaults draw the look D324 landed. The
+  films and the safari take the same values, and round 67's film draws them.
+- The gape's tinted lip draws a cool silver where the body is brown. It is fixed as a separate step, and close shots of
+  a gape are retaken after it.
+
+**Why.** As landed, the bold kinds draw near-pure flat white. The sucker's rings and the gape's rim around a black
+centre read as eyes stuck on the skin, the fault the mouth fix was meant to remove. Tinted, the sucker's cups read as
+skin-coloured rings and the crown's lobes as translucent pink, both part of the body.
+
+**Rejected.** The white as landed (0.65, keyline on, hard edges). A setting between (0.35, half the keyline, 0.03
+radii), which keeps the kinds apart at a distance but still reads as drawn on. Whether the tinted kinds stay apart in a
+world shot, where a mouth is a few pixels across, is untested.
