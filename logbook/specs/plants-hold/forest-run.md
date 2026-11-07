@@ -254,3 +254,20 @@ The winters still cost each stand, and more as the winter deepens: at 0.4, 6203'
 
 Inference: a forest as the plants stand now survives a winter at 0.6 of the mean light about half the time, and not one
 at 0.4. D319's bank and rest have to carry a stand across that gap.
+
+## A, the bank (D319), written before it starts
+
+The owner ruled D319: the anchored founders draw their reserve margin from a range of their own, a bank of 3,000 s of
+their upkeep, a winter's cost with no income, and a resting plant is screened after it with the bank as its control.
+This run is the second forest run's world at D151's full winter with that bank (`rounds/env-plants-bank.ps1`, the
+margin at 3,000 s), launched by `rounds/launch-plants-bank.ps1` as `plb-6202` and `plb-6203`, 12,000 s at group 32,
+then the same two worlds at group 64 for 1,200 s. The build is `plants-build` with D319's bank, D308 and D319's rest
+merged, each off unless its world sets it; only the bank is on here. It is the first card run on the build that carries
+D308's regenerated kernels, so the group 64 check is read against it as before.
+
+**How it is read.** The forest test at 12,000 s, islands assigned as `read5.py` assigns them. If it passes on either
+seed, a bank alone carries a forest through the full winter. If it fails on both, the bank falls short, as the
+proposal expected, and the rest's screen decides. Read besides: the grippers that began and died in each season against
+the second run's table, and the reserve margin (`rm` in the lineage) of the gripping plants born in each season, to see
+whether their children keep the bank. The card check passes as before if the group 64 worlds equal the group 32 worlds'
+first 1,200 s on the stats, the digest and the lineage.
