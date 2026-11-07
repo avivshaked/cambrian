@@ -105,12 +105,16 @@ through itself, and counts regrowths apart from additions. Its counts start at z
 checkpoint.
 
 `rounds/launch-refusal-fixed.ps1` resumes two worlds on the card from their 10,500 s checkpoints to 12,000 s: the
-control with the most tries, `pldr-6203`, as `plrf-6203`, and the world with light at each part with the most modules
-standing, `plp2-6204`, as `plrf-6204`. It runs while no other farm and no Unity runs.
+control with the most tries, `pldr-6203`, and the world with light at each part with the most modules standing,
+`plp2-6204`. It runs them twice, as two groups one after the other: first on `plants-build`'s own farm as `plrc-6203`
+and `plrc-6204`, then on the probe build as `plrf-6203` and `plrf-6204`. It runs while no other farm and no Unity runs.
 
-- **The probe changes nothing in the world.** Each run's stats rows equal its source's on every field but the wall
-  times, the step counts and the probe's own columns, and its lineage rows are the source's
-  (`scripts/reads/resume-match.py`). If they differ, no count is read and the build is looked at instead.
+- **The probe changes nothing in the world.** A resume on `plants-build` does not repeat its source (`forest-run.md`,
+  "What light at each part found"), so each probe run is compared with the plain resume from the same checkpoint
+  rather than with its source. Their stats rows are equal on every field but the wall times, the step counts and the
+  probe's own columns, and their lineage rows are equal (`scripts/reads/resume-match.py`). If they differ, no count is
+  read and the build is looked at instead. This check was revised on 2026-11-07, before the run. The forest-shot
+  resume had just shown that a resume on this build parts from its source.
 - **What is read.** For additions and for plants among them: the share of shape refusals that are "would stand inside
   itself" (D101), "no larger" on a node off every cycle, "no larger" on a node on a cycle, and each other cause. With
   the fix on, no refusal should name a dormant node.

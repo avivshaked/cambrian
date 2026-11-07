@@ -526,9 +526,14 @@ no part was fed at its body's centre, and the books closed far under their lines
 `e70d870a` from 13:56. At 14:57 the group's heat stop fired at 99 °C, with another project's render on the cores
 beside it (`logbook/specs/machine-and-tools.md`). Every world wrote a checkpoint at its stop, at 4,860 to 6,760 s.
 They resumed at 15:00 from those checkpoints as `plp2-*` and `pldr2-*` (`rounds/launch-plants-partlight-resume.ps1`,
-`8676833f`). All ended by budget at 12,000 s at 16:11, at 1.5 to 1.9 times real time. A resume repeats a card run on
-the card, so each pair is one world. `partlight-read/stitch.py` joins them as `plpx-*` and `pldrx-*`, and the reads
-below read those. Every world kept `partFeedFallbacks` at 0. The largest energy residual was 3.6e-4 J and the largest
+`8676833f`). All ended by budget at 12,000 s at 16:11, at 1.5 to 1.9 times real time. `partlight-read/stitch.py` joins
+them as `plpx-*` and `pldrx-*`, and the reads below read those. ~~A resume repeats a card run on the card, so each pair
+is one world.~~ A resume on this build does not repeat its source. That evening `plfev-6202` resumed `plf-6202` from
+its 7,500 s checkpoint on the same build and config. It parted from the source at its first stats row and its first
+deaths, while two copies resumed in one group matched each other row for row (`scripts/reads/resume-match.py`).
+So each joined world is the stopped run to its stop and a cousin after it, one realisation of the same world. Each
+world was read whole, against controls run the same way, so the comparison stands. Inference until its cause is found:
+some state of the plant rules is left out of the checkpoint. Every world kept `partFeedFallbacks` at 0. The largest energy residual was 3.6e-4 J and the largest
 matter residual 6.7e-6 (`partlight-read/screen-end.txt`).
 
 **Light at each part does not help the forest by the test written before it.** It passes on one seed of four, as its
