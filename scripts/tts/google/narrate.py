@@ -114,6 +114,11 @@ def main() -> int:
     from google.genai._gaos.utils import BackoffStrategy, RetryConfig
 
     client = genai.Client(api_key=read_key())
+    # The client retries a 429 by itself and sleeps for whatever Retry-After Google sends, which under the
+    # free tier's daily limit is hours: F4's beats sat silent for 13 minutes and more on 2026-10-10. With no
+    # retries a limit is reported at once, as an error row. google-genai 2.34 refuses a per-call retries=
+    # and turns HttpRetryOptions(attempts=0) into one retry, so this sets the resource's own configuration.
+    client.interactions.sdk_configuration.retry_config = RetryConfig("none", BackoffStrategy(0, 0, 1, 0), False)
     index_path = out / "index.json"
     index = json.loads(index_path.read_text(encoding="utf-8")) if index_path.is_file() else {"runs": []}
     index.update(model=MODEL, script=str(script), style=style, beats=bs)
@@ -136,10 +141,6 @@ def main() -> int:
                     }]}],
                     response_format={"type": "audio"},
                     generation_config={"speech_config": [{"voice": ids[v]}]},
-                    # The client retries a 429 by itself and sleeps for whatever Retry-After Google sends, which
-                    # under the free tier's daily limit is hours: F4's beats sat silent for 13 minutes and more on
-                    # 2026-10-10. With no retries a limit is reported at once, as an error row.
-                    retries=RetryConfig("none", BackoffStrategy(0, 0, 1, 0), False),
                     timeout=180,
                 )
                 raw = base64.b64decode(result.output_audio.data)
