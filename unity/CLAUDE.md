@@ -192,5 +192,9 @@ Don't waste time on it; use the Hub GUI.
   new tokens. With no Unity process running, delete the lock and refresh again, and read
   the header tokens of the smoke before taking its hash. A worktree's worker is a copy too:
   an edit in the worktree reaches `<worktree>/unity-wN` only by a refresh from the worktree.
+- **Before seating a branch on a worker, move aside every untracked `.meta` file that
+  `git -C <worker> status --porcelain` lists.** Unity writes a `.meta` beside each source it
+  imports. A source that one branch tracks and the next lacks leaves its `.meta` behind, and the
+  checkout refuses until it is gone (2026-11-06, w7, 18 files).
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
