@@ -2,3 +2,8 @@
 world	stop_a	stop_b	measured_hue	measured_sat	measured_light	frame	note
 r62cf	0.1318,0.2662,0.0359	0.0529,0.1068,0.0145	104.7	0.409	0.221	r62cf-6202 22515 s	film look; blades at the photographs' hue (102-108) in this world's light
 r63b-c	0.1674,0.3713,0.0598	0.0672,0.1490,0.0242	102.0	0.44	0.24	r63b-c-6202 24000-24006 s, 7 frames	film look; one step from r62cf's row (which read hue 98.7 here); a second step toward 105 (0.1838,0.4117,0.0766 and 0.0738,0.1652,0.0310) is not yet rendered
+r67r1	0.0629,0.1052,0.0779	0.0253,0.0422,0.0315	103.7	0.435	0.234	r67r1-6202 24004-24010 s, 7 frames	film look; the third render: the stand-in read hue 97.6 and theatre-blade-stops.py's step 98.8, since the blades' light here moves only about as the stop to a power of 0.1 to 0.25 (the water's own light, inferred), so these stops come from a fit to those two renders
+r67	0.0629,0.1052,0.0779	0.0253,0.0422,0.0315	103.7	0.435	0.234	r67r1-6202 24004-24010 s, 7 frames	film look; r67r1's row, measured on r67r1-6202: every round 67 world shares config 029c8c7471573f72 and so its light
+r67ev-24b	0.0629,0.1052,0.0779	0.0253,0.0422,0.0315	103.7	0.435	0.234	r67r1-6202 24004-24010 s, 7 frames	film look; r67r1's row (a card resume of r67r1-6202, the same config and light)
+r67ev-64a	0.0629,0.1052,0.0779	0.0253,0.0422,0.0315	103.7	0.435	0.234	r67r1-6202 24004-24010 s, 7 frames	film look; r67r1's row (a card resume of r67-6202, the same config and light)
+r67ev-68a	0.0629,0.1052,0.0779	0.0253,0.0422,0.0315	103.7	0.435	0.234	r67r1-6202 24004-24010 s, 7 frames	film look; r67r1's row (a card resume of r67r1-6202, the same config and light)
