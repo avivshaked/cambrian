@@ -164,10 +164,13 @@ what a creature did, the first Kurzgesagt film, an investigation told as it happ
 shape. Don't take the voice of any earlier film of ours. Those were written to older briefs, and in a
 voice the owner rejected.
 
-If n is above 1, read the draft before yours, its fact check `prose-<n-1>-facts-check.md`, its line
-check `prose-<n-1>-line-check.md`, the session's read `prose-<n-1>-session-read.md`, and what the owner
-said of it. A sample reads the same files of the sample before it. Every line the line check or the
-session's read names is told again or cut. Build on it: keep what the owner liked, and tell again what they didn't. A sample
+If n is above 1, read the draft before yours, its fact check `prose-<n-1>-facts-check.md`, and what the
+owner said of it. A sample reads the same files of the sample before it. Read every earlier line check
+`prose-<m>-line-check.md` and session's read `prose-<m>-session-read.md`, of every draft and sample before
+yours, not only the last one's. Every line any of them names stays out of your draft, or is told again so
+that it says something, unless the owner's words keep it. A line that comes back in nearly the same
+words is the same line: round 67's fourth draft brought back four lines that its first draft's checks
+had named. A line the owner's words keep, you keep, until their words let it go. Build on it: keep what the owner liked, and tell again what they didn't. A sample
 does the same with the latest sample before it that the owner has spoken on. Where a sample the owner
 has spoken on is newer than the draft before yours, build each beat it covers on that sample instead.
 

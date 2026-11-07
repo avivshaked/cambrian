@@ -19,7 +19,8 @@ you: a fact, a step of reasoning, or a picture. Then flag the sentence if any of
 - **Stock.** A stock transition, or a fragment that lands as a punchline instead of carrying a fact.
 
 A question that sets out what the film will answer is not a repeat, even when the facts before it
-already hint at it. A short sentence is fine when it carries a fact. "It starved." and "No children." each tell you
+already hint at it. Nor is the sentence that gives the film's answer to that question, even when the
+facts before it already add up to it: the listener was promised the answer in words. A short sentence is fine when it carries a fact. "It starved." and "No children." each tell you
 something. A joke is fine when the fact itself is what's funny. Flag by what the sentence does for a
 listener, not by its length or its style.
 

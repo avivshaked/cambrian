@@ -47,7 +47,7 @@ In the film's folder, beside `facts.md` and `story.md`. Drafts are numbered from
 
 | Who | Brief | Reads | Writes |
 |---|---|---|---|
-| the prose writer | [prose-brief.md](prose-brief.md) | `story.md`, `facts.md`, the draft before and its fact check, every owner's file with the key lines its picks name, and up to three earlier films' `prose.md` | its passes, `prose-<n>.md` and `prose-<n>-key-lines.md`, or `prose-<n>-questions.md` in place of the draft |
+| the prose writer | [prose-brief.md](prose-brief.md) | `story.md`, `facts.md`, the draft before and its fact check, every earlier draft's and sample's line check and session's read, every owner's file with the key lines its picks name, and up to three earlier films' `prose.md` | its passes, `prose-<n>.md` and `prose-<n>-key-lines.md`, or `prose-<n>-questions.md` in place of the draft |
 | the check | [script-check.py](script-check.py) | one draft, its key lines and `story.md` | what it prints |
 | the fact checker | [prose-fact-check-brief.md](prose-fact-check-brief.md) | `facts.md`, one draft and its key lines | its answer |
 | the line checker | [prose-line-check-brief.md](prose-line-check-brief.md) | one draft's spoken words, nothing else | its answer |
@@ -148,6 +148,12 @@ spoken time at 145 words a minute.
    session's read before you read the line checker's answer. The draft fails when the check's first
    line is `PROSE CHECK: FAIL`, the fact checker's is `FACTS: FAIL`, the line checker's is
    `LINES: FAIL`, the session's read is `READ: CUT`, or the comparer's is `COLD READ: MISMATCH`.
+   A line-check flag on a line the owner's words keep, word for word, in a `*-owner.md` file does not
+   fail the draft, since the line checker reads no owner's file and cannot know. Once you have read the
+   line check, add `## Kept by the owner` at the end of the session's read, below its verdict, with each
+   such line and the owner's file that keeps it. When every line the line checker flags is listed
+   there, its `LINES: FAIL` does not fail the draft. The owner ruled this on 2026-11-07, after round
+   67's drafts 2 to 4 each failed on lines the owner had kept.
 4. If the draft fails, go back to step 1 for the next draft. After two failed drafts in a row, go on to
    step 5 with the latest draft.
 5. Show the owner the draft, its checks, the check's notes and the fact checker's pedantic faults.
