@@ -22,7 +22,7 @@ def main(folder):
         for kind, rows in (('gripping', [r for r in late if r['grips']]), ('drifting', [r for r in late if not r['grips']])):
             rise = [r['max_y'] - r['root_y'] for r in rows]
             span = [r['max_y'] - r['min_y'] for r in rows]
-            print('%-5s %-9s %6d %6.1f %5.2f %6.0f%% %4.0f%% %9.1f   (span max-min %.2f)' % (
+            print('%-5s %-9s %6d %6.1f %5.2f %6.1f%% %4.1f%% %9.1f   (span max-min %.2f)' % (
                 arm, kind, len(rows), median([r['parts'] for r in rows]), median(rise),
                 100.0 * sum(x >= 0.5 for x in rise) / len(rows), 100.0 * sum(x >= 1.0 for x in rise) / len(rows),
                 median([-r['max_y'] for r in rows]), median(span)))

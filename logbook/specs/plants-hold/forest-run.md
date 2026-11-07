@@ -569,11 +569,15 @@ and 12,000 s and read every part where the solver held it. The reads are in `hei
 
 | Arm | Gripping plants read | Median parts | Median rise | Rise 0.5 m or more | Rise 1 m or more | Median depth of the top |
 |---|---|---|---|---|---|---|
-| Light at each part | 262 | 2 | 0.24 m | 9 % | 0 % | 3.5 m |
-| Control | 414 | 2 | 0.16 m | 7 % | 0 % | 3.2 m |
+| Light at each part | 262 | 2 | 0.24 m | 9 % | 0.4 % (1) | 3.5 m |
+| Control | 414 | 2 | 0.16 m | 7 % | 0.5 % (2) | 3.2 m |
 
-The rise is the highest part's centre above the holdfast's. A gripping plant is a holdfast and one blade, standing a
-hand's breadth off the rock, and no world in either arm held a gripping plant whose blade rose a metre. The drifting
+The rise is the highest part's centre above the holdfast's. The median gripping plant is a holdfast and one blade,
+standing a hand's breadth off the rock. ~~No world in either arm held a gripping plant whose blade rose a metre.~~ Three
+readings rose a metre or more, one with light at each part (1.32 m) and two controls (1.05 and 1.48 m). The pooled
+read printed them as 0 %, rounded, and now prints a decimal. Its chart is `logbook/images/0160-gripping-plants-rise.png`,
+drawn by `height-read/rise-plot.py`.
+The drifting
 plants, about 13,000 bodies read in each arm, lie flat, with their parts at one height. The census's restore read the
 source hashes as differing from the checkpoints', because the farm hashes the tree it runs from, which was the main
 checkout. The census binary's Core and Dynamics are byte for byte the forest build's, and it steps nothing.
