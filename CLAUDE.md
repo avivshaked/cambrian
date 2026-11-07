@@ -334,6 +334,12 @@ actually verifying it.
   real footage of what it stands for, for whether it looks natural: the birth cloud of 2026-11-02 passed
   every check against the film before it, and reached the owner as a scatter of identical flat grey
   discs that the owner found dated.
+- **A film must look amazing, judged frame by frame by eye, and its maker checks that unasked** (the owner,
+  2026-11-07, after round 67's first takes reached the owner night-dark and without subjects). The reference above is
+  a floor, not the bar. Every shot is filmed first as a small test take. The film maker makes slides of each take's
+  frames and judges them at full size for light, colour, depth, a subject worth seeing and a composition that holds
+  as a still. It directs and refilms what fails, and the owner sees only passing takes, with their slides. The steps
+  are in the `create-story-video` skill's `filming.md`.
 - **The films do what the safari does, unless the owner has ruled otherwise for that one thing** (the owner, 2026-11-03,
   who had said it many times before it was written down). A look, a dial or an effect the safari uses goes into the
   film look as well, without asking; the lineage hue was missing from the films until that day. The detail is in
