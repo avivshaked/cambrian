@@ -342,6 +342,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D318](#d318) | The winter comes back to the plant work's worlds in steps, while a way through it is designed | 2026-11-06 | ruled by the owner on 2026-11-06, choosing the coordinator's recommendation after the forest diagnostic (`logbook/specs/plants-hold/forest-run.md`, "What the diagnostic found") |
 | [D319](#d319) | A gripping plant may shed its blades and rest through the winter, its ageing slowed, beside a bank of its own | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's proposal for D318's way through the winter (`proposals/propose-plants-winter.md` at `90dd34b2`, absorbed here and deleted) |
 | [D320](#d320) | A prose line that says nothing fails the draft, the session's read among the checks, and a film may run past 800 words | 2026-11-06 | ruled by the owner on 2026-11-06, after round 67's first prose sample (`scratch/story-video/round-67-202611061206/prose-sample-1-owner.md`, the owner's words saved as written), choosing four fixes… |
+| [D321](#d321) | Every film's narration says what the picture cannot show, and tells a rule where the story first needs it | 2026-11-07 | ruled by the owner on the night of 2026-11-06 to 2026-11-07, after round 67's third prose sample (`scratch/story-video/round-67-202611061206/prose-sample-3-owner.md`, the owner's answers saved as… |
 
 ---
 
@@ -11306,3 +11307,17 @@ the owner asked what each part of the setup does for the story and the pictures,
 
 **Rejected.** Leaving every verdict to subagents and tools alone, under which this sample's empty lines passed every
 check before it reached the owner.
+
+### D321
+**Every film's narration says what the picture cannot show, and tells a rule where the story first needs it** · 2026-11-07
+
+**Status:** ruled by the owner on the night of 2026-11-06 to 2026-11-07, after round 67's third prose sample
+(`scratch/story-video/round-67-202611061206/prose-sample-3-owner.md`, the owner's answers saved as they came). It
+extends D320. The film lane wrote both rules into the `create-story-video` skill's prose brief at `6c950d50`.
+
+**Decision.** Two rules hold for every film's prose. Narration says what the picture cannot show, never what it already
+shows. A rule of the world is told where the story first needs it, not gathered into a setup ahead of the story.
+
+**Why.** Round 67's third sample passed every check and still held back: it described the leaves the viewer was
+already looking at, and its setup listed rules that paid off only beats later, burying the one line the story turns on.
+The session put the two notes to the owner as ones that hold for any film, and the owner agreed.
