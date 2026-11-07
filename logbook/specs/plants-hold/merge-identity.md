@@ -47,3 +47,12 @@ byte-identical.
 default. The same fixture on its Release farm is `runs/cefix-s4/2026-11-06-162944-987efd5c`, config `987efd5cad824929`.
 Against the fixture of `02a57851`, its 2,000 stats rows hold the same 340,000 values with no field in one run only, and
 its `lineage.jsonl` (10,408 rows) and its snapshot at 20,000 s are byte-identical.
+
+## D319's bank and rest and D308's urge and sense change nothing with their switches off
+
+`plants-build` at `a33fff90` merges D319's bank (`bank`, merge `315412c3`), D308's grow urge and matter sense (`grow`,
+merge `82e866fc`, with the card's kernels regenerated) and D319's rest (`rest`, merge `a33fff90`), each off by default.
+The same fixture on its Release farm is `runs/cefix-s4/2026-11-07-001403-ca80831c`, config `ca80831c7561a859`. Against
+the fixture of `c7c88a4d`, its 2,000 stats rows hold the same 340,000 values with no field in one run only, and its
+`lineage.jsonl` (10,408 rows) and its snapshot at 20,000 s are byte-identical. The fixture runs on the CPU, so the
+regenerated kernels are checked on the card by the bank screen's group 64 check.
