@@ -1,0 +1,6 @@
+seed 6202: 1200 and 1200 rows; columns ['plantsResting', 'restsBegun', 'wakes']
+  first rest: plr 3280 s, plrk 3280 s
+  no sample differs
+seed 6203: 1200 and 1200 rows; columns ['plantsResting', 'restsBegun', 'wakes']
+  first rest: plr 1150 s, plrk 1150 s
+  first differing sample at 1150 s; columns differing there: ['auditResidual', 'matterLocked', 'matterResidual', 'matterStanding', 'meanBuoyancyOffset', 'meanExposure', 'meanReach', 'moduleDrops', 'moduleRebuilds', 'modulesStanding', 'remainsJoules', 'remainsStanding']

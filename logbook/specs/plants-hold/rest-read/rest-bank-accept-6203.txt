@@ -1,0 +1,17 @@
+A: scratch/plants-work/runs\plb-6203\2026-11-07-005615-08d44003
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 100035.9911 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 167e3496a5 dirty False dynamics 43025f555fd4 farm 68e2b391d72c config 08d44003b4af6b44
+  pace     12000 s of 12000 in 69.02963143166667 min, 2.8973065023240436 x real time, status ended (budget), diverged 0
+B: scratch/plants-work/runs\plr-6203\2026-11-07-045803-b4488948
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.9474 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit feda016139 dirty False dynamics 43025f555fd4 farm 68e2b391d72c config b4488948510b7209
+  pace     12000 s of 12000 in 91.38434435666667 min, 2.1885586793665017 x real time, status ended (budget), diverged 0
+split A  physics 67%, world 27%, harness 5%, writers 1%
+split B  physics 66%, world 29%, harness 4%, writers 1%
+stats    identical through t=110; first difference at t=120 in 25 fields, e.g. bloomLeafArea=[0.8206680752336979, 0, 0.03323707357048988, 0.34535881876945496, 0, 0, 0.27311568707227707, 0, 0, 0.2527098059654236, 0.2923126071691513]/[0.8206680752336979, 0, 0.03323707357048988, 0.34535881876945496, 0, 0, 0.27653786540031433, 0, 0, 0.2527098059654236, 0.2923126071691513], detritusCv=104.01289995936982/104.00549974301533, detritusExudedTotal=193.45498002576642/193.46994917164557, detritusExudedWindow=29.448838922660798/29.463808068539947, detritusJoules=189.24828889252862/189.26324893868806
+stats    left out where only one run holds them: plantsResting, restsBegun, wakes
+digest   identical through step 11800; parts at step 11900 (t=118.99999734014273), bodies 58/58
+lineage  first differs at line 74
+positions not in both runs

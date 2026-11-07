@@ -341,3 +341,61 @@ Read besides:
 - the grippers begun and the children settled in each season against each arm's control, since A's bank cost both;
 - the rest delay among the living gripping plants at 12,000 s, against the 600 s they started at;
 - the matter and energy books against their lines.
+
+## What the rest found
+
+The six worlds ran on `plants-build` at `feda0161` from 04:58 on 2026-11-07. All ended by budget, between 06:18 and
+06:59, at 1.7 to 2.5 times real time. They are `scratch/plants-work/runs/plr-6202/2026-11-07-045803-b4488948`,
+`plrk-6202/2026-11-07-045803-3f667b48` and `plro-6202/2026-11-07-045803-94517f1a`, with their 6203 twins. Every book
+closed under its line. The largest energy residual was 4.2e-5 J and the largest matter residual 4.3e-6. The reads and
+their outputs are in `rest-read/` beside this file.
+
+**The forest test fails on every arm and seed.** No world holds 20 gripping bodies at 12,000 s, even counting every
+island together. By the pre-statement, the full winter beats the rest as built, and the next step is the owner's.
+
+| World | Seed | Grippers begun in the first summer | Gripping at the first winter's end | At the second winter's end | At 12,000 s | Children settled |
+|---|---|---|---|---|---|---|
+| Bank, rest, shedding (`plr`) | 6202 | 12 | 2 | 1 | 1 | 1 |
+| Bank, rest, keeping (`plrk`) | 6202 | 12 | 2 | 1 | 1 | 1 |
+| A's bank, the control | 6202 | 13 | 3 | 4 | 5 | 11 |
+| Bank, rest, shedding | 6203 | 28 | 2 | 1 | 2 | 15 |
+| Bank, rest, keeping | 6203 | 17 | 5 | 2 | 4 | 7 |
+| A's bank | 6203 | 20 | 0 | 0 | 0 | 7 |
+| Rest without the bank (`plro`) | 6202 | 80 | 9 | 3 | 6 | 113 |
+| The second run, the control | 6202 | 84 | 9 | 1 | 2 | 107 |
+| Rest without the bank | 6203 | 103 | 14 | 5 | 10 | 131 |
+| The second run | 6203 | 101 | 2 | 1 | 1 | 80 |
+
+**The rest carries most of the plants it reaches, and it reaches few.** Plants began to rest in the winters, 5 to 29
+rests in a winter in each world, and 31 of the first winter's 60 rests ended in a wake in the summer after. Between
+none and 7 began a rest in the first summer. Gripping plants were counted winter by winter over the five distinct worlds, since `plrk-6202` repeats
+`plr-6202`. Of these, 20 rested at some sample in the winter, and 15 of those lived to its end. Of the 384 that never
+rested, 27 did. So one gripping plant in twenty rested. The others mostly died first, of starvation. In the first winter
+age killed nearly as many. About half the gripping deaths on the rest-only arm were by age, as the first summer's
+plants reached the end of their lives.
+
+Inference, untested: the plants that rested may be the ones with the most reserve, which lasted the 600 s of deficit
+the delay asks for. This read cannot tell the rest's help from that choice. Inference: most gripping plants cannot run a
+deficit for 600 s, so they starve before they rest. A shorter delay would reach more of them, at a cost. The day is
+1,000 s, and D319 set the delay longer than a night so that a plant would not rest every night.
+
+**The delay did not move, and ages at death did not lengthen.** Among the gripping plants alive at 12,000 s, the median
+delay was 600 s on every world, and the upper quartile at most 759 s. The gripping plants' median age at death in the
+first winter was 420 and 2,061 s on the bank arm that sheds, against 290 and 1,779 s on A's bank. On the rest-only arm
+it was 1,626 and 1,397 s, against 1,432 and 1,414 s on the second run. The second winter was as mixed. With one plant
+in twenty resting, the slowed ageing touches too few to show.
+
+**Shedding changed nothing on 6202, and the switch reached the world on 6203.** On 6202 the shedding and keeping arms
+are identical in every stats sample but the wall clocks, through 21 rests. On 6203 they part at the first rest, at
+1,150 s. Inference: no plant that rested on 6202 carried an added blade to shed. The run does not count shed blades.
+
+**Each arm is a new realisation of its control from about two minutes in.** The pre-statement expected the rest-only
+arm to step as the second run did until a plant first rested, and a difference before then to come from the builds,
+and neither held. The rest-only arm parts from the second run at the first plant birth by breeding, 143.5 s on 6202 and
+118 s on 6203. The bank arm parts from A's at the first such birth in A's world, 170.5 s and 118 s
+(`rest-accept-*.txt`, `rest-bank-accept-*.txt`). With the rest on, every plant birth draws the chance that its delay
+gene steps (D319, `Mutator.cs`). A world without the rest never takes that draw, so the random stream moves at the
+first birth. The arms' differences from their controls therefore carry a realisation's spread as well as the rest's effect.
+The rest-only arm leaned above its control on 6203, 10 against 1 gripping at 12,000 s, and matched it on 6202 after the
+first winter. Inference: a lean of that size is within what a new realisation gives. The two bank arms on 6203, which
+part at 1,150 s, end at 2 and 4.

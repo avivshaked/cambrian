@@ -1,0 +1,60 @@
+plr-6202: 51 bodies seen gripping
+  summer 1 died   7, median age 1373 s, {'aged': 4, 'starved': 3}
+  winter 1 died  18, median age 420 s, {'starved': 13, 'aged': 5}
+  summer 2 died  13, median age 816 s, {'aged': 3, 'starved': 10}
+  winter 2 died  12, median age 364 s, {'aged': 3, 'starved': 9}
+  summer 3 died   0, median age - s, {}
+plr-6203: 69 bodies seen gripping
+  summer 1 died  14, median age 1438 s, {'aged': 10, 'starved': 4}
+  winter 1 died  23, median age 2061 s, {'aged': 14, 'starved': 9}
+  summer 2 died  12, median age 847 s, {'starved': 7, 'aged': 5}
+  winter 2 died  17, median age 129 s, {'starved': 13, 'aged': 4}
+  summer 3 died   1, median age 116 s, {'starved': 1}
+plrk-6202: 51 bodies seen gripping
+  summer 1 died   7, median age 1373 s, {'aged': 4, 'starved': 3}
+  winter 1 died  18, median age 420 s, {'starved': 13, 'aged': 5}
+  summer 2 died  13, median age 816 s, {'aged': 3, 'starved': 10}
+  winter 2 died  12, median age 364 s, {'aged': 3, 'starved': 9}
+  summer 3 died   0, median age - s, {}
+plrk-6203: 60 bodies seen gripping
+  summer 1 died  12, median age 1438 s, {'aged': 9, 'starved': 3}
+  winter 1 died  20, median age 113 s, {'starved': 16, 'aged': 4}
+  summer 2 died  13, median age 737 s, {'starved': 7, 'aged': 6}
+  winter 2 died  11, median age 206 s, {'aged': 2, 'starved': 9}
+  summer 3 died   0, median age - s, {}
+plb-6202: 73 bodies seen gripping
+  summer 1 died   7, median age 1373 s, {'aged': 4, 'starved': 3}
+  winter 1 died  17, median age 290 s, {'starved': 14, 'aged': 3}
+  summer 2 died  12, median age 475 s, {'aged': 3, 'starved': 9}
+  winter 2 died  32, median age 595 s, {'aged': 7, 'starved': 25}
+  summer 3 died   0, median age - s, {}
+plb-6203: 62 bodies seen gripping
+  summer 1 died  11, median age 1646 s, {'aged': 10, 'starved': 1}
+  winter 1 died  23, median age 1779 s, {'starved': 12, 'aged': 11}
+  summer 2 died   8, median age 275 s, {'starved': 7, 'aged': 1}
+  winter 2 died  20, median age 468 s, {'starved': 15, 'aged': 5}
+  summer 3 died   0, median age - s, {}
+plro-6202: 182 bodies seen gripping
+  summer 1 died  25, median age 798 s, {'starved': 11, 'aged': 14}
+  winter 1 died  77, median age 1626 s, {'aged': 41, 'eaten': 2, 'starved': 34}
+  summer 2 died  25, median age 782 s, {'aged': 11, 'starved': 14}
+  winter 2 died  49, median age 1290 s, {'starved': 38, 'aged': 11}
+  summer 3 died   0, median age - s, {}
+plro-6203: 263 bodies seen gripping
+  summer 1 died  60, median age 1147 s, {'aged': 37, 'starved': 23}
+  winter 1 died 100, median age 1397 s, {'aged': 57, 'starved': 43}
+  summer 2 died  41, median age 904 s, {'starved': 23, 'aged': 14, 'eaten': 4}
+  winter 2 died  51, median age 818 s, {'aged': 12, 'starved': 38, 'eaten': 1}
+  summer 3 died   1, median age 1396 s, {'aged': 1}
+plg-6202: 194 bodies seen gripping
+  summer 1 died  30, median age 742 s, {'aged': 16, 'starved': 14}
+  winter 1 died  97, median age 1432 s, {'starved': 58, 'aged': 39}
+  summer 2 died  18, median age 2071 s, {'aged': 11, 'starved': 7}
+  winter 2 died  47, median age 1204 s, {'starved': 30, 'aged': 17}
+  summer 3 died   0, median age - s, {}
+plg-6203: 224 bodies seen gripping
+  summer 1 died  56, median age 1308 s, {'aged': 35, 'starved': 21}
+  winter 1 died  92, median age 1414 s, {'starved': 52, 'aged': 39, 'eaten': 1}
+  summer 2 died  20, median age 860 s, {'starved': 10, 'aged': 9, 'eaten': 1}
+  winter 2 died  54, median age 1510 s, {'starved': 35, 'aged': 19}
+  summer 3 died   1, median age 2706 s, {'aged': 1}

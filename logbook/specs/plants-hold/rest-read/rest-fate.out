@@ -1,0 +1,30 @@
+plr-6202
+  winter 1, rested         1: alive at its end   1, died in it   0 {}
+  winter 1, never rested  19: alive at its end   1, died in it  18 {'aged': 5, 'starved': 13}
+  winter 2, rested         0: alive at its end   0, died in it   0 {}
+  winter 2, never rested  12: alive at its end   1, died in it  11 {'starved': 8, 'aged': 3}
+plr-6203
+  winter 1, rested         1: alive at its end   1, died in it   0 {}
+  winter 1, never rested  23: alive at its end   1, died in it  22 {'aged': 13, 'starved': 9}
+  winter 2, rested         1: alive at its end   1, died in it   0 {}
+  winter 2, never rested  16: alive at its end   0, died in it  16 {'aged': 3, 'starved': 13}
+plrk-6202
+  winter 1, rested         1: alive at its end   1, died in it   0 {}
+  winter 1, never rested  19: alive at its end   1, died in it  18 {'aged': 5, 'starved': 13}
+  winter 2, rested         0: alive at its end   0, died in it   0 {}
+  winter 2, never rested  12: alive at its end   1, died in it  11 {'starved': 8, 'aged': 3}
+plrk-6203
+  winter 1, rested         3: alive at its end   3, died in it   0 {}
+  winter 1, never rested  21: alive at its end   2, died in it  19 {'starved': 16, 'aged': 3}
+  winter 2, rested         1: alive at its end   1, died in it   0 {}
+  winter 2, never rested  12: alive at its end   1, died in it  11 {'starved': 9, 'aged': 2}
+plro-6202
+  winter 1, rested         4: alive at its end   3, died in it   1 {'starved': 1}
+  winter 1, never rested  76: alive at its end   5, died in it  71 {'aged': 37, 'eaten': 2, 'starved': 32}
+  winter 2, rested         4: alive at its end   1, died in it   3 {'aged': 1, 'starved': 2}
+  winter 2, never rested  43: alive at its end   2, died in it  41 {'starved': 33, 'aged': 8}
+plro-6203
+  winter 1, rested         4: alive at its end   3, died in it   1 {'aged': 1}
+  winter 1, never rested 109: alive at its end  11, died in it  98 {'aged': 55, 'starved': 43}
+  winter 2, rested         1: alive at its end   1, died in it   0 {}
+  winter 2, never rested  53: alive at its end   3, died in it  50 {'starved': 37, 'aged': 12, 'eaten': 1}

@@ -1,0 +1,6 @@
+plr-6202 at 12,000 s: by island (n, born after 3,000 s): {10: (1, 1)}; test fails
+plr-6203 at 12,000 s: by island (n, born after 3,000 s): {0: (1, 1), 6: (1, 1)}; test fails
+plrk-6202 at 12,000 s: by island (n, born after 3,000 s): {10: (1, 1)}; test fails
+plrk-6203 at 12,000 s: by island (n, born after 3,000 s): {6: (3, 2), 9: (1, 1)}; test fails
+plro-6202 at 12,000 s: by island (n, born after 3,000 s): {6: (1, 1), 8: (1, 1), 9: (2, 2), 10: (2, 2)}; test fails
+plro-6203 at 12,000 s: by island (n, born after 3,000 s): {3: (1, 0), 6: (3, 3), 7: (1, 1), 9: (5, 5)}; test fails

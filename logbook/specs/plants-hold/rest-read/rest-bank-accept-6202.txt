@@ -1,0 +1,17 @@
+A: scratch/plants-work/runs\plb-6202\2026-11-07-005615-08d44003
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.7902 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 167e3496a5 dirty False dynamics 43025f555fd4 farm 68e2b391d72c config 08d44003b4af6b44
+  pace     12000 s of 12000 in 71.58796682833334 min, 2.793765612586769 x real time, status ended (budget), diverged 0
+B: scratch/plants-work/runs\plr-6202\2026-11-07-045803-b4488948
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 37373.5181 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit feda016139 dirty False dynamics 43025f555fd4 farm 68e2b391d72c config b4488948510b7209
+  pace     12000 s of 12000 in 79.98323966666666 min, 2.50052387016965 x real time, status ended (budget), diverged 0
+split A  physics 68%, world 26%, harness 4%, writers 1%
+split B  physics 66%, world 31%, harness 2%, writers 1%
+stats    identical through t=170; first difference at t=180 in 50 fields, e.g. auditResidual=-4.547473508864641e-12/-5.4569682106375694e-12, bloomLeafArea=[0.08704307675361633, 0, 0.2839682996273041, 0.6061781793832779, 0, 0, 0, 0, 0, 1.7886361628770828, 1.3039401695132256]/[0.08704307675361633, 0, 0.2839682996273041, 0.6061781793832779, 0, 0, 0, 0, 0, 1.7841400504112244, 1.3039401695132256], buoyant=7/6, buoyantDepth=-4.1884857927049906/-4.900025208791097, buoyantInherited=2/1
+stats    left out where only one run holds them: plantsResting, restsBegun, wakes
+digest   identical through step 17000; parts at step 17100 (t=170.99999617785215), bodies 80/80
+lineage  first differs at line 116
+positions not in both runs
