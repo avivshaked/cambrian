@@ -341,8 +341,9 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D317](#d317) | Round 67's film follows the costly team's comeback with the plants beside it, and shows the first forest run's stand before its ending | 2026-11-06 | ruled by the owner on 2026-11-06, in the film lane's questions after story draft 6 (`scratch/story-video/round-67-202611061206/owner-6.md` and `pick.md`, the owner's answers saved as written) |
 | [D318](#d318) | The winter comes back to the plant work's worlds in steps, while a way through it is designed | 2026-11-06 | ruled by the owner on 2026-11-06, choosing the coordinator's recommendation after the forest diagnostic (`logbook/specs/plants-hold/forest-run.md`, "What the diagnostic found") |
 | [D319](#d319) | A gripping plant may shed its blades and rest through the winter, its ageing slowed, beside a bank of its own | 2026-11-06 | ruled by the owner on 2026-11-06, on the coordinator's proposal for D318's way through the winter (`proposals/propose-plants-winter.md` at `90dd34b2`, absorbed here and deleted) |
-| [D320](#d320) | A prose line that says nothing fails the draft, the session's read among the checks, and a film may run past 800 words | 2026-11-06 | ruled by the owner on 2026-11-06, after round 67's first prose sample (`scratch/story-video/round-67-202611061206/prose-sample-1-owner.md`, the owner's words saved as written), choosing four fixes… |
+| [D320](#d320) | A prose line that says nothing fails the draft, the session's read among the checks, and a film may run past 800 words | 2026-11-06 | ruled by the owner on 2026-11-06, after round 67's first prose sample (`scratch/story-video/round-67-202611061206/prose-sample-1-owner.md`, the owner's words saved as written), choosing four fixes… · amended by D322 |
 | [D321](#d321) | Every film's narration says what the picture cannot show, and tells a rule where the story first needs it | 2026-11-07 | ruled by the owner on the night of 2026-11-06 to 2026-11-07, after round 67's third prose sample (`scratch/story-video/round-67-202611061206/prose-sample-3-owner.md`, the owner's answers saved as… |
+| [D322](#d322) | The prose writer reads every earlier check, a line the owner keeps never fails a draft, and a film's answer is not a repeat | 2026-11-07 | ruled by the owner on 2026-11-07, after round 67's prose draft 4 (`scratch/story-video/round-67-202611061206/prose-4-owner.md`, the owner's answers saved as they came), choosing the three fixes the… |
 
 ---
 
@@ -11321,3 +11322,30 @@ shows. A rule of the world is told where the story first needs it, not gathered 
 **Why.** Round 67's third sample passed every check and still held back: it described the leaves the viewer was
 already looking at, and its setup listed rules that paid off only beats later, burying the one line the story turns on.
 The session put the two notes to the owner as ones that hold for any film, and the owner agreed.
+
+### D322
+**The prose writer reads every earlier check, a line the owner keeps never fails a draft, and a film's answer is not a repeat** · 2026-11-07
+
+**Status:** ruled by the owner on 2026-11-07, after round 67's prose draft 4
+(`scratch/story-video/round-67-202611061206/prose-4-owner.md`, the owner's answers saved as they came), choosing the
+three fixes the film lane recommended. It extends D320 and D321, and amends D320's rule that the session's read can
+fail a draft: a flagged line that the owner's words keep fails nothing. The film lane wrote the fixes into the
+`create-story-video` skill's prose step at `6cab2630`.
+
+**Decision.**
+- The prose writer reads every earlier draft's line check and every session's read, not only the last draft's. A line
+  any of them named stays out unless the owner's words keep it.
+- A line-check flag on a line the owner's words keep does not fail a draft. The session's read lists such a line under
+  "Kept by the owner", and the writer never cuts it.
+- In the line checker's brief, the sentence that gives the film's answer is not a repeat, even when the facts before it
+  add up to it, as the film's question is not.
+- For round 67's film, the travel thread leaves story beats 4 and 7: the line that a costly lead would mean the ocean
+  rewards getting from place to place, and with it "That would be the more interesting result", which the owner had
+  kept on draft 2.
+
+**Why.** Draft 4 brought back four lines that draft 1's checks had named, because its writer read only the last draft's
+checks. Without the second fix, every line the owner keeps would fail every draft. The travel thread was raised and
+never paid off: the cold listener needed it twice, and the last line already leaves the film's open question. Cutting
+it saves about 60 words.
+
+**Rejected.** Bringing the travel thread back into the film.
