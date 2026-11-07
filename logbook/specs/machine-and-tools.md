@@ -165,6 +165,15 @@ The root file's rules still apply. The entries below were moved word for word, s
     with 14 s at 85 °C or more and 3 s at 90 °C or more in Afterburner's log. Its own stop, reading every 30 s, saw
     88 °C and ended it. The group was unharmed. Such a job runs after the group, alone, and a heat stop for a job that
     loads a model reads every few seconds.
+  - **Nor does another project's render, and a slot given to another agent carries the heat terms.** On 2026-11-07
+    the coordinator gave another project's video render (headless Chrome and x264, four tabs) logical 12-19 beside
+    D325's six-world card group, with a memory guard and no heat guard. From 14:43 those cores went from about 20 %
+    to 56-98 % busy, and the CPU's hottest reading rose from 75-84 °C to 97-100 °C every minute. Afterburner's log
+    held 443 s at 85 °C or more, 208 s at 90 °C or more and 79 s at 95 °C or more. The group's heat stop fired at
+    14:57:21 on 99 °C, and the render alone held 97 °C at 14:58 after the group had stopped. The group resumed from
+    the checkpoints it wrote at its stop. `scripts/reads/core-load.py` reads each band of cores minute by minute.
+    Heavy work for another project waits for the card group to end, like any other heavy job, and its slot names the
+    heat stop it runs under.
   - **A group's first minute can burst past the stop unseen.** The launchers read the heat every 15 s, so a burst
     of a few seconds falls between two readings. On 2026-10-30, `r63d`'s three-world group resumed from its
     24,000 s checkpoints beside N0 (16-23). Afterburner's log then held 23 seconds at 95 °C or more, up to 100 °C,
