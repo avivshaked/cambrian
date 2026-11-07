@@ -1,0 +1,8 @@
+run scratch/plants-work/runs/plr-6203/2026-11-07-045803-b4488948//, samples from 3,000 s, one in 10
+group | mean count a sample | depth y median (q10, q90) | nearest animal median m (q10) | within 3 m | within 10 m
+plant remains | 318.1 | -2.9 (-6.4, -1.3) | 7.0 (2.7) | 13.4% | 63.1%
+animal remains | 47.9 | -3.1 (-9.5, -0.8) | 5.6 (2.1) | 21.3% | 68.4%
+living plants | 1218.4 | -2.6 (-5.5, -1.1) | 5.9 (2.3) | 18.8% | 70.0%
+animals | 109.5 | -2.8 (-7.8, -0.5) | nan (nan) | nan% | nan%
+plant remains followed: 6087, seen for median 490 s, depth change median -0.01 m (q10 -0.53), horizontal drift median 4.0 m (q90 10.3)
+animal remains followed: 915, seen for median 490 s, depth change median -0.38 m (q10 -2.84), horizontal drift median 5.7 m (q90 12.5)

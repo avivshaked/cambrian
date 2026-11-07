@@ -11,14 +11,13 @@ Absorbed into DECISIONS.md on ruling, then deleted.*
 The owner wants a forest because it is the key to grazers that feed properly without their numbers running away. A grip
 already pays: a plant that settles on rock breeds about five times as much as its sibling that drifts. What stops the
 forest is that it cannot spread. Most children that try to settle find no spot, the winter kills the grippers, and a
-gripping plant gains nothing by growing taller. A real kelp forest rests on three things our world lacks or has only
-weakly. Its blades earn by their height, so plants stack into a canopy. It sheds most of what it grows as drifting
-food, which keeps its grazers fed without eating the living stand. And it stands on reef in lit water. I propose three
-steps, in this order, each behind its own switch and each started overpowered (D262). First, light and matter at each
-part (D297), which is built. Second, the grazers' side. Our forest already sheds a large stream of dead plants and the
-grazers take 1 to 2 % of it, so a read of why comes before blade turnover, a plant's oldest blade wearing out on a
-schedule. Third, more lit rock from D204's shoals, only if room still limits after the
-first two.
+gripping plant gains nothing by growing taller. A real kelp forest rests on three things. Its blades earn by their
+height, so plants stack into a canopy. It sheds most of what it grows as drifting food, which keeps its grazers fed
+without eating the living stand. And it stands on reef in lit water. Our world lacks the first and has the third only
+weakly. The second it has already: the forest sheds a large stream of dead plants within the grazers' reach, and they
+take 1 to 2 % of it, because they are few. So I propose two steps, each behind its own switch and each started
+overpowered (D262). First, light and matter at each part (D297), which is built. Then more lit rock from D204's shoals,
+only if room still limits after the first. Blade turnover, drafted as a second step, is withdrawn.
 
 ## What the measures found
 
@@ -31,6 +30,7 @@ first two.
 | The winter | With the rest at a delay of 100 to 600 s, a forest held through the full winter on 6202 (74 gripping bodies on one island) and failed on 6203 | `forest-run.md` |
 | Dead plant matter today | Contact eating is on in the forest worlds (D219, D220), so no corpse forms. A dropped blade, and every body that dies, stays in the water as remains a mouth can bite for 500 s. Then the remains burn: their energy leaves the world and their matter goes to the spent field where they lie, which the plants draw on. Plants drop blades only when poor, 13 to 2,689 drops a world | `WorldModules.cs`, `WorldContact.cs`, the run's config |
 | What grazers eat | Over 12,000 s in six forest worlds, mouths took 1,490 to 8,531 J from remains and 11,073 to 99,044 J from living leaves, while 297,000 to 715,000 J of remains burnt uneaten. The forest already sheds a large stream of dead plants, and the grazers take 1 to 2 % of it | `remains-read/remains-eaten.out` |
+| Where the remains lie | After 3,000 s, plant remains sit at the living plants' depth (median 2.4 to 2.9 m against 1.8 to 2.6 m), barely sink, and drift a median 4 m in their 500 s. They lie as near an animal, any living body without a leaf, as living plants do (within 3 m of one: 1.9 to 13.4 % of remains, 2.8 to 18.8 % of living plants). A sample holds 14 to 117 animals against 900 to 2,400 plant bodies, a fifth of them remains | `remains-read/remains-where-*.out` |
 
 ## What real forests do
 
@@ -59,7 +59,7 @@ gripping plant, children per gripping plant against drifting, the grips of their
 since no rule points growth at the light. A gripping plant lives about 2,000 s, so 12,000 s is about six generations,
 and if the blades start to rise, a long world follows.
 
-## 2. Blade turnover (a world rule, the owner's)
+## 2. Blade turnover, withdrawn
 
 A plant's added blades wear out. Each added blade older than the turnover time is shed and stays in the water as
 remains, as a module drop leaves them today. The module rule grows it back while the plant can afford it. The
@@ -72,10 +72,13 @@ dead plants, and the grazers take 1 to 2 % of it and bite living leaves five to 
 would add to a stream the grazers leave. The matter books need no change: burning remains send their matter to the spent
 field where they lie, so a shed stays at the island if its remains do.
 
-So a read comes first, and it is agent work. It asks where the remains lie and drift in their 500 s against where the
-grazers feed, and whether a grazer can sense them. Its answer decides the step. If the remains sink or drift out of reach, the
-fix is where they go. If a grazer cannot find them, the fix is a sense. If the grazers reach them and still pass them by,
-the question is what a remains bite is worth. Blade turnover comes after, as the plants' side of the same stream.
+The read of where the remains lie answered why. The remains are within reach: they hang among the living plants at
+the same depth and lie as near the animals. Per body, the animals bite them a third to two thirds as much as living
+leaves (inference from the totals; why less is not read). What is scarce is animals: 14 to 117 in a world of 900 to
+2,400 plant bodies. The forest already makes more drift food than its grazers can eat, so blade turnover would feed no
+one new. What holds the grazers back is their own side, the search and the pace of life that the grazer work already
+names. I would take step 2 out of this proposal. Blade turnover can come back later as a question about the plants, a
+way to shed weight before winter.
 
 ## 3. More lit rock (D204's shoals)
 
@@ -90,16 +93,16 @@ the growing tip and its float point up. Here, height should come from evolution 
 
 ## What it implies
 
-- **For the record:** step 1 needs no new decision. Steps 2 and 3 each take a decision, and step 3 builds D204.
+- **For the record:** step 1 needs no new decision. Withdrawing step 2 needs none either. Step 3 takes a decision and
+  builds D204.
 - **For the rounds:** the forest world becomes the base for the grazer rounds, and it departs from round 67's world.
-- **For the machine:** one card screen of about 2 h for step 1, a builder's window and a screen for step 2, and a
-  larger build for step 3.
+- **For the machine:** one card screen of about 2 h for step 1, and a larger build for step 3.
 - **The risk:** D297 changes how animals earn as well, and a forest that feeds grazers can still collapse to a barren
   if they outgrow its shedding.
 
 ## The questions
 
 1. Step 1: run the screen with light and matter at each part, on four seeds?
-2. Step 2: hold blade turnover until the read says why the grazers leave the dead plants they already have, and bring
-   back what that read finds as its own question?
+2. Step 2: withdraw blade turnover and leave the grazers' side to the grazer work? The forest already sheds more food
+   within the grazers' reach than they eat.
 3. Step 3: hold the shoals unless room still limits?
