@@ -45,6 +45,12 @@ anything they can hold:
 A short line is welcome when it carries a fact: "It starved." "No children." Ask of every sentence what
 it tells the listener. If the answer is "nothing new", or the sentence would need explaining, it goes.
 
+Say what the picture can't show. The viewer already sees the screen, so a sentence that describes it
+tells them nothing. "These animals are swimming through a thick layer of leaves", from round 67's
+third sample, was spoken over footage of those animals in those leaves. Point at the picture to hang a fact on it,
+"This animal grew from a genome", and never just to describe it. The owner ruled on 2026-11-07 that
+this holds for every film.
+
 ## Write it in passes
 
 You won't get it in one go, and nobody does. A writer gets there in passes, each built on the last,
@@ -128,8 +134,14 @@ Truth is a tax the story pays. Pay all of it, and not a word more.
   mend a sentence by adding a qualifier to it.
 - No creature wants, tries, learns or decides. Things happen to it, and to its kind. Words of wanting
   teach the commonest wrong idea about evolution (research/story-video/narration-writing.md §2.6).
-- Explain each idea once, where `story.md` puts it, and lean on it after. A word the viewer hasn't
-  been told means nothing to them.
+- Explain each idea once, and lean on it after. A word the viewer hasn't been told means nothing to
+  them.
+- Tell a rule where the story first needs it. `story.md` says where each idea is first explained, but
+  the setup holds only what bears on the film's question. A rule the question doesn't need, even one
+  `story.md` lists in the setup, is told in the beat that first uses it, and the notes say where it
+  went. Round 67's third sample spent five minutes on a rulebook before the story moved, and told the
+  three ways a world stops seven beats before the one that uses them. The owner ruled on 2026-11-07
+  that this holds for every film.
 - A listener can't look back. Every "it", "they" and "that" must point at something they can name.
 
 ## What you read, and what you write
