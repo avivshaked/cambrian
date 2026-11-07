@@ -546,9 +546,21 @@ was 17 and 30, on island 6 at 3,200 and 3,100 s. All but one were born before 3,
 6204 the world held 53 to 61 gripping bodies at every 1,500 s mark from 7,500 s to the end. Of the children that try to settle,
 80 to 84 % find no spot, against 80 to 81 % in the new seeds' controls.
 
-**The height read is owed.** It needs each gripping body's highest part, which no run records. A census will restore the
-checkpoints and read every part where the solver holds it (`scratch/plants-work/height-census/brief.md`). Its build
-waits for the card's group to end, since a build does not run beside one (D258).
+**Gripping plants stand no taller with light at each part.** No run records a part's height. The farm's height
+census (`--height-census`, branch `height-census` `dfbdab27`, never merged) restored each world at 3,000, 6,000, 9,000
+and 12,000 s and read every part where the solver held it. The reads are in `height-read/`
+(`height-read.py` by world and second, `pooled.py` by arm). After 3,000 s, over all four seeds:
+
+| Arm | Gripping plants read | Median parts | Median rise | Rise 0.5 m or more | Rise 1 m or more | Median depth of the top |
+|---|---|---|---|---|---|---|
+| Light at each part | 262 | 2 | 0.24 m | 9 % | 0 % | 3.5 m |
+| Control | 414 | 2 | 0.16 m | 7 % | 0 % | 3.2 m |
+
+The rise is the highest part's centre above the holdfast's. A gripping plant is a holdfast and one blade, standing a
+hand's breadth off the rock, and no world in either arm held a gripping plant whose blade rose a metre. The drifting
+plants, about 13,000 bodies read in each arm, lie flat, with their parts at one height. The census's restore read the
+source hashes as differing from the checkpoints', because the farm hashes the tree it runs from, which was the main
+checkout. The census binary's Core and Dynamics are byte for byte the forest build's, and it steps nothing.
 
 Read besides:
 - **The grip pays as before** (`grip-test.out`). Settled children of gripping parents had 4.9 to 7.8 children each,
@@ -563,8 +575,9 @@ Read besides:
   and the controls at 1.88. Inference: the rule costs about a tenth to a fifth of the pace, part of it from the extra bodies.
 
 Inference, untested: a part that earns light at its own height earns more near the surface, so the plants grow in
-number. Whether gripping plants raise their blades is the height read's question. With the grip already paying
-fivefold and the settling still failing four times in five, nothing here moves the room a forest needs.
+number, but not in height. A plant cannot rise without adding blades, and the module rule refuses nearly every blade
+these worlds try to add (below). With the grip already paying fivefold and the settling still failing four times in
+five, nothing here moves the room a forest needs.
 
 **Nearly every blade these worlds try to add is refused for shape**, with the module rule's fix on (`EVOSIM_MODULE_GROWABLE`),
 read from each world's last stats row at 12,000 s. The counts run from the start of the run.
