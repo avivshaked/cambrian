@@ -38,6 +38,9 @@ second, else the child nearest it born to a member of the scene's line (the clad
 near its founding, else the clade itself, as the director's rehearsal takes it), within 120 s
 before the second and 600 s after. The birth goes into the manifest, and the director films that
 birth; a birth that cannot be found is said, and the window is planned at the story's second.
+A resumed run's own file holds only the rows after its checkpoint, so the lineage is read through
+the chain of `resumedFrom` sources (at most 8), each up to the second its resume began at, and the
+plan says once per arm which sources it read, or which it could not.
 
 The run of each arm is the one `--run-dir` names, else the one the story's own `runs` map names
 under `--runs-root`, else the newest run directory under `<runs-root>/<arm>`. A scene whose run
@@ -507,6 +510,7 @@ def checkpoints(run_dir):
     return sorted(out)
 
 
+MAX_SOURCES = 8
 BIRTH_ROW = re.compile(r'"e"\s*:\s*"b"')
 
 
@@ -517,9 +521,54 @@ class Lineage:
         self.born = {}          # id -> (parent, t, flags)
         self.clade = {}         # id -> founder of its clade
         self.children = {}      # parent -> [ids]
+        self.notes = []         # what the resume chain could not read
+        self.sources = []       # (arm, seconds) of each source read, oldest first
         path = os.path.join(run_dir, "lineage.jsonl")
         self.present = os.path.isfile(path)
-        if not self.present:
+        # A resumed run's own file holds only the rows after its second: its sources hold the rest.
+        chain = self._chain(run_dir)
+        self.sources.reverse()
+        for src_dir, bound in reversed(chain):
+            self._read(os.path.join(src_dir, "lineage.jsonl"), bound)
+        if self.present:
+            self._read(path, math.inf)
+
+    def _chain(self, run_dir):
+        """[(directory, last second to read)] of the sources a resume names, newest first, at most MAX_SOURCES."""
+        out = []
+        seen = {os.path.normcase(os.path.abspath(run_dir))}
+        cur, bound = os.path.abspath(run_dir), math.inf
+        while len(out) < MAX_SOURCES:
+            try:
+                with open(os.path.join(cur, "run.json"), encoding="utf-8") as f:
+                    rf = json.load(f).get("resumedFrom")
+            except (OSError, ValueError, AttributeError):
+                if out:
+                    self.notes.append("the run.json of %s could not be read, so the chain of resumes ends there" % cur.replace("\\", "/"))
+                return out
+            if not isinstance(rf, dict):
+                return out
+            try:
+                arm, run, sec = str(rf["arm"]), str(rf["run"]), float(rf["seconds"])
+            except (KeyError, TypeError, ValueError):
+                self.notes.append("the resumedFrom of %s is incomplete, so the chain of resumes ends there" % cur.replace("\\", "/"))
+                return out
+            bound = min(bound, sec)
+            src = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(cur)), arm, run))
+            if os.path.normcase(src) in seen:
+                self.notes.append("the chain of resumes returns to %s/%s, so it ends there" % (arm, run))
+                return out
+            if not os.path.isdir(src):
+                self.notes.append("the source %s/%s of the resume at %.1f s is missing, so its births before the resume are not known" % (arm, run, sec))
+                return out
+            seen.add(os.path.normcase(src))
+            out.append((src, bound))
+            self.sources.append((arm, bound))
+            cur = src
+        return out
+
+    def _read(self, path, bound):
+        if not os.path.isfile(path):
             return
         with open(path, encoding="utf-8", errors="replace") as f:
             for line in f:
@@ -530,6 +579,8 @@ class Lineage:
                 except ValueError:
                     continue
                 i, p, t = int(row["id"]), int(row.get("p", -1)), float(row["t"])
+                if t > bound:
+                    continue
                 flags = (1 if row.get("abs") else 0) | (2 if row.get("jnt") else 0) | (4 if row.get("pho") else 0)
                 self.born[i] = (p, t, flags)
                 c = i
@@ -537,6 +588,13 @@ class Lineage:
                     c = self.clade[p]
                 self.clade[i] = c
                 self.children.setdefault(p, []).append(i)
+
+    def chain_note(self):
+        """One line for the plan when the lineage was read through sources, else None."""
+        if not self.sources:
+            return None
+        names = ", ".join("%s to %.1f s" % (a, b) for a, b in self.sources)
+        return "the lineage was read through %d source%s of this resumed run: %s" % (len(self.sources), "" if len(self.sources) == 1 else "s", names)
 
     def clade_info(self, founder):
         """The clade's founding second and its parent clade's founder (-1 for none)."""
@@ -676,6 +734,9 @@ def plan_arm(arm, shots, run_dir, fps, tail, guide_path, out_dir):
         if needs_clade or station == "Birth":
             if lineage is None:
                 lineage = Lineage(run_dir)
+                if lineage.chain_note():
+                    notes.append(lineage.chain_note())
+                notes.extend(lineage.notes)
             founder = place(shot, lineage, cards, notes)
             if needs_clade and founder < 0 and not (station == "Portrait" and shot.body >= 0):
                 notes.append("a %s whose subject could not be placed in a clade: the director films it as an Arrival" % station)

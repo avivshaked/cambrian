@@ -175,5 +175,102 @@ class PlannerTests(unittest.TestCase):
         self.assertFalse(planner.same_run("s2", "r48-s1"))
 
 
+def write_run(root, arm, name, rows, resumed=None, end=100.0):
+    """A run under root/arm/name: rows are (id, parent, second); resumed is (arm, run, seconds) or None."""
+    run = os.path.join(root, arm, name)
+    os.makedirs(run)
+    meta = {"arm": arm, "requestedSeconds": end, "simulatedSeconds": end}
+    if resumed:
+        meta["resumedFrom"] = {"arm": resumed[0], "run": resumed[1], "seconds": resumed[2]}
+    with open(os.path.join(run, "run.json"), "w") as f:
+        json.dump(meta, f)
+    with open(os.path.join(run, "stats.jsonl"), "w") as f:
+        for t in range(0, int(end) + 1, 10):
+            f.write(json.dumps({"t": float(t), "alive": 5}) + "\n")
+    with open(os.path.join(run, "lineage.jsonl"), "w") as f:
+        for i, p, t in rows:
+            f.write(json.dumps({"e": "b", "t": t, "id": i, "p": p, "abs": 0, "jnt": 0, "pho": 1}) + "\n")
+    return run
+
+
+class ResumedLineageTests(unittest.TestCase):
+    def setUp(self):
+        self.base = os.path.join(ROOT, "scratch", "tests", "story-windows", uuid.uuid4().hex)
+        self.runs = os.path.join(self.base, "runs")
+        # The source: births at 10, 20 and 30 s. The resume is from 20 s and writes from 20.5 s.
+        self.src = write_run(self.runs, "src", "run-a", [(1, -1, 10.0), (2, 1, 20.0), (3, 2, 30.0)])
+
+    def tearDown(self):
+        shutil.rmtree(self.base, ignore_errors=True)
+
+    def resume(self, rows, arm="res", name="run-b", of=("src", "run-a", 20.0)):
+        return write_run(self.runs, arm, name, rows, resumed=of)
+
+    def test_a_body_born_before_the_resume_is_known_and_its_child_joins_its_clade(self):
+        run = self.resume([(4, 2, 20.5)])
+        lin = planner.Lineage(run)
+        self.assertIn(2, lin.born)
+        self.assertEqual(1, lin.clade[2])
+        self.assertEqual(1, lin.clade[4])
+        self.assertEqual([4], lin.children[2])
+        self.assertEqual([("src", 20.0)], lin.sources)
+        self.assertEqual([], lin.notes)
+        self.assertIn("1 source", lin.chain_note())
+
+    def test_source_rows_after_the_resume_second_are_not_read(self):
+        lin = planner.Lineage(self.resume([(4, 2, 20.5)]))
+        self.assertNotIn(3, lin.born)
+
+    def test_a_resume_of_a_resume(self):
+        mid = self.resume([(4, 2, 20.5), (5, 4, 25.0), (6, 5, 40.0)], name="run-b")
+        # run-c resumes run-b from 25 s: run-b's 40 s row is after it, and src's 30 s row is after run-b's own resume.
+        run = write_run(self.runs, "res", "run-c", [(7, 5, 25.5)], resumed=("res", "run-b", 25.0))
+        lin = planner.Lineage(run)
+        for i in (1, 2, 4, 5, 7):
+            self.assertIn(i, lin.born)
+        for i in (3, 6):
+            self.assertNotIn(i, lin.born)
+        self.assertEqual(1, lin.clade[7])
+        self.assertEqual([("src", 20.0), ("res", 25.0)], lin.sources)
+        self.assertIn("2 sources", lin.chain_note())
+        self.assertTrue(os.path.isdir(mid))
+
+    def test_a_missing_source_reads_the_runs_own_rows_with_a_note(self):
+        run = self.resume([(4, 2, 20.5)], of=("src", "gone", 20.0))
+        lin = planner.Lineage(run)
+        self.assertEqual({4}, set(lin.born))
+        self.assertEqual(1, len(lin.notes))
+        self.assertIn("src/gone", lin.notes[0])
+        self.assertIsNone(lin.chain_note())
+
+    def test_a_source_without_a_readable_run_json_ends_the_chain_with_a_note(self):
+        os.remove(os.path.join(self.src, "run.json"))
+        run = self.resume([(4, 2, 20.5)])
+        lin = planner.Lineage(run)
+        self.assertIn(2, lin.born)
+        self.assertNotIn(3, lin.born)
+
+    def test_a_run_with_no_resumed_from_reads_as_before(self):
+        lin = planner.Lineage(self.src)
+        self.assertEqual({1, 2, 3}, set(lin.born))
+        self.assertEqual([], lin.sources)
+        self.assertEqual([], lin.notes)
+        self.assertIsNone(lin.chain_note())
+
+    def test_a_birth_whose_parent_was_born_in_the_source_is_planned_as_a_birth(self):
+        run = self.resume([(4, 2, 20.5)])
+        story = os.path.join(self.base, "story.json")
+        scenes = [{"n": 1, "run": "res", "station": "Birth", "second": 21, "subject": "the leaves (root 1); parent body 2"}]
+        with open(story, "w") as f:
+            json.dump({"title": "t", "scenes": scenes}, f)
+        out = os.path.join(self.base, "out")
+        self.assertEqual(0, planner.main([story, "--out", out, "--runs-root", self.runs, "--run-dir", "res=" + run]))
+        with open(os.path.join(out, planner.FILE_NAME), encoding="utf-8") as f:
+            w = json.load(f)["windows"][0]
+        self.assertEqual("Birth", w["station"])
+        self.assertEqual({"parent": 2, "child": 4, "at": 20.5}, w["birth"])
+        self.assertEqual(1, sum("read through" in n for n in w["notes"]))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
