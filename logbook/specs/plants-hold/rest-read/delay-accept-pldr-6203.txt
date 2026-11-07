@@ -1,0 +1,16 @@
+A: scratch/plants-work/runs\plro-6203\2026-11-07-045803-94517f1a
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.5868 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit feda016139 dirty False dynamics 43025f555fd4 farm 68e2b391d72c config 94517f1a812a1427
+  pace     12000 s of 12000 in 121.24133542166666 min, 1.6496024173968198 x real time, status ended (budget), diverged 0
+B: scratch/plants-work/runs\pldr-6203\2026-11-07-074804-27d24592
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.2175 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 83a95ed0f3 dirty False dynamics 43025f555fd4 farm 68e2b391d72c config 27d24592e350ffe4
+  pace     12000 s of 12000 in 101.13678811 min, 1.9775197901526478 x real time, status ended (budget), diverged 0
+split A  physics 65%, world 27%, harness 7%, writers 1%
+split B  physics 69%, world 25%, harness 5%, writers 1%
+stats    identical through t=680; first difference at t=690 in 19 fields, e.g. auditResidual=8.392526069656014e-06/8.392467861995101e-06, detritusCv=10.943833087155694/10.943855811618285, detritusExudedTotal=36937.64255112546/36937.554866862796, detritusExudedWindow=881.8711534920658/881.7834692294055, detritusJoules=35396.285571512606/35396.19798607758
+digest   identical through step 69900; parts at step 70000 (t=699.9999843537807), bodies 1065/1065
+lineage  first differs at line 1716
+positions not in both runs

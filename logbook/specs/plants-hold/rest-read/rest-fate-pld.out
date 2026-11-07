@@ -1,0 +1,20 @@
+pld-6202
+  winter 1, rested        43: alive at its end  26, died in it  17 {'aged': 14, 'starved': 3}
+  winter 1, never rested  73: alive at its end   8, died in it  65 {'starved': 34, 'aged': 30, 'eaten': 1}
+  winter 2, rested        35: alive at its end  18, died in it  17 {'starved': 9, 'aged': 8}
+  winter 2, never rested 104: alive at its end  16, died in it  88 {'starved': 40, 'aged': 48}
+pld-6203
+  winter 1, rested        29: alive at its end  12, died in it  17 {'starved': 3, 'aged': 14}
+  winter 1, never rested  88: alive at its end   5, died in it  83 {'starved': 35, 'aged': 48}
+  winter 2, rested        41: alive at its end  23, died in it  18 {'starved': 7, 'aged': 11}
+  winter 2, never rested 109: alive at its end   9, died in it 100 {'starved': 55, 'eaten': 11, 'aged': 34}
+pldr-6202
+  winter 1, rested        18: alive at its end   8, died in it  10 {'starved': 4, 'aged': 6}
+  winter 1, never rested 105: alive at its end  27, died in it  78 {'aged': 35, 'starved': 43}
+  winter 2, rested        14: alive at its end  10, died in it   4 {'starved': 3, 'aged': 1}
+  winter 2, never rested 186: alive at its end  64, died in it 122 {'aged': 74, 'starved': 48}
+pldr-6203
+  winter 1, rested         7: alive at its end   4, died in it   3 {'aged': 2, 'starved': 1}
+  winter 1, never rested 107: alive at its end  14, died in it  93 {'starved': 49, 'aged': 44}
+  winter 2, rested         3: alive at its end   3, died in it   0 {}
+  winter 2, never rested  84: alive at its end   8, died in it  76 {'starved': 36, 'aged': 37, 'eaten': 3}

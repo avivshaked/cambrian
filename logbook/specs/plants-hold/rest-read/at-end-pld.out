@@ -1,0 +1,4 @@
+pld-6202 at 12,000 s: by island (n, born after 3,000 s): {0: (1, 1), 1: (1, 1), 2: (3, 3), 4: (1, 1), 6: (28, 26), 8: (1, 1), 10: (8, 8)}; test passes
+pld-6203 at 12,000 s: by island (n, born after 3,000 s): {0: (11, 8), 2: (1, 1), 6: (10, 9), 7: (1, 1), 9: (12, 12), 10: (1, 1)}; test fails
+pldr-6202 at 12,000 s: by island (n, born after 3,000 s): {2: (1, 1), 6: (74, 74), 10: (17, 17)}; test passes
+pldr-6203 at 12,000 s: by island (n, born after 3,000 s): {0: (1, 0), 6: (8, 7), 9: (5, 5)}; test fails

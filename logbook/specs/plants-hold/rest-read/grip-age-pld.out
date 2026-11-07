@@ -1,0 +1,24 @@
+pld-6202: 379 bodies seen gripping
+  summer 1 died  31, median age 805 s, {'aged': 14, 'starved': 17}
+  winter 1 died  86, median age 1374 s, {'aged': 45, 'starved': 40, 'eaten': 1}
+  summer 2 died 103, median age 1482 s, {'aged': 69, 'starved': 33, 'eaten': 1}
+  winter 2 died 107, median age 1365 s, {'aged': 58, 'starved': 49}
+  summer 3 died   9, median age 2146 s, {'aged': 9}
+pld-6203: 430 bodies seen gripping
+  summer 1 died  65, median age 1018 s, {'aged': 39, 'starved': 26}
+  winter 1 died 101, median age 1676 s, {'aged': 63, 'starved': 38}
+  summer 2 died 101, median age 922 s, {'aged': 42, 'starved': 54, 'eaten': 5}
+  winter 2 died 121, median age 1311 s, {'starved': 64, 'aged': 46, 'eaten': 11}
+  summer 3 died   5, median age 1614 s, {'aged': 3, 'starved': 2}
+pldr-6202: 434 bodies seen gripping
+  summer 1 died  30, median age 798 s, {'starved': 14, 'aged': 16}
+  winter 1 died  90, median age 1617 s, {'starved': 48, 'aged': 42}
+  summer 2 died  89, median age 1492 s, {'aged': 48, 'starved': 40, 'eaten': 1}
+  winter 2 died 128, median age 2378 s, {'aged': 75, 'starved': 53}
+  summer 3 died   5, median age 3375 s, {'aged': 3, 'starved': 2}
+pldr-6203: 321 bodies seen gripping
+  summer 1 died  65, median age 1016 s, {'aged': 39, 'starved': 26}
+  winter 1 died  97, median age 1180 s, {'starved': 51, 'aged': 46}
+  summer 2 died  64, median age 1122 s, {'starved': 24, 'aged': 40}
+  winter 2 died  78, median age 1212 s, {'aged': 39, 'eaten': 3, 'starved': 36}
+  summer 3 died   3, median age 474 s, {'aged': 1, 'starved': 1, 'eaten': 1}

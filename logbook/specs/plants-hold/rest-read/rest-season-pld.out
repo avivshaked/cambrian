@@ -1,0 +1,68 @@
+pld-6202 (scratch/plants-work/runs/pld-6202\2026-11-07-074804-3abefdb1)
+  summer 1  resting mean 2.3, most 11; rests begun 23, wakes 13
+  winter 1  resting mean 78.6, most 179; rests begun 433, wakes 343
+  summer 2  resting mean 19.3, most 80; rests begun 45, wakes 94
+  winter 2  resting mean 98.6, most 189; rests begun 422, wakes 292
+  summer 3  resting mean 83.0, most 122; rests begun 0, wakes 103
+  summer 1  plant deaths 803 {'aged': 415, 'starved': 388}, median age 930 s
+  winter 1  plant deaths 1624 {'aged': 1002, 'starved': 582, 'eaten': 40}, median age 1387 s
+  summer 2  plant deaths 2516 {'aged': 1575, 'starved': 727, 'eaten': 214}, median age 1298 s
+  winter 2  plant deaths 2499 {'aged': 1526, 'starved': 845, 'eaten': 128}, median age 1610 s
+  summer 3  plant deaths 171 {'aged': 140, 'starved': 27, 'eaten': 4}, median age 1664 s
+  at  2750 s: gripping 72, of them resting 1
+  at  5750 s: gripping 34, of them resting 21
+  at  8750 s: gripping 73, of them resting 8
+  at 11750 s: gripping 38, of them resting 18
+  at 12000 s: gripping 43, of them resting 4
+  rest delay of the 43 gripping at 12,000 s: median 125 s, quartiles 125-150 s
+pld-6203 (scratch/plants-work/runs/pld-6203\2026-11-07-074804-3abefdb1)
+  summer 1  resting mean 9.7, most 43; rests begun 87, wakes 49
+  winter 1  resting mean 128.7, most 282; rests begun 575, wakes 423
+  summer 2  resting mean 36.9, most 126; rests begun 49, wakes 122
+  winter 2  resting mean 147.8, most 328; rests begun 695, wakes 440
+  summer 3  resting mean 131.9, most 189; rests begun 0, wakes 135
+  summer 1  plant deaths 1639 {'starved': 949, 'aged': 690}, median age 846 s
+  winter 1  plant deaths 3382 {'aged': 2183, 'starved': 1138, 'eaten': 61}, median age 1762 s
+  summer 2  plant deaths 2312 {'aged': 1277, 'starved': 902, 'eaten': 133}, median age 1554 s
+  winter 2  plant deaths 4190 {'aged': 1863, 'starved': 1577, 'eaten': 750}, median age 1698 s
+  summer 3  plant deaths 155 {'aged': 127, 'starved': 19, 'eaten': 9}, median age 2272 s
+  at  2750 s: gripping 57, of them resting 2
+  at  5750 s: gripping 17, of them resting 10
+  at  8750 s: gripping 84, of them resting 8
+  at 11750 s: gripping 33, of them resting 21
+  at 12000 s: gripping 36, of them resting 8
+  rest delay of the 36 gripping at 12,000 s: median 150 s, quartiles 150-150 s
+pldr-6202 (scratch/plants-work/runs/pldr-6202\2026-11-07-074804-27d24592)
+  summer 1  resting mean 1.1, most 5; rests begun 11, wakes 8
+  winter 1  resting mean 33.4, most 74; rests begun 150, wakes 106
+  summer 2  resting mean 5.7, most 31; rests begun 6, wakes 31
+  winter 2  resting mean 48.6, most 93; rests begun 206, wakes 127
+  summer 3  resting mean 50.4, most 68; rests begun 0, wakes 38
+  summer 1  plant deaths 810 {'aged': 418, 'starved': 392}, median age 945 s
+  winter 1  plant deaths 1672 {'aged': 1016, 'starved': 611, 'eaten': 45}, median age 1464 s
+  summer 2  plant deaths 2139 {'aged': 1246, 'starved': 650, 'eaten': 243}, median age 1276 s
+  winter 2  plant deaths 1980 {'aged': 1081, 'starved': 874, 'eaten': 25}, median age 1716 s
+  summer 3  plant deaths 85 {'aged': 65, 'starved': 18, 'eaten': 2}, median age 2894 s
+  at  2750 s: gripping 60, of them resting 2
+  at  5750 s: gripping 37, of them resting 7
+  at  8750 s: gripping 110, of them resting 0
+  at 11750 s: gripping 74, of them resting 10
+  at 12000 s: gripping 92, of them resting 9
+  rest delay of the 92 gripping at 12,000 s: median 308 s, quartiles 308-357 s
+pldr-6203 (scratch/plants-work/runs/pldr-6203\2026-11-07-074804-27d24592)
+  summer 1  resting mean 4.8, most 13; rests begun 24, wakes 14
+  winter 1  resting mean 57.5, most 99; rests begun 147, wakes 88
+  summer 2  resting mean 21.2, most 54; rests begun 16, wakes 47
+  winter 2  resting mean 41.1, most 65; rests begun 101, wakes 50
+  summer 3  resting mean 45.7, most 48; rests begun 0, wakes 7
+  summer 1  plant deaths 1595 {'starved': 936, 'aged': 659}, median age 906 s
+  winter 1  plant deaths 2883 {'aged': 1768, 'starved': 1055, 'eaten': 60}, median age 1702 s
+  summer 2  plant deaths 2157 {'starved': 1180, 'aged': 918, 'eaten': 59}, median age 1250 s
+  winter 2  plant deaths 3977 {'starved': 1772, 'aged': 1662, 'eaten': 543}, median age 1589 s
+  summer 3  plant deaths 165 {'aged': 105, 'starved': 35, 'eaten': 25}, median age 2404 s
+  at  2750 s: gripping 49, of them resting 0
+  at  5750 s: gripping 20, of them resting 4
+  at  8750 s: gripping 34, of them resting 1
+  at 11750 s: gripping 13, of them resting 3
+  at 12000 s: gripping 14, of them resting 3
+  rest delay of the 14 gripping at 12,000 s: median 312 s, quartiles 301-355 s

@@ -1,0 +1,16 @@
+A: scratch/plants-work/runs\plro-6202\2026-11-07-045803-94517f1a
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.227 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit feda016139 dirty False dynamics 43025f555fd4 farm 68e2b391d72c config 94517f1a812a1427
+  pace     12000 s of 12000 in 100.14486510333333 min, 1.997106889041513 x real time, status ended (budget), diverged 0
+B: scratch/plants-work/runs\pld-6202\2026-11-07-074804-3abefdb1
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 40398.6922 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 83a95ed0f3 dirty False dynamics 43025f555fd4 farm 68e2b391d72c config 3abefdb1e962e183
+  pace     12000 s of 12000 in 84.1697512 min, 2.376150542785494 x real time, status ended (budget), diverged 0
+split A  physics 63%, world 33%, harness 4%, writers 1%
+split B  physics 69%, world 26%, harness 4%, writers 1%
+stats    identical through t=500; first difference at t=510 in 59 fields, e.g. alive=189/190, alivePerPatch=[0, 5, 49, 13, 15, 55, 21, 0, 31]/[0, 5, 49, 13, 15, 56, 21, 0, 31], bloomLeafArea=[0.3522357940673828, 0.8205348886549473, 2.365767441689968, 1.5165417194366455, 0, 0, 0.42813265323638916, 0.9932261034846306, 0.5277920067310333, 14.610996851697564, 5.9539889097213745]/[0.3522357940673828, 0.8205348886549473, 2.365767441689968, 1.5165417194366455, 0, 0, 0.42813265323638916, 0.9932261034846306, 0.5277920067310333, 15.001983055844903, 5.9539889097213745], deaths=66/65, depthJointed=-1.7391014047737778/-2.3064511567354202
+digest   identical through step 50300; parts at step 50400 (t=503.99998873472214), bodies 251/251
+lineage  first differs at line 321
+positions not in both runs

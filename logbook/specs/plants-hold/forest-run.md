@@ -427,3 +427,55 @@ Read besides, with B's reads in `rest-read/`:
 
 Expected, as inference: at 150 s far more than one gripping plant in twenty rests in a winter, and the plants rest on
 some summer nights.
+
+## What the shorter delay found
+
+The four worlds ran on `plants-build` at `83a95ed0` from 07:48 on 2026-11-07. All ended by budget, between 09:12 and
+09:29, at 2.0 to 2.5 times real time. They are `scratch/plants-work/runs/pld-6202/2026-11-07-074804-3abefdb1` and
+`pldr-6202/2026-11-07-074804-27d24592`, with their 6203 twins. Every book closed under its line. The largest energy
+residual was 2.4e-4 J and the largest matter residual 6.5e-6. The reads are B's, in `rest-read/`, and their outputs
+are the files there named for `pld`.
+
+**Both arms pass the forest test, on 6202 alone.** At 12,000 s, `pld-6202` holds 28 gripping bodies on island 6, 26 of
+them born after 3,000 s. `pldr-6202` holds 74 there, all born after 3,000 s, and 17 more on island 10. On 6203 both
+fail: the most on one island is 12 at the delay of 150 s and 8 across the range. At 150 s, 6203 held 58 on island 6
+at 8,700 s, 56 of them born after 3,000 s, and the second winter took that stand down to 10.
+
+| World | Seed | Gripping at the first winter's end | At the second's | At 12,000 s | Most on one island at 12,000 s | Children settled |
+|---|---|---|---|---|---|---|
+| 150 s (`pld`) | 6202 | 34 | 35 | 43 | 28 | 282 |
+| 100 to 600 s (`pldr`) | 6202 | 36 | 74 | 92 | 74 | 349 |
+| 600 s (`plro`), the control | 6202 | 9 | 3 | 6 | 2 | 113 |
+| 150 s | 6203 | 17 | 32 | 36 | 12 | 281 |
+| 100 to 600 s | 6203 | 18 | 11 | 14 | 8 | 168 |
+| 600 s | 6203 | 14 | 5 | 10 | 5 | 131 |
+
+**Each arm steps as the control until its own first rest.** The arms part from `plro` at 510 s and 690 s at 150 s,
+and at 750 s and 690 s across the range, each the sample of its first rest (`delay-accept-*.txt`). Up to there the
+pairs are identical, so the delay is the only cause of what follows. After it, each is its own realisation. On 6202
+both arms end far above every full-winter world before them. The second run ended with 2 gripping bodies, and the rest
+at 600 s with 6. On 6202 the forest held 25 on one island without the winter and 21 under a winter of 0.4,
+and the range arm's 74 under the full winter beats both. So the lift on 6202 is larger than a realisation's spread
+(inference, from the earlier worlds on that seed). On 6203 the lean
+above the control is within it.
+
+**The rest reaches more plants, and it still carries those it reaches.** Gripping plants were again counted winter by
+winter. At 150 s, 148 of 522 rested at some sample in their winter, and 79 of those lived to its end, against 38 of the
+374 that never rested. Across the range, 42 of 524 rested, and 25 of them lived, against 113 of 482 that never rested.
+The range arm's plants that never rested survived three times as well as the control's. Inference: a rest shorter than
+the 100 s between samples counts as none here, so some of them rested. The read cannot show it.
+
+**Plants rest and wake through the winter, and rarely in summer.** At 150 s, each winter began 422 to 695 rests and
+ended 292 to 440 of them with a wake. Inference: those are nights, of which a winter of 3,000 s holds three. The
+summers began 23 to 87 rests, not the hundreds a rest on most summer nights would make. Across the range the counts
+were a quarter to a third as large. The night rests that the pre-statement expected in the summer came in the winter.
+
+**The delay among the survivors.** At 150 s, the gripping plants alive at 12,000 s held a median delay of 125 s on 6202,
+quartiles 125 to 150 s, and 150 s on 6203. Across the range, the founders drew 100 to 600 s, and the survivors' median
+was 308 s on 6202 and 312 s on 6203, with quartiles within 301 to 357 s. Inference: a quartile that equals the median
+says most survivors descend from one or a few founders. The read cannot tell selection on the delay from that founder's
+luck.
+
+**Ages at death changed little.** Against `plro`, the gripping plants' median age at death in the second winter was
+2,378 s against 1,290 s across the range on 6202. Every other season and world fell within a few hundred seconds of
+the control.
