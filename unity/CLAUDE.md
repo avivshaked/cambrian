@@ -196,5 +196,10 @@ Don't waste time on it; use the Hub GUI.
   `git -C <worker> status --porcelain` lists.** Unity writes a `.meta` beside each source it
   imports. A source that one branch tracks and the next lacks leaves its `.meta` behind, and the
   checkout refuses until it is gone (2026-11-06, w7, 18 files).
+- **Two workers in one worktree compile one Core.** `<worktree>/unity-w7` and `unity-w8` both point
+  `Packages/manifest.json` at `file:../../src/...`, the worktree's own `src/`, so seating a branch
+  on one changes the Core, Dynamics and Farm the other compiles. Two branches whose `src/` differ
+  are filmed in turn, each seat a checkout and a recompile (about six minutes), or on workers in
+  separate worktrees (2026-11-07, round 67's films and plf-6202's, which ran on different farms).
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
