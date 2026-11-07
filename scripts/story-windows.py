@@ -57,6 +57,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import run_chain  # noqa: E402
+
 FORMAT = "story-windows 1"
 FILE_NAME = "windows.json"
 
@@ -526,46 +529,12 @@ class Lineage:
         path = os.path.join(run_dir, "lineage.jsonl")
         self.present = os.path.isfile(path)
         # A resumed run's own file holds only the rows after its second: its sources hold the rest.
-        chain = self._chain(run_dir)
-        self.sources.reverse()
-        for src_dir, bound in reversed(chain):
+        chain, self.notes = run_chain.resume_sources(run_dir, MAX_SOURCES)
+        for src_dir, bound in chain:
+            self.sources.append((os.path.basename(os.path.dirname(src_dir)), bound))
             self._read(os.path.join(src_dir, "lineage.jsonl"), bound)
         if self.present:
             self._read(path, math.inf)
-
-    def _chain(self, run_dir):
-        """[(directory, last second to read)] of the sources a resume names, newest first, at most MAX_SOURCES."""
-        out = []
-        seen = {os.path.normcase(os.path.abspath(run_dir))}
-        cur, bound = os.path.abspath(run_dir), math.inf
-        while len(out) < MAX_SOURCES:
-            try:
-                with open(os.path.join(cur, "run.json"), encoding="utf-8") as f:
-                    rf = json.load(f).get("resumedFrom")
-            except (OSError, ValueError, AttributeError):
-                if out:
-                    self.notes.append("the run.json of %s could not be read, so the chain of resumes ends there" % cur.replace("\\", "/"))
-                return out
-            if not isinstance(rf, dict):
-                return out
-            try:
-                arm, run, sec = str(rf["arm"]), str(rf["run"]), float(rf["seconds"])
-            except (KeyError, TypeError, ValueError):
-                self.notes.append("the resumedFrom of %s is incomplete, so the chain of resumes ends there" % cur.replace("\\", "/"))
-                return out
-            bound = min(bound, sec)
-            src = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(cur)), arm, run))
-            if os.path.normcase(src) in seen:
-                self.notes.append("the chain of resumes returns to %s/%s, so it ends there" % (arm, run))
-                return out
-            if not os.path.isdir(src):
-                self.notes.append("the source %s/%s of the resume at %.1f s is missing, so its births before the resume are not known" % (arm, run, sec))
-                return out
-            seen.add(os.path.normcase(src))
-            out.append((src, bound))
-            self.sources.append((arm, bound))
-            cur = src
-        return out
 
     def _read(self, path, bound):
         if not os.path.isfile(path):

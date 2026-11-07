@@ -65,6 +65,8 @@ import time
 # Either record, the JSON lines or the gzip members: one reader for both (reads/runrec.py).
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'reads'))
 import runrec  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import run_chain  # noqa: E402
 
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -411,10 +413,37 @@ def resolve_run(runs_root, arm, run):
     return os.path.join(arm_dir, runs[-1])
 
 
-def read_lineage(path):
-    births = {}
-    deaths = {}
+def read_lineage_chain(run_dir):
+    """The run's lineage read through its resume chain, oldest source first, the run's own rows last
+    (a later row wins). Returns (births, deaths, other rows, [lines for the printout])."""
+    sources, notes = run_chain.resume_sources(run_dir)
+    births, deaths = {}, {}
+    said = []
+    for src, bound in sources:
+        path = os.path.join(src, 'lineage.jsonl')
+        arm = os.path.basename(os.path.dirname(src))
+        if not os.path.isfile(path):
+            notes.append('the source %s/%s has no lineage.jsonl' % (arm, os.path.basename(src)))
+            continue
+        _, _, _, taken = read_lineage(path, births, deaths, bound)
+        said.append('%s/%s to %.1f s gave %s births' % (arm, os.path.basename(src), bound, fmt_n(taken)))
+    births, deaths, other, taken = read_lineage(os.path.join(run_dir, 'lineage.jsonl'), births, deaths)
+    lines = []
+    if said or notes:
+        lines.append('lineage read through %d resume source%s (oldest first): %s; the run itself gave %s births%s'
+                     % (len(said), '' if len(said) == 1 else 's', '; '.join(said) or 'none',
+                        fmt_n(taken), ''.join('; ' + n for n in notes)))
+    return births, deaths, other, lines
+
+
+def read_lineage(path, births=None, deaths=None, bound=math.inf):
+    """Fold a lineage file's rows into births and deaths (new maps when none are given). Rows with
+    t above bound are skipped (a source is read to the second its resume began at). Returns
+    (births, deaths, other rows, births taken from this file)."""
+    births = {} if births is None else births
+    deaths = {} if deaths is None else deaths
     other = 0
+    taken = 0
     with open(path, 'r', encoding='utf-8') as f:
         for line in f:
             if not line.endswith('\n'):
@@ -423,13 +452,16 @@ def read_lineage(path):
                 continue
             row = json.loads(line)
             e = row.get('e')
+            if e in ('b', 'd') and row['t'] > bound:
+                continue
             if e == 'b':
                 births[row['id']] = row
+                taken += 1
             elif e == 'd':
                 deaths[row['id']] = row['t']
             else:
                 other += 1
-    return births, deaths, other
+    return births, deaths, other, taken
 
 
 def build_clades(births):
@@ -1545,7 +1577,7 @@ def main():
                 bed = (values, b['cellsX'], b['cellsZ'], float(b['cellMetres']))
 
     # 1. The clades.
-    births, deaths, other_rows = read_lineage(lineage_path)
+    births, deaths, other_rows, chain_lines = read_lineage_chain(run_dir)
     if not births:
         fail('%s: no birth rows in %s' % (args.arm, lineage_path))
     clade_of, clades = build_clades(births)
@@ -2163,6 +2195,8 @@ def main():
     write_markdown(os.path.join(out_dir, 'guide.md'), guide, cards, names, trip, picker, status)
     t_done = time.time()
 
+    for line in chain_lines:
+        print('%s: %s' % (args.arm, line))
     print('%s: %s, %s births, %d clades, %d in the picker, trip %s'
           % (args.arm, os.path.basename(run_dir), fmt_n(len(births)), len(clades), len(picker),
              ', '.join(names[c] for c in trip)))
