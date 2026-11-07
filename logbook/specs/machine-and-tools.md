@@ -385,6 +385,11 @@ The root file's rules still apply. The entries below were moved word for word, s
   failed with "is not recognized", because Git Bash mangles the inner quotes. Written into a `.cmd`
   file and run through `scratch/kit-arm/pinned.ps1 -Mask <mask> -Cmd <file>` from the PowerShell
   tool, the same check passed in seconds.
+- **No Python on this machine has pytest** (2026-11-07). Python 3.10, 3.12 and 3.13 lack it, and
+  `pip install --target` into `scratch/` failed pip's TLS certificate check, which is not bypassed. The test
+  files written in pytest's style under `scripts/tests/` run through `python -B scripts/tests/minirun.py <file>`,
+  a stand-in that supplies `pytest.raises`, `tmp_path` and `monkeypatch` and keeps its files under
+  `scratch/pytest-tmp/`. Files written for `unittest` run as `python <file>`.
 - **A refusal in one session is approved in that session** (2026-10-10). Claude Code's auto-mode
   classifier refused the speed agent's script for a several-hour unattended card chain, launched on the
   coordinator's word. The owner then said yes twice, in the coordinator's session, and neither yes
