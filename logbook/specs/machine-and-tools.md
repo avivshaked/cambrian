@@ -222,6 +222,12 @@ The root file's rules still apply. The entries below were moved word for word, s
     as Task Manager does, and another agent may divide by 10^9. On 2026-11-07 the coordinator gave another project's
     render a guard of 106 GB. The render's first check read 109.0 GB and it stopped before its first frame. Both had
     read the same 108.9 billion bytes, which the coordinator's look called 101.4 GB, of a 120.0 billion byte limit.
+  - **A film's Unity alone reaches 85 to 86 °C, so its guard stops at 90 °C twice in a row or 95 °C once.** On
+    2026-11-07 the film lane's round 67 pass ran under the stricter card terms (85 °C twice in a row, read every
+    second). At 21:46 it stopped while Unity filmed at 4K alone on 16-19, with no farm or other job beside it, after
+    readings of 82, 86, 85 and 85 °C. Its 48 recorded windows were kept, and one finished take was lost. At a one-second
+    cadence, two readings at 85 °C are a passing peak, not a held heat. The coordinator set the film's guard at 90 °C
+    twice in a row or 95 °C once, stricter than D258's 98 °C once or 95 °C held a minute.
   - **A process id handed to the owner goes stale.** Windows reuses ids within hours. On 2026-11-01 one of nine hung
     shells' ids, given to the owner to stop, belonged three hours later to r65's card-run process. So a kill command
     for the owner names the process by its command line, or its ids are read again in the same message that gives it.
