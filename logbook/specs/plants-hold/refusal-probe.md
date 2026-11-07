@@ -94,3 +94,26 @@ default. Bodies that were stuck would then grow their next node that can grow, a
 
 The third cause, a plant's next blade standing inside the plant, is the geometry, and a third of the plants' refusals.
 Fixing it would change what a body may be, so under D298 it comes back to the owner as its own rule.
+
+## On the fixed build, written before it runs
+
+With the fix on (`EVOSIM_MODULE_GROWABLE`), the forest worlds still refuse 71 to 96 % of their additions for shape
+(`forest-run.md`, after "What light at each part found"). A second probe build, branch `probe/refusal-fixed`
+(`scratch/wt-refusal-fixed`, `4dee4844`, off `plants-build` `8676833f`, never merged), carries the same counts onto the
+build those worlds ran. It also splits "no larger, the chosen node reachable" by whether the node lies on a cycle
+through itself, and counts regrowths apart from additions. Its counts start at zero on a resume and are not in the
+checkpoint.
+
+`rounds/launch-refusal-fixed.ps1` resumes two worlds on the card from their 10,500 s checkpoints to 12,000 s: the
+control with the most tries, `pldr-6203`, as `plrf-6203`, and the world with light at each part with the most modules
+standing, `plp2-6204`, as `plrf-6204`. It runs while no other farm and no Unity runs.
+
+- **The probe changes nothing in the world.** Each run's stats rows equal its source's on every field but the wall
+  times, the step counts and the probe's own columns, and its lineage rows are the source's
+  (`scripts/reads/resume-match.py`). If they differ, no count is read and the build is looked at instead.
+- **What is read.** For additions and for plants among them: the share of shape refusals that are "would stand inside
+  itself" (D101), "no larger" on a node off every cycle, "no larger" on a node on a cycle, and each other cause. With
+  the fix on, no refusal should name a dormant node.
+- **What it decides.** If the overlap test carries most of the plants' refusals, the overlap rule is now what limits a
+  plant's growth, and it goes to the owner with this count. If "no larger" carries most of them, the module rule has
+  another fault, which is agent work under D298. Either way D308's urge waits for the answer.
