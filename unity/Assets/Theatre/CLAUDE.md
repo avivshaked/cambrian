@@ -1997,6 +1997,10 @@ run many steps to a frame, prints the identity verdict at every sample, and quit
 
 ## Gotchas
 
+- **A safari dial read before Play mode is lost.** Entering Play mode reloads the domain and resets the safari's
+  statics. Only what is packed in `SessionState` crosses the reload. Read a new dial in Play mode, beside the story
+  look's own dials, or pack it. `3663bda2` read `EVOSIM_THEATRE_SCENE_CLOCK` while parsing the request, so the clock
+  never switched on, and phase 191's first run stopped on its own guard (fixed at `d6d53981`).
 - **A subject picked from the farm's positions may not exist in the theatre's cousin.** A safari or film steps its own
   realisation, so a farm body id can be absent there; the safari then films another member of the clade and says so in
   the log (`the guide's exemplar ... is not alive in this cousin`). Pick subjects from the cousin's own positions, or check
