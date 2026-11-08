@@ -458,8 +458,8 @@
       "ruling": "D329: the coordinator, 2026-11-08, under the owner's delegation, from the one sitting on chain201b-205's sheets (scratch/film-light/c8/sheets201 to sheets205): a family part is drawn no squarer than a box on the same path, so the blocks in r67r1's crowds draw as ovals, the taper kept; built at c8fa55c0 (theatre-look-familyround); the still pairs are in scratch/owner/theatre-family-round-preview/"
     },
     "EVOSIM_THEATRE_MIRROR_LIT": {
-      "value": "1",
-      "ruling": "D329: the coordinator, 2026-11-08, under the owner's delegation, from the one sitting on chain201b-205's sheets (scratch/film-light/c8/sheets201 to sheets205): the surface's underside lit, which lifts the top quarter of the frame (64 to 78 on 1.6a); 2 overshot into a flat band with a hard lower edge"
+      "value": "0",
+      "ruling": "D330: the coordinator, 2026-11-08, under the owner's delegation, from the pass 7 stills sheet of 2.1a, 4.2a, 8.5b and 6.6a (scratch/owner/round67-pass7-stills-sheet/), built at a0334b16 (theatre-look-pass7): the surface's underside unlit again (amends D329's 1). MIRROR_LIT 1 alone turned the water cobalt, green over blue 0.72-0.74 against 0.82-0.83 without it, and the reference's 0.84-0.95; with the cameras now 8 deg down, the dark lid it lifted is a thin band at a grazing angle"
     },
     "EVOSIM_THEATRE_WORLD_OASIS": {
       "value": "1",
@@ -480,6 +480,26 @@
     "EVOSIM_THEATRE_PORTRAIT_LEVEL_END": {
       "value": "1",
       "ruling": "D329: the coordinator, 2026-11-08, under the owner's delegation, from the one sitting on chain201b-205's sheets (scratch/film-light/c8/sheets201 to sheets205): a portrait arc that sweeps in elevation ends level with its subject or below it, never above it looking down into the deep (story-32's luma fell from 65.5 to 41.8); built at 2dc6d92c (theatre-look-refilm); in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_GROUP_FILL": {
+      "value": "0.8",
+      "ruling": "D330: the coordinator, 2026-11-08, under the owner's delegation, from the pass 7 stills sheet of 2.1a, 4.2a, 8.5b and 6.6a (scratch/owner/round67-pass7-stills-sheet/), built at a0334b16 (theatre-look-pass7): a card and a descent close on the nearest group of living animals until it fills 0.8 of the width, 8 deg down, its lowest member a fifth up the frame, trying up to 6 groups for one the eye can look down on (GROUPAIM and GROUPDEEP run under this dial); at 0.5 only 2.1a's animals reached a tenth of the width; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_COLONY_KIN": {
+      "value": "1",
+      "ruling": "D330: the coordinator, 2026-11-08, under the owner's delegation, from the pass 7 stills sheet of 2.1a, 4.2a, 8.5b and 6.6a (scratch/owner/round67-pass7-stills-sheet/), built at a0334b16 (theatre-look-pass7): a colony's pull-back ends on the anchor's kin, the members within 6, 9 or 12 m (KINWIDEN runs under this dial), at the distance where their spread fills 0.8 of the width; 6.6a's tone rose from 23 to 47; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_FILL": {
+      "value": "2.4",
+      "ruling": "D330: the coordinator, 2026-11-08, under the owner's delegation, from the pass 7 stills sheet of 2.1a, 4.2a, 8.5b and 6.6a (scratch/owner/round67-pass7-stills-sheet/), built at a0334b16 (theatre-look-pass7): the scene's fill, opposite the sun and so from below, from 0.8 to 2.4, so a leaf or body against the surface reads as coloured, not black (3% of the pixels, the bodies, moved by up to 39 levels); it lights portraits too. STORY_AMBIENT does nothing under LOOK 4; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_FADE_START": {
+      "value": "6",
+      "ruling": "D330: the coordinator, 2026-11-08, under the owner's delegation, from the pass 7 stills sheet of 2.1a, 4.2a, 8.5b and 6.6a (scratch/owner/round67-pass7-stills-sheet/), built at a0334b16 (theatre-look-pass7): the second batch's fade starts 6 m from the eye, not 3, which clears the near haze (2.1a's tone 64 to 72). STORY_FOG does nothing under LOOK 4; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_FADE_FULL": {
+      "value": "20",
+      "ruling": "D330: the coordinator, 2026-11-08, under the owner's delegation, from the pass 7 stills sheet of 2.1a, 4.2a, 8.5b and 6.6a (scratch/owner/round67-pass7-stills-sheet/), built at a0334b16 (theatre-look-pass7): the fade reaches its full rate at 20 m, not 12, with FADE_START 6; in wide because the safari takes wide and events only"
     }
   },
   "close": {

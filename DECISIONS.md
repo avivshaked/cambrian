@@ -351,6 +351,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D327](#d327) | The films' exposure meter joins the agreed look at 0.21, and the water's absorption stays at 0.6 | 2026-11-08 | decided by the coordinator on 2026-11-08, under the owner's delegation of 2026-11-07 at 23:12 through the question tool, which gave the coordinator round 67's film light, the meter and the… |
 | [D328](#d328) | The light shafts reach the bed whole | 2026-11-08 | decided by the coordinator on 2026-11-08 under the owner's delegation of the films' light (D327), which the owner restated that night |
 | [D329](#d329) | Round 67's refilm takes the lit surface, a meter at 0.22, rounded family parts and the new cameras | 2026-11-08 | decided by the coordinator on 2026-11-08, under the owner's delegation of the films' look (D327), which the owner restated that night |
+| [D330](#d330) | Round 67's world shots close on the nearest group from above, and the water goes back to teal | 2026-11-08 | decided by the coordinator on 2026-11-08, under the owner's delegation of the films' look (D327) |
 
 ---
 
@@ -11545,3 +11546,39 @@ show at film size. The record ease, since neither ease causes the specks.
 **Not settled.** The 70 % gate on round 67's resumed world and `PORTRAIT_LEVEL_END` were not judged in a picture; the
 refilm's review judges them. The specks stay unexplained. The safari's Unity leaks about 130 MB of heap a scene, so the
 refilm runs in passes of at most 12 scenes.
+
+### D330
+**Round 67's world shots close on the nearest group from above, and the water goes back to teal** · 2026-11-08
+
+**Status:** decided by the coordinator on 2026-11-08, under the owner's delegation of the films' look (D327). It reverses
+D329's `MIRROR_LIT` 1. It corrects D327: `STORY_AMBIENT` and `STORY_FOG` change nothing under `LOOK` 4, where no pixel
+moved by more than 2 levels and every measure read the same, so D327's values for them were never in the picture.
+Judged at full size on the theatre lane's pass 7 stills sheet (`scratch/owner/round67-pass7-stills-sheet/`), built on
+`theatre-look-pass7` `a0334b16`, whose dials-off check is identical to its reference.
+
+**Decision.** In `wide`, the film look (`scripts/theatre-film-look.json`) sets `MIRROR_LIT` to 0 and gains:
+- `GROUP_FILL` 0.8: the Card and the Descent close on the nearest group of living animals until it fills 0.8 of the
+  width. They look 8° down, try up to six groups for one the eye can look down on, and aim at the members' lowest
+  points. Those three rules have no dials of their own and run only under this one;
+- `COLONY_KIN` 1: a colony's pull-back ends on the anchor's kin, searched within 6, then 9, then 12 m;
+- `FILL` 2.4: the scene's fill, opposite the sun and so from below, which lights the portraits too;
+- `FADE_START` 6 and `FADE_FULL` 20: the second batch's fade starts 6 m from the eye and is full at 20 m.
+
+`STORY_LUMA` 0.22, `FAMILY_ROUND` 1 and the rest of D329 stand, and `ABSORB` stays at the owner's 0.6.
+
+**Why.** Pass 6 failed 11 of its 12 takes. The Card and the Descent framed from the crowd's distance and never closed on
+anyone, so the subjects were specks over empty water, the leaves against the surface were black, and the water was
+cobalt. On the sheet the new cameras look down onto coral with animals through the frame, and 4.2a holds three animals
+by the coral tables. At 0.5 only 2.1a's nearest animal reached a tenth of the width; at 0.8 two of the three Cards did.
+6.6a ends on its striped anchor among its kin, its tone up from 23 to 47 against a floor of 44. The cobalt came from
+`MIRROR_LIT` 1 alone: without it the water's green over blue went from 0.72-0.74 back to 0.82-0.83, against the
+reference's 0.84-0.95. `FILL` 2.4 turns the bodies against the surface from near black to coloured, and the later fade
+clears the near haze.
+
+**Rejected.** `GROUP_FILL` 0.5, which left the animals at a twentieth of the width in two of three Cards. `ABSORB` 0.3,
+which gained only 0.03 of green over blue. `STORY_REACH` 26 and StoryLook's own lit water, which do not move the hue.
+Keeping `MIRROR_LIT` 1: the lid it lifted is a thin band at a grazing angle under cameras that look down, and the hue
+shows in every shot.
+
+**Not settled.** 8.5b's animals reach 0.06 to 0.08 of the width at 0.8, under a tenth; its take's review decides it.
+Pass 6's one passing take, 9.2a, was filmed under D329 and is filmed again, so the film has one look.
