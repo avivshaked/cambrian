@@ -390,8 +390,44 @@
       "ruling": "the owner, 2026-11-03: whatever the safari does, the films do too; every body painted by its clade as the safari paints it (the owner's leaf ruling of 2026-09-24), 0.06 of the wheel, the safari's own; the film path gives it LineageOf from the run's lineage (TheatreFilm.SetUp)"
     },
     "EVOSIM_THEATRE_STORY_LOOK": {
+      "value": "1",
+      "ruling": "D327 (amends D290): the story look's exposure meter joins the one agreed look; every other lift of the story look is held at the census's own value by the eight dials below, so the meter is the only change from the agreed look. Without them StoryLook's own defaults return v3's whole look, which D290 rejected"
+    },
+    "EVOSIM_THEATRE_STORY_LUMA": {
+      "value": "0.21",
+      "ruling": "D327: the meter aims each shot at 0.21 of full scale at mid-depth (1.2x at the surface, 0.8x at the bed), picked by eye from phase184's still set (scratch/owner/round-67-film-light-pick/)"
+    },
+    "EVOSIM_THEATRE_STORY_DEEP": {
+      "value": "1",
+      "ruling": "D327: the census's deep water, x1"
+    },
+    "EVOSIM_THEATRE_STORY_SHALLOW": {
+      "value": "1",
+      "ruling": "D327: the census's lit water, x1"
+    },
+    "EVOSIM_THEATRE_STORY_AMBIENT": {
+      "value": "1",
+      "ruling": "D327: the census's ambient, x1"
+    },
+    "EVOSIM_THEATRE_STORY_FOG": {
+      "value": "0.035",
+      "ruling": "D327: the census's fog"
+    },
+    "EVOSIM_THEATRE_STORY_REACH": {
+      "value": "18",
+      "ruling": "D327: the census's surface light reach, 18 m"
+    },
+    "EVOSIM_THEATRE_STORY_VIGNETTE": {
+      "value": "0.22",
+      "ruling": "D327: the census's vignette"
+    },
+    "EVOSIM_THEATRE_STORY_LAMP": {
       "value": "0",
-      "ruling": "D290: every film uses the theatre's agreed look, the story films included; story films with a look of their own rejected. The story safari's StoryLook (deep water and ambient lifted, fog, reach, vignette, lamp, exposure meter) is that look; this one dial reverses it"
+      "ruling": "D327: no lamp on portraits and births, as the census; a lamp is under trial (phase186)"
+    },
+    "EVOSIM_THEATRE_STORY_STARVING": {
+      "value": "0.45",
+      "ruling": "D327: the census's starving value"
     },
     "EVOSIM_THEATRE_CARVE": {
       "value": "0.35",
