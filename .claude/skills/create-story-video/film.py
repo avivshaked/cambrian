@@ -213,6 +213,7 @@ def film_settings(folder, lines):
                         + ", ".join(f"{k} {a} to {b}" for k, (a, b) in FOCUS_RANGES.items()) + "}")
     if problems:
         raise Refused(f"the film's {SETTINGS} is not in its form:", *("  " + p for p in problems))
+    s["look_dials"] = look_dials()     # read once for the command; shot_key takes it from here
     return s
 
 
@@ -415,6 +416,49 @@ def handle_of(shot, s):
     return (s.get("handles_by_shot") or {}).get(shot["id"], s["handles_s"])
 
 
+LOOK_SECTIONS = ("wide", "events")     # the sections of theatre-film-look.json the safari reads
+
+
+def look_file():
+    """The main checkout's scripts/theatre-film-look.json, found from any worktree as theatre-film-look.ps1 finds it
+    (the parent of git's common directory), else this checkout's own."""
+    own = REPO / "scripts" / "theatre-film-look.json"
+    try:
+        r = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--git-common-dir"], capture_output=True, text=True,
+                           encoding="utf-8", timeout=30)
+        common = r.stdout.strip().splitlines()[0] if r.returncode == 0 and r.stdout.strip() else None
+    except (OSError, subprocess.SubprocessError):
+        common = None
+    if common:
+        c = Path(common)
+        c = c if c.is_absolute() else REPO / c
+        main = c.resolve().parent / "scripts" / "theatre-film-look.json"
+        if main.is_file():
+            return main
+    return own
+
+
+def look_dials():
+    """The first 16 hex characters of the sha256 of the canonical JSON (sorted keys, no spaces) of the look's
+    sections the safari reads. Refuses when the look file is missing or unreadable."""
+    path = look_file()
+    if not path.is_file():
+        raise Refused(f"the theatre's film look was not found at {path}; a clip's key cannot be made without it")
+    try:
+        look = json.loads(path.read_text(encoding="utf-8-sig"))
+        sections = {k: look[k] for k in LOOK_SECTIONS}
+    except (OSError, ValueError, KeyError) as e:
+        raise Refused(f"the theatre's film look at {path} cannot be read ({type(e).__name__}: {e}); it needs the "
+                      f"sections {', '.join(LOOK_SECTIONS)}")
+    text = json.dumps(sections, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+
+
+def seat_of(s):
+    """The theatre build a take is filmed on: theatre_commit's first 8 characters, lower-cased."""
+    return str(s.get("theatre_commit") or "")[:8].lower()
+
+
 def shot_key(shot, s, colours=None):
     """What a clip was filmed from: a clip whose key differs from its shot's is filmed again. A far shot's own
     fog is in its key, so setting far_fog films the far shots again and no others."""
@@ -423,6 +467,8 @@ def shot_key(shot, s, colours=None):
     fields["handles_s"] = handle_of(shot, s)
     fields["size"] = size_of(shot, s)
     fields["look"] = s["theatre_look"]
+    fields["look_dials"] = s.get("look_dials") or look_dials()   # a take on other dials is never kept silently
+    fields["seat"] = seat_of(s)                                  # nor one filmed on another theatre build
     take =(s.get("takes_by_shot") or {}).get(shot["id"])
     if take is not None:
         fields["take"] = take          # raised to film a shot again when nothing in its key changed, a camera's fix
@@ -938,6 +984,7 @@ def cmd_plan(folder, k):
             "farm: the checkout's own build, since the runs' manifests name none"]
     if s.get("theatre_root"):
         head.append(f"theatre root: the render worker and theatre-safari.ps1 are taken from {theatre_root(s)}")
+    head.append(f"look dials {fields_look(s)}, seat {seat_of(s) or 'none'}")
     head.append(guard_text(s))
     if s.get("overlap") is False:
         head.append("overlap: off, the pass records every window first and films after, with no farm beside Unity")
@@ -947,6 +994,10 @@ def cmd_plan(folder, k):
     if stale:
         head.append(f"warning: {stale}")
     return "FILM PLAN: READY", head + lines
+
+
+def fields_look(s):
+    return s.get("look_dials") or look_dials()
 
 
 def guard_text(s):

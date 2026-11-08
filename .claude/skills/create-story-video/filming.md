@@ -86,6 +86,14 @@ owner, 2026-10-11). A shot is filmed again only when the fields it
 was filmed from change, which `clips.json` records as its key. So a new shot list films only the shots it
 changed.
 
+A clip's key holds the look's version (`theatre_look`), the look's dials as `look_dials` (the first 16 hex characters
+of a sha256 of the sorted, space-free JSON of the `wide` and `events` sections of the main checkout's
+`scripts/theatre-film-look.json`, the sections the safari reads) and the theatre build as `seat` (`theatre_commit`'s
+first 8 characters, lower-cased, so a short and a full hash key alike). A take on the wrong dials or the wrong seat
+must never be kept silently, so changing either films every shot again; to keep old takes after a reseat that is
+proven not to change the drawing, the coordinator marks them kept, by name, in the flow. `plan` refuses when the look
+file is missing and prints `look dials <digest>, seat <commit>` in its header.
+
 **The limits:**
 
 - The director opens a birth's take 8 seconds before the birth, a constant in its code, so a `Birth`
@@ -126,7 +134,7 @@ the first time, and from then on reads the copy.
 | `size` | `3840x2160` | The clips' frame: 4K, as the edit is (the owner's ruling of 2026-09-28). |
 | `worker` | 6 | The render worker, `unity-w<n>`. |
 | `theatre_root` | null | The checkout that holds the render worker `unity-w<n>` and the `theatre-safari.ps1` the pass runs, absolute or from the checkout's root; null is this checkout. The plan's worker check, `machine`'s lock check, the theatre's takes and its log all read from it. It must hold `scripts/theatre-safari.ps1`. Not in a shot's key. |
-| `theatre_commit` | null | A commit or branch name. When set, `plan` and `start` refuse unless `git rev-parse HEAD` of the `theatre_root` checkout equals `git rev-parse <theatre_commit>` there; the refusal names both. The theatre lane reseats that checkout between films, and both its workers compile its `src`. Not in a shot's key. |
+| `theatre_commit` | null | A commit or branch name. When set, `plan` and `start` refuse unless `git rev-parse HEAD` of the `theatre_root` checkout equals `git rev-parse <theatre_commit>` there; the refusal names both. The theatre lane reseats that checkout between films, and both its workers compile its `src`. Its first 8 characters, lower-cased, are in every shot's key as `seat`. |
 | `guard` | `standard` | The heat guard `start` launches beside the job (`film-guard.ps1`, hidden, as its sibling): `card terms` is D258's stops with one CPU reading of 90 C, or two in a row at 85 C; `film terms` is D258's stops with one CPU reading of 95 C, or two in a row at 90 C (the coordinator's terms for the theatre and film windows); `standard` is D258's own stops; null runs none. Its pid is in `started.json` and its log is `guard.log` in the pass folder. `plan`'s header says which. A guard that does not start stops the job. Not in a shot's key. |
 | `guard_minutes` | 600 | How long the guard watches, in minutes. Not in a shot's key. |
 | `runs_root` | `runs` | Where the runs are, from the checkout's root. |
@@ -634,3 +642,6 @@ Round 57's film is the first under the underwater look, and its look test found 
 - **One long pass leaked the theatre's memory.** Round 67's film, 2026-11-08: the theatre leaked about 1.6 GiB an
   hour, and then about 12 GiB an hour in one long pass, so passes are capped by `max_scenes`
   (`scripts/tests/story-video-check/test_max_scenes.py`).
+- **A change of dials and seat kept old takes.** Round 67's film, 2026-11-08: 33 takes were counted as filmed across a
+  change of dials (D329) and of seat (2dc6d92c), because the key held only the look's version number. It now holds
+  the look's digest and the seat (`scripts/tests/story-video-check/test_look_key.py`).
