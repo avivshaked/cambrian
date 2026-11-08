@@ -429,6 +429,14 @@
       "value": "0.45",
       "ruling": "D327: the census's starving value"
     },
+    "EVOSIM_THEATRE_STORY_METER_SCENE": {
+      "value": "1",
+      "ruling": "D327 (the coordinator, 2026-11-08): each scene is metered alone; its first take settles from the trip's starting exposure to within 0.03 EV, so where it settles no longer depends on the scene filmed before it (round 67's scene 10 settled 0.4 EV apart without it). Built at 0e533490 (theatre-look-meter); a build without it ignores the dial"
+    },
+    "EVOSIM_THEATRE_SCENE_CLOCK": {
+      "value": "1",
+      "ruling": "D327 (the coordinator, 2026-11-08): each take's water (ripples, caustics, shafts, snow) runs on its own clock from the world's second at the take's start, not on Unity's frame clock. With it and the meter per scene, scene 10 filmed after the descent and alone settled at +1.32 and +1.33 EV, the surface, shafts and bed identical; the frames are near-identical, not byte-identical: specks at mid-distance body edges still differ (0.09% of pixels over 3 levels in phase191), likely the snow's drift on Unity's level clock, to be hunted behind this dial. Built at d6d53981; a build without it ignores the dial"
+    },
     "EVOSIM_THEATRE_SHAFT_BED_FULL": {
       "value": "1",
       "ruling": "D328: the light shafts reach the bed whole; the shaft march no longer counts the bed as a thing it ends on, and the 0.4 cut over bodies stays. Built at d0527c57 (theatre-look-bedcut); a build without it ignores the dial"
