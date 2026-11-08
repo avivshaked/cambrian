@@ -11,6 +11,7 @@ CPU reads 80 C or more. No test starts Blender or Unity: subprocess calls, the c
 
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 import types
@@ -442,3 +443,57 @@ def test_render_passes_its_printout_to_the_graphics_lines(tmp_path, monkeypatch)
     monkeypatch.setattr(graphics, "check_draws", lambda *a: None)
     verdict, lines = graphics.cmd_render(folder, "1.1a")
     assert verdict == "RENDER: FAIL" and got["notes"] is not None
+
+
+# ------------------------------------------------------------------------------------------------ one log a launch
+
+def log_of(command):
+    return re.search(r"-logFile'?,? *'?([^',]+\.log)", command[-1]).group(1)
+
+
+def test_two_runs_write_two_different_logs_each_naming_its_run(tmp_path, monkeypatch):
+    root, folder, s, items = stills_setup(tmp_path, monkeypatch, runs=("run-a", "run-b"))
+    calls, notes = [], []
+    fake_unity(monkeypatch, calls)
+    assert graphics.launch_stills(s, folder, items, tmp_path / "list.json", notes) is None
+    logs = [log_of(c["command"]) for c in calls]
+    assert len(set(logs)) == 2
+    assert "run-a" in logs[0] and "run-b" in logs[1]
+    assert logs[0].endswith(f"stills-{folder.name}-run-a.log")
+
+
+def test_the_notes_name_each_launchs_log(tmp_path, monkeypatch):
+    root, folder, s, items = stills_setup(tmp_path, monkeypatch, runs=("run-a", "run-b"))
+    calls, notes = [], []
+    fake_unity(monkeypatch, calls)
+    graphics.launch_stills(s, folder, items, tmp_path / "list.json", notes)
+    named = [x for x in notes if x.startswith("log: ")]
+    assert len(named) == 2
+    assert "run-a" in named[0] and "run-b" in named[1]
+    assert notes.index(named[0]) == notes.index([x for x in notes if x.startswith("launch 1")][0]) + 1
+
+
+def test_a_failing_launch_names_its_own_log(tmp_path, monkeypatch):
+    root, folder, s, items = stills_setup(tmp_path, monkeypatch, runs=("run-a", "run-b"))
+    n = []
+
+    def run(command, **kw):
+        n.append(command)
+        if len(n) == 1:
+            listing = Path(kw["env"]["EVOSIM_STILLS_LIST"])
+            (listing.parent / "result.json").write_text(json.dumps({"items": []}), encoding="utf-8")
+            return subprocess.CompletedProcess(command, 0, "", "")
+        return subprocess.CompletedProcess(command, 1, "", "boom")
+    monkeypatch.setattr(subprocess, "run", run)
+    why = graphics.launch_stills(s, folder, items, tmp_path / "list.json")
+    assert why and "run-b.log" in why and "run-a.log" not in why
+
+
+def test_a_timed_out_launch_names_its_own_log(tmp_path, monkeypatch):
+    root, folder, s, items = stills_setup(tmp_path, monkeypatch, runs=("run-a", "run-b"))
+
+    def run(command, **kw):
+        raise subprocess.TimeoutExpired(command, 1)
+    monkeypatch.setattr(subprocess, "run", run)
+    why = graphics.launch_stills(s, folder, items, tmp_path / "list.json")
+    assert why and "run-a.log" in why

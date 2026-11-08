@@ -972,21 +972,23 @@ def launch_stills(s, folder, items, listing, notes=None):
     verdict, found = tool.narration_tool().cmd_machine()
     if verdict.endswith("BUSY"):
         return "the machine is busy: " + "; ".join(found)
-    log = REPO / "scratch" / "logs" / f"stills-{folder.name}.log"
-    log.parent.mkdir(parents=True, exist_ok=True)
-    unity_args = ["-projectPath", str(worker), "-batchmode", "-executeMethod", SOLO_ENTRY, "-job-worker-count", "4",
-                  "-logFile", str(log)]
+    logs = REPO / "scratch" / "logs"
+    logs.mkdir(parents=True, exist_ok=True)
     runs = []
     for x in items:
         if x["run"] not in runs:
             runs.append(x["run"])
     for n, run in enumerate(runs, 1):
         mine = [x for x in items if x["run"] == run]
+        log = logs / f"stills-{folder.name}-{safe(run)}.log"      # one log a launch: a second would overwrite the first
+        unity_args = ["-projectPath", str(worker), "-batchmode", "-executeMethod", SOLO_ENTRY, "-job-worker-count", "4",
+                      "-logFile", str(log)]
         here = listing.parent / safe(run) / listing.name
         write_json(here, {"schema": "create-story-video/stills-list/1", "background": "transparent",
                           "items": [{"name": x["name"], "genome_file": x["genome_file"], "run_dir": x["run_dir"],
                                      "png_file": x["out"], "size": x["size"]} for x in mine]})
         notes.append(f"launch {n} of {len(runs)}: run {run}, {len(mine)} stills: " + ", ".join(x["name"] for x in mine))
+        notes.append(f"log: {rel(log)}")
         env = dict(os.environ)
         env["EVOSIM_STILLS_LIST"] = str(here)
         env["EVOSIM_THEATRE_WALL_MINUTES"] = str(s["still_wall_minutes"])

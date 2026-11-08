@@ -80,6 +80,9 @@ faulted.
   film was shot on a worker in another checkout, and launched Unity with no film look set at all, so a still would
   have come out in a skin the film did not have. It now reads `theatre_root` and `theatre_commit` as `film.py`
   does, and launches the Editor once a run under that root's `Use-FilmLook`.
+- **Each stills launch writes its own Editor log** (round 67's film, 2026-11-08: two stills launches wrote one log and the
+  second overwrote the first). The log is `scratch/logs/stills-<film folder>-<run>.log`, and `stills` prints a
+  `log:` line under each `launch n of m` line.
 - Blender's dither is off. Its faint noise broke the clip's runs of equal pixels, and the same 4K clip was
   920 MB with it on. PNG and ProRes 4444 were larger than QuickTime Animation on the same frames (82 and
   281 MB).
@@ -108,7 +111,7 @@ into the film's folder the first time, and from then on reads the copies.
 | `render_heat_minutes` | 20 | How long a render waits on the heat before it fails with the last reading. |
 | `unity` | the project's Editor | The Unity Editor the stills are drawn with. |
 | `worker` | 6 | The render worker, `unity-w<n>`, in the theatre root. |
-| `theatre_root` | null | The checkout that holds the render worker and the theatre the stills are drawn in, as for `film.py`: null is this checkout, otherwise the path of one that holds `scripts/theatre-safari.ps1`. The stills entry is looked for in that root's tree and in its worker, and the Editor is launched under that root's `scripts/theatre-film-look.ps1`. The runs and the Editor's log stay in this checkout. |
+| `theatre_root` | null | The checkout that holds the render worker and the theatre the stills are drawn in, as for `film.py`: null is this checkout, otherwise the path of one that holds `scripts/theatre-safari.ps1`. The stills entry is looked for in that root's tree and in its worker, and the Editor is launched under that root's `scripts/theatre-film-look.ps1`. The runs and the Editor's logs stay in this checkout, one log a launch under `scratch/logs/`, each named by `stills`. |
 | `theatre_commit` | null | A commit or branch name that the `theatre_root` checkout must be at, as for `film.py`; the stills refuse otherwise. |
 | `runs_root` | `runs` | Where the runs are, from the checkout's root. |
 | `still_size` | 1600 | A still's side, in pixels. |
