@@ -349,6 +349,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D325](#d325) | The forest screen turns on light and matter at each part, and blade turnover is withdrawn | 2026-11-07 | ruled by the owner on 2026-11-07, choosing the coordinator's recommendation on both questions it put (`proposals/propose-forest-pays.md` at `7af2f5ec`, absorbed here and deleted) |
 | [D326](#d326) | The bold mouth kinds are drawn tinted toward the body's own colour | 2026-11-07 | ruled by the owner on 2026-11-07 in two choices through the question tool, each the coordinator's recommendation (`scratch/owner/mouth-kinds-three-tints/owner-2026-11-07.md`, saved as they came; the… |
 | [D327](#d327) | The films' exposure meter joins the agreed look at 0.21, and the water's absorption stays at 0.6 | 2026-11-08 | decided by the coordinator on 2026-11-08, under the owner's delegation of 2026-11-07 at 23:12 through the question tool, which gave the coordinator round 67's film light, the meter and the… |
+| [D328](#d328) | The light shafts reach the bed whole | 2026-11-08 | decided by the coordinator on 2026-11-08 under the owner's delegation of the films' light (D327), which the owner restated that night |
 
 ---
 
@@ -11485,3 +11486,23 @@ bodies already peak at 221 of 255.
 under an overcast ceiling, the leaf shadows on the bed as hard dark cut-outs, and a wide subject has no highlight.
 Tried next: the canopy camera, which looks up at the bright window of the surface, the lamp on portraits and births,
 and softer shadows as a render build.
+
+### D328
+**The light shafts reach the bed whole** · 2026-11-08
+
+**Status:** decided by the coordinator on 2026-11-08 under the owner's delegation of the films' light (D327), which the
+owner restated that night. Picked from the theatre lane's phase 188 sheets (`scratch/film-light/c8/sheets188/`), built
+at `d0527c57`. The owner may overrule it before any 4K pass.
+
+**Decision.**
+- The film look sets `EVOSIM_THEATRE_SHAFT_BED_FULL` 1. The shaft march no longer counts the bed as a thing it ends on,
+  so the bed takes the shafts' full light. The cut of 0.4 over a body, `SHAFT_OVER_OBJECT`, stays.
+- With the dial at 0 the compiled shader is the one before it, and the dials-off check matched.
+
+**Why.** The dark shapes on the bed in round 67's first takes were not shadows. Where the bed rose above the floor of
+the shafts' box, a ray ended on it and took 0.4 of the shafts' light. Every high patch of the bed showed as a navy
+cut-out with the mesh's triangle edges. With the dial on the shafts reach the floor whole, and the frames' brightness
+and the light over bodies are unchanged.
+
+**Rejected.** Lowering the box's floor, which would dim the whole bed evenly and darken the lower frame. Lifting the cut
+everywhere (`SHAFT_OVER_OBJECT` 1), which also lights the bodies the cut was made for.
