@@ -556,8 +556,18 @@ and the CPU accelerator copies whole arrays, so neither shows it. The fix indexe
 another (`plants-build` `3fab5b8e`). Its test resumes a gripping world on the CPU accelerator while the accelerator
 copies only the used slots, as the card does. With 15 bodies and 4 grips held at the checkpoint, the test failed without
 the fix, parting from its run at physics step 25, and passed with it, digest for digest over 8 metabolic steps. The grip,
-resume, copy and remains tests passed with it, 19 of 19. The engine's two grip tests against the solver, and a resume on
-the card itself, are still owed. Every card checkpoint of a gripping world written before
+resume, copy and remains tests passed with it, 19 of 19, and so did the engine's two grip tests against the solver.
+
+The farm's fidelity mode passes the two grip fields. It ran on `plp2-6202`'s 7,500 s checkpoint, written on the fix's
+parent `8676833f`; `plf-6202`'s is refused, since it predates the tunable `anchoredFounderMarginMaxSeconds`. Its
+restored twin agreed with the unbroken world after each of 100 physics steps. It still reports 9,691 differences. All
+are in members newer than its not-state list: the mouth-bearing index, the harness's scratch arrays,
+`ModuleGrowableNodes` and the bodies' card-side copies. That they are caches is inference from their names and from the
+twin's agreement. The list is owed an update. On the card itself, two forest worlds ran fresh to 3,000 s
+(`rounds/launch-grip-card-resume.ps1` on `plants-build` `a270a02a`). They held 7 and 10 grips at their 1,500 s
+checkpoints. Each resumed on the card from there and repeated its source by `scripts/reads/resume-match.py`: every
+stats field over 150 rows from 1,510 to 3,000 s, and every lineage row, 1,981 and 4,241.
+A gripping world now resumes on the card as its unbroken run. Every card checkpoint of a gripping world written before
 the fix holds the stale values, `plf-6202`'s among them, so its resume stays a cousin even on the fixed build. The
 format is not bumped, since a bump would refuse the gripless checkpoints too.
 Every world kept `partFeedFallbacks` at 0. The largest energy residual was 3.6e-4 J and the largest
