@@ -175,6 +175,9 @@ def film_settings(folder, lines):
     if ms is not None and not (isinstance(ms, int) and not isinstance(ms, bool) and ms >= 1):
         problems.append("max_scenes is null (a pass films every shot it plans) or a whole number of 1 or more, the "
                         "most scenes one pass films")
+    if not isinstance(s.get("record_only", False), bool):
+        problems.append("record_only is true (a pass records the farm windows of every shot and films nothing) or "
+                        "false, the default: a pass that films")
     for key, default in THEATRE_COSTS.items():
         v = s.get(key, default)
         if not number(v) or v < 0:
@@ -735,11 +738,13 @@ def cmd_plan(folder, k):
     errors, scenes, entries, dirs = [], [], [], {}
     # The director films a run at one size, so a pass does too: an offline pass is the shots set small in
     # size_by_shot, and the 4K pass that follows it is the same shots once they are taken out of it.
+    # A record-only pass films nothing, and a window depends on neither the size nor the colour, so it has no size to hold.
+    record_only = bool(s.get("record_only"))
     sizes = sorted({size_of(x, s) for x in todo})
-    if len(sizes) > 1:
+    if len(sizes) > 1 and not record_only:
         raise Refused("a pass films at one size, and these shots ask " + ", ".join(sizes) + ": film the shots of "
                       "one size first, by leaving the others' size_by_shot as it was filmed")
-    pass_size = sizes[0]
+    pass_size = s["size"] if record_only else sizes[0]
     # A window is recorded on the farm build that recorded its run, and one pass records on one build. So a film
     # whose runs come from several builds films one build's shots a pass, the build with the most shots first,
     # and the next passes take the rest; collect keeps every pass's clips (round 57's film, 2026-10-10).
@@ -764,7 +769,9 @@ def cmd_plan(folder, k):
     for x in todo:
         by_colour[x.get("colour")] = by_colour.get(x.get("colour"), 0) + 1
     pass_colour = None
-    if len(by_colour) > 1:
+    if record_only:
+        pass        # a window holds no colour: the pass records every shot's, and the passes that film split by colour
+    elif len(by_colour) > 1:
         first = sorted(by_colour, key=lambda c: (-by_colour[c], c is not None, c or ""))[0]
         pass_colour = first
         waiting = [x for x in todo if x.get("colour") != first]
@@ -792,7 +799,10 @@ def cmd_plan(folder, k):
     # coordinator ruled on 2026-11-08 that the refilm runs in passes of at most 12. The estimate and the wall below
     # are computed from the entries of the shots kept.
     cap = s.get("max_scenes")
-    if cap is not None and len(todo) > cap:
+    if record_only:
+        if cap is not None:
+            lines.append(f"max_scenes {cap} is not applied: the theatre's memory is not used, and the pass records every window")
+    elif cap is not None and len(todo) > cap:
         waiting = todo[cap:]
         todo = todo[:cap]
         dirs = {arm: rd for arm, rd in dirs.items() if arm in {x["run"] for x in todo}}
@@ -863,10 +873,14 @@ def cmd_plan(folder, k):
                      + (f"; short: {', '.join(why)}" if why else ""))
     if errors:
         raise Refused(*errors)
-    wall, over = wall_lines(s, entries, pass_size)
-    if over:
-        raise Refused(*over)
-    lines.extend(wall)
+    if record_only:
+        lines.append(f"record only: the farm windows of {len(entries)} shots on {len(dirs)} runs; nothing is filmed, "
+                     "and the next filming pass reuses them")
+    else:
+        wall, over = wall_lines(s, entries, pass_size)
+        if over:
+            raise Refused(*over)
+        lines.extend(wall)
     farms = {arm: farm_for(s, arm, rd) for arm, rd in dirs.items()}
     named = sorted({f for f in farms.values() if f})
     if len(named) > 1:
@@ -913,10 +927,11 @@ def cmd_plan(folder, k):
                      "records only the rest")
     write_json(out / "plan.json", {"pass": k, "planned": now(), "shots_sha256": sha256_of(folder / "shots.json"),
                                    "settings": s, "size": pass_size, "farm": farm, "scenes": entries,
+                                   "record_only": record_only,
                                    "colour": colour_of({"colour": pass_colour}, colours) if pass_colour else None})
     footage = sum(e["seconds"] for e in entries)
-    head = [f"pass {k}: {len(entries)} shots to film on {len(dirs)} run(s), {filmed_count} filmed already, "
-            f"{footage:.0f} s of footage with handles",
+    head = [f"pass {k}: {len(entries)} shots to " + ("record, none filmed" if record_only else "film")
+            + f" on {len(dirs)} run(s), {filmed_count} filmed already, {footage:.0f} s of footage with handles",
             (f"farm: {farm}, named for the pass's runs in farm_by_run"
              if any((s.get("farm_by_run") or {}).get(arm) for arm in dirs) else
              f"farm: {farm}, the program that recorded the runs") if farm else
@@ -928,7 +943,7 @@ def cmd_plan(folder, k):
         head.append("overlap: off, the pass records every window first and films after, with no farm beside Unity")
     if pass_colour:
         head.append(f"colour: {pass_colour}, {colours[pass_colour]['shows']}")
-    stale = stale_worker(s)
+    stale = None if record_only else stale_worker(s)
     if stale:
         head.append(f"warning: {stale}")
     return "FILM PLAN: READY", head + lines
@@ -1201,11 +1216,17 @@ def launch(args, sink=None, cores=None):
     return proc.wait()
 
 
+def record_only_pass(plan, done=None):
+    """True for a pass planned with record_only: it records the farm windows and films nothing."""
+    return bool(plan.get("record_only") or (plan.get("settings") or {}).get("record_only")
+                or (done or {}).get("record_only"))
+
+
 def cmd_run(folder, k):
     """The pass's job. It records each run's windows on the farm, and films each run in the theatre as soon as its
     windows are in, while the next run records: the farm works the processor and the theatre mostly the card, so
     the two overlap. The runs record smallest first, so the theatre starts early. It films one run at a time,
-    since a worker takes one Editor."""
+    since a worker takes one Editor. A record-only pass starts no theatre: it records the windows and ends."""
     import queue
     import threading
     out = pass_dir(folder, k)
@@ -1227,7 +1248,8 @@ def cmd_run(folder, k):
     done = {"pass": k, "started": now(), "look": s["theatre_look"], "stream": bool(s.get("theatre_stream")),
             "snow": s.get("snow"), "colour": plan.get("colour"),
             "overlap": s.get("overlap") is not False, "stopped": None, "record_exit": 0, "recorded": {},
-            "render_exit": {}, "safari": {}, "stop_file": None}
+            "render_exit": {}, "safari": {}, "stop_file": None, "record_only": record_only_pass(plan)}
+    record_only = done["record_only"]
     if safari_takes_stop_file(s):
         done["stop_file"] = str(stop_file(folder))
     scenes = {}
@@ -1277,8 +1299,9 @@ def cmd_run(folder, k):
 
     todo = queue.Queue()
     held = []      # overlap false: the runs recorded with exit 0, filmed once every run is recorded
-    theatre = threading.Thread(target=films, args=(todo,))
-    theatre.start()
+    theatre = None if record_only else threading.Thread(target=films, args=(todo,))
+    if theatre:
+        theatre.start()
     try:
         for arm in order:
             if note_stop():
@@ -1291,17 +1314,20 @@ def cmd_run(folder, k):
             done["recorded"][arm] = code
             say(f"{now()} {arm}: recorded, exit {code}")
             if code == 0:
-                if done["overlap"]:
+                if record_only:
+                    pass
+                elif done["overlap"]:
                     todo.put(arm)
                 else:
                     held.append(arm)
             elif done["record_exit"] == 0:
                 done["record_exit"] = code
     finally:
-        for arm in held:
-            todo.put(arm)
-        todo.put(None)
-        theatre.join()
+        if theatre:
+            for arm in held:
+                todo.put(arm)
+            todo.put(None)
+            theatre.join()
     done["finished"] = now()
     note_stop()
     write_json(out / "done.json", done)
@@ -1319,8 +1345,9 @@ def cmd_wait(folder, k, minutes):
         done = read_json(out / "done.json")
         if done is not None:
             ok = done["record_exit"] == 0 and all(v == 0 for v in done["render_exit"].values())
-            lines = [f"recording exited {done['record_exit']}; filming exited "
-                     + (", ".join(f"{a} {c}" for a, c in done["render_exit"].items()) or "not at all")]
+            lines = [f"recording exited {done['record_exit']}; "
+                     + ("nothing was filmed: a record-only pass, which is not collected" if done.get("record_only") else
+                        "filming exited " + (", ".join(f"{a} {c}" for a, c in done["render_exit"].items()) or "not at all"))]
             return ("FILMING: DONE" if ok else "FILMING: FAILED"), lines
         if not alive(started["pid"]):
             return "FILMING: FAILED", [f"process {started['pid']} ended without writing done.json; see film/pass-{k}/run.log"]
@@ -1497,6 +1524,9 @@ def cmd_collect(folder, k):
     plan, done = read_json(out / "plan.json"), read_json(out / "done.json")
     if plan is None or done is None:
         raise Refused(f"pass {k} has not been planned and run to its end")
+    if record_only_pass(plan, done):
+        raise Refused(f"pass {k} recorded windows only (record_only) and has nothing to collect: the next filming pass "
+                      "reuses its windows")
     s, shots = plan["settings"], read_json(folder / "shots.json")
     colours = colours_of(folder, [x for x in shots["shots"] if isinstance(x, dict)])
     ref = reference(folder, s)
@@ -1706,6 +1736,8 @@ def cmd_slides(folder, k):
     plan = read_json(out / "plan.json")
     if plan is None or read_json(out / "done.json") is None:
         raise Refused(f"pass {k} has not been planned and run to its end")
+    if record_only_pass(plan, read_json(out / "done.json")):
+        raise Refused(f"pass {k} recorded windows only (record_only) and has no takes to make slides of")
     data, shots = read_json(folder / "clips.json"), read_json(folder / "shots.json")
     mine = {c["shot"]: c for c in (data or {}).get("clips", []) if c.get("pass") == k}
     if not mine:
@@ -1885,6 +1917,8 @@ def cmd_encode(folder, k):
     plan, done = read_json(out / "plan.json"), read_json(out / "done.json")
     if plan is None or done is None:
         raise Refused(f"pass {k} has not been planned and run to its end")
+    if record_only_pass(plan, done):
+        raise Refused(f"pass {k} recorded windows only (record_only) and has no frames to encode")
     s = plan["settings"]
     fps, cores = s["fps"], s.get("theatre_cores")
     lines, failed, made = [], [], 0
