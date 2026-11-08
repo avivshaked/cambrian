@@ -2022,10 +2022,13 @@ run many steps to a frame, prints the identity verdict at every sample, and quit
   -24). A window shorter than 10 s compares only that first row, so it reads FAITHFUL ("1 of 1"), and that
   verdict means nothing more. Caption such a film as a close cousin from its checkpoint. A source whose hashes
   match the run's does not change this.
-- **The theatre-coral branch has no take clock.** `EVOSIM_THEATRE_SAFARI_CLOCK` exists only in main's
-  `TheatreSafari.cs`, so on this branch the variable does nothing and the shaders' clock is Unity's `_Time.y`,
-  stepped once per captured frame. A take's moving terms (snow, caustics, sway) are still the same on every
-  rerun, which is what the identity checks rely on.
+- **The water's clock counts every frame rendered before a scene, unless `EVOSIM_THEATRE_SCENE_CLOCK` is on.** The
+  shaft march, the old shafts, the surface and the bed's caustics read Unity's `_Time.y`, stepped once per captured
+  frame. A scene's ripples and shafts therefore depend on every scene filmed before it in the same Unity run. A
+  rerun of the same scene list is identical, which is what the identity checks rely on. A retake alone, or a pass
+  with another scene list, shows other shafts and lets the meter settle up to 0.4 EV elsewhere. `SCENE_CLOCK` 1
+  (`3663bda2`, the theatre lane) sets the water's own clock (`EvoTime()` in `TheatreWater.hlsl`) to each take's
+  world second, so a scene's water depends on that scene alone. No code sets `EVOSIM_THEATRE_SAFARI_CLOCK`.
 - **Prove a shading term is live in the shot before building its fix.** Render one take with the term forced to zero or to
   a false colour, and show the pixels move. Light-through terms are zero when the key is behind the camera, and the film's
   shots look down with the key above. Three colour dials in a row were built on a dead term and came out byte-identical
