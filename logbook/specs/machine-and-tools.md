@@ -96,7 +96,9 @@ The root file's rules still apply. The entries below were moved word for word, s
   no reset followed. The film's guard stopped the pass at 03:09:20, and Unity exited -1. It is the first of the three
   with no card group on the card, so the pairing of card work and Unity no longer explains them all (inference). The coordinator
   held all card work, Unity and Blender included, until the owner rules, because twelve of these came before the
-  blue screen of 2026-09-29.
+  blue screen of 2026-09-29. The owner ruled the same night that the take is filmed once alone, with nothing else on
+  the card, before the rest of the pass: a repeat near the same frame names the content, and a clean take points at the
+  driver or the card.
 - **A farm run started from VS Code gets the fast cores only while VS Code has focus.** The
   machine is an i9-13900K: eight fast cores (logical 0 to 15) and sixteen efficiency cores (16
   to 31). With VS Code in front, round 48's two farm runs sat about 44% on the fast cores and
