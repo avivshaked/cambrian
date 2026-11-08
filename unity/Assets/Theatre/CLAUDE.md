@@ -183,6 +183,18 @@ holds at another value, so that no film departs from the look unseen. A film dep
 as a show filter or a comparison, and says which dial it changes and why. A change to the look is a change to the file,
 with its ruling. Unity's dials not in the file stay at their code defaults, and many of those are not 0.
 
+**Two dials ignore the environment in `theatre-safari.ps1`.** It clears `EVOSIM_THEATRE_STORY_LOOK` and
+`EVOSIM_THEATRE_SAFARI_CANOPY` at its start, then takes them from the film look or its own switches (`-StoryLook`,
+`-NoStoryLook`, `-Canopy`). A value a caller sets in the environment for either is dropped. D327's first meter runs
+came out with the story look off for that reason. A change to either goes in the file, or a run passes the switch.
+`theatre-film.ps1`'s C# never applies the story look, so D327's exposure meter does not reach a film made that way. The
+interactive Editor reads no film look at all: it takes the environment it was opened with and the code's defaults.
+
+**A logged NullReferenceException on opening a window is survived.** `TheatreRunner.OpenWhateverModeSays`
+(`TheatreRunner.cs:431`) logs one through `Debug.LogError` and the run carries on and renders. An error check that stops
+on any exception line stops a good run, as phase184's first try did. Stop on compile and shader errors, and require
+frames in every scene.
+
 **The films do what the safari does, unless the owner has ruled otherwise for that one thing** (the owner, 2026-11-03).
 Both read the same file, the safari its `wide` and `events` sections, so a dial entered in either of those reaches
 both. `close` is the films' alone. Some of the safari's looks, dials and effects are set
