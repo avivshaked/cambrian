@@ -238,6 +238,14 @@ The root file's rules still apply. The entries below were moved word for word, s
     16.8 GB. The owner asked that day that stray processes be watched (the owner, 2026-10-27), so each look at
     the machine reads committed memory beside the heat. Closing an idle session frees about 1.5 to 2.5 GB with
     its helpers, and which sessions close is the owner's choice.
+  - **Committed memory at its limit costs speed, not a crash: the page file grows.** On 2026-11-08 a film pass's
+    Unity grew from 17.6 GiB at 06:43 to 20.5 GiB at 07:51 and 26.1 GiB at 08:18. Committed memory reached 104.7 of
+    105.7 GiB, which was 63.7 GiB of RAM and a 42 GiB page file. Windows manages the page file on C:, and it grew to
+    47 GiB by itself. It logged no Resource-Exhaustion-Detector event (System log, id 2004) and no System warning.
+    The cost was speed. With 0.9 GiB of RAM free, the last scene drew at about 3.7 s a frame against 0.25 s, and a
+    16-second seek took 14 minutes. When Unity exited at its time-out, committed memory fell by about 28 GiB. So a
+    near-full commit is read for pace, and for an event 2004 or a page file that stops growing. A pass on a build with
+    the theatre's stop file (`b611190a` on) can then be stopped between scenes without losing its takes.
   - **A memory threshold handed to another agent is given in bytes.** The scripts here divide by 2^30 and call it GB,
     as Task Manager does, and another agent may divide by 10^9. On 2026-11-07 the coordinator gave another project's
     render a guard of 106 GB. The render's first check read 109.0 GB and it stopped before its first frame. Both had

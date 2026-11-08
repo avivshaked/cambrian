@@ -45,12 +45,42 @@ reads in the first steps after a restore. Both are inference, to be proven or ru
 
 The task ends when the edits are in the worktree's files. Nothing is compiled or run in stage A.
 
-## Stage B, run later by the coordinator in a HOLD window
+## Stage B, part 1: build and test on the CPU, in a window with no render
 
-Build, run the new test and the grip and resume tests by filter, then the fidelity mode on `plf-6202`'s checkpoint:
-`Evosim.Farm.exe --verify-checkpoint <ckpt> 10 <scratch dir> 4`. If the fix holds, resume `plf-6202` from 7,500 s on
-the card and match its rows against the source with `scripts/reads/resume-match.py`. That stage is not part of this
-brief's task.
+Stage A wrote the fix, unbuilt, in the worktree (`forest-run.md` gives the cause). Part 1 builds it and runs the tests
+that need no card. Every command starts pinned to logical 20-23 and below normal, from Git Bash:
+`cmd //c start "" //b //wait //belownormal //affinity F00000 <command>`. The SDK is Unity's:
+`C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe`.
+
+1. Build `src\Evosim.Farm.Tests\Evosim.Farm.Tests.csproj` in the worktree with `-c Release -m:1
+   -p:UseSharedCompilation=false`, its output written to a log in the folder below. Fix any compile error in the files
+   stage A changed or added, and nowhere else.
+2. Run the tests with `test --no-build -c Release`, one filter at a time, each with `&Category!=Card` added. Set no
+   `EVOSIM_GPU_*` variable. First `GpuKernelSourceTests`, which confirms the regenerated kernels. Then the new
+   `GpuGripResumeTests`, which must pass. Then `GripCheckpointTests`, `GpuSettledResumeTests`, `GpuUsedCopyTests` and
+   `GpuRemainsTests`, and the tests of `GpuEngineTests` whose names contain `Grip`.
+3. Prove the test can fail. Make a second worktree, detached at the worktree's commit:
+   `git -C D:\Projects\experiments\evolution-simulator worktree add --detach scratch\wt-grip-nofix 8676833f`. Copy in
+   only the new test file, `GpuColumns.cs` and `CheckpointFidelity.cs`, leaving the kernel, the runner and the
+   generated kernels unfixed. Build it the same way and run the new test there. It must fail, and the report gives the
+   assertion that failed.
+4. Read the heat before each build and each test run with the PowerShell tool's
+   `D:\Projects\experiments\evolution-simulator\scripts\temp-check.ps1`. At 90 °C or above, stop and report.
+5. No test touches the graphics card: another session uses it. No commit. No `cd`. After the last step, check that
+   no `dotnet.exe` you started is still running.
+
+A test run that has not ended in 10 minutes is stopped, and the report says so; nothing is relaunched in the
+background. Write only to the two worktrees' `src` folders (part 3's copies included) and to
+`D:\Projects\experiments\evolution-simulator\scratch\plants-work\grip-resume\`, never to the session scratchpad or
+TEMP. The report, at most 400 words, gives each step's outcome with its test counts, every compile fix by file and
+line, and the failing assertion of part 3.
+
+## Stage B, part 2, run by the coordinator
+
+The fidelity mode on `plf-6202`'s checkpoint: `Evosim.Farm.exe --verify-checkpoint <ckpt> 10 <scratch dir> 4`. It
+steps on the CPU, so it cannot see this fault, but it must now pass the two `Organism` fields. Then a fresh card run
+on the fixed build, checkpointed while grips are held, resumed on the card and matched against its source with
+`scripts/reads/resume-match.py`. The card run waits for a card window with no Unity beside it.
 
 ## Paths
 
