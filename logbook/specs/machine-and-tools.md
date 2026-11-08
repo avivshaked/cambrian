@@ -98,7 +98,9 @@ The root file's rules still apply. The entries below were moved word for word, s
   held all card work, Unity and Blender included, until the owner rules, because twelve of these came before the
   blue screen of 2026-09-29. The owner ruled the same night that the take is filmed once alone, with nothing else on
   the card, before the rest of the pass: a repeat near the same frame names the content, and a clean take points at the
-  driver or the card.
+  driver or the card. The take, filmed alone from 03:22, drew all 501 frames and ended at 03:24:30 with no
+  driver event, the CPU at most 85 °C and the GPU 48 °C. So the content is not the reading, and the cause is the driver
+  or the card (inference).
 - **A farm run started from VS Code gets the fast cores only while VS Code has focus.** The
   machine is an i9-13900K: eight fast cores (logical 0 to 15) and sixteen efficiency cores (16
   to 31). With VS Code in front, round 48's two farm runs sat about 44% on the fast cores and
