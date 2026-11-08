@@ -350,6 +350,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D326](#d326) | The bold mouth kinds are drawn tinted toward the body's own colour | 2026-11-07 | ruled by the owner on 2026-11-07 in two choices through the question tool, each the coordinator's recommendation (`scratch/owner/mouth-kinds-three-tints/owner-2026-11-07.md`, saved as they came; the… |
 | [D327](#d327) | The films' exposure meter joins the agreed look at 0.21, and the water's absorption stays at 0.6 | 2026-11-08 | decided by the coordinator on 2026-11-08, under the owner's delegation of 2026-11-07 at 23:12 through the question tool, which gave the coordinator round 67's film light, the meter and the… |
 | [D328](#d328) | The light shafts reach the bed whole | 2026-11-08 | decided by the coordinator on 2026-11-08 under the owner's delegation of the films' light (D327), which the owner restated that night |
+| [D329](#d329) | Round 67's refilm takes the lit surface, a meter at 0.22, rounded family parts and the new cameras | 2026-11-08 | decided by the coordinator on 2026-11-08, under the owner's delegation of the films' look (D327), which the owner restated that night |
 
 ---
 
@@ -11506,3 +11507,41 @@ and the light over bodies are unchanged.
 
 **Rejected.** Lowering the box's floor, which would dim the whole bed evenly and darken the lower frame. Lifting the cut
 everywhere (`SHAFT_OVER_OBJECT` 1), which also lights the bodies the cut was made for.
+
+### D329
+**Round 67's refilm takes the lit surface, a meter at 0.22, rounded family parts and the new cameras** · 2026-11-08
+
+**Status:** decided by the coordinator on 2026-11-08, under the owner's delegation of the films' look (D327), which the
+owner restated that night. It amends D327: the meter's aim rises from 0.21 to 0.22. The owner looked at the previews of
+the lit surface and the rounded parts the same afternoon and found the frames good. Judged in one sitting on the theatre
+lane's test chain (chain201b-205, `scratch/film-light/c8/sheets201` to `sheets205`) and built on
+`theatre-look-refilm` `2dc6d92c`, whose dials-off check is identical to its reference.
+
+**Decision.** The film look (`scripts/theatre-film-look.json`) gains, in `wide`:
+- `MIRROR_LIT` 1: outside the bright window overhead, the surface seen from below carries the lit water's colour, not a
+  dark mirror of the depths;
+- `STORY_LUMA` 0.22;
+- `FAMILY_ROUND` 1: no family part is drawn squarer than a box is drawn on the same path;
+- `WORLD_OASIS` 1, for the Descent and the Card. The Arrival keeps its old plan, and the oasis gate is 70 % of bodies in
+  the top quarter;
+- `COLONY_CLOSE` 1, `PORTRAIT_UP` 25, `PORTRAIT_FILL` 0.55 and `PORTRAIT_LEVEL_END` 1.
+
+In `events` it gains `BIRTH_CLOSE` 0.2. The `close` section keeps `PORTRAIT_FILL` 0.8 for stills and the theatre's own
+close shots. The safari never reads that section.
+
+**Why.** Pass 5's 41 test takes all failed review. The dark lid at the top of the frame held three takes under the luma
+floor. The world shots looked at empty water, the portraits held their subject small and looked across dark water, and
+the colony camera ignored the scene's named body. On the test sheets, `MIRROR_LIT` 1 with the meter at 0.22 cleared the
+floor on every scene tested (1.6a at 67.71 against 66.65 on the chain's measure). It also lifted the top quarter by 14
+to 30 levels. The colonies opened at their named body, 25° below it, and the portraits held their subject at 44 % of the
+frame's height. The descent through the canopy was rich. `FAMILY_ROUND`'s preview showed that superellipsoid parts had
+been drawn as hard blocks, squarer than a plain box, against the owner's rule that no box is drawn. That inverted 6.4a's
+story, whose softened mouth looked boxier than its parent's plain box.
+
+**Rejected.** `MIRROR_LIT` 2, a flat bright band with a hard lower edge. The meter at 0.23 alone, which spends the
+bodies' highlights where the lid is the fault. The oasis Arrival, dark and nearly empty. `BOLD_MEAN`, which does not
+show at film size. The record ease, since neither ease causes the specks.
+
+**Not settled.** The 70 % gate on round 67's resumed world and `PORTRAIT_LEVEL_END` were not judged in a picture; the
+refilm's review judges them. The specks stay unexplained. The safari's Unity leaks about 130 MB of heap a scene, so the
+refilm runs in passes of at most 12 scenes.

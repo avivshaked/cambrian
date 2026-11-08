@@ -394,8 +394,8 @@
       "ruling": "D327 (amends D290): the story look's exposure meter joins the one agreed look; every other lift of the story look is held at the census's own value by the eight dials below, so the meter is the only change from the agreed look. Without them StoryLook's own defaults return v3's whole look, which D290 rejected"
     },
     "EVOSIM_THEATRE_STORY_LUMA": {
-      "value": "0.21",
-      "ruling": "D327: the meter aims each shot at 0.21 of full scale at mid-depth (1.2x at the surface, 0.8x at the bed), picked by eye from phase184's still set (scratch/owner/round-67-film-light-pick/)"
+      "value": "0.22",
+      "ruling": "D329: D327 meter, its aim raised from 0.21 to 0.22 beside MIRROR_LIT 1 (the coordinator, 2026-11-08, under the owner's delegation, from the one sitting on chain201b-205's sheets (scratch/film-light/c8/sheets201 to sheets205)): at 0.21 alone, 1.6a and 3.4a read under the 66.65 floor (63.91 and 65.42); MIRROR_LIT 1 with 0.22 read 67.71 on 1.6a, and each alone cleared 3.4a and 5.6a (sheets203/exposure.tsv)"
     },
     "EVOSIM_THEATRE_STORY_DEEP": {
       "value": "1",
@@ -452,6 +452,34 @@
     "EVOSIM_THEATRE_NO_BOX_JOIN": {
       "value": "2",
       "ruling": "the owner, 2026-11-03, as EVOSIM_THEATRE_NO_BOX: the lobes joined across each joint at the dial's top"
+    },
+    "EVOSIM_THEATRE_FAMILY_ROUND": {
+      "value": "1",
+      "ruling": "D329: the coordinator, 2026-11-08, under the owner's delegation, from the one sitting on chain201b-205's sheets (scratch/film-light/c8/sheets201 to sheets205): a family part is drawn no squarer than a box on the same path, so the blocks in r67r1's crowds draw as ovals, the taper kept; built at c8fa55c0 (theatre-look-familyround); the still pairs are in scratch/owner/theatre-family-round-preview/"
+    },
+    "EVOSIM_THEATRE_MIRROR_LIT": {
+      "value": "1",
+      "ruling": "D329: the coordinator, 2026-11-08, under the owner's delegation, from the one sitting on chain201b-205's sheets (scratch/film-light/c8/sheets201 to sheets205): the surface's underside lit, which lifts the top quarter of the frame (64 to 78 on 1.6a); 2 overshot into a flat band with a hard lower edge"
+    },
+    "EVOSIM_THEATRE_WORLD_OASIS": {
+      "value": "1",
+      "ruling": "D329: the coordinator, 2026-11-08, under the owner's delegation, from the one sitting on chain201b-205's sheets (scratch/film-light/c8/sheets201 to sheets205): in a world whose life is a thin layer near the surface, the descent and the card frame an oasis from below; the arrival keeps its old plan, and the gate is 70% of the bodies in the top quarter (2dc6d92c, theatre-look-refilm); in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_COLONY_CLOSE": {
+      "value": "1",
+      "ruling": "D329: the coordinator, 2026-11-08, under the owner's delegation, from the one sitting on chain201b-205's sheets (scratch/film-light/c8/sheets201 to sheets205): a colony's pull-back opens at the scene's named body, close and from below, then pulls back; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_PORTRAIT_UP": {
+      "value": "25",
+      "ruling": "D329: the coordinator, 2026-11-08, under the owner's delegation, from the one sitting on chain201b-205's sheets (scratch/film-light/c8/sheets201 to sheets205): a portrait within the surface reach starts its search 25 degrees below the subject, looking up; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_PORTRAIT_FILL": {
+      "value": "0.55",
+      "ruling": "D329: the coordinator, 2026-11-08, under the owner's delegation, from the one sitting on chain201b-205's sheets (scratch/film-light/c8/sheets201 to sheets205): the safari's portraits hold the subject at about 44% of the frame's height (its default is 0.4); close keeps 0.8 for theatre-film's close shots and the stills, since a later section replaces an earlier one; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_PORTRAIT_LEVEL_END": {
+      "value": "1",
+      "ruling": "D329: the coordinator, 2026-11-08, under the owner's delegation, from the one sitting on chain201b-205's sheets (scratch/film-light/c8/sheets201 to sheets205): a portrait arc that sweeps in elevation ends level with its subject or below it, never above it looking down into the deep (story-32's luma fell from 65.5 to 41.8); built at 2dc6d92c (theatre-look-refilm); in wide because the safari takes wide and events only"
     }
   },
   "close": {
@@ -536,6 +564,10 @@
     "EVOSIM_THEATRE_MOUTH2_GAPE": {
       "value": "0.4",
       "ruling": "practice adopted by the coordinator under D290 on 2026-11-03: what every film carried"
+    },
+    "EVOSIM_THEATRE_BIRTH_CLOSE": {
+      "value": "0.2",
+      "ruling": "D329: the coordinator, 2026-11-08, under the owner's delegation, from the one sitting on chain201b-205's sheets (scratch/film-light/c8/sheets201 to sheets205): a birth is two takes, the parent and then the newborn's spot, each held at 20% of the frame's height from below, looking up at the surface"
     }
   },
   "trial": {
