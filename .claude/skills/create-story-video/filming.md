@@ -287,6 +287,18 @@ on its first line and how long it took on its last.
   own size, and its numbers from `clips.json` beside the reference's with each flag. The last slide holds the
   bar, word for word. The images are copies, so the deck survives a later collect. `SLIDES: READY` and the
   deck's path, or `SLIDES: REFUSED` for a pass that is not planned and collected.
+- `encode <folder> <k>`: for a pass whose theatre ended at its own wall, before `theatre-safari.ps1` reached its
+  encode block. For each run in `done.json` it reads the safari folder's `scenes.tsv` (none: it says so and goes on)
+  and does the script's encode in Python for each `played` scene: each take's frames to `take-<n>.mp4` with the
+  script's ffmpeg arguments, one take copied, a `Time` scene's last two takes crossfaded, any other station joined
+  through `parts.txt`, then `film-sheet.py`, then the take's frames deleted. A scene whose `<slug>.mp4` exists is
+  passed over, so it can run again; other outcomes are listed. It refuses, keeping the frames and going on to the
+  next scene, a scene folder with no row in `scenes.tsv`, and a scene whose frames on disk differ from the
+  theatre's log (`take <n> of <slug> ended: <F> frames`, read from `film/pass-<k>/theatre-<run>.log`): no take
+  lines, a take folder the log does not name, or a take with another count. It prints `ENCODE: DONE`, `ENCODE:
+  NOTHING TO ENCODE` or `ENCODE: FAILED` with the scenes that failed, a line a scene, and writes the same to
+  `film/pass-<k>/encode.log`. ffmpeg runs below normal priority on the settings' `theatre_cores`. The function
+  must agree with the script's encode block.
 - `plan` also estimates each run's time in the theatre and refuses a run over `wall_minutes` (the faults list,
   "A plan over the wall").
 
@@ -399,7 +411,10 @@ The main session runs only the lines below that name it. `plan`, `start` and `co
    save what it prints in `film-<k>-wait.txt`, below any earlier.
    - `FILMING: DONE`: go on.
    - `FILMING: STILL RUNNING`: run it again. After the third, show the owner and ask whether to wait longer.
-   - `FILMING: FAILED`: show the owner what it printed and the last lines of `film/pass-<k>/run.log`, and
+   - `FILMING: FAILED`: a failure whose `run.log` and theatre log (`film/pass-<k>/theatre-<run>.log`) show the
+     theatre's own time-out ("TIMED OUT at scene") and whose safari folder holds a `scenes.tsv` is encoded with
+     `encode <folder> <k>`, then collected as usual; the scenes it did not reach are filmed in the next pass.
+     Any other failure: show the owner what it printed and the last lines of `film/pass-<k>/run.log`, and
      stop.
 8. Launch the filmer for pass k, run 2. Save its answer in `film-<k>-filmer-2.md`, word for word.
    - `CLIPS: PASS`: go on.
@@ -571,6 +586,10 @@ Round 57's film is the first under the underwater look, and its look test found 
   opening descent alone. The theatre takes canopy per scene from the story, not only per call, so `plan` writes
   it into that shot's scene and the shot is filmed in its run's pass with the others
   (`scripts/tests/story-video-check/test_canopy.py`).
+- **A run reached the theatre's wall with nothing encoded.** Round 67's film, 2026-11-08: pass 5's r67r1-6202 ran at
+  about ten minutes a scene against the plan's estimate of five, and reached its wall with about 30 of 41 scenes
+  filmed and none encoded, since the script exits before its encode block when the theatre quits with code 1.
+  `encode` does that block (`scripts/tests/story-video-check/test_encode.py`).
 - **The director draws no tint.** Shot 6.9a asked for the family tinted along the bed and was filmed as a
   rock table with no family in view. It went back to the shot list as a `Floor` shot, and a tint now comes
   only from a shot's `colour`.

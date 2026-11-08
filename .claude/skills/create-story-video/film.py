@@ -8,6 +8,7 @@
     python film.py wait <folder> <k> <minutes>     wait for pass k to end, for at most the minutes given
     python film.py collect <folder> <k>            copy pass k's clips into clips/, make their sheets, write clips.json
     python film.py slides <folder> <k>             build a deck of pass k's collected takes, film/pass-<k>/slides/index.html
+    python film.py encode <folder> <k>             encode the takes of a pass whose theatre ended at its wall, film/pass-<k>/encode.log
 
 The first line each command prints is its verdict, as filming.md reads it. The last line says how long the
 command took. Exit status: 0 on READY, NOTHING TO FILM, FREE, STARTED, DONE or PASS, 1 otherwise, 2 on a
@@ -1667,14 +1668,171 @@ def cmd_slides(folder, k):
     return "SLIDES: READY", [f"pass {k}: {len(order)} takes, {len(order) + 2} slides", f"deck: {deck / 'index.html'}"]
 
 
+def run_pinned(args, cores):
+    """One child at below-normal priority on the given cores (none: unpinned), its output kept; (code, last line)."""
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
+    pin(proc.pid, cores)
+    text = proc.communicate()[0] or ""
+    return proc.returncode, (text.strip().splitlines() or [""])[-1]
+
+
+def clip_seconds(clip):
+    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of",
+                        "default=noprint_wrappers=1:nokey=1", str(clip)], capture_output=True, text=True)
+    try:
+        return float(r.stdout.strip().splitlines()[0])
+    except (ValueError, IndexError):
+        return 0.0
+
+
+def film_sheet(clip, s):
+    """The theatre checkout's film-sheet.py on the clip, as theatre-safari.ps1 does; its last line, or None."""
+    sheet = theatre_root(s) / "scripts" / "film-sheet.py"
+    if not sheet.is_file():
+        return None
+    r = subprocess.run([sys.executable, str(sheet), str(clip)], capture_output=True, text=True, errors="replace")
+    return ((r.stdout + r.stderr).strip().splitlines() or [""])[-1]
+
+
+def take_dirs(scene):
+    """A scene's take folders in number order, as (number, path)."""
+    found = [(int(p.name[5:]), p) for p in scene.glob("take-*") if p.is_dir() and p.name[5:].isdigit()]
+    return sorted(found)
+
+
+def join_parts(scene, parts, clip, cores):
+    """A concat join through parts.txt as theatre-safari.ps1 writes it; the error text, or None."""
+    listing = scene / "parts.txt"
+    listing.write_text("".join("file '" + str(p).replace(chr(92), "/") + "'\n" for p in parts), encoding="ascii")
+    code, last = run_pinned(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i",
+                             str(listing), "-c", "copy", "-movflags", "+faststart", str(clip)], cores)
+    return None if code == 0 else (last or "ffmpeg failed")
+
+
+def encode_scene(row, safari, log, s, fps, cores):
+    """One played scene: (lines to print, failure text or None, True when it made a clip)."""
+    slug, station = row["slug"], row.get("station", "")
+    scene, clip = safari / slug, safari / f"{slug}.mp4"
+    if not slug.startswith("story-"):
+        return [], f"{slug}: not a story scene (a film's slugs start story-)", False
+    if clip.is_file():
+        return [], None, False
+    takes = [(n, d, sorted(d.glob("frame-*.png"))) for n, d in take_dirs(scene)]
+    takes = [t for t in takes if t[2]]
+    # The frames on disk must be what the theatre says it drew, take for take.
+    if log is None:
+        return [], f"{slug}: no theatre log to check its frames against", False
+    drawn = take_frames(log, slug)
+    if drawn is None:
+        return [], f"{slug}: the theatre's log holds no take lines for it", False
+    diffs = []
+    if len(takes) != len(drawn):
+        diffs.append(f"{len(takes)} take folders with frames, the log names {len(drawn)}")
+    on_disk = {n: len(fr) for n, _, fr in takes}
+    for n, f in enumerate(drawn, 1):
+        if on_disk.get(n, 0) != f:
+            diffs.append(f"take {n}: {on_disk.get(n, 0)} frames on disk, the log says {f}")
+    for n in sorted(set(on_disk) - set(range(1, len(drawn) + 1))):
+        diffs.append(f"take {n}: {on_disk[n]} frames on disk, the log does not name it")
+    if diffs:
+        return [], f"{slug}: " + "; ".join(diffs), False
+    parts = []
+    for n, d, _ in takes:
+        part = scene / f"take-{n}.mp4"
+        code, last = run_pinned(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-framerate", str(fps),
+                                 "-start_number", "0", "-i", str(d / "frame-%06d.png"), "-c:v", "libx264",
+                                 "-pix_fmt", "yuv420p", "-crf", "18", "-r", str(fps), "-threads", "4",
+                                 "-movflags", "+faststart", str(part)], cores)
+        if code != 0 or not part.is_file():
+            return [], f"{slug}: take-{n}: ffmpeg failed: {last}", False
+        parts.append(part)
+    if len(parts) == 1:
+        shutil.copyfile(parts[0], clip)
+    elif station == "Time":
+        first, second = parts[-2], parts[-1]
+        faded = clip if len(parts) == 2 else scene / "time-xfade.mp4"
+        offset = f"{max(0.0, clip_seconds(first) - 1.0):.3f}".rstrip("0").rstrip(".")
+        code, last = run_pinned(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(first), "-i", str(second),
+                                 "-filter_complex", f"[0:v][1:v]xfade=transition=fade:duration=1:offset={offset},format=yuv420p[v]",
+                                 "-map", "[v]", "-c:v", "libx264", "-crf", "18", "-r", str(fps), "-threads", "4",
+                                 "-movflags", "+faststart", str(faded)], cores)
+        if code != 0:
+            return [], f"{slug}: the crossfade failed: {last}", False
+        if len(parts) > 2:
+            joined = join_parts(scene, parts[:-2] + [faded], clip, cores)
+            if joined:
+                return [], f"{slug}: the join after the crossfade failed: {joined}", False
+    else:
+        joined = join_parts(scene, parts, clip, cores)
+        if joined:
+            return [], f"{slug}: the join failed: {joined}", False
+    lines = [f"  {clip.name:<48} {len(parts)} take(s), {clip_seconds(clip):.1f} s"]
+    sheet = film_sheet(clip, s)
+    if sheet is not None:
+        lines.append(f"    sheet: {sheet}")
+    for _, _, frames in takes:      # only once the scene's clip is made, as -DeleteFrames does
+        for f in frames:
+            f.unlink()
+    return lines, None, True
+
+
+def cmd_encode(folder, k):
+    """Encode a pass whose theatre ended at its own wall, before theatre-safari.ps1 reached its encode. The theatre
+    flushes its frames and writes scenes.tsv, then quits with code 1, and the script exits before its encode block.
+    THIS MUST AGREE WITH the section headed "the encode" of scripts/theatre-safari.ps1 (ffmpeg arguments, the Time
+    station's crossfade, the join, the clip's name, the frame delete): change one and change the other. It adds a
+    check the script lacks: a scene is encoded only when its frames on disk match the take lines of the theatre's log."""
+    out = pass_dir(folder, k)
+    plan, done = read_json(out / "plan.json"), read_json(out / "done.json")
+    if plan is None or done is None:
+        raise Refused(f"pass {k} has not been planned and run to its end")
+    s = plan["settings"]
+    fps, cores = s["fps"], s.get("theatre_cores")
+    lines, failed, made = [], [], 0
+    for arm, d in done["safari"].items():
+        safari = Path(d)
+        lines.append(f"{arm}: {safari}")
+        sheet = safari / "scenes.tsv"
+        if not sheet.is_file():
+            lines.append(f"  no scenes.tsv in {safari}; passed over")
+            continue
+        rows = read_tsv(sheet)
+        copy = out / f"theatre-{arm}.log"
+        if not copy.is_file():
+            copy = theatre_root(s) / "scratch" / "logs" / f"theatre-safari-{arm}.log"
+        log = copy.read_text(encoding="utf-8", errors="replace") if copy.is_file() else None
+        known = {r.get("slug") for r in rows}
+        for sd in sorted(safari.glob("story-*")):
+            if sd.is_dir() and sd.name not in known and take_dirs(sd):
+                lines.append(f"  {sd.name} : refused, no row in scenes.tsv")
+                failed.append(f"{arm} {sd.name}: no row in scenes.tsv")
+        for row in rows:
+            if row.get("outcome") != "played":
+                lines.append(f"  {row.get('slug')} : {row.get('outcome')}")
+                continue
+            got, fault, did = encode_scene(row, safari, log, s, fps, cores)
+            lines.extend(got)
+            made += did
+            if fault:
+                lines.append(f"  refused or failed: {fault}")
+                failed.append(f"{arm} {fault}")
+    if failed:
+        verdict, lines = "ENCODE: FAILED", [f"FAILED {f}" for f in failed] + lines
+    else:
+        verdict = "ENCODE: DONE" if made else "ENCODE: NOTHING TO ENCODE"
+    (out / "encode.log").write_text("\n".join([verdict] + lines) + "\n", encoding="utf-8")
+    return verdict, lines
+
+
 COMMANDS = {"plan": (cmd_plan, "FILM PLAN: REFUSED", ["folder", "n"]),
             "machine": (cmd_machine, "MACHINE: BUSY", ["folder"]),
             "start": (cmd_start, "FILM START: REFUSED", ["folder", "n"]),
             "run": (cmd_run, "FILM RUN: FAILED", ["folder", "n"]),
             "wait": (cmd_wait, "FILMING: FAILED", ["folder", "n", "n"]),
             "collect": (cmd_collect, "CLIPS: REFUSED", ["folder", "n"]),
-            "slides": (cmd_slides, "SLIDES: REFUSED", ["folder", "n"])}
-PASSING = ("READY", "NOTHING TO FILM", "FREE", "STARTED", "DONE", "PASS")
+            "slides": (cmd_slides, "SLIDES: REFUSED", ["folder", "n"]),
+            "encode": (cmd_encode, "ENCODE: REFUSED", ["folder", "n"])}
+PASSING = ("READY", "NOTHING TO FILM", "NOTHING TO ENCODE", "FREE", "STARTED", "DONE", "PASS")
 
 
 def main(argv):
