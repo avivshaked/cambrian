@@ -87,6 +87,10 @@ choose a body, a camera and a stretch where `facts.md` places them together. Wit
 has a colour. To make a family stand out without one, choose a camera and a stretch where it fills the frame,
 as `Floor` low over a bed it covers.
 
+A shot with the `Arrival` or `Descent` camera may carry `"canopy": true`, which films it as the canopy shot,
+looking up through the leaves at Snell's window. Set it only on a shot the owner's file for its draft names for
+the canopy; never on your own judgment, and never on another camera.
+
 **A graphic is drawn to the words, beside the event.** Over footage, the drawing keeps to the corner card
 at the right, at most a third of the frame, and never darkens the picture. So choose footage whose event
 sits clear of it, and say in `see` where the event is in the frame and where the drawing sits. A drawing

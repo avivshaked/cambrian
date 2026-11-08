@@ -259,7 +259,7 @@ def check_shots(data, folder):
     order, by_passage, ids = [p["id"] for p in narration["passages"]], {}, []
     for i, shot in enumerate(shots, 1):
         where = f"shot {shot.get('id')}" if isinstance(shot, dict) and shot.get("id") else f"shot {i}"
-        if not isinstance(shot, dict) or shot.get("kind") not in KEYS or set(shot) - {"colour"} not in KEYS[shot["kind"]]:
+        if not isinstance(shot, dict) or shot.get("kind") not in KEYS or set(shot) - {"colour", "canopy"} not in KEYS[shot["kind"]]:
             errors.append(f"{where}: kind is run or graphic, and the shot holds exactly its kind's fields: a run "
                           "shot the footage's, and a graphic its beats and stills and either the footage's or alone")
             continue
@@ -283,6 +283,7 @@ def check_shots(data, folder):
         check_places(shot["places"], lines, where, errors)
         check_text(shot, where, lines, given, errors)
         errors += [f"{where}: {x}" for x in film_tool().colour_faults(shot, colours)]
+        errors += [f"{where}: {x}" for x in film_tool().canopy_faults(shot)]
         if "run" in shot:
             check_footage(shot, where, facts, errors)
         if shot["kind"] == "graphic":
@@ -354,6 +355,7 @@ def cmd_sheet(path):
         what = f"{s['camera']} on {', '.join(s['bodies']) or 'the world'}" if "run" in s else "no footage"
         what = ("graphic over " + what if "run" in s else "graphic alone") if s["kind"] == "graphic" else what
         what += f", {s['colour']} colour" if "colour" in s else ""
+        what += ", canopy" if s.get("canopy") else ""
         words = s["see"].split()
         lines.append(f"{s['id']:>7}  {minutes(s['from_s']):>7}  {s['to_s'] - s['from_s']:5.1f} s  {what:<36}  "
                      + " ".join(words[:9]) + (" ..." if len(words) > 9 else ""))

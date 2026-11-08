@@ -175,6 +175,19 @@ each named body's hue by its turn, a signed fraction of the colour wheel. It rea
   line with N above 0 naming the pass's file. It refuses a clip of an uncoloured pass whose log has one. Paths are
   compared with slashes and case normalised. Each clip in `clips.json` names its colour.
 
+## A shot's canopy
+
+A shot whose camera is `Arrival` or `Descent` may carry `"canopy": true` (the form is in
+[shots-schema.md](shots-schema.md)). The theatre reads the canopy per scene, from the story, so it goes to the
+theatre as a field of that shot's scene and a canopy shot shares its run's pass with the other shots.
+
+- **`plan` writes `"canopy": true` into the shot's scene in `story.json`**, and only for a shot that has it. Each
+  plan entry records `canopy`. No pass is split by it, `run` passes no switch for it, and the safari's folder and
+  log keep their names.
+- **The canopy is in the shot's key**, only when the shot has it, so no other shot is filmed again.
+- **`collect` reads the theatre's log.** The director writes `take N of <slug> at T s: canopy: ...` for each take
+  planned as the canopy shot. `collect` refuses a canopy shot whose log has no such line for its scene.
+
 ## clips.json
 
 ```json
@@ -554,6 +567,10 @@ Round 57's film is the first under the underwater look, and its look test found 
   reviewer read as a fault and asked for a FAITHFUL run that cannot exist. `collect` now reads each take's frames from
   the theatre's log and measures `jump_ratio` within takes, and COUSIN raises no flag
   (`scripts/tests/story-video-check/test_take_jumps.py`).
+- **A canopy is asked for per scene.** Round 67's film, 2026-11-08: the coordinator ruled the canopy for the
+  opening descent alone. The theatre takes canopy per scene from the story, not only per call, so `plan` writes
+  it into that shot's scene and the shot is filmed in its run's pass with the others
+  (`scripts/tests/story-video-check/test_canopy.py`).
 - **The director draws no tint.** Shot 6.9a asked for the family tinted along the bed and was filmed as a
   rock table with no family in view. It went back to the shot list as a `Floor` shot, and a tint now comes
   only from a shot's `colour`.

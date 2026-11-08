@@ -70,6 +70,11 @@ Every shot has these fields:
 | `camera` | The director's camera move: `Arrival`, `Descent`, `Portrait`, `Floor`, `Birth`, `Colony` or `Card`. [shot-lister-brief.md](shot-lister-brief.md) says what each does. |
 | `run_from_s`, `run_to_s` | The stretch of the run the shot plays, in simulated seconds. It is the action; the handles are added by filming. |
 
+**A canopy.** An `Arrival` or a `Descent` shot may also carry `"canopy": true`, and no other value. The theatre then
+films that scene as the canopy shot: the eye under the densest column of leaves, looking up through them at Snell's
+window. Without the field the shot is filmed as the plain Arrival or Descent. Filming writes the field into the
+shot's scene in the story, so the other shots of its run are unaffected ([filming.md](filming.md)).
+
 **A colour.** A shot with footage may also carry `colour`, the name of a colour in the film's `colours.json`.
 The theatre turns the hue of the bodies that colour's map names, so two teams or one family can be told apart
 in the picture. Without it the shot is filmed in the bodies' own colours. `colours.json` sits in the film's
@@ -111,6 +116,8 @@ footage, in a few words. The edit lays it over the plate, a flat colour.
 - A graphic that stands alone says why.
 - Words on screen are at most four words, hold their places unless they are only a name we give, and
   show inside their shot.
+- A shot's `canopy` is `true` and sits on a shot with footage whose `camera` is `Arrival` or `Descent`. `false`,
+  any other value, a graphic with no footage and any other camera are refused.
 - A shot's `colour` is a string, and sits on a shot with footage whose `run` is one the colour lists. The
   film has a `colours.json` that names it, in its form, whose files are there and whose `sha256` is each
   file's. A film with neither a `colours.json` nor a `colour` is checked as it always was.

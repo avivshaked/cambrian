@@ -429,6 +429,8 @@ def shot_key(shot, s, colours=None):
             raise Refused(f"shot {shot['id']}: colour '{shot['colour']}' is not a colour {COLOURS} names")
         fields["colour"] = shot["colour"]      # likewise: a shot with no colour keeps its key
         fields["colour_sha256"] = colours[shot["colour"]]["sha256"]
+    if shot.get("canopy"):
+        fields["canopy"] = True        # likewise: only a canopy shot, so no other shot is filmed again
     if far_fog(shot, s) is not None:
         fields["fog"] = far_fog(shot, s)
     if close_focus(shot, s) is not None:
@@ -665,6 +667,30 @@ def pass_dir(folder, k):
     return folder / "film" / f"pass-{k}"
 
 
+CANOPY_CAMERAS = ("Arrival", "Descent")     # the stations the theatre films as the canopy shot
+
+
+def canopy_faults(shot):
+    """Why a shot's canopy cannot be filmed, as lines without the shot's name; none when it has none or is sound."""
+    if "canopy" not in shot:
+        return []
+    if shot["canopy"] is not True:
+        return [f"canopy is true or left out, not {json.dumps(shot['canopy'])}"]
+    if "run" not in shot:
+        return ["canopy is on a shot with no footage; only an Arrival or a Descent is filmed as the canopy"]
+    if shot.get("camera") not in CANOPY_CAMERAS:
+        return [f"canopy is on a {shot.get('camera')} shot; only an Arrival or a Descent is filmed as the canopy"]
+    return []
+
+
+def canopy_log_fault(slug, log):
+    """Why a theatre log does not show the canopy plan for a scene, or None. The director writes
+    'take N of <slug> at T s: canopy: ...' for each take planned as the canopy shot (FilmPlans Plan_)."""
+    if re.search(r"take [0-9]+ of " + re.escape(slug) + r" at [^\n]*? s: canopy: ", log):
+        return None
+    return f"the theatre's log does not show the canopy plan for {slug}"
+
+
 def safari_dir(folder, k, arm, s=None):
     return theatre_root(s or {}) / "scratch" / "safari" / arm / f"{folder.name}-film{k}"
 
@@ -798,12 +824,14 @@ def cmd_plan(folder, k):
             scene["focus"] = focus
         if side is not None:
             scene["side"] = side
+        if shot.get("canopy"):
+            scene["canopy"] = True     # the theatre reads canopy per scene (SafariStory.cs), so no switch on the call
         scenes.append(scene)
         entries.append({"n": n, "shot": shot["id"], "key": shot_key(shot, s, colours), "arm": arm, "camera": shot["camera"],
                         "clip_start_s": round(start, 3), "seconds": round(seconds, 3),
                         "action_in_s": round(before, 3), "action_out_s": round(before + b - a, 3),
                         "handle_before_s": round(before, 3), "handle_after_s": round(after, 3),
-                        "birth_s": second if shot["camera"] == "Birth" else None, "fog": fog,
+                        "birth_s": second if shot["camera"] == "Birth" else None, "fog": fog, "canopy": bool(shot.get("canopy")),
                         "focus": focus, "side": side})
         why = []
         if before < h - EPS:
@@ -1468,6 +1496,11 @@ def cmd_collect(folder, k):
         if colour_fault:
             errors.append(f"{where}: {colour_fault}")
             continue
+        if e.get("canopy"):
+            canopy_fault = canopy_log_fault(row["slug"], log)
+            if canopy_fault:
+                errors.append(f"{where}: {canopy_fault}; its log film/pass-{k}/theatre-{e['arm']}.log")
+                continue
         if skin_of(s) and not re.search(skin_pattern(s), log):
             errors.append(f"{where}: the theatre's log does not show the skin it was asked for ({skin_of(s)})")
             continue
