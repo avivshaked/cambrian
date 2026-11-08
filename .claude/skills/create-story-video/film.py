@@ -9,6 +9,7 @@
     python film.py collect <folder> <k>            copy pass k's clips into clips/, make their sheets, write clips.json
     python film.py slides <folder> <k>             build a deck of pass k's collected takes, film/pass-<k>/slides/index.html
     python film.py encode <folder> <k>             encode the takes of a pass whose theatre ended at its wall, film/pass-<k>/encode.log
+    python film.py stop <folder> <k> <reason...>   end a running pass cleanly: the scene under way completes, then the theatre writes scenes.tsv
 
 The first line each command prints is its verdict, as filming.md reads it. The last line says how long the
 command took. Exit status: 0 on READY, NOTHING TO FILM, FREE, STARTED, DONE or PASS, 1 otherwise, 2 on a
@@ -1019,6 +1020,23 @@ def stop_text(folder):
     return f.read_text(encoding="utf-8", errors="replace").strip() or "(the stop file is empty)"
 
 
+def safari_takes_stop_file(s):
+    """True when the theatre checkout's theatre-safari.ps1 declares a $StopFile parameter in its param(...) block."""
+    script = theatre_root(s) / "scripts" / "theatre-safari.ps1"
+    try:
+        text = script.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    m = re.search(r"\bparam\s*\(", text, re.IGNORECASE)
+    if not m:
+        return False
+    depth, i = 1, m.end()
+    while i < len(text) and depth:
+        depth += {"(": 1, ")": -1}.get(text[i], 0)
+        i += 1
+    return re.search(r"\$StopFile\b", text[m.end():i], re.IGNORECASE) is not None
+
+
 def path_regex(path):
     """A regex that accepts a path with either slash."""
     return r"[\\/]".join(re.escape(x) for x in re.split(r"[\\/]+", str(path)) if x)
@@ -1074,7 +1092,8 @@ def cmd_start(folder, k):
     out = pass_dir(folder, k)
     stopped = stop_text(folder)
     if stopped is not None:
-        raise Refused(f"the heat guard stopped a pass: {stop_file(folder)} says: {stopped}",
+        raise Refused(f"a stop file exists, written by the heat guard or by a clean stop (`stop`): "
+                      f"{stop_file(folder)} says: {stopped}",
                       "wait until scripts/temp-check.ps1 reads the CPU under 75 °C, tell the machine's coordinator, "
                       "and delete the file")
     if read_json(out / "plan.json") is None:
@@ -1194,7 +1213,9 @@ def cmd_run(folder, k):
     done = {"pass": k, "started": now(), "look": s["theatre_look"], "stream": bool(s.get("theatre_stream")),
             "snow": s.get("snow"), "colour": plan.get("colour"),
             "overlap": s.get("overlap") is not False, "stopped": None, "record_exit": 0, "recorded": {},
-            "render_exit": {}, "safari": {}}
+            "render_exit": {}, "safari": {}, "stop_file": None}
+    if safari_takes_stop_file(s):
+        done["stop_file"] = str(stop_file(folder))
     scenes = {}
     for e in plan["scenes"]:
         scenes.setdefault(e["arm"], []).append(e["n"])
@@ -1226,6 +1247,8 @@ def cmd_run(folder, k):
                     "-Worker", str(s["worker"]), "-RunsRoot", str(runs_root_for(s, arm)),
                     "-Folder", f"{folder.name}-film{k}", "-DeleteFrames", "-WallMinutes", str(s["wall_minutes"]),
                     "-Fps", str(s["fps"]), "-Size", plan.get("size", s["size"])]
+            if done["stop_file"]:
+                args += ["-StopFile", done["stop_file"]]   # checked between scenes; a clean stop (film.py stop)
             if s.get("theatre_stream"):
                 args.append("-Stream")     # the takes straight to the card's encoder (theatre-safari.ps1 -Stream)
             say(f"{now()} {arm}: filming, its log film/pass-{k}/film-{arm}.log: {' '.join(args)}")
@@ -1824,6 +1847,38 @@ def cmd_encode(folder, k):
     return verdict, lines
 
 
+def cmd_stop(folder, k, reason):
+    """End a running pass cleanly: write the stop file in the guard's one-line form. A safari given -StopFile
+    completes the scene under way, writes scenes.tsv and exits 1; the runs not yet filmed are skipped."""
+    out = pass_dir(folder, k)
+    started = read_json(out / "started.json")
+    if started is None:
+        raise Refused(f"pass {k} has not been started")
+    if read_json(out / "done.json") is not None:
+        raise Refused(f"pass {k} has ended already (film/pass-{k}/done.json exists)")
+    reason = " ".join((reason or "").split())
+    if not reason:
+        raise Refused("a reason is needed: stop <folder> <k> <reason...>")
+    existing = stop_text(folder)
+    if existing is not None:
+        raise Refused(f"the stop file {stop_file(folder)} exists already and says: {existing}")
+    plan = read_json(out / "plan.json")
+    given = bool(plan) and safari_takes_stop_file(plan["settings"])
+    f = stop_file(folder)
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(f"{now()} {reason} (a clean stop: the scene under way completes, then the theatre writes "
+                 "scenes.tsv)" + chr(10), encoding="utf-8")
+    lines = [f"wrote {f}"]
+    if given:
+        lines.append("the pass's safari was given the stop file: the scene under way completes, then the theatre "
+                     "writes scenes.tsv and exits; the runs not yet filmed are skipped. Then encode, then collect.")
+    else:
+        lines.append("the pass's safari was not given the stop file (the theatre checkout's theatre-safari.ps1 has no "
+                     "-StopFile parameter): the theatre will not see it until its run ends, and only the runs not yet "
+                     "filmed are skipped.")
+    return "STOP: WRITTEN", lines
+
+
 COMMANDS = {"plan": (cmd_plan, "FILM PLAN: REFUSED", ["folder", "n"]),
             "machine": (cmd_machine, "MACHINE: BUSY", ["folder"]),
             "start": (cmd_start, "FILM START: REFUSED", ["folder", "n"]),
@@ -1831,19 +1886,24 @@ COMMANDS = {"plan": (cmd_plan, "FILM PLAN: REFUSED", ["folder", "n"]),
             "wait": (cmd_wait, "FILMING: FAILED", ["folder", "n", "n"]),
             "collect": (cmd_collect, "CLIPS: REFUSED", ["folder", "n"]),
             "slides": (cmd_slides, "SLIDES: REFUSED", ["folder", "n"]),
-            "encode": (cmd_encode, "ENCODE: REFUSED", ["folder", "n"])}
-PASSING = ("READY", "NOTHING TO FILM", "NOTHING TO ENCODE", "FREE", "STARTED", "DONE", "PASS")
+            "encode": (cmd_encode, "ENCODE: REFUSED", ["folder", "n"]),
+            "stop": (cmd_stop, "STOP: REFUSED", ["folder", "n", "text"])}
+PASSING = ("WRITTEN", "READY", "NOTHING TO FILM", "NOTHING TO ENCODE", "FREE", "STARTED", "DONE", "PASS")
 
 
 def main(argv):
     started = time.monotonic()
     spec = COMMANDS.get(argv[1]) if len(argv) > 1 else None
+    rest = bool(spec) and spec[2][-1] == "text"      # a last word list, joined; an empty one is the command's to refuse
+    if rest:
+        argv = argv[:2 + len(spec[2]) - 1] + [" ".join(argv[2 + len(spec[2]) - 1:])]
     if spec is None or len(argv) != 2 + len(spec[2]) or not all(
-            kind == "folder" or (v.isdigit() and int(v) >= 1) for kind, v in zip(spec[2], argv[2:])):
+            kind in ("folder", "text") or (v.isdigit() and int(v) >= 1) for kind, v in zip(spec[2], argv[2:])):
         print(__doc__.strip(), file=sys.stderr)
         return 2
     command, refused, kinds = spec
-    args = [Path(v).resolve() if kind == "folder" else int(v) for kind, v in zip(kinds, argv[2:])]
+    args = [Path(v).resolve() if kind == "folder" else v if kind == "text" else int(v)
+            for kind, v in zip(kinds, argv[2:])]
     if not args[0].is_dir():
         verdict, lines = refused, [f"cannot read the film's folder {args[0]}"]
     else:

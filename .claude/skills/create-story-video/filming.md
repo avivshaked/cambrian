@@ -299,6 +299,16 @@ on its first line and how long it took on its last.
   NOTHING TO ENCODE` or `ENCODE: FAILED` with the scenes that failed, a line a scene, and writes the same to
   `film/pass-<k>/encode.log`. ffmpeg runs below normal priority on the settings' `theatre_cores`. The function
   must agree with the script's encode block.
+- `stop <folder> <k> <reason...>`: ends a running pass early without losing its finished takes. For a pass with
+  `started.json` and no `done.json` it writes the stop file, `film/STOP`, in the heat guard's one-line form: the
+  time, the reason, and `(a clean stop: the scene under way completes, then the theatre writes scenes.tsv)`. It
+  refuses a pass not started or ended, an empty reason, and an existing stop file (it prints what that says). When
+  the theatre checkout's `theatre-safari.ps1` declares `-StopFile`, `run` gave the safari the file (`done.json`
+  records it as `stop_file`, else `null`): the safari checks it between scenes, finishes the scene under way, writes
+  `scenes.tsv` and exits 1 with `STOPPED at scene`, and `run` films no run after it. Without the parameter the
+  theatre does not see the file until its run ends, and only the runs not yet filmed are skipped; `stop` says which
+  holds. Use it to end a pass early; the heat guard's kill stays for driver events and heat, and loses the run under
+  way. `start` refuses while the file exists, naming its text.
 - `plan` also estimates each run's time in the theatre and refuses a run over `wall_minutes` (the faults list,
   "A plan over the wall").
 
@@ -412,7 +422,8 @@ The main session runs only the lines below that name it. `plan`, `start` and `co
    - `FILMING: DONE`: go on.
    - `FILMING: STILL RUNNING`: run it again. After the third, show the owner and ask whether to wait longer.
    - `FILMING: FAILED`: a failure whose `run.log` and theatre log (`film/pass-<k>/theatre-<run>.log`) show the
-     theatre's own time-out ("TIMED OUT at scene") and whose safari folder holds a `scenes.tsv` is encoded with
+     theatre's own time-out ("TIMED OUT at scene") or its clean stop ("STOPPED at scene", after `stop`) and whose
+     safari folder holds a `scenes.tsv` is encoded with
      `encode <folder> <k>`, then collected as usual; the scenes it did not reach are filmed in the next pass.
      Any other failure: show the owner what it printed and the last lines of `film/pass-<k>/run.log`, and
      stop.
@@ -590,6 +601,10 @@ Round 57's film is the first under the underwater look, and its look test found 
   about ten minutes a scene against the plan's estimate of five, and reached its wall with about 30 of 41 scenes
   filmed and none encoded, since the script exits before its encode block when the theatre quits with code 1.
   `encode` does that block (`scripts/tests/story-video-check/test_encode.py`).
+- **A pass could only be killed.** Round 67's film, 2026-11-08: pass 5 could be ended only by the guard's kill,
+  which would have lost every finished take of the run under way, since a kill writes no `scenes.tsv`. The theatre
+  gained a stop file, `-StopFile`, read between scenes, and film.py passes it and writes it with `stop`
+  (`scripts/tests/story-video-check/test_stop_clean.py`).
 - **The director draws no tint.** Shot 6.9a asked for the family tinted along the bed and was filmed as a
   rock table with no family in view. It went back to the shot list as a `Floor` shot, and a tint now comes
   only from a shot's `colour`.
