@@ -5,6 +5,7 @@
  "worker": 6,
  "runs_root": "runs",
  "runs_root_by_run": {},
+ "runs_only": null,
  "farm_threads": 10,
  "wall_minutes": 180,
  "theatre_start_s": 300,

@@ -165,6 +165,10 @@ def film_settings(folder, lines):
                                            for k, v in rb.items()):
         problems.append("runs_root_by_run is an object of run names and the paths of an existing folder that holds "
                         "the run, absolute or from the checkout's root")
+    ro = s.get("runs_only")
+    if ro is not None and not (isinstance(ro, list) and ro and all(isinstance(r, str) and r for r in ro)):
+        problems.append("runs_only is null (a pass films every run's shots) or a list of run names, the only runs "
+                        "the next pass films")
     for key, default in THEATRE_COSTS.items():
         v = s.get(key, default)
         if not number(v) or v < 0:
@@ -683,6 +687,18 @@ def cmd_plan(folder, k):
     todo = [x for x in runs if filmed.get(x["id"]) != shot_key(x, s, colours)]
     if not todo:
         return "FILM PLAN: NOTHING TO FILM", lines + [f"every one of the {len(runs)} shots with footage has its clip"]
+    # runs_only films the named runs alone, so one run can be filmed by itself and judged before the rest: round
+    # 67's film refilmed the take a driver fault cut short before filming the other runs (2026-11-08).
+    if s.get("runs_only"):
+        only = set(s["runs_only"])
+        waiting = [x for x in todo if x["run"] not in only]
+        todo = [x for x in todo if x["run"] in only]
+        if not todo:
+            raise Refused("runs_only names " + ", ".join(sorted(only)) + ", and no shot of those runs is left to "
+                          "film: set it to null, or name a run with shots to film")
+        if waiting:
+            lines.append(f"{len(waiting)} shots on runs not in runs_only wait for the next passes: "
+                         + ", ".join(sorted({x['run'] for x in waiting})))
     errors, scenes, entries, dirs = [], [], [], {}
     # The director films a run at one size, so a pass does too: an offline pass is the shots set small in
     # size_by_shot, and the 4K pass that follows it is the same shots once they are taken out of it.
