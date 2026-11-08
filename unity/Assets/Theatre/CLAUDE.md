@@ -235,6 +235,18 @@ variant with every dial off. It cannot see a symbol used under one keyword and d
 the film look's own set of keywords. So every build is first rendered for a few small frames in the film look at
 `ONE_SKIN=3`, and again in the close look. Any shader error in the safari's log fails it.
 
+**The dials-off check has two references, chosen by ancestry** (the coordinator's ruling of 2026-11-08). Its portrait
+of body 27382 on `r62d-u-6102` is itself a resume of `r61-p6102`. The director's resume fix (`630184b7`) reads the
+source's births, so it places 27382 in its clade and films the portrait from the other side. That changes the dials-off
+frames by design. `slot-r62kg.ps1` therefore checks a build that contains `630184b7` against `ref-dials-off-resume`, and
+any other build against `look-dials-off-rig6`. `seat-ok` names the reference used. The move was proved when `630184b7`
+alone matched `a538f33a` with every dial off, while rig 6 differed in all nine frames
+(`scratch/film-light/c8/check187/`).
+
+**A `-Check` run writes its own log**, `theatre-safari-CHECK-<arm>.log`, beside the filming log
+`theatre-safari-<arm>.log`. Read the check's log. Phase 187 first read the filming log of the pass before, from a build
+without the fix, and reported a fault that the check itself did not have.
+
 **Round 62's branching coral is drawn in the rock's look, one mesh a colony** (`TheatreCoralRock.cs`,
 `TheatreSkin.BuildCoral`). `EVOSIM_THEATRE_CORAL=0` switches it off. A live world draws its own
 `World.Coral`; a film window and a reconstruction grow it from the run's config with
