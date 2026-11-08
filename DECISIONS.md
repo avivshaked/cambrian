@@ -348,6 +348,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D324](#d324) | The films draw eyespots on a true half of their bearers, the outline's gate at 0.5 m, and the mouth fix with its kinds | 2026-11-07 | ruled by the owner on 2026-11-07, accepting the coordinator's three recommendations as the film lane put them in its status that day (`scratch/owner/eyespot-gate-kinds/owner-2026-11-07.md`, the… |
 | [D325](#d325) | The forest screen turns on light and matter at each part, and blade turnover is withdrawn | 2026-11-07 | ruled by the owner on 2026-11-07, choosing the coordinator's recommendation on both questions it put (`proposals/propose-forest-pays.md` at `7af2f5ec`, absorbed here and deleted) |
 | [D326](#d326) | The bold mouth kinds are drawn tinted toward the body's own colour | 2026-11-07 | ruled by the owner on 2026-11-07 in two choices through the question tool, each the coordinator's recommendation (`scratch/owner/mouth-kinds-three-tints/owner-2026-11-07.md`, saved as they came; the… |
+| [D327](#d327) | The films' exposure meter joins the agreed look at 0.21, and the water's absorption stays at 0.6 | 2026-11-08 | decided by the coordinator on 2026-11-08, under the owner's delegation of 2026-11-07 at 23:12 through the question tool, which gave the coordinator round 67's film light, the meter and the… |
 
 ---
 
@@ -11451,3 +11452,36 @@ skin-coloured rings and the crown's lobes as translucent pink, both part of the 
 **Rejected.** The white as landed (0.65, keyline on, hard edges). A setting between (0.35, half the keyline, 0.03
 radii), which keeps the kinds apart at a distance but still reads as drawn on. Whether the tinted kinds stay apart in a
 world shot, where a mouth is a few pixels across, is untested.
+
+### D327
+**The films' exposure meter joins the agreed look at 0.21, and the water's absorption stays at 0.6** · 2026-11-08
+
+**Status:** decided by the coordinator on 2026-11-08, under the owner's delegation of 2026-11-07 at 23:12 through the
+question tool. The delegation gave the coordinator round 67's film light, the meter and the absorption, judged by eye
+to the owner's bar. The owner may overrule it before any 4K pass. Picked from the theatre lane's still set, phase184
+(`scratch/owner/round-67-film-light-pick/`). It amends D290: the story look's exposure meter, off since D290, returns
+inside the one agreed look, with every other lift of the story look at the census's own value.
+
+**Decision.**
+- The film look's `wide` section sets `EVOSIM_THEATRE_STORY_LOOK` 1, its eight lifts at the census's values (deep,
+  shallow and ambient x1, fog 0.035, reach 18 m, vignette 0.22, lamp 0, starving 0.45) and `STORY_LUMA` 0.21. The only
+  change from the agreed look is the meter, which sets each shot's exposure from its own brightness.
+- `EVOSIM_THEATRE_ABSORB` stays at D246's 0.6.
+- `scripts/theatre-film-look.json` stays the one source, read by the safari's renders, `film.py` and `graphics.py`.
+  `theatre-film.ps1`'s films do not apply the story look, so the meter goes into them before any film is made that
+  way. The interactive Editor reads no film look, and a story opened there takes the story look's own defaults, which
+  D290 rejected, until those defaults are set to the agreed look.
+
+**Why.** Pass 2's takes read as night. Its wides measured a mean luma of 36 to 51, and the water around the shafts was
+near black. At 0.21 the wides read as daylight, at luma 62 to 67, with the shafts over a lit bed and a green plant
+bright enough to show its surface. The portrait was left as filmed, the meter moving it by 0.2 EV, and nothing clipped.
+At 0.18 the wides were still muted. At full size an absorption of 0.4 could not be told from 0.6. The meter takes back what
+the lighter water gives, so that dial stays where it is.
+
+**Rejected.** The meter at 0.18, and absorption 0.4. A meter above 0.21 was not tried: in the birth crowd the brightest
+bodies already peak at 221 of 255.
+
+**Not settled by the light.** Judged by eye, the wides are lit but not yet amazing. The surface reads as a dull band
+under an overcast ceiling, the leaf shadows on the bed as hard dark cut-outs, and a wide subject has no highlight.
+Tried next: the canopy camera, which looks up at the bright window of the surface, the lamp on portraits and births,
+and softer shadows as a render build.
