@@ -553,8 +553,11 @@ host. A checkpoint saved the host's stale values, and a restore handed them back
 toward an anchor metres away, far past its breaking force, and the grip formed again where the body stood. Inference:
 the 1 to 2 cm rise is the spring's resting stretch added a second time. The CPU engine reads the creature's own arrays,
 and the CPU accelerator copies whole arrays, so neither shows it. The fix indexes both sides one component after
-another. It is written, uncommitted and unbuilt, in `scratch/wt-plants-build`, with a test that resumes a gripping
-world on the accelerator while it copies as the card does. Every card checkpoint of a gripping world written before
+another (`plants-build` `3fab5b8e`). Its test resumes a gripping world on the CPU accelerator while the accelerator
+copies only the used slots, as the card does. With 15 bodies and 4 grips held at the checkpoint, the test failed without
+the fix, parting from its run at physics step 25, and passed with it, digest for digest over 8 metabolic steps. The grip,
+resume, copy and remains tests passed with it, 19 of 19. The engine's two grip tests against the solver, and a resume on
+the card itself, are still owed. Every card checkpoint of a gripping world written before
 the fix holds the stale values, `plf-6202`'s among them, so its resume stays a cousin even on the fixed build. The
 format is not bumped, since a bump would refuse the gripless checkpoints too.
 Every world kept `partFeedFallbacks` at 0. The largest energy residual was 3.6e-4 J and the largest
