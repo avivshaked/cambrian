@@ -26,7 +26,8 @@ In the film's folder:
   (`"kind": "graphic"`) is drawn over its footage later, so its `see` also names a drawing that is not in
   the clip: judge the clip by its footage alone.
 - `clips.json`: one clip a shot with footage, with its sheet's path, the sheet's frame times, where the action lies
-  (`action_in_s`, `action_out_s`), its mean `luma`, its `jump_ratio`, its `tone` and `edges`, its
+  (`action_in_s`, `action_out_s`), its mean `luma`, its `jump_ratio`, its `takes` (the frames of each take the
+  scene was filmed as, in order, or null when they were not read), its `tone` and `edges`, its
   `provenance` and its `flags` (`dark`, `flat`, `soft`, `jump`, `provenance`). Its `reference` holds the reference film's luma, tone, edges and sheet.
 - Each clip's slide images, in `film/pass-<k>/slides/img/`: `<shot id>-sheet.png`, the sheet below, and
   `<shot id>-frame.png`, one full-size frame from the middle of the action, at the clip's own size. Read the
@@ -64,14 +65,18 @@ Read every sheet and every full-size frame whole. Read nothing else.
   small body appearing near its parent.
 - **F3, camera.** The camera is inside a body, below the bed or behind the glass, or a frame shows only
   empty water.
-- **F4, size.** A body changes size sharply from one frame to the next, or `jump_ratio` is 6 or more.
+- **F4, size.** A body changes size sharply from one frame to the next, or `jump_ratio` is 6 or more. A clip
+  whose `takes` lists more than one take cuts between them by design, so the cut is not F4, and `jump_ratio`
+  already leaves it out. A jump inside a take still fails.
 - **F5, light.** The frames are much darker or brighter than the reference sheet, or `luma` is under 0.6
   or over 1.5 times the reference's.
 - **F8, flat or soft.** The frames are murkier or softer than the reference sheet's, or `tone` is under the
   reference's `tone_p10`, or `edges` under its `edges_p10`.
 - **F6, words.** Words, numbers or labels are burned into the frames. The clips carry none; the edit adds
   them.
-- **F7, provenance.** `provenance` is not `FAITHFUL`.
+- **F7, provenance.** `provenance` is missing, or is neither `FAITHFUL` nor `COUSIN`. A take of a run recorded on
+  the farm is filmed by a theatre that cannot replay that run exactly, so it is labelled a cousin by construction.
+  COUSIN is never a fault, and no `fix:` line asks for a FAITHFUL run.
 
 ## Your answer
 

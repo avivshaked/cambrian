@@ -1359,6 +1359,33 @@ def read_tsv(path):
     return [dict(zip(rows[0], r)) for r in rows[1:]] if rows else []
 
 
+def take_frames(log, slug):
+    """The frames of each take of a scene, in order, from the theatre's log, or None when the log holds no take
+    line for exactly this slug. A scene filmed again in the same log is read from its last take 1 on."""
+    found = [(int(n), int(f)) for n, s, f in re.findall(r"take ([0-9]+) of (\S+) ended: ([0-9]+) frames", log)
+             if s == slug]
+    starts = [i for i, (n, _) in enumerate(found) if n == 1]
+    if not starts:
+        return None
+    found = found[starts[-1]:]
+    if [n for n, _ in found] != list(range(1, len(found) + 1)):
+        return None
+    return [f for _, f in found]
+
+
+def jumps_within_takes(jumps, takes):
+    """The frame-to-frame changes with those that cross a take boundary left out. tblend writes no output for the
+    clip's first frame and collect drops the next one, so jumps[j] is the change into frame j + 2, and the change
+    into the first frame of a take that begins at frame b is jumps[b - 2]."""
+    if not takes or len(takes) < 2:
+        return list(jumps)
+    cuts, at = set(), 0
+    for n in takes[:-1]:
+        at += n
+        cuts.add(at - 2)
+    return [v for j, v in enumerate(jumps) if j not in cuts]
+
+
 def cmd_collect(folder, k):
     out = pass_dir(folder, k)
     plan, done = read_json(out / "plan.json"), read_json(out / "done.json")
@@ -1415,8 +1442,11 @@ def cmd_collect(folder, k):
         sheet(clip, clips_dir / f"{e['shot']}-sheet.png", sorted(set(frames)))
         luma = yavg(clip, clips_dir, f"{e['shot']}-luma.txt")
         jumps = yavg(clip, clips_dir, f"{e['shot']}-jump.txt", "tblend=all_mode=difference,")[1:]
-        typical = middle(jumps) or 0
-        ratio = round(max(jumps) / typical, 1) if typical > 0 else None
+        takes = take_frames(logs.get(e["arm"], ""), row["slug"])
+        takes = takes if takes and sum(takes) == info["frames"] else None
+        within = jumps_within_takes(jumps, takes)
+        typical = middle(within) or 0
+        ratio = round(max(within) / typical, 1) if typical > 0 and within else None
         tone, edges = look(clip, clips_dir, f"{e['shot']}-look.txt", f"fps={LOOK_RATE},")
         tone, edges = middle(tone), (round(middle(edges), 2) if edges else None)
         rgb = colour(clip, f"fps={LOOK_RATE},")
@@ -1454,7 +1484,7 @@ def cmd_collect(folder, k):
                   "height": info["height"], "run": e["arm"], "clip_start_s": e["clip_start_s"],
                   "action_in_s": a, "action_out_s": b, "handle_before_s": e["handle_before_s"],
                   "handle_after_s": e["handle_after_s"], "provenance": row.get("provenance", ""),
-                  "luma": round(sum(luma) / len(luma), 2) if luma else None, "jump_ratio": ratio,
+                  "luma": round(sum(luma) / len(luma), 2) if luma else None, "jump_ratio": ratio, "takes": takes,
                   "tone": tone, "edges": edges, "rgb": rgb, "fog": fog, "focus": focus, "side": side,
                   "look": plan["settings"].get("theatre_look"), "stream": bool(plan["settings"].get("theatre_stream")),
                   "snow": plan["settings"].get("snow"), "skin": skin_of(plan["settings"]) or None,
@@ -1462,12 +1492,17 @@ def cmd_collect(folder, k):
                   "sheet":f"clips/{e['shot']}-sheet.png", "sheet_times_s": [round(f / fps, 2) for f in sorted(set(frames))]}
         new.append(record)
         notes, flags = [], []
-        if record["provenance"] != "FAITHFUL":
+        # A run recorded on the farm is filmed in a theatre that cannot replay it exactly, so COUSIN is right there.
+        if record["provenance"] not in ("FAITHFUL", "COUSIN"):
             notes.append(f"provenance {record['provenance'] or 'none'}")
             flags.append("provenance")
         if ratio is not None and ratio >= JUMP_FLAG:
             notes.append(f"a frame-to-frame change {ratio} times the clip's median")
             flags.append("jump")
+        if takes is None:
+            notes.append("the take boundaries were not read (" + ("the theatre's log has no take line for this scene"
+                         if not take_frames(logs.get(e["arm"], ""), row["slug"]) else
+                         "the takes' frames do not sum to the clip's frames") + "), so the largest change is over the whole clip")
         if record["luma"] is not None and record["luma"] < ref["luma"]:
             flags.append("dark")
             notes.append(f"dark: its luma {record['luma']:g} is under the reference's, {ref['luma']:g}")

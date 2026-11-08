@@ -195,9 +195,10 @@ each named body's hue by its turn, a signed fraction of the colour wheel. It rea
   frame. The edit takes the clip from `action_in_s` and has the handles either side.
 - `luma` is the clip's mean luma, 0 to 255, beside the reference's, which is the floor: a clip under it is
   flagged `dark`.
+- `takes` is the frames of each take the scene was filmed as, in order, or null when the log did not give them.
 - `flags` lists what `collect` flagged on the clip: `provenance`, `jump`, `flat`, `soft` and `dark`. None of them
   fails the collect by itself. The reviewer judges them against the bar.
-- `jump_ratio` is the clip's largest change between two frames over its median change. A body that pops in
+- `jump_ratio` is the clip's largest change between two frames over its median change, within takes. A body that pops in
   size, or a frame that flashes, shows as a high ratio; `collect` prints any at 6 or more.
 - `tone` is the clip's median spread of luma from the 10th to the 90th percentile, and `edges` its median
   Sobel edge strength, both read at 1920 wide, three frames a second. A flat frame has a small spread, and
@@ -262,7 +263,9 @@ on its first line and how long it took on its last.
   `FAILED` or `STILL RUNNING`. It ends by itself, so it can run in the background.
 - `collect <folder> <k>`: copies the pass's clips into `clips/`, makes their sheets and numbers, and writes
   `clips.json`. `PASS` when every shot with footage has a clip as it now stands, `FAIL` with the shots that do not.
-  It prints a clip's luma under the reference's as `dark`, beside `flat` and `soft`.
+  It prints a clip's luma under the reference's as `dark`, beside `flat` and `soft`. It measures `jump_ratio`
+  within takes, leaving out the change across each cut between the takes of one scene, and records the takes' frames
+  as `takes`. It flags `provenance` only for a label that is missing or is neither FAITHFUL nor COUSIN.
 - `slides <folder> <k>`: builds a deck of pass k's collected takes in `film/pass-<k>/slides/index.html`, its
   images beside it in `slides/img/`: a dark page, one slide on screen at a time, arrow keys to move, nothing
   loaded but its images. A first slide names the film, the pass, the size, the number of takes and the date.
@@ -545,6 +548,12 @@ Round 57's film is the first under the underwater look, and its look test found 
   alone, and 9471 was born before the resume began. `collect` passed it. It now refuses a take whose `station` in the
   theatre's `scenes.tsv` differs from the plan's camera, and points to the theatre's log
   (`scripts/tests/story-video-check/test_test_pass.py`, 2026-11-08).
+- **A planned cut and a COUSIN label failed a shot.** Round 67's film, 2026-11-08, found shot 2.4b failing F4 and F7. The
+  birth is filmed as two takes, the parent and then the newborn, and the cut between them gave a `jump_ratio` of 51.9
+  where every other change was under twice the median. Every take on the farm route is labelled COUSIN, which the
+  reviewer read as a fault and asked for a FAITHFUL run that cannot exist. `collect` now reads each take's frames from
+  the theatre's log and measures `jump_ratio` within takes, and COUSIN raises no flag
+  (`scripts/tests/story-video-check/test_take_jumps.py`).
 - **The director draws no tint.** Shot 6.9a asked for the family tinted along the bed and was filmed as a
   rock table with no family in view. It went back to the shot list as a `Floor` shot, and a tint now comes
   only from a shot's `colour`.
