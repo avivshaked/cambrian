@@ -81,6 +81,20 @@ The root file's rules still apply. The entries below were moved word for word, s
   the wake is read as an occasional trigger, not a rule (inference). The owner uses the machine through the day and
   will not keep the display fixed. If it happens again, it is debugged against these two. One option then is to drive
   the display from the processor's own graphics, so the card carries no display; that choice is the owner's.
+  **A third FECS Exception, with Unity alone on the card** (2026-11-08). One `nvlddmkm` id 13 came at 03:09:19 UTC
+  while round 67's 960x540 test pass had Unity about 3.5 minutes into `r67ev-64a-6202`, at the theatre build
+  `d6d53981`. No card group, farm or dotnet process ran, and no Blender ran at that moment: the film lane's last draft
+  render had ended at 03:07:25 and the next began 6 s after the event. The CPU was at 65 to 77 °C and the GPU at 48 °C,
+  and no reset or Kernel-Power event followed. The film guard stopped the pass at 03:09:20. So the pairing with a card
+  group does not explain every event. The coordinator held all card work, Unity and Blender included, until the owner
+  rules, because twelve of these came before the blue screen of 2026-09-29.
+  **A third FECS Exception, with Unity alone on the card** (2026-11-08). An `nvlddmkm` id 13 ("Graphics FECS Exception:
+  Logging error 0x2") came at 03:09:19 local time, about 3.5 min into round 67's 960x540 test pass filming r67ev-64a-6202
+  on worker 7 at d6d53981, likely while the theatre loaded and skinned its first window. No card group, farm or other
+  dotnet ran, no Blender was open at that second (a graphics draft render had ended at 03:07:25 and the next began at
+  03:09:25), and no Kernel-Power 566 or other display wake was logged. The CPU read 65 to 77 °C and the GPU 48 °C, and
+  no reset followed. The film's guard stopped the pass at 03:09:20, and Unity exited -1. It is the first of the three
+  with no card group on the card, so the pairing of card work and Unity no longer explains them all (inference).
 - **A farm run started from VS Code gets the fast cores only while VS Code has focus.** The
   machine is an i9-13900K: eight fast cores (logical 0 to 15) and sixteen efficiency cores (16
   to 31). With VS Code in front, round 48's two farm runs sat about 44% on the fast cores and
