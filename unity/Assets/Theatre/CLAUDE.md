@@ -2032,7 +2032,11 @@ run many steps to a frame, prints the identity verdict at every sample, and quit
   rerun of the same scene list is identical, which is what the identity checks rely on. A retake alone, or a pass
   with another scene list, shows other shafts and lets the meter settle up to 0.4 EV elsewhere. `SCENE_CLOCK` 1
   (`3663bda2`, the theatre lane) sets the water's own clock (`EvoTime()` in `TheatreWater.hlsl`) to each take's
-  world second, so a scene's water depends on that scene alone. No code sets `EVOSIM_THEATRE_SAFARI_CLOCK`.
+  world second, so a scene's water depends on that scene alone (read in Play mode from `d6d53981`). With it and
+  `STORY_METER_SCENE` on, a scene filmed alone and after another settles within 0.01 EV and is near-identical, not
+  byte-identical: specks at the edges of mid-distance bodies still differ (phase 191). Inference: something on the C#
+  side, perhaps `TheatreSkin.AdvanceDrift`'s `Time.timeSinceLevelLoad`, still runs on Unity's clock. No code sets
+  `EVOSIM_THEATRE_SAFARI_CLOCK`.
 - **Prove a shading term is live in the shot before building its fix.** Render one take with the term forced to zero or to
   a false colour, and show the pixels move. Light-through terms are zero when the key is behind the camera, and the film's
   shots look down with the key above. Three colour dials in a row were built on a dead term and came out byte-identical
