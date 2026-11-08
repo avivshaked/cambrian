@@ -115,7 +115,7 @@ def collect_film(tmp_path, monkeypatch, luma, ref_luma, station=None):
     (out / "done.json").write_text(json.dumps({"safari": {"r67-6202": str(safari)}}), encoding="utf-8")
     (out / "theatre-r67-6202.log").write_text("[Theatre] nothing", encoding="utf-8")
     monkeypatch.setattr(film, "probe", lambda p: {"frames": 121, "width": 1920, "height": 1080})
-    monkeypatch.setattr(film, "reference", lambda f, s: {"luma": ref_luma, "tone": 1, "tone_p10": 0, "edges": 1,
+    monkeypatch.setattr(film, "reference", lambda f, s, w=1920: {"luma": ref_luma, "tone": 1, "tone_p10": 0, "edges": 1,
                                                           "edges_p10": 0})
     monkeypatch.setattr(film, "sheet", lambda *a, **k: None)
     monkeypatch.setattr(film, "yavg", lambda *a, **k: [luma, luma, luma])

@@ -193,12 +193,14 @@ theatre as a field of that shot's scene and a canopy shot shares its run's pass 
 ```json
 {"schema": "create-story-video/clips/1", "shots_sha256": "<64 hex>",
  "reference": {"file": "…", "luma": 41.2, "sheet": "film/reference-sheet.png", "tone": 35.0, "tone_p10": 25.0,
-               "edges": 7.82, "edges_p10": 3.25},
+               "edges": 7.82, "edges_p10": 3.25,
+               "at": {"960": {"tone": 33.0, "tone_p10": 23.0, "edges": 11.9, "edges_p10": 5.4}}},
  "clips": [
    {"shot": "1.1a", "key": "<16 hex>", "pass": 1, "file": "clips/1.1a.mp4", "sha256": "<64 hex>",
     "frames": 793, "fps": 30, "width": 1920, "height": 1080, "run": "r49-s2", "clip_start_s": 4884.5,
     "action_in_s": 10.0, "action_out_s": 16.42, "handle_before_s": 10.0, "handle_after_s": 10.0,
-    "provenance": "FAITHFUL", "luma": 38.7, "jump_ratio": 2.4, "tone": 29.0, "edges": 7.66, "rgb": [16.3, 62.6, 78.3], "fog": null,
+    "provenance": "FAITHFUL", "luma": 38.7, "jump_ratio": 2.4, "tone": 29.0, "edges": 7.66,
+    "look_width": 1920, "reference_look": {"tone": 35.0, "tone_p10": 25.0, "edges": 7.82, "edges_p10": 3.25}, "rgb": [16.3, 62.6, 78.3], "fog": null,
     "focus": {"mode": "gaussian", "radius": 1.5, "start": 1.1, "end": 2}, "side": "left",
     "sheet": "clips/1.1a-sheet.png", "sheet_times_s": [0, 10.0, 11.6, 13.21, 14.81, 16.42, 21.71, 26.4]}]}
 ```
@@ -214,9 +216,14 @@ theatre as a field of that shot's scene and a canopy shot shares its run's pass 
 - `jump_ratio` is the clip's largest change between two frames over its median change, within takes. A body that pops in
   size, or a frame that flashes, shows as a high ratio; `collect` prints any at 6 or more.
 - `tone` is the clip's median spread of luma from the 10th to the 90th percentile, and `edges` its median
-  Sobel edge strength, both read at 1920 wide, three frames a second. A flat frame has a small spread, and
-  a soft or fogged one has weak edges. `collect` prints a clip under the reference's tenth percentile of
-  either as flat or soft.
+  Sobel edge strength, three frames a second. A flat frame has a small spread, and a soft or fogged one has weak
+  edges. Both are read at the clip's own width, capped at 1920 (`look_width`), because a frame scaled up first has
+  every edge spread over more pixels and reads softer. The reference is read at that same width, scaled down from its
+  own frames, and `reference_look` holds its four numbers there; `reference.json` caches the other widths under `at`
+  beside the 1920 ones at its top level. `collect` prints a clip under the reference's tenth percentile of either at
+  its width as flat or soft. When the reference is narrower than the clip, or of another aspect ratio, the clip is
+  not compared: `reference_look` is null, it gets neither flag, and its line says so; judge its tone and edges by eye
+  against the reference sheet.
 - `rgb` is the clip's mean red, green and blue, 0 to 255, each frame averaged over a 160 by 90 image at three
   frames a second. The edit's grade stretches the clip's contrast about it.
 - `fog` is the fog the clip was filmed in when it was not the look's, and null otherwise.
@@ -582,6 +589,14 @@ Round 57's film is the first under the underwater look, and its look test found 
   48's film (luma 56.6) where the last finished episode, rounds 50-57 v3, reads 60 to 70, so seven dark 4K takes
   passed the checks. The reference setting now names that episode, `collect` flags a clip under its luma as `dark`,
   and the test pass with its slides is a step of the procedure.
+- **A 960x540 test take read soft beside a 4K reference.** Round 67's film, 2026-11-08: a test pass's takes were
+  scaled up to 1920 before their edges were measured, so they read soft beside a 4K reference scaled down to 1920
+  (shot 9.1a: edges 9.58 against the tenth percentile 11.1). `collect` now measures a take at its own size against the
+  reference at that size (the coordinator's ruling of 2026-11-08,
+  `scripts/tests/story-video-check/test_look_width.py`). Measured again that way, pass 5's takes and the reference
+  both rose about one and a half times (the reference's tenth percentile from 11.1 to 16.09 at 960 wide), and 40 of
+  the 41 takes kept their flags: 9.1a read 14.87 and stayed soft. So the scaling was real but small, and most of those
+  takes are softer than the reference in fact.
 - **A take filmed as another station.** Round 67's 6.4a was planned as a Birth in body 9471's clade on a resumed
   run, and the director filmed it as an Arrival, with only a warning in its log: it reads a resumed run's own lineage
   alone, and 9471 was born before the resume began. `collect` passed it. It now refuses a take whose `station` in the

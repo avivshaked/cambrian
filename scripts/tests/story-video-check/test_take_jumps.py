@@ -96,7 +96,7 @@ def collect_film(tmp_path, monkeypatch, jumps, log, frames=11, provenance="FAITH
     (out / "done.json").write_text(json.dumps({"safari": {"r67-6202": str(safari)}}), encoding="utf-8")
     (out / "theatre-r67-6202.log").write_text(log, encoding="utf-8")
     monkeypatch.setattr(film, "probe", lambda p: {"frames": frames, "width": 1920, "height": 1080})
-    monkeypatch.setattr(film, "reference", lambda f, s: {"luma": 1, "tone": 1, "tone_p10": 0, "edges": 1, "edges_p10": 0})
+    monkeypatch.setattr(film, "reference", lambda f, s, w=1920: {"luma": 1, "tone": 1, "tone_p10": 0, "edges": 1, "edges_p10": 0})
     monkeypatch.setattr(film, "sheet", lambda *a, **k: None)
 
     def fake_yavg(path, cwd, name, before=""):

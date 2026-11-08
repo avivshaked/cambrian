@@ -70,8 +70,9 @@ Read every sheet and every full-size frame whole. Read nothing else.
   already leaves it out. A jump inside a take still fails.
 - **F5, light.** The frames are much darker or brighter than the reference sheet, or `luma` is under 0.6
   or over 1.5 times the reference's.
-- **F8, flat or soft.** The frames are murkier or softer than the reference sheet's, or `tone` is under the
-  reference's `tone_p10`, or `edges` under its `edges_p10`.
+- **F8, flat or soft.** The frames are murkier or softer than the reference sheet's, or a clip's `tone` is under
+  its own `reference_look`'s `tone_p10`, or its `edges` under that `reference_look`'s `edges_p10` (the reference read
+  at the clip's `look_width`). A clip whose `reference_look` is null is judged by eye against the reference sheet.
 - **F6, words.** Words, numbers or labels are burned into the frames. The clips carry none; the edit adds
   them.
 - **F7, provenance.** `provenance` is missing, or is neither `FAITHFUL` nor `COUSIN`. A take of a run recorded on

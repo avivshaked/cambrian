@@ -1341,15 +1341,15 @@ def yavg(path, cwd, name, before=""):
     return [float(v) for v in re.findall(r"YAVG=([0-9.]+)", text)]
 
 
-def look(path, cwd, name, pre=""):
-    """A clip's tone and edges, each frame read at 1920 wide: the spread of its luma from the 10th to the 90th
+def look(path, cwd, name, pre="", width=1920):
+    """A clip's tone and edges, each frame read at `width` wide (1920 unless the caller says less): the spread of its luma from the 10th to the 90th
     percentile (a flat frame has little), and its mean Sobel edge strength (a soft or fogged frame has little)."""
-    ffmpeg(["-i", str(path), "-vf", f"{pre}scale=1920:-2,signalstats,metadata=print:file={name}", "-f", "null", "-"],
+    ffmpeg(["-i", str(path), "-vf", f"{pre}scale={width}:-2,signalstats,metadata=print:file={name}", "-f", "null", "-"],
            cwd=cwd)
     text = (cwd / name).read_text(encoding="utf-8")
     low = [float(v) for v in re.findall(r"YLOW=([0-9.]+)", text)]
     high = [float(v) for v in re.findall(r"YHIGH=([0-9.]+)", text)]
-    ffmpeg(["-i", str(path), "-vf", f"{pre}scale=1920:-2,format=gray,sobel,signalstats,metadata=print:"
+    ffmpeg(["-i", str(path), "-vf", f"{pre}scale={width}:-2,format=gray,sobel,signalstats,metadata=print:"
             f"key=lavfi.signalstats.YAVG:file={name}", "-f", "null", "-"], cwd=cwd)
     edges = [float(v) for v in re.findall(r"YAVG=([0-9.]+)", (cwd / name).read_text(encoding="utf-8"))]
     (cwd / name).unlink()
@@ -1384,13 +1384,15 @@ def sheet(path, out, frame_numbers):
             "-fps_mode", "vfr", str(out)])
 
 
-def reference(folder, s):
-    """The reference film's mean luma and its sheet, made once a film."""
+def reference(folder, s, width=1920):
+    """The reference film's mean luma and its sheet, made once a film. Its tone and edges are read at 1920 wide, and
+    at a smaller width on request, scaled down from its own frames and cached under "at" in reference.json. The dict
+    returned for a smaller width holds that width's tone and edges in place of the 1920 ones, and "look_width"."""
     path = repo_path(s["reference"])
     ref = read_json(folder / "film" / "reference.json")
     # The cache holds for the file the settings name now; a different file is measured again.
     if ref is not None and "tone_p10" in ref and same_path(ref.get("file", ""), str(path)):
-        return ref
+        return reference_at(folder, path, ref, width)
     if not path.is_file():
         raise Refused(f"the reference film {path} is not there; the settings name the last film the owner accepted")
     (folder / "film").mkdir(parents=True, exist_ok=True)
@@ -1403,7 +1405,45 @@ def reference(folder, s):
            "tone": middle(tone), "tone_p10": tenth(tone), "edges": round(middle(edges), 2),
            "edges_p10": round(tenth(edges), 2)}
     write_json(folder / "film" / "reference.json", ref)
-    return ref
+    return reference_at(folder, path, ref, width)
+
+
+LOOK_KEYS = ("tone", "tone_p10", "edges", "edges_p10")
+
+
+def reference_at(folder, path, ref, width):
+    """The cached reference at a width: itself at 1920 or more, otherwise with the numbers read at that width."""
+    if width >= 1920:
+        return ref
+    at = ref.get("at") or {}
+    if str(width) not in at:
+        if not path.is_file():
+            raise Refused(f"the reference film {path} is not there; the settings name the last film the owner accepted")
+        tone, edges = look(path, folder / "film", f"reference-look-{width}.txt", "fps=1,", width=width)
+        at[str(width)] = {"tone": middle(tone), "tone_p10": tenth(tone), "edges": round(middle(edges), 2),
+                          "edges_p10": round(tenth(edges), 2)}
+        ref["at"] = at
+        write_json(folder / "film" / "reference.json", ref)
+    out = {k: v for k, v in ref.items() if k != "at"}
+    out.update(at[str(width)])
+    out["look_width"] = width
+    return out
+
+
+def reference_unsuited(ref, w, info):
+    """Why a clip w wide cannot have its tone and edges compared with the reference, or None when it can. A reference
+    not named by file (a stub) is taken as suited."""
+    if not ref.get("file"):
+        return None
+    size = probe(ref["file"])
+    rw, rh = size.get("width"), size.get("height")
+    if not rw or not rh or not info.get("width") or not info.get("height"):
+        return None
+    if rw < w:
+        return f"the reference film is {rw} wide, narrower than the clip's {w}"
+    if abs((rw / rh) / (info["width"] / info["height"]) - 1) > 0.01:
+        return f"the reference film is {rw}x{rh} and the clip {info['width']}x{info['height']}, of another aspect ratio"
+    return None
 
 
 def read_tsv(path):
@@ -1446,6 +1486,7 @@ def cmd_collect(folder, k):
     s, shots = plan["settings"], read_json(folder / "shots.json")
     colours = colours_of(folder, [x for x in shots["shots"] if isinstance(x, dict)])
     ref = reference(folder, s)
+    refs = {}
     clips_dir = folder / "clips"
     clips_dir.mkdir(exist_ok=True)
     tables = {arm: read_tsv(Path(d) / "scenes.tsv") if (Path(d) / "scenes.tsv").is_file() else []
@@ -1499,7 +1540,12 @@ def cmd_collect(folder, k):
         within = jumps_within_takes(jumps, takes)
         typical = middle(within) or 0
         ratio = round(max(within) / typical, 1) if typical > 0 and within else None
-        tone, edges = look(clip, clips_dir, f"{e['shot']}-look.txt", f"fps={LOOK_RATE},")
+        w = min(info["width"] or 1920, 1920)
+        unsuited = reference_unsuited(ref, w, info)
+        if unsuited is None and w not in refs:
+            refs[w] = reference(folder, s, w)
+        rl = None if unsuited else refs[w]
+        tone, edges = look(clip, clips_dir, f"{e['shot']}-look.txt", f"fps={LOOK_RATE},", width=w)
         tone, edges = middle(tone), (round(middle(edges), 2) if edges else None)
         rgb = colour(clip, f"fps={LOOK_RATE},")
         fog = e.get("fog")
@@ -1542,7 +1588,8 @@ def cmd_collect(folder, k):
                   "action_in_s": a, "action_out_s": b, "handle_before_s": e["handle_before_s"],
                   "handle_after_s": e["handle_after_s"], "provenance": row.get("provenance", ""),
                   "luma": round(sum(luma) / len(luma), 2) if luma else None, "jump_ratio": ratio, "takes": takes,
-                  "tone": tone, "edges": edges, "rgb": rgb, "fog": fog, "focus": focus, "side": side,
+                  "tone": tone, "edges": edges, "look_width": w,
+                  "reference_look": {k: rl[k] for k in LOOK_KEYS} if rl else None, "rgb": rgb, "fog": fog, "focus": focus, "side": side,
                   "look": plan["settings"].get("theatre_look"), "stream": bool(plan["settings"].get("theatre_stream")),
                   "snow": plan["settings"].get("snow"), "skin": skin_of(plan["settings"]) or None,
                   "colour": (plan.get("colour") or {}).get("name"),
@@ -1563,17 +1610,23 @@ def cmd_collect(folder, k):
         if record["luma"] is not None and record["luma"] < ref["luma"]:
             flags.append("dark")
             notes.append(f"dark: its luma {record['luma']:g} is under the reference's, {ref['luma']:g}")
-        if tone is not None and tone < ref["tone_p10"]:
+        if rl is not None and tone is not None and tone < rl["tone_p10"]:
             flags.append("flat")
-        if edges is not None and edges < ref["edges_p10"]:
+            notes.append(f"flat: its tone spread {tone:g} is under the reference's tenth percentile, {rl['tone_p10']:g}, "
+                         f"at {w} wide")
+        if rl is not None and edges is not None and edges < rl["edges_p10"]:
             flags.append("soft")
+            notes.append(f"soft: its edges {edges:g} are under the reference's tenth percentile, {rl['edges_p10']:g}, "
+                         f"at {w} wide")
         record["flags"] = flags
-        if tone is not None and tone < ref["tone_p10"]:
-            notes.append(f"flat: its tone spread {tone:g} is under the reference's tenth percentile, {ref['tone_p10']:g}")
-        if edges is not None and edges < ref["edges_p10"]:
-            notes.append(f"soft: its edges {edges:g} are under the reference's tenth percentile, {ref['edges_p10']:g}")
+        if rl is None:
+            notes.append(f"tone and edges not compared: {unsuited}; judge them by eye against the reference sheet")
+            versus = f"tone {tone}, edges {edges} at {w} wide, not compared"
+        else:
+            versus = (f"tone {tone} against the reference's {rl['tone']}, edges {edges} against the reference's "
+                      f"{rl['edges']} at {w} wide")
         lines.append(f"{where}: {info['frames']} frames, luma {record['luma']} against the reference's {ref['luma']}, "
-                     f"tone {tone} against {ref['tone']}, edges {edges} against {ref['edges']}"
+                     f"{versus}"
                      + (f", fog {fog_text(fog)}" if fog is not None else "")
                      + f", largest change {ratio} times the median" + (f"; look: {', '.join(notes)}" if notes else ""))
     known = {x["id"] for x in shots["shots"] if "run" in x}
@@ -1660,8 +1713,17 @@ def cmd_slides(folder, k):
         shutil.copyfile(folder / c["sheet"], img / f"{sid}-sheet.png")
         ffmpeg(["-ss", f"{(c['action_in_s'] + c['action_out_s']) / 2:.3f}", "-i", str(folder / c["file"]), "-frames:v", "1",
                 str(img / f"{sid}-frame.png")])
-        rows = [("luma", f"{c['luma']} (reference {ref.get('luma')})"), ("tone", f"{c['tone']} (reference {ref.get('tone')})"),
-                ("edges", f"{c['edges']} (reference {ref.get('edges')})"),
+        if "reference_look" in c:
+            rl, wide = c["reference_look"], f"at {c.get('look_width')} wide"
+        else:
+            rl, wide = ref, "at 1920 wide"
+        if rl:
+            tone_row = f"{c['tone']} (reference {rl.get('tone')}, tenth percentile {rl.get('tone_p10')}, {wide})"
+            edge_row = f"{c['edges']} (reference {rl.get('edges')}, tenth percentile {rl.get('edges_p10')}, {wide})"
+        else:
+            tone_row = f"{c['tone']} ({wide}; not compared with the reference, judge by eye)"
+            edge_row = f"{c['edges']} ({wide}; not compared with the reference, judge by eye)"
+        rows = [("luma", f"{c['luma']} (reference {ref.get('luma')})"), ("tone", tone_row), ("edges", edge_row),
                 ("largest change", f"{c['jump_ratio']} times the median"),
                 ("provenance", c.get("provenance") or "none"), ("size", f"{c['width']}x{c['height']}")]
         table = "".join(f"<tr><th>{esc(a)}</th><td>{esc(b)}</td></tr>" for a, b in rows)

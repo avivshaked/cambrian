@@ -263,7 +263,7 @@ def collect_with(tmp_path, monkeypatch, theatre_log="", launcher_log=""):
     if launcher_log:
         (out / "film-r67-6202.log").write_text(launcher_log, encoding="utf-8")
     monkeypatch.setattr(film, "probe", lambda p: {"frames": 121, "width": 1920, "height": 1080})
-    monkeypatch.setattr(film, "reference", lambda f, s: {"luma": 1, "tone": 1, "tone_p10": 0, "edges": 1, "edges_p10": 0})
+    monkeypatch.setattr(film, "reference", lambda f, s, w=1920: {"luma": 1, "tone": 1, "tone_p10": 0, "edges": 1, "edges_p10": 0})
     monkeypatch.setattr(film, "sheet", lambda *a, **k: None)
     monkeypatch.setattr(film, "yavg", lambda *a, **k: [1.0, 1.0, 1.0])
     monkeypatch.setattr(film, "look", lambda *a, **k: ([1.0], [1.0]))
