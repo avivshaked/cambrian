@@ -429,6 +429,10 @@
       "value": "0.45",
       "ruling": "D327: the census's starving value"
     },
+    "EVOSIM_THEATRE_SHAFT_BED_FULL": {
+      "value": "1",
+      "ruling": "D328: the light shafts reach the bed whole; the shaft march no longer counts the bed as a thing it ends on, and the 0.4 cut over bodies stays. Built at d0527c57 (theatre-look-bedcut); a build without it ignores the dial"
+    },
     "EVOSIM_THEATRE_CARVE": {
       "value": "0.35",
       "ruling": "the owner's eye, carve 0.5 refused (logbook/specs/handoff-archive-2026-09-26.md, 0091's addendum); theatre-film.ps1's default since, and the safari's now (the owner, 2026-11-03: films and safari share a look)"
