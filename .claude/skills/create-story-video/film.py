@@ -171,6 +171,10 @@ def film_settings(folder, lines):
     if ro is not None and not (isinstance(ro, list) and ro and all(isinstance(r, str) and r for r in ro)):
         problems.append("runs_only is null (a pass films every run's shots) or a list of run names, the only runs "
                         "the next pass films")
+    ms = s.get("max_scenes")
+    if ms is not None and not (isinstance(ms, int) and not isinstance(ms, bool) and ms >= 1):
+        problems.append("max_scenes is null (a pass films every shot it plans) or a whole number of 1 or more, the "
+                        "most scenes one pass films")
     for key, default in THEATRE_COSTS.items():
         v = s.get(key, default)
         if not number(v) or v < 0:
@@ -715,6 +719,7 @@ def cmd_plan(folder, k):
     todo = [x for x in runs if filmed.get(x["id"]) != shot_key(x, s, colours)]
     if not todo:
         return "FILM PLAN: NOTHING TO FILM", lines + [f"every one of the {len(runs)} shots with footage has its clip"]
+    filmed_count = len(runs) - len(todo)       # shots whose clip is current; the shots held back are not counted as filmed
     # runs_only films the named runs alone, so one run can be filmed by itself and judged before the rest: round
     # 67's film refilmed the take a driver fault cut short before filming the other runs (2026-11-08).
     if s.get("runs_only"):
@@ -735,7 +740,6 @@ def cmd_plan(folder, k):
         raise Refused("a pass films at one size, and these shots ask " + ", ".join(sizes) + ": film the shots of "
                       "one size first, by leaving the others' size_by_shot as it was filmed")
     pass_size = sizes[0]
-    filmed_count = len(runs) - len(todo)
     # A window is recorded on the farm build that recorded its run, and one pass records on one build. So a film
     # whose runs come from several builds films one build's shots a pass, the build with the most shots first,
     # and the next passes take the rest; collect keeps every pass's clips (round 57's film, 2026-10-10).
@@ -784,6 +788,16 @@ def cmd_plan(folder, k):
         dirs = {arm: rd for arm, rd in dirs.items() if arm in {x["run"] for x in todo}}
         lines.append(f"{len(waiting)} shots on runs under {len(by_root) - 1} other runs root(s) wait for the next "
                      "passes: " + ", ".join(sorted({x['run'] for x in waiting})) + "; a pass films the runs under one root")
+    # max_scenes caps the scenes of a pass, in shot-list order, because the theatre leaks memory per scene: round 67's
+    # coordinator ruled on 2026-11-08 that the refilm runs in passes of at most 12. The estimate and the wall below
+    # are computed from the entries of the shots kept.
+    cap = s.get("max_scenes")
+    if cap is not None and len(todo) > cap:
+        waiting = todo[cap:]
+        todo = todo[:cap]
+        dirs = {arm: rd for arm, rd in dirs.items() if arm in {x["run"] for x in todo}}
+        lines.append(f"{len(waiting)} shots wait for the next passes under max_scenes {cap}: "
+                     + ", ".join(x["id"] for x in waiting))
     for n, shot in enumerate(todo, 1):
         h = handle_of(shot, s)
         where, arm = f"shot {shot['id']}", shot["run"]

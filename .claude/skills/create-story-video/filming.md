@@ -132,6 +132,7 @@ the first time, and from then on reads the copy.
 | `runs_root` | `runs` | Where the runs are, from the checkout's root. |
 | `runs_root_by_run` | `{}` | A folder for a run, by its name: `{run name: folder}`, absolute or from the checkout's root, each an existing folder that holds the run, for a film whose runs lie under more than one root (round 67's forest test is under `scratch/plants-work/runs`). A run named here is looked up there in place of `runs_root`, by `plan` and by the theatre's `-RunsRoot`. `story-windows.py` takes one root, so a pass films the runs under one root, the root with the most shots first, and the plan names the shots that wait. Not in a shot's key. |
 | `runs_only` | `null` | The only runs the next pass films, as a list of run names; null films every run. The plan names the shots of the other runs as waiting, and refuses a list that leaves nothing to film. It films one run by itself, to be judged before the rest are filmed, as after a driver fault cut a take short. Set it back to null for the pass after. Not in a shot's key. |
+| `max_scenes` | `null` | The most scenes one pass films, a whole number of 1 or more; null sets no cap. After `runs_only` and the splits by build, colour and root, `plan` keeps the first `max_scenes` shots to film in shot-list order and names the rest as waiting for the next passes; the estimate and the wall are computed from the shots kept. It exists because the theatre leaks memory per scene: round 67's coordinator ruled on 2026-11-08 that the refilm runs in passes of at most 12 scenes, each its own Unity process. Not in a shot's key. |
 | `farm_threads` | 10 | The farm's threads for recording, a third of the machine. |
 | `farm_cores` | null | The logical processors the window recorder and its farms are pinned to, at below-normal priority, such as `"16-31"`; null leaves them where the job runs. |
 | `theatre_cores` | null | The logical processors the pwsh that starts each theatre-safari is pinned to, at below-normal priority, such as `"16-19"`. The Unity Editor it starts inherits the mask from that pwsh, as Windows children do; null launches the theatre unpinned. Not in a shot's key. |
@@ -623,3 +624,6 @@ Round 57's film is the first under the underwater look, and its look test found 
 - **The director draws no tint.** Shot 6.9a asked for the family tinted along the bed and was filmed as a
   rock table with no family in view. It went back to the shot list as a `Floor` shot, and a tint now comes
   only from a shot's `colour`.
+- **One long pass leaked the theatre's memory.** Round 67's film, 2026-11-08: the theatre leaked about 1.6 GiB an
+  hour, and then about 12 GiB an hour in one long pass, so passes are capped by `max_scenes`
+  (`scripts/tests/story-video-check/test_max_scenes.py`).
