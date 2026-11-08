@@ -84,10 +84,13 @@ The root file's rules still apply. The entries below were moved word for word, s
   **A third FECS Exception, with Unity alone on the card** (2026-11-08). An `nvlddmkm` id 13 ("Graphics FECS Exception:
   Logging error 0x2") came at 03:09:19 local time, about 3.5 min into round 67's 960x540 test pass filming r67ev-64a-6202
   on worker 7 at d6d53981. The theatre was mid-take, not loading: story 25, the Birth in Remigia locapifens (shot 6.4a),
-  a held frame on body 9471 at 12 m, about 175 of some 500 frames drawn, in a window with 182 bodies crumbling (4,744
-  flakes drawn), 312 birth bubbles from body 11554 and 39 births, three newborns built mid-take just before the end. The
-  Unity log ends mid-frame with no error (the theatre lane's read of its log, `scratch/wt-theatre-look/scratch/logs/
-  theatre-safari-r67ev-64a-6202.log`). The run before it, r67ev-24b-6202, filmed whole on the same build. No card group, farm or other
+  a held frame on body 9471 at 12 m, 366 of some 500 frames written (frame-000000 to frame-000365, the last landing at
+  03:09:22 as the writer threads drained), so the fault came about 12.2 s into the 16.7 s take. The window held 182
+  bodies crumbling (4,744 flakes drawn), 312 birth bubbles from body 11554 and 39 births, and three newborns were built
+  mid-take shortly before the end. The Unity log ends mid-frame with no error, and the last frame looks normal (the
+  theatre lane's read of its log, `scratch/wt-theatre-look/scratch/logs/theatre-safari-r67ev-64a-6202.log`, and of the
+  frames). The run before it, r67ev-24b-6202, filmed whole on the same build, and by the theatre lane's count it was
+  heavier on every count and drew no path that 64a lacked. No card group, farm or other
   dotnet ran, no Blender was open at that second (a graphics draft render had ended at 03:07:25 and the next began at
   03:09:25), and no Kernel-Power 566 or other display wake was logged. The CPU read 65 to 77 °C and the GPU 48 °C, and
   no reset followed. The film's guard stopped the pass at 03:09:20, and Unity exited -1. It is the first of the three
