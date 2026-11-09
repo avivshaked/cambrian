@@ -359,6 +359,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D335](#d335) | Round 3's five director dials join the film look, and pass 16 films 1.3a and 3.1a and refilms 2.3a and 2.4b | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 3, saved as they came… |
 | [D336](#d336) | Every shot either holds one clear hero in focus with the rest blurred, or holds nearly everything in focus | 2026-11-09 | ruled by the owner on 2026-11-09, on watching round 67's first two passing takes, 2.3a and 2.4b of pass 15 (`scratch/owner/round67-pass15-first-passing-takes/`) |
 | [D337](#d337) | No shot blurs: a hero holds much of the frame and is clear, a crowded frame keeps everything clear, and fog alone makes the background recede | 2026-11-09 | ruled by the owner on 2026-11-09, refining their focus ruling of the same day (D336) |
+| [D338](#d338) | Depth of field only when a clear hero takes up much of the frame; otherwise everything near is clear and fog makes the background recede | 2026-11-09 | ruled by the owner on 2026-11-09, correcting the coordinator's reading recorded as D337 |
 
 ---
 
@@ -11812,3 +11813,22 @@ watched, and the birth was too far from the camera to be seen. In 2.3a nothing w
 
 **Not settled.** What softens 2.3a, which ran no depth of field, is still being traced. Whether the fog needs to start
 nearer once nothing blurs is settled on stills. The safari keeps its own look unless the owner rules otherwise.
+
+### D338
+**Depth of field only when a clear hero takes up much of the frame; otherwise everything near is clear and fog makes the background recede** · 2026-11-09
+
+**Status:** ruled by the owner on 2026-11-09, correcting the coordinator's reading recorded as D337. It supersedes D337,
+whose removal of depth of field from every shot misread the owner. D202's shallow depth of field holds again, for hero
+shots. D336's faults stand.
+
+**Decision.** A shot whose hero takes up much of the frame uses depth of field: the hero stays sharp for the whole shot,
+and the background blurs. A shot without such a hero has no blur. Everything near is clear, and the water's fog makes the
+background recede. The line is the hero's drawn width on screen, at least two fifths of the frame (the coordinator's
+number, taken from the shot list's hero lines). The focus stays on the hero, or on the parent and newborn on a birth, and
+never moves to another body. Hero shots aim the hero at about half the width, so that they clear the line.
+
+**Why.** The two takes the owner judged did neither. 2.4b blurred with its parent at under a third of the width and the
+focus moving off it. 2.3a, a column of plants with no single hero, was evenly soft.
+
+**Not settled.** What softens 2.3a, which ran no depth of field, is still being traced. Whether the fog needs to start
+nearer is settled on stills. Whether two fifths is the right line is the owner's to adjust.
