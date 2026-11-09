@@ -4,8 +4,9 @@
 # before. Two worlds, each from its 10,500 s checkpoint to 12,000 s, as their runs stepped them (group 32, the snow's
 # transport on the card): pldr-6203 (the control with the most tries) and plp2-6204 (light at each part, the most
 # modules standing). A resume on plants-build does not repeat its source (forest-run.md), so they run twice, as two
-# card groups one after the other: plrc-* on plants-build's own farm (scratch/wt-plants-build, 8676833f), then plrf-*
-# on the probe's. scripts/reads/resume-match.py must find each plrf run equal to its plrc twin before any count is
+# card groups one after the other: plrc-* on plants-build's own farm (scratch/wt-plants-build, a270a02a, with the grip
+# fix), then plrf-* on the probe's, which since 2026-11-09 is probe/refusal-fixed-grip 1b220d02, the probe commit on
+# a270a02a (refusal-probe.md). scripts/reads/resume-match.py must find each plrf run equal to its plrc twin before any count is
 # read. The probe's Core differs from the checkpoints', so its resume is allowed across the source hashes. Runs on the
 # coordinator's go only, while no other farm and no Unity runs. Start it detached and hidden.
 $R = 'D:\Projects\experiments\evolution-simulator'
