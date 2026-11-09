@@ -362,6 +362,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D338](#d338) | Depth of field only when a clear hero takes up much of the frame; otherwise everything near is clear and fog makes the background recede | 2026-11-09 | ruled by the owner on 2026-11-09, correcting the coordinator's reading recorded as D337 |
 | [D339](#d339) | Focus is set per shot and judged frame by frame; the two-fifths line only sets the default | 2026-11-09 | ruled by the owner on 2026-11-09, refining D338 |
 | [D340](#d340) | The camera holds still only when an action carries the shot; otherwise it moves slowly, with a purpose | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327), after the owner asked that day why the camera stays still when nothing much is happening |
+| [D341](#d341) | A shot without a hero has no blur at all: everything is clear, and fog alone makes the far field disappear | 2026-11-09 | ruled by the owner on 2026-11-09, on looking at the 3840 by 2160 still of 2.3a, rendered with pass 15's lens |
 
 ---
 
@@ -11870,3 +11871,20 @@ card, never the picture, and no review had judged motion against it.
 
 **Not settled.** The moves' speeds are judged on clips, since stills cannot show them. Which card shots keep a still
 camera is decided shot by shot in the shot list, by whether the see line names an action.
+
+### D341
+**A shot without a hero has no blur at all: everything is clear, and fog alone makes the far field disappear** · 2026-11-09
+
+**Status:** ruled by the owner on 2026-11-09, on looking at the 3840 by 2160 still of 2.3a, rendered with pass 15's lens.
+It supersedes D339's light level for shots without a hero. D338's depth of field for a hero who holds much of the frame
+stands, and so do D339's per-shot setting and its judging frame by frame.
+
+**Decision.** A shot that is not a hero shot uses no depth of field and no blur at any distance. Near and far bodies are
+drawn sharp, and the water's fog is what makes the far ones fade and disappear. Only a hero shot whose hero holds at least
+two fifths of the frame may blur its background, with the hero sharp throughout. The shot list's focus setting is off or
+full. Where the far field clutters, the fog comes nearer; blur is never the answer.
+
+**Why.** In the still, the creatures at the back are blurred, not fogged away, and the owner does not want that.
+
+**Not settled.** How near the fog must start before the far field disappears rather than clutters is set on stills, at
+today's 6 to 20 m against 4 to 14 m and 3 to 10 m.
