@@ -38,6 +38,7 @@ TAIL_S = 1.0                       # what story-windows.py records after a take'
 ALIVE_AFTER_S = 1.0                # a named body's window opens this long after its birth: two metabolic steps
 EPS = 0.0015
 WORLD = {"Arrival", "Descent", "Floor", "Card"}
+SUBJECTS = ("plants",)     # what subject_by_shot may name for a world shot, besides the default "world"
 CLOSE = {"Portrait", "Birth"}      # the cameras the theatre focuses on a subject (SafariPlans' focusOn)
 # What a close shot's own focus may hold, as the theatre's story reader takes it (SafariStory.ReadFocus).
 FOCUS_RANGES = {"aperture": (1, 32), "format": (8, 120), "radius": (0.5, 1.5), "start": (1, 20), "end": (1.1, 40),
@@ -120,6 +121,9 @@ def film_settings(folder, lines):
     tb = s.get("takes_by_shot", {})
     if not isinstance(tb, dict) or not all(isinstance(k, str) and isinstance(v, int) and v >= 1 for k, v in tb.items()):
         problems.append("takes_by_shot is an object of shot ids and take numbers, 1 or more")
+    sj = s.get("subject_by_shot", {})
+    if not isinstance(sj, dict) or not all(isinstance(k, str) and isinstance(v, str) and v in SUBJECTS for k, v in sj.items()):
+        problems.append("subject_by_shot is an object of shot ids and subjects, each one of " + ", ".join(SUBJECTS))
     sb = s.get("size_by_shot", {})
     if not isinstance(sb, dict) or not all(isinstance(k, str) and SIZE.fullmatch(str(v)) for k, v in sb.items()):
         problems.append("size_by_shot is an object of shot ids and sizes, <width>x<height>")
@@ -474,6 +478,8 @@ def shot_key(shot, s, colours=None):
         fields["take"] = take          # raised to film a shot again when nothing in its key changed, a camera's fix
     if s.get("theatre_stream"):
         fields["stream"] = "nvenc"     # only when on, so a film filmed before the switch keeps its keys
+    if (s.get("subject_by_shot") or {}).get(shot["id"]):
+        fields["subject"] = s["subject_by_shot"][shot["id"]]    # likewise: only a shot with an entry
     if s.get("snow"):
         fields["snow"] = s["snow"]     # only when set, so a film filmed before the setting keeps its keys
     skin = skin_of(s)
@@ -711,7 +717,10 @@ def commit_fault(s):
     return None
 
 
-def subject(shot):
+def subject(shot, s=None):
+    named = ((s or {}).get("subject_by_shot") or {}).get(shot["id"])
+    if named:
+        return named
     if shot["camera"] in WORLD or not shot["bodies"]:
         return "world"
     # "parent body N" names no family the window planner can place, and it films such a Birth as an Arrival.
@@ -761,6 +770,16 @@ def cmd_plan(folder, k):
     fault = commit_fault(s)
     if fault:
         raise Refused(fault)
+    # subject_by_shot names a world shot's subject; a body's shot already has its subject, so that entry is refused.
+    by_id = {x.get("id"): x for x in shots["shots"] if isinstance(x, dict)}
+    wrong = [f"subject_by_shot names shot {i}, a {by_id[i].get('camera')} shot; only a shot on a world station "
+             f"({', '.join(sorted(WORLD))}) takes a subject, and a body's shot has its body" for i in (s.get("subject_by_shot") or {})
+             if i in by_id and by_id[i].get("camera") not in WORLD]
+    if wrong:
+        raise Refused(*wrong)
+    for i in (s.get("subject_by_shot") or {}):
+        if i not in by_id:
+            lines.append(f"warning: subject_by_shot names shot {i}, which is not in shots.json")
     clips = (read_json(folder / "clips.json") or {}).get("clips", [])
     filmed = {c["shot"]: c["key"] for c in clips if (folder / c["file"]).is_file() and sha256_of(folder / c["file"]) == c["sha256"]}
     colours = colours_of(folder, [x for x in shots["shots"] if isinstance(x, dict)])
@@ -887,7 +906,7 @@ def cmd_plan(folder, k):
         seconds = b + after - start
         fog = far_fog(shot, s)
         scene = {"n": n, "run": arm, "station": shot["camera"], "second": round(second if second is not None
-                 else start, 3), "seconds": round(seconds, 3), "subject": subject(shot), "flexible": False,
+                 else start, 3), "seconds": round(seconds, 3), "subject": subject(shot, s), "flexible": False,
                  "captions": []}
         if fog is not None:
             scene["fog"] = fog
@@ -912,7 +931,7 @@ def cmd_plan(folder, k):
                                                      else " (the run starts)"))
         if after < h - EPS:
             why.append(f"{after:.1f} s after (the run ends at {end:g} s)")
-        lines.append(f"{where}: {shot['camera']} on {subject(shot)}, run {start:g} to {start + seconds:g} s, "
+        lines.append(f"{where}: {shot['camera']} on {subject(shot, s)}, run {start:g} to {start + seconds:g} s, "
                      f"handles {before:.1f} and {after:.1f} s" + (f", fog {fog_text(fog)}" if fog is not None else "")
                      + (f", focus {focus['mode']}" if focus is not None else "")
                      + (f", subject {side}" if side is not None else "")
