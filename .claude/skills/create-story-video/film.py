@@ -1913,7 +1913,7 @@ def cmd_slides(folder, k):
     return "SLIDES: READY", [f"pass {k}: {len(order)} takes, {len(order) + 2} slides", f"deck: {deck / 'index.html'}"]
 
 
-STILLS_MAX = 3                     # frames a take's stills may hold
+STILLS_MAX = 5                     # frames a take's stills may hold: a move's 0, 25, 50, 75 and 100 % (the coordinator, 2026-11-09)
 STILLS_TOP = {"stills", "head", "provenance", "takes"}
 
 

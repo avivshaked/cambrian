@@ -292,12 +292,25 @@ def test_a_shot_and_variant_given_twice_are_refused(tmp_path, monkeypatch):
     assert "take 2.3a:A is given twice" in said
 
 
-def test_a_take_with_no_frames_or_more_than_three_is_refused(tmp_path, monkeypatch):
+def test_a_take_with_no_frames_or_more_than_five_is_refused(tmp_path, monkeypatch):
     said, _, _ = stills_case(tmp_path / "none", monkeypatch, lambda m: m["takes"][0].update(frames=[]))
-    assert "1 to 3 are allowed" in said
-    four = [{"file": f"3.1a-A-{i}.png", "second": 39001.0 + i, "what": "x"} for i in range(1, 5)]
-    said, _, _ = stills_case(tmp_path / "four", monkeypatch, lambda m: m["takes"][0].update(frames=four))
-    assert "it holds 4 frames, 1 to 3 are allowed" in said
+    assert "1 to 5 are allowed" in said
+    six = [{"file": f"3.1a-A-{i}.png", "second": 39001.0 + i, "what": "x"} for i in range(1, 7)]
+    said, _, _ = stills_case(tmp_path / "six", monkeypatch, lambda m: m["takes"][0].update(frames=six))
+    assert "it holds 6 frames, 1 to 5 are allowed" in said
+
+
+def test_a_move_in_five_stills_is_one_sheet_of_five_and_its_frame_is_the_third(tmp_path, monkeypatch):
+    five = take("3.1a", "A", 1)
+    five["frames"] = [{"file": f"3.1a-A-{i}.png", "second": s, "what": f"{p} %"}
+                      for i, (s, p) in enumerate(zip([39004.0, 39006.5, 39009.0, 39011.5, 39014.0], [0, 25, 50, 75, 100]), 1)]
+    m = {"stills": 1, "head": "h", "provenance": "COUSIN", "takes": [five]}
+    folder, src = stills_film(tmp_path, monkeypatch, m)
+    verdict, lines = film.cmd_stills(folder, 1, src)
+    assert verdict == "STILLS: READY", lines
+    img = folder / "film" / "stills-1" / "slides" / "img"
+    assert dims(img / "3.1a-A-sheet.png") == (480 * 5, 270)
+    assert (img / "3.1a-A-frame.png").read_bytes() == (src / "3.1a-A-3.png").read_bytes()
 
 
 def test_a_frame_file_that_is_missing_is_refused(tmp_path, monkeypatch):

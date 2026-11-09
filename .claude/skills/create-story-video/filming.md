@@ -316,7 +316,7 @@ on its first line and how long it took on its last.
   folder under the repository that the theatre lane writes: PNG frames and a `manifest.json` of `stills` (the round's
   number), `head`, `provenance` (`FAITHFUL` or `COUSIN`) and `takes`, a take being one variant of a shot: its `shot`,
   `variant` (one capital letter), `run`, `dials` (only the values that differ from the film look in force, possibly
-  none) and 1 to 3 `frames`, each a `file`, a `second` of the run and a free-text `what`. It refuses, a line each: a
+  none) and 1 to 5 `frames` (five for a move: its 0, 25, 50, 75 and 100 %), each a `file`, a `second` of the run and a free-text `what`. It refuses, a line each: a
   manifest missing, unreadable or for another round; a `film/stills-<j>/` that exists; a take whose shot is not in
   `shots.json` or has no run, or whose run is not its shot's; a variant that is not one capital letter; a shot and
   variant given twice; a take with no frames or more than three; a frame missing, not a PNG or not at the settings'
