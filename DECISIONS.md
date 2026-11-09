@@ -354,6 +354,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D330](#d330) | Round 67's world shots close on the nearest group from above, and the water goes back to teal | 2026-11-08 | decided by the coordinator on 2026-11-08, under the owner's delegation of the films' look (D327) |
 | [D331](#d331) | Round 67's group shots close on one slow animal and end looking up, under the edge of Snell's window | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327) |
 | [D332](#d332) | Round 67's shots show the sunlit surface above the subject, and the director follows the shot list | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327) |
+| [D333](#d333) | The overlap rule stays for plants, and the body plan's depth limit is screened first | 2026-11-09 | ruled by the owner on 2026-11-09, option (a) of the coordinator's recommendation, after the refusal probe on the fixed build (`logbook/specs/plants-hold/refusal-probe.md`, "What the fixed build… |
 
 ---
 
@@ -11670,3 +11671,30 @@ ends on a red animal in the shafts at a quarter of the width, the turning subjec
 - 2.4b's second take is built to hold the parent beside the newborn. It was not stilled, and its review decides.
 - The group shots have no depth of field. 2.1a's low edge count comes from a frame of open water: its subject is about
   four times sharper than the frame as a whole.
+
+### D333
+**The overlap rule stays for plants, and the body plan's depth limit is screened first** · 2026-11-09
+
+**Status:** ruled by the owner on 2026-11-09, option (a) of the coordinator's recommendation, after the refusal probe on
+the fixed build (`logbook/specs/plants-hold/refusal-probe.md`, "What the fixed build found"). It closes the last open
+question of `proposals/propose-plants-grow.md` (section 5), whose other questions were ruled as D307 to D310. It keeps
+D101 unchanged.
+
+**Decision.** A plant's new part may still not stand inside its own body (D101). The next plant step is a screen that
+raises the body plan's depth limit (`DevelopmentLimits.MaxDepth`, 8 today) generously, as D262 asks of a new freedom,
+on two forest worlds on the card, after round 67's film passes.
+
+**Why.** On the build with the module rule's fix, the overlap test refused 64 % and 51 % of the plants' additions in two
+forest worlds, and the depth limit 32 % and 48 %. No refusal named a dormant node, and "no larger" carried 4 % and 0.3 %.
+Shading is off in these worlds, so blades allowed to overlap could stack in one place and each catch full light, a gain
+with no growth behind it (inference). The gripping plants stood about a quarter of a metre tall, and the depth limit may
+be what keeps their chains short (inference, which the screen tests).
+
+**Rejected.** Letting a plant's blades pass through each other, which probably needs plants to shade their own blades
+first. Changing both rules at once, which would leave the screen unable to say which one mattered. Changing neither,
+which would leave the forest as it is.
+
+**Not settled.** Whether the raised limit applies to every body or only to the parts the module rule adds is set in the
+screen's pre-registration, since `MaxDepth` today bounds every body's development, animals' included. So are the limit's
+value and the screen's marks. Each forest world after the change is a new realisation, and each part costs about 22 µs
+of compute per simulated second.
