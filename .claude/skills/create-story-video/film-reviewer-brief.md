@@ -77,12 +77,11 @@ Read every sheet and every full-size frame whole. Read nothing else.
 - **F8, flat or soft.** The frames are murkier or softer than the reference sheet's, or a clip's `tone` is under
   its own `reference_look`'s `tone_p10`, or its `edges` under that `reference_look`'s `edges_p10` (the reference read
   at the clip's `look_width`). A clip whose `reference_look` is null is judged by eye against the reference sheet.
-- **F9, focus.** The focus serves the frame (the owner, 2026-11-09). A shot with a clear hero, at least two fifths of
-  the frame's width, may blur its background, and its hero stays sharp for the whole shot. In a shot without such a
-  hero, clarity is a matter of degree: the near bodies are crisp and fog makes the background recede, and a light
-  blur far off in a busy frame is not a fault on its own. The take fails when:
+- **F9, focus.** Only a hero shot may blur: a shot whose clear hero holds at least two fifths of the frame's width may
+  blur its background, and its hero stays sharp for the whole shot. In any other shot everything is clear, near and
+  far, and only fog may fade the far field (the owner, 2026-11-09). The take fails when:
   - a big hero goes soft in any frame, the focus moving off it;
-  - blur or softness muddies a busy frame, or its near bodies;
+  - a shot without such a hero shows any blur, near or far;
   - a frame is evenly soft.
 
   Judge it frame by frame at full size, on the full-size frame and in frames 2 to 6.
