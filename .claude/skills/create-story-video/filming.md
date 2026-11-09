@@ -464,6 +464,10 @@ The main session runs only the lines below that name it. `plan`, `start` and `co
      A fix to a camera that changes no key is raised in `takes_by_shot`.
    - The deck goes to the machine's coordinator before the owner sees it. The owner sees only passing takes, with
      their slides.
+   - Nothing put in front of the owner is smaller than 1920x1080 (the coordinator's rule of 2026-11-09, after the
+     owner found a 960x540 frame of 2.3a badly blurred, which was mostly the working size enlarged on their screen).
+     The reviewer keeps working at 960x540, because its floors (`tone`, `edges`) are measured there. A passing take is
+     rendered again at 1920x1080 or more, as a clip or a still, before it goes to `scratch/owner/`.
    - Then the 4K pass films the shots that passed: take them out of `size_by_shot`, or set `size`, which films them
      again at 4K since the size is in every shot's key. Its `plan` estimates the wall first.
 5. Ask the owner for their go on the render, since they are asked before any Unity render (their standing
