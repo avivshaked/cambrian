@@ -200,6 +200,17 @@ def test_the_canopy_log_check():
     assert film.canopy_log_fault("story-01-descent", CANOPY_LINE) is None
     assert film.canopy_log_fault("story-01-descent", PLAIN_LINE) is not None
     assert film.canopy_log_fault("story-01-descent", "") is not None
+
+
+HELD_LINE = ("WARNING: 14 frame(s) of story-03-r67ev-24b-6202-birth were asked for past the window's last frame at "
+             "20434.3 s and show it held; plan the window longer")
+
+
+def test_a_take_held_past_its_window_is_a_fault_named_with_its_frames_and_second():
+    fault = film.held_log_fault("story-03-r67ev-24b-6202-birth", "take 2 of story-03-r67ev-24b-6202-birth\n" + HELD_LINE)
+    assert fault is not None and "14 frame(s)" in fault and "20434.3 s" in fault
+    assert film.held_log_fault("story-03-r67ev-24b-6202-birth", "take 2 of story-03-r67ev-24b-6202-birth") is None
+    assert film.held_log_fault("story-01-r67r1-6202-card-world", HELD_LINE) is None     # another scene's warning
     assert film.canopy_log_fault("story-01-arrival", CANOPY_LINE) is not None     # another scene's line
 
 

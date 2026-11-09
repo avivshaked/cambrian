@@ -187,6 +187,10 @@ each named body's hue by its turn, a signed fraction of the colour wheel. It rea
   (EVOSIM_THEATRE_TEAMS)` when it loads a map. `collect` refuses a clip of a coloured pass whose log has no such
   line with N above 0 naming the pass's file. It refuses a clip of an uncoloured pass whose log has one. Paths are
   compared with slashes and case normalised. Each clip in `clips.json` names its colour.
+- **`collect` refuses a take that outran its window.** A take that runs past its window's last recorded second
+  holds that second, and its bodies freeze while the camera moves on. The director then logs
+  `WARNING: N frame(s) of <slug> were asked for past the window's last frame at T s and show it held; plan the window
+  longer`, and `collect` refuses that clip with the frames and the second.
 
 ## A shot's canopy
 

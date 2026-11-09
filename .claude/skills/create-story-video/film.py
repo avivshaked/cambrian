@@ -785,6 +785,19 @@ def canopy_log_fault(slug, log):
     return f"the theatre's log does not show the canopy plan for {slug}"
 
 
+def held_log_fault(slug, log):
+    """Why a scene's take shows its world frozen at the end, or None. A take that runs past its window's last
+    recorded second holds that second while the camera moves on, and the director says so at the take's end:
+    'WARNING: N frame(s) of <slug> were asked for past the window's last frame at T s and show it held; plan the window
+    longer' (SafariDirector EndTake, 07's report of 2026-11-09)."""
+    m = re.search(r"WARNING: ([0-9]+) frame\(s\) of " + re.escape(slug) + r" were asked for past the window's last "
+                  r"frame at ([0-9.]+) s", log)
+    if m is None:
+        return None
+    return (f"{m.group(1)} frame(s) were filmed past its window's last frame at {m.group(2)} s and show the world held "
+            "still; plan the window longer")
+
+
 def safari_dir(folder, k, arm, s=None):
     return theatre_root(s or {}) / "scratch" / "safari" / arm / f"{folder.name}-film{k}"
 
@@ -1754,6 +1767,10 @@ def cmd_collect(folder, k):
             if canopy_fault:
                 errors.append(f"{where}: {canopy_fault}; its log film/pass-{k}/theatre-{e['arm']}.log")
                 continue
+        held_fault = held_log_fault(row["slug"], log)
+        if held_fault:
+            errors.append(f"{where}: {held_fault}; its log film/pass-{k}/theatre-{e['arm']}.log")
+            continue
         if skin_of(s) and not re.search(skin_pattern(s), log):
             errors.append(f"{where}: the theatre's log does not show the skin it was asked for ({skin_of(s)})")
             continue
