@@ -203,6 +203,26 @@ def test_the_canopy_log_check():
     assert film.canopy_log_fault("story-01-arrival", CANOPY_LINE) is not None     # another scene's line
 
 
+GROUP_LINE = ("[Theatre] safari: take 1 of story-01-descent at 4501 s: descent: group frame, 3 animals round body 5927, "
+              "3.3 m wide, in place of the canopy descent under the densest column of leaves at (185.4, -1.8, 139.2), "
+              "searched within 25 m; group fill: used (EVOSIM_THEATRE_CANOPY_GROUP took the canopy descent for a group "
+              "descent round the canopy's column)\n")
+GROUP_PLAIN_LINE = ("[Theatre] safari: take 1 of story-01-descent at 4501 s: descent: group frame, 3 animals round body "
+                    "5927, 3.3 m wide; group fill: used\n")
+PHRASE_ONLY_LINE = ("[Theatre] safari: note: in place of the canopy descent under the densest column of leaves at "
+                    "(185.4, -1.8, 139.2)\n")
+
+
+def test_the_canopy_log_check_takes_the_group_descent_in_the_canopys_place():
+    assert film.canopy_log_fault("story-01-descent", GROUP_LINE) is None
+    assert film.canopy_log_fault("story-01-descent", PLAIN_LINE + GROUP_LINE) is None
+    assert film.canopy_log_fault("story-01-arrival", GROUP_LINE) is not None      # another scene's line
+    assert film.canopy_log_fault("story-01-descent", GROUP_PLAIN_LINE) is not None  # a group the canopy did not ask for
+    assert film.canopy_log_fault("story-01-descent", PHRASE_ONLY_LINE) is not None  # no take start
+    # the phrase on another line does not count for this slug's line
+    assert film.canopy_log_fault("story-01-descent", GROUP_PLAIN_LINE + PHRASE_ONLY_LINE) is not None
+
+
 def collect_film(tmp_path, monkeypatch, log):
     folder = tmp_path / "film"
     folder.mkdir(parents=True)
@@ -236,6 +256,11 @@ def collect_film(tmp_path, monkeypatch, log):
 
 def test_collect_keeps_a_canopy_clip_whose_log_shows_the_plan(tmp_path, monkeypatch):
     verdict, lines = collect_film(tmp_path, monkeypatch, CANOPY_LINE)
+    assert verdict == "CLIPS: PASS", lines
+
+
+def test_collect_keeps_a_canopy_clip_whose_log_shows_the_group_descent_in_its_place(tmp_path, monkeypatch):
+    verdict, lines = collect_film(tmp_path, monkeypatch, GROUP_LINE)
     assert verdict == "CLIPS: PASS", lines
 
 

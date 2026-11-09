@@ -749,8 +749,14 @@ def canopy_faults(shot):
 
 def canopy_log_fault(slug, log):
     """Why a theatre log does not show the canopy plan for a scene, or None. The director writes
-    'take N of <slug> at T s: canopy: ...' for each take planned as the canopy shot (FilmPlans Plan_)."""
-    if re.search(r"take [0-9]+ of " + re.escape(slug) + r" at [^\n]*? s: canopy: ", log):
+    'take N of <slug> at T s: canopy: ...' for each take planned as the canopy shot (FilmPlans Plan_). Under
+    EVOSIM_THEATRE_CANOPY_GROUP it may write instead 'take N of <slug> at T s: descent: ... in place of the canopy
+    descent under the densest column of leaves ...' (SafariPlans.GroupDescentAtCanopy), a group descent that takes the
+    canopy's place on that one line; that counts too."""
+    start = r"take [0-9]+ of " + re.escape(slug) + r" at [^\n]*? s: "
+    if re.search(start + r"canopy: ", log):
+        return None
+    if re.search(start + r"[^\n]*in place of the canopy descent under the densest column of leaves", log):
         return None
     return f"the theatre's log does not show the canopy plan for {slug}"
 

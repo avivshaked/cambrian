@@ -197,7 +197,9 @@ theatre as a field of that shot's scene and a canopy shot shares its run's pass 
   log keep their names.
 - **The canopy is in the shot's key**, only when the shot has it, so no other shot is filmed again.
 - **`collect` reads the theatre's log.** The director writes `take N of <slug> at T s: canopy: ...` for each take
-  planned as the canopy shot. `collect` refuses a canopy shot whose log has no such line for its scene.
+  planned as the canopy shot. `collect` refuses a canopy shot whose log has no such line for its scene. Under
+  `EVOSIM_THEATRE_CANOPY_GROUP` the director's group descent in the canopy's place counts too, shown by its line's
+  `in place of the canopy descent under the densest column of leaves`.
 
 ## clips.json
 
