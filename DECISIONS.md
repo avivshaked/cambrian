@@ -357,6 +357,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D333](#d333) | The overlap rule stays for plants, and the body plan's depth limit is screened first | 2026-11-09 | ruled by the owner on 2026-11-09, option (a) of the coordinator's recommendation, after the refusal probe on the fixed build (`logbook/specs/plants-hold/refusal-probe.md`, "What the fixed build… |
 | [D334](#d334) | Round 67's director dials of pass 13 join the film look, the band stays unlit, and pass 15 films the three shots that passed their stills | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of the first two stills rounds, saved as they came… |
 | [D335](#d335) | Round 3's five director dials join the film look, and pass 16 films 1.3a and 3.1a and refilms 2.3a and 2.4b | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 3, saved as they came… |
+| [D336](#d336) | Every shot either holds one clear hero in focus with the rest blurred, or holds nearly everything in focus | 2026-11-09 | ruled by the owner on 2026-11-09, on watching round 67's first two passing takes, 2.3a and 2.4b of pass 15 (`scratch/owner/round67-pass15-first-passing-takes/`) |
 
 ---
 
@@ -11769,3 +11770,25 @@ being current. Inference: none of the five dials is read on a plants scene or a 
 - `SUBJECT_HOLD` stays out of the look until a founder portrait passes on it. `CANOPY_PLANTS` stays at 1, since 1.2a
   failed with it at 0 as well.
 - Ten shots have no passing take: 1.2a, 1.4a, 1.6a, 2.1a, 2.2a, 2.4a, 2.5a, 2.6a, 4.1a and 6.3a.
+
+### D336
+**Every shot either holds one clear hero in focus with the rest blurred, or holds nearly everything in focus** · 2026-11-09
+
+**Status:** ruled by the owner on 2026-11-09, on watching round 67's first two passing takes, 2.3a and 2.4b of pass 15
+(`scratch/owner/round67-pass15-first-passing-takes/`). Both did neither. The split by kind of shot is the coordinator's,
+under the owner's delegation of the films' look (D327). It narrows D202's shallow depth of field and D208's lens to the
+shots that have a hero.
+
+**Decision.** A shot passes on focus only when one clear hero is sharp and the rest is plainly blurred, or when everything,
+or nearly everything, is sharp. A shot whose hero is about as soft as its background, or whose whole frame is evenly soft,
+fails. Hero shots take a focus that follows the hero, with the background clearly blurred: a portrait, a birth, one named
+animal close. Scene shots take deep focus with nothing softened: plants, crowds and groups, descents, cards and wide
+views. The film reviewer's brief gains the ruling as a fault.
+
+**Why.** In 2.4b the parent, the shot's hero, is about as soft as bodies several metres behind it. In 2.3a the nearest
+leaf pads and the far field are equally soft, so nothing reads as the subject. The reviewer passed both, since its brief
+had no fault for focus, and the coordinator did not see it either.
+
+**Not settled.** Where the softness comes from in each shot is traced before anything is built: the depth of field's
+settings, the water's haze, the box filter and the encode. The fix is built behind dials and stilled on 2.3a, 2.4b, 1.3a
+and a founder portrait. Every passing shot is filmed again once it is in the look.
