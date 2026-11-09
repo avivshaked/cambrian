@@ -125,6 +125,9 @@ def film_settings(folder, lines):
     sj = s.get("subject_by_shot", {})
     if not isinstance(sj, dict) or not all(isinstance(k, str) and isinstance(v, str) and v in SUBJECTS for k, v in sj.items()):
         problems.append("subject_by_shot is an object of shot ids and subjects, each one of " + ", ".join(SUBJECTS))
+    cb = s.get("child_by_shot", {})
+    if not isinstance(cb, dict) or not all(isinstance(k, str) and isinstance(v, str) and re.fullmatch(r"[0-9]+", v) for k, v in cb.items()):
+        problems.append("child_by_shot is an object of shot ids and body ids, each a string of digits such as \"32873\"")
     sb = s.get("size_by_shot", {})
     if not isinstance(sb, dict) or not all(isinstance(k, str) and SIZE.fullmatch(str(v)) for k, v in sb.items()):
         problems.append("size_by_shot is an object of shot ids and sizes, <width>x<height>")
@@ -366,6 +369,20 @@ def births(rd, parent, a, b):
     return sorted(out)
 
 
+def births_with_ids(rd, parent, a, b):
+    """The children a body had inside [a, b], from the run's lineage, as (second, id) pairs in time order. Reads
+    the rows as births() does."""
+    out = []
+    with open(rd / "lineage.jsonl", encoding="utf-8") as f:
+        for line in f:
+            if '"p":' + parent + "," not in line:
+                continue
+            row = json.loads(line)
+            if row.get("e") == "b" and str(row.get("p")) == parent and a - EPS <= row["t"] <= b + EPS:
+                out.append((float(row["t"]), str(row["id"])))
+    return sorted(out)
+
+
 def born_at(rd, body):
     """The second a body was born, from the run's lineage, or None when the lineage has no birth row for it."""
     key = '"id":' + str(body) + ","
@@ -485,6 +502,8 @@ def shot_key(shot, s, colours=None):
         fields["stream"] = "nvenc"     # only when on, so a film filmed before the switch keeps its keys
     if (s.get("subject_by_shot") or {}).get(shot["id"]):
         fields["subject"] = s["subject_by_shot"][shot["id"]]    # likewise: only a shot with an entry
+    if (s.get("child_by_shot") or {}).get(shot["id"]):
+        fields["child"] = s["child_by_shot"][shot["id"]]        # likewise: only a shot with an entry
     if s.get("snow"):
         fields["snow"] = s["snow"]     # only when set, so a film filmed before the setting keeps its keys
     skin = skin_of(s)
@@ -791,6 +810,14 @@ def cmd_plan(folder, k):
     for i in (s.get("subject_by_shot") or {}):
         if i not in by_id:
             lines.append(f"warning: subject_by_shot names shot {i}, which is not in shots.json")
+    # child_by_shot names the child a Birth shot films; any other shot has no child to name.
+    wrong = [f"child_by_shot names shot {i}, a {by_id[i].get('camera')} shot; only a Birth shot films a child"
+             for i in (s.get("child_by_shot") or {}) if i in by_id and by_id[i].get("camera") != "Birth"]
+    if wrong:
+        raise Refused(*wrong)
+    for i in (s.get("child_by_shot") or {}):
+        if i not in by_id:
+            lines.append(f"warning: child_by_shot names shot {i}, which is not in shots.json")
     clips = (read_json(folder / "clips.json") or {}).get("clips", [])
     filmed = {c["shot"]: c["key"] for c in clips if (folder / c["file"]).is_file() and sha256_of(folder / c["file"]) == c["sha256"]}
     colours = colours_of(folder, [x for x in shots["shots"] if isinstance(x, dict)])
@@ -918,9 +945,17 @@ def cmd_plan(folder, k):
         if after < 0:
             errors.append(f"{where}: its stretch ends at {b:g} s, past the run's last second, {end:g}")
             continue
-        second = None
+        second, child = None, (s.get("child_by_shot") or {}).get(shot["id"])
         if shot["camera"] == "Birth":
-            found = births(rd, shot["bodies"][0], a, b)
+            if child:
+                kids = dict((i, t) for t, i in births_with_ids(rd, shot["bodies"][0], a, b))
+                if child not in kids:
+                    errors.append(f"{where}: body {child} is not a child of body {shot['bodies'][0]} born between "
+                                  f"{a:g} and {b:g} s")
+                    continue
+                found = [kids[child]]
+            else:
+                found = births(rd, shot["bodies"][0], a, b)
             if not found:
                 errors.append(f"{where}: body {shot['bodies'][0]} has no child born between {a:g} and {b:g} s")
                 continue
@@ -947,6 +982,8 @@ def cmd_plan(folder, k):
             scene["focus"] = focus
         if side is not None:
             scene["side"] = side
+        if child:
+            scene["child"] = "body " + child     # the theatre films this child's birth, whatever its distance
         if shot.get("canopy"):
             scene["canopy"] = True     # the theatre reads canopy per scene (SafariStory.cs), so no switch on the call
         scenes.append(scene)
