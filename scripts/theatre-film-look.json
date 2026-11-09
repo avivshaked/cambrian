@@ -500,6 +500,18 @@
     "EVOSIM_THEATRE_FADE_FULL": {
       "value": "20",
       "ruling": "D330: the coordinator, 2026-11-08, under the owner's delegation, from the pass 7 stills sheet of 2.1a, 4.2a, 8.5b and 6.6a (scratch/owner/round67-pass7-stills-sheet/), built at a0334b16 (theatre-look-pass7): the fade reaches its full rate at 20 m, not 12, with FADE_START 6; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_GROUP_NEAREST": {
+      "value": "0.2",
+      "ruling": "D331: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), judged on the pass 11 stills sheet: a card's or a descent's group frame closes on its subject, the member with the longest drawn side that stays 1 m under the surface's limit, until it fills 0.2 of the width, and takes the bearing with the fewest large bodies cut by the frame's edge (margin 0.05 of the width); pass 10's group frames held the group's spread at 0.8 and their animals at about a tenth; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_GROUP_LOOKUP": {
+      "value": "15",
+      "ruling": "D331: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), judged on the pass 11 stills sheet: the group frame ends looking up from slightly below its subject, so the lit water and the shafts sit behind it, unless the bed or coral lies within 5 m under the group, when it looks down steeply enough for the bed to fill the lower third; looking down into open water made pass 10's navy lower third; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_WINDOW_CAP": {
+      "value": "2",
+      "ruling": "D331: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), judged on the pass 11 stills sheet: a look up keeps the frame's top 2 deg under the edge of Snell's window (41.4 deg of elevation), past which the window shows as a pale sheet with a hard edge and the unlit mirror under it as a dark band (pass 10's 2.2a, 2.4b and 2.5a); the group frame, the close birth, the oasis card, the portrait and the colony, so GROUP_LOOKUP's 15 becomes 10.4 for a card and 11.9 for a descent; in wide because the safari takes wide and events only"
     }
   },
   "close": {

@@ -352,6 +352,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D328](#d328) | The light shafts reach the bed whole | 2026-11-08 | decided by the coordinator on 2026-11-08 under the owner's delegation of the films' light (D327), which the owner restated that night |
 | [D329](#d329) | Round 67's refilm takes the lit surface, a meter at 0.22, rounded family parts and the new cameras | 2026-11-08 | decided by the coordinator on 2026-11-08, under the owner's delegation of the films' look (D327), which the owner restated that night |
 | [D330](#d330) | Round 67's world shots close on the nearest group from above, and the water goes back to teal | 2026-11-08 | decided by the coordinator on 2026-11-08, under the owner's delegation of the films' look (D327) |
+| [D331](#d331) | Round 67's group shots close on one slow animal and end looking up, under the edge of Snell's window | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327) |
 
 ---
 
@@ -11582,3 +11583,46 @@ shows in every shot.
 
 **Not settled.** 8.5b's animals reach 0.06 to 0.08 of the width at 0.8, under a tenth; its take's review decides it.
 Pass 6's one passing take, 9.2a, was filmed under D329 and is filmed again, so the film has one look.
+
+### D331
+**Round 67's group shots close on one slow animal and end looking up, under the edge of Snell's window** · 2026-11-09
+
+**Status:** decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327). It amends
+D330: a Card or a Descent no longer ends 8° down on the members' lowest points, unless the bed or coral lies within 5 m
+under the group. Judged at full size on the theatre lane's pass 11 stills sheet
+(`scratch/owner/round67-pass11-stills-sheet/`), built on `theatre-look-pass7` `771d389f`, whose dials-off check is
+identical to its reference at each of its four heads.
+
+**Decision.** In `wide`, the film look (`scripts/theatre-film-look.json`) gains:
+- `GROUP_NEAREST` 0.2: a Card or a Descent closes on one subject until its drawn length is 0.2 of the width. The subject
+  is the group's longest member that stays 1 m under the surface's limit and swims no faster than 0.25 m/s, and the
+  camera takes the clear bearing with the fewest large bodies cut by the frame's edge;
+- `GROUP_LOOKUP` 15: the group frame ends looking up at its subject, so the lit water and the shafts sit behind it,
+  unless the bed or coral lies within 5 m under the group;
+- `WINDOW_CAP` 2: no look rises past 2° under the edge of Snell's window, which stands at 41.4° of elevation at any
+  depth. That caps a Card at 10.4° up, a Descent at 11.9° and a portrait or a birth at 14.4°.
+
+`MIRROR_LIT` stays 0. Shot 2.4b keeps its birth, body 28824, and is filmed under these values with no exception of its own.
+
+**Why.** Pass 10's group frames held the group's spread at 0.8 of the width, so each animal came to about a tenth, and
+the look down into open water gave a navy lower third. Its portraits and births looked up past the window's edge, where
+the sky draws as a pale sheet with a hard edge. On the sheet, 1.4a ends on a white body at 0.2 of the width against
+bright teal water (luma 82.9, green over blue 0.87, edges 17.0), 3.1a ends on a slow striped body among leaves and coral
+(edges 19.8, green over blue 0.86), and the pale sheet is gone from 2.2a, 2.4a and 2.4b.
+
+**Rejected.**
+- `MIRROR_LIT` 1. It changes nothing where no surface shows, and where the surface shows it turns it a flat blue and
+  lowers green over blue (2.2a from 0.84 to 0.77).
+- For 2.4b, the birth's level family (`BIRTH_CLOSE_SURFACE_REACH` 1). Its lowest clear look was 5° up, and the surface
+  still showed. A deeper birth for 2.4b, which would change the shot list and the facts it cites, for a frame that may
+  pass as it is. The parent lives 1.7 m down, so the surface's underside fills the top half of the frame at any elevation
+  the eye can take. Under the cap it shows as a dark rippled lid, not the pale sheet. Inference: that lid is the mirror
+  the surface makes outside Snell's window, which is what an eye under water sees there.
+
+**Not settled.**
+- Whether 2.4b's lid passes is for its take's review. If it fails, a deeper birth is the next choice.
+- 2.1a is soft (edges 6.8, against the reference's floor of 16). 2.1a and 2.4a are bluer than the reference (green over
+  blue 0.77 and 0.73, against 0.84 to 0.95). Their takes decide.
+- The plan's check for bodies cut by the frame's edge missed a second body cut by the top edge in 1.4a's last frame, and
+  it does not count coral, such as the plate cut at 3.1a's lower left. The fix is the theatre lane's, under its dials-off
+  check.
