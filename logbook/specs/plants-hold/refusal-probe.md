@@ -119,7 +119,9 @@ and `plrc-6204`, then on the probe build as `plrf-6203` and `plrf-6204`. It runs
   grip columns at `3fab5b8e` (`forest-run.md`), which a plain resume on its farm now runs. A probe without the fix would
   read and step held grips differently from its twin. So the probe commit is cherry-picked onto `plants-build`
   `a270a02a`, as `probe/refusal-fixed-grip` `1b220d02` in the same worktree. The two touch no file in common. The
-  checkpoints are still the 8676833f ones, whose held grips carry the stale values; both twins read them alike. What is
+  checkpoints are still the `8676833f` ones, whose held grips carry the stale values; both twins read them alike. The
+  fix changed the farm's sources, so both resumes, not only the probe's, are allowed across the source hashes and
+  marked cousins. What is
   read and what it decides are unchanged.
 - **What is read.** For additions and for plants among them: the share of shape refusals that are "would stand inside
   itself" (D101), "no larger" on a node off every cycle, "no larger" on a node on a cycle, and each other cause. With

@@ -7,12 +7,13 @@
 # card groups one after the other: plrc-* on plants-build's own farm (scratch/wt-plants-build, a270a02a, with the grip
 # fix), then plrf-* on the probe's, which since 2026-11-09 is probe/refusal-fixed-grip 1b220d02, the probe commit on
 # a270a02a (refusal-probe.md). scripts/reads/resume-match.py must find each plrf run equal to its plrc twin before any count is
-# read. The probe's Core differs from the checkpoints', so its resume is allowed across the source hashes. Runs on the
+# read. Both builds differ from the checkpoints' (the probe's Core, and since the grip fix the farm), so both resumes are
+# allowed across the source hashes and marked cousins. Runs on the
 # coordinator's go only, while no other farm and no Unity runs. Start it detached and hidden.
 $R = 'D:\Projects\experiments\evolution-simulator'
 $runs = "$R\scratch\plants-work\runs"
 $src = @("$runs\pldr-6203\2026-11-07-074804-27d24592", "$runs\plp2-6204\2026-11-07-150253-274b5f36")
-foreach ($pair in @(@('plrc', "$R\scratch\wt-plants-build", '0'), @('plrf', "$R\scratch\wt-refusal-fixed", '1'))) {
+foreach ($pair in @(@('plrc', "$R\scratch\wt-plants-build", '1'), @('plrf', "$R\scratch\wt-refusal-fixed", '1'))) {
     $name, $b, $allow = $pair
     if ($allow -eq '1') { $env:EVOSIM_ALLOW_SOURCE_MISMATCH = '1' }
     $g = @('-NoProfile', '-File', "$b\scripts\card\card-group.ps1", '-Name', "$name-group",
