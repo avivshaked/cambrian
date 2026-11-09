@@ -2134,3 +2134,13 @@ run many steps to a frame, prints the identity verdict at every sample, and quit
   `TheatreSkinMap.Register`, which the window runs for every body, so it needs nothing. The paint switches on other global
   state at the first body that has the feature (the alga blade, arc and thalli keywords, behind their own dials); those are
   not reproduced, so leave the alga dials off or prove a film with them on.
+- **Under the underwater look (`EVOSIM_THEATRE_LOOK=4`), `EVOSIM_THEATRE_STORY_AMBIENT` and `EVOSIM_THEATRE_STORY_FOG` change
+  nothing in the frame.** On theatre-look-refilm `2dc6d92c` (2026-11-08, worker 7), cells with the ambient at 2 and 3 and the fog
+  at 0.022 rendered as the film look's ambient 1 and fog 0.035 did, at both seconds tested: no pixel moved by more than 2
+  levels (at most 5), and luma, tone, edges and hue read the same to the second decimal (D330). The scene's fill at 2.4
+  against 0.8 moved 3% of the pixels, the bodies, by up to 39 levels. The story look's log line printed the new values all
+  the same (`ambient x2`, `fog 0.022`), so a dial reaching StoryLook is no proof that it reaches the render. Those two keys of
+  `scripts/theatre-film-look.json` are inert on this build. A body's shadow side is lifted by the scene's fill
+  (`EVOSIM_THEATRE_FILL`, opposite the sun, which the body shader adds as an extra light). The near-field haze comes from the
+  second batch's fade (`EVOSIM_THEATRE_FADE_START`, `_FADE_FULL`, `_FADE_SCATTER`). Before tuning a story-look key, prove it
+  is live: render one cell with it moved and compare the frames byte for byte.
