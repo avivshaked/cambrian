@@ -73,11 +73,14 @@ Read every sheet and every full-size frame whole. Read nothing else.
 - **F8, flat or soft.** The frames are murkier or softer than the reference sheet's, or a clip's `tone` is under
   its own `reference_look`'s `tone_p10`, or its `edges` under that `reference_look`'s `edges_p10` (the reference read
   at the clip's `look_width`). A clip whose `reference_look` is null is judged by eye against the reference sheet.
-- **F9, focus.** A shot has either one clear hero in focus with the rest blurred, or everything, or nearly everything,
-  in focus (the owner, 2026-11-09). The take fails when it is neither. Either the hero is about as sharp as the water
-  and bodies behind it, with neither of them crisp, or the whole frame is evenly soft. Judge it at full size, on the
-  full-size frame and in frames 2 to 6. A crisp hero over a plainly blurred background passes, and so does a frame
-  crisp nearly everywhere.
+- **F9, focus.** Only a shot with a clear hero, at least two fifths of the frame's width, may blur its background, and
+  its hero stays sharp for the whole shot. A shot without such a hero has no blur: everything near the camera is
+  crisp, and fog alone makes the background recede (the owner, 2026-11-09). The take fails when:
+  - it blurs or softens anything without a hero at least two fifths of the width;
+  - a hero shot's hero goes soft in any frame, the focus moving off it;
+  - a frame without such a hero is evenly soft.
+
+  Judge it at full size, on the full-size frame and in frames 2 to 6.
 - **F6, words.** Words, numbers or labels are burned into the frames. The clips carry none; the edit adds
   them.
 - **F7, provenance.** `provenance` is missing, or is neither `FAITHFUL` nor `COUSIN`. A take of a run recorded on
