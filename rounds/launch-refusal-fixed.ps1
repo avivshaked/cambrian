@@ -10,11 +10,14 @@
 # read. Both builds differ from the checkpoints' (the probe's Core, and since the grip fix the farm), so both resumes are
 # allowed across the source hashes and marked cousins. Runs on the
 # coordinator's go only, while no other farm and no Unity runs. Start it detached and hidden.
+# -Only plrc or -Only plrf runs one group, for a rerun after the other has run.
+param([string]$Only = '')
 $R = 'D:\Projects\experiments\evolution-simulator'
 $runs = "$R\scratch\plants-work\runs"
 $src = @("$runs\pldr-6203\2026-11-07-074804-27d24592", "$runs\plp2-6204\2026-11-07-150253-274b5f36")
 foreach ($pair in @(@('plrc', "$R\scratch\wt-plants-build", '1'), @('plrf', "$R\scratch\wt-refusal-fixed", '1'))) {
     $name, $b, $allow = $pair
+    if ($Only -and $Only -ne $name) { continue }
     if ($allow -eq '1') { $env:EVOSIM_ALLOW_SOURCE_MISMATCH = '1' }
     $g = @('-NoProfile', '-File', "$b\scripts\card\card-group.ps1", '-Name', "$name-group",
            '-Arms', "$name-6203,$name-6204", '-At', '10500,10500', '-Until', 12000, '-ResumeFrom', ($src -join ','),
@@ -24,4 +27,6 @@ foreach ($pair in @(@('plrc', "$R\scratch\wt-plants-build", '1'), @('plrf', "$R\
     & pwsh @g
     if ($LASTEXITCODE -ne 0) { "group $name-group ended with exit $LASTEXITCODE"; exit $LASTEXITCODE }
     "group $name-group ended"
+    # The group's driver watch outlives it by about 15 s, and a card group refuses to launch beside it (2026-11-09).
+    Start-Sleep -Seconds 30
 }
