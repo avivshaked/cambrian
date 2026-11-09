@@ -73,6 +73,11 @@ Read every sheet and every full-size frame whole. Read nothing else.
 - **F8, flat or soft.** The frames are murkier or softer than the reference sheet's, or a clip's `tone` is under
   its own `reference_look`'s `tone_p10`, or its `edges` under that `reference_look`'s `edges_p10` (the reference read
   at the clip's `look_width`). A clip whose `reference_look` is null is judged by eye against the reference sheet.
+- **F9, focus.** A shot has either one clear hero in focus with the rest blurred, or everything, or nearly everything,
+  in focus (the owner, 2026-11-09). The take fails when it is neither. Either the hero is about as sharp as the water
+  and bodies behind it, with neither of them crisp, or the whole frame is evenly soft. Judge it at full size, on the
+  full-size frame and in frames 2 to 6. A crisp hero over a plainly blurred background passes, and so does a frame
+  crisp nearly everywhere.
 - **F6, words.** Words, numbers or labels are burned into the frames. The clips carry none; the edit adds
   them.
 - **F7, provenance.** `provenance` is missing, or is neither `FAITHFUL` nor `COUSIN`. A take of a run recorded on
@@ -111,7 +116,7 @@ Read nothing else.
 A take is one variant of a shot, named `<shot>:<variant>`. Judge each take against the bar alone, never against another
 variant.
 
-B0 to B4 and F1, F2, F3, F5, F6, F7 and F8 are judged as for a clip, on the stills given. What a clip shows in frames 2
+B0 to B4 and F1, F2, F3, F5, F6, F7, F8 and F9 are judged as for a clip, on the stills given. What a clip shows in frames 2
 to 6, the stills show. F2 is judged from the stills: a birth's newborn is beside its parent in a still. A move (a
 descent, a pull-back, a dolly) is judged from the change between its first and last still. F4 is not judged on stills;
 the pass's own review judges it. F8 reads `stills.json`'s `tone` and `edges` against its `reference_look`.
