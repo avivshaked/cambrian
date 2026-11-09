@@ -356,6 +356,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D332](#d332) | Round 67's shots show the sunlit surface above the subject, and the director follows the shot list | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327) |
 | [D333](#d333) | The overlap rule stays for plants, and the body plan's depth limit is screened first | 2026-11-09 | ruled by the owner on 2026-11-09, option (a) of the coordinator's recommendation, after the refusal probe on the fixed build (`logbook/specs/plants-hold/refusal-probe.md`, "What the fixed build… |
 | [D334](#d334) | Round 67's director dials of pass 13 join the film look, the band stays unlit, and pass 15 films the three shots that passed their stills | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of the first two stills rounds, saved as they came… |
+| [D335](#d335) | Round 3's five director dials join the film look, and pass 16 films 1.3a and 3.1a and refilms 2.3a and 2.4b | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 3, saved as they came… |
 
 ---
 
@@ -11736,3 +11737,35 @@ filmed clip, and the three shots cost about 25 minutes of card.
 - 2.5a's portrait plan evaluated no candidate in its clash search. The fix is built behind a dial that stays off unless a
   review fails a shot for it.
 - The reviewer saw a faint square grid in 1.2a's water, which may be an artefact.
+
+### D335
+**Round 3's five director dials join the film look, and pass 16 films 1.3a and 3.1a and refilms 2.3a and 2.4b** · 2026-11-09
+
+**Status:** decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327), on the
+reviewer's verdicts of stills round 3, saved as they came (`scratch/story-video/round-67-202611061206/film-stills-3-review.md`).
+It adds to D334. The passing stills ran on `theatre-look-pass7`'s `pass13/arcfit` at `c4381575`. Pass 16 films at the seat
+the theatre lane confirms dials-off identical, which it names in the take's theatre commit.
+
+**Decision.** In `wide`, the film look (`scripts/theatre-film-look.json`) adds `ANIMALS_CLUSTER` 1.5, `COLONY_DENSE` 1,
+`DOLLY_LEVEL` 1, `PORTRAIT_ARC_FIT` 1 and `SUBJECT_TRACE` 1, which only logs. 3.1a is filmed from variant A. Pass 16 films
+1.3a and 3.1a, and films 2.3a and 2.4b again on the new look.
+
+**Why.** Stills round 3 passed 1.3a on A, and 3.1a on A and M. A is the brighter of 3.1a's two (luma 70.07 against 68.59),
+and M adds the meter change that failed everywhere else. Filming on dials the stills never passed on would screen
+nothing, so the dials join the look. The new look changes the digest, so pass 15's passing clips of 2.3a and 2.4b stop
+being current. Inference: none of the five dials is read on a plants scene or a birth, so the refilms should match pass
+15. A filmed clip tests that more surely than a still, at about ten minutes of card.
+
+**Rejected.**
+- `METER_TOP` 0.33 and `MIRROR_FROM_SURFACE`. The first darkened every frame by 2 to 6 of luma: the band is the darkest
+  part of the frame, so leaving it out of the meter closed the exposure. The second moved the band by 0 to 2.
+- Keeping the look at D334, which would film 1.3a and 3.1a on dials their stills did not pass on.
+- A still of 2.3a and 2.4b on the new dials before refilming them, a step a clip makes unneeded.
+
+**Not settled.**
+- The band under the surface still reads dark. The next lever scales the mirror's reflection by a gain, which keeps its
+  ripples, with `METER_TOP` beside it so the meter does not close: the case the theatre lane found it right for. It is
+  tested at 1.8 and 3.0, on shots the reviewer fails for the band.
+- `SUBJECT_HOLD` stays out of the look until a founder portrait passes on it. `CANOPY_PLANTS` stays at 1, since 1.2a
+  failed with it at 0 as well.
+- Ten shots have no passing take: 1.2a, 1.4a, 1.6a, 2.1a, 2.2a, 2.4a, 2.5a, 2.6a, 4.1a and 6.3a.

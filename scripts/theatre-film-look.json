@@ -564,6 +564,26 @@
     "EVOSIM_THEATRE_SUBJECT_PROBE": {
       "value": "1",
       "ruling": "D334: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 1 at theatre-look-pass7's pass13/director aa3a4043, where 2.3a, 2.4b and 3.1a passed on these dials: logging only: each frame logs where the followed subject is drawn, so the film runs as its stills ran and its aim can be checked; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_ANIMALS_CLUSTER": {
+      "value": "1.5",
+      "ruling": "D335: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 3 at theatre-look-pass7's pass13/arcfit c4381575, where 1.3a and 3.1a passed on these dials: PLANTS_CLUSTER's heart search applied to animals at 1.5 m, so a group frame holds a tight crowd rather than open water; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_COLONY_DENSE": {
+      "value": "1",
+      "ruling": "D335: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 3 at theatre-look-pass7's pass13/arcfit c4381575, where 1.3a and 3.1a passed on these dials: the colony's pull-back ends on the members' densest crowd rather than their centre; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_DOLLY_LEVEL": {
+      "value": "1",
+      "ruling": "D335: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 3 at theatre-look-pass7's pass13/arcfit c4381575, where 1.3a and 3.1a passed on these dials: the dolly holds its end's pitch from the first frame and turns only in bearing, so 3.1a never looks down into dark water; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_PORTRAIT_ARC_FIT": {
+      "value": "1",
+      "ruling": "D335: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 3 at theatre-look-pass7's pass13/arcfit c4381575, where 1.3a and 3.1a passed on these dials: a level-ending vertical portrait arc starts at the window cap and sweeps only the cap's room, so its clash search has candidates; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_SUBJECT_TRACE": {
+      "value": "1",
+      "ruling": "D335: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 3 at theatre-look-pass7's pass13/arcfit c4381575, where 1.3a and 3.1a passed on these dials: logging only: each take names every box its subject's measures count, so the film runs as its stills ran; in wide because the safari takes wide and events only"
     }
   },
   "close": {
