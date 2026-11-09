@@ -260,6 +260,10 @@ In the film's folder, for pass k, numbered from 1 and going on from the highest 
 - `film-<k>-owner.md`: the owner's words on the render and on a busy machine, saved word for word.
 - `film-<k>-filmer-<r>.md`: the filmer's answer on run r, saved word for word.
 - `film-<k>-review.md`: the reviewer's answer, saved word for word.
+- `film/stills-<j>/`: the tool's own, for stills round j: `stills.json`, `frames/` (copies of the lane's frames) and
+  `slides/index.html` with `slides/img/`.
+- `film-stills-<j>.txt`: what `stills` printed.
+- `film-stills-<j>-review.md`: the reviewer's answer on stills round j, saved word for word.
 - `film-<k>-review-owner.md`: the owner's words on the faults, saved word for word.
 
 ## Who does what
@@ -307,6 +311,21 @@ on its first line and how long it took on its last.
   own size, and its numbers from `clips.json` beside the reference's with each flag. The last slide holds the
   bar, word for word. The images are copies, so the deck survives a later collect. `SLIDES: READY` and the
   deck's path, or `SLIDES: REFUSED` for a pass that is not planned and collected.
+- `stills <folder> <j> <stills dir>`: a stills round, numbered from 1 in each film, made once. `<stills dir>` is a
+  folder under the repository that the theatre lane writes: PNG frames and a `manifest.json` of `stills` (the round's
+  number), `head`, `provenance` (`FAITHFUL` or `COUSIN`) and `takes`, a take being one variant of a shot: its `shot`,
+  `variant` (one capital letter), `run`, `dials` (only the values that differ from the film look in force, possibly
+  none) and 1 to 3 `frames`, each a `file`, a `second` of the run and a free-text `what`. It refuses, a line each: a
+  manifest missing, unreadable or for another round; a `film/stills-<j>/` that exists; a take whose shot is not in
+  `shots.json` or has no run, or whose run is not its shot's; a variant that is not one capital letter; a shot and
+  variant given twice; a take with no frames or more than three; a frame missing, not a PNG or not at the settings'
+  `size`; a second outside its shot's `run_from_s` to `run_to_s`; frames out of time order; another provenance. It
+  measures each frame's luma, tone and edges as `collect` measures a clip, each take's as the mean over its frames,
+  against the reference at the frames' width, with the flags `dark`, `flat` and `soft`. It writes
+  `film/stills-<j>/stills.json` (the shot list's order, then the variant's letter) and a deck in the form of
+  `slides`': a slide a take with its dials (or the film look's own), the see panel, a sheet of its stills side by
+  side at 480 wide, its middle still at full size, and the numbers. The pass is untouched. `STILLS: READY`, the
+  number of takes, shots and slides, and the deck's path, or `STILLS: REFUSED`.
 - `encode <folder> <k>`: for a pass whose theatre ended at its own wall, before `theatre-safari.ps1` reached its
   encode block. For each run in `done.json` it reads the safari folder's `scenes.tsv` (none: it says so and goes on)
   and does the script's encode in Python for each `played` scene: each take's frames to `take-<n>.mp4` with the
@@ -351,6 +370,18 @@ You are the film reviewer of a story film.
 Your brief is <checkout>\.claude\skills\create-story-video\film-reviewer-brief.md. Read it whole and follow it.
 The film's folder is <folder>.
 You review pass <k>.
+Write nothing. Your answer is your whole report.
+Your time budget is 15 minutes.
+```
+
+A stills round's reviewer gets a third fixed prompt, the reviewer's with one line changed. Only the number `<j>` is
+filled in, with the folder and the checkout:
+
+```text
+You are the film reviewer of a story film.
+Your brief is <checkout>\.claude\skills\create-story-video\film-reviewer-brief.md. Read it whole and follow it.
+The film's folder is <folder>.
+You review stills <j>.
 Write nothing. Your answer is your whole report.
 Your time budget is 15 minutes.
 ```
@@ -417,6 +448,11 @@ The main session runs only the lines below that name it. `plan`, `start` and `co
    5. Test takes first: every shot at 960x540 before any 4K pass. Slides of each take, its sheet and a full-size frame, judged against this bar by eye first, directed and refilmed until it passes. The owner sees only passing takes, with their slides.
    ```
 
+   - A stills round comes before the filmer is launched for a pass that refilms shots failed for their light, framing or
+     subject: the theatre lane renders those shots as stills, up to three variants each; the main session runs `stills`
+     and the reviewer ("A stills review" in its brief, `film-stills-<j>.txt` and `film-stills-<j>-review.md`); only shots
+     with a variant that passes are filmed in the pass, on that variant's dials; and when more than one variant of a shot
+     passes, the machine's coordinator chooses among them.
    - Film every shot at 960x540: `size` for the pass, or `size_by_shot` for the shots set small (a pass films at one
      size). No focus supersample. Then `collect` and `slides` (the filmer's runs; the main session runs the rest).
    - Launch the film reviewer on pass k. It judges each take against the bar from its slide, by eye: the sheet and

@@ -91,3 +91,34 @@ shot list's order:
 List every bar item and fault the take fails, `B` items first. The film maker directs the fixes from your `fix:`
 lines, so name what to change (a camera station, the span, the framing, the light), as one fix a take. Say what
 you saw in the picture, not a guess at its cause. Write nothing. Say if you stopped at your time budget.
+
+## A stills review
+
+When the prompt says `You review stills <j>`, you judge stills, not clips. Everything above holds except where this
+section says otherwise.
+
+What you read, in the film's folder:
+
+- `shots.json`.
+- `film/stills-<j>/stills.json`: one entry a take, with its `dials`, its stills' seconds and `what`, its `luma`, `tone`,
+  `edges`, `reference_look`, `look_width` and `flags` (`dark`, `flat`, `soft`).
+- Each take's `film/stills-<j>/slides/img/<shot>-<variant>-sheet.png`: its stills side by side, in time order, and
+  `film/stills-<j>/slides/img/<shot>-<variant>-frame.png`: its middle still at full size.
+- `film/reference-sheet.png`.
+
+Read nothing else.
+
+A take is one variant of a shot, named `<shot>:<variant>`. Judge each take against the bar alone, never against another
+variant.
+
+B0 to B4 and F1, F2, F3, F5, F6, F7 and F8 are judged as for a clip, on the stills given. What a clip shows in frames 2
+to 6, the stills show. F2 is judged from the stills: a birth's newborn is beside its parent in a still. A move (a
+descent, a pull-back, a dolly) is judged from the change between its first and last still. F4 is not judged on stills;
+the pass's own review judges it. F8 reads `stills.json`'s `tone` and `edges` against its `reference_look`.
+
+Your answer: the first line is `STILLS REVIEW: OK` when every shot has at least one variant that passes, else
+`STILLS REVIEW: FAULTS`. Then one line a take, in the shot list's order and then the variant's letter:
+
+- `<shot>:<variant>: PASS`, or
+- `<shot>:<variant>: FAIL B<n>, F<m>: <what you saw, and in which still>`, followed on the next line by its `fix:` line,
+  as for a clip.

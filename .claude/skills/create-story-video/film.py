@@ -8,6 +8,7 @@
     python film.py wait <folder> <k> <minutes>     wait for pass k to end, for at most the minutes given
     python film.py collect <folder> <k>            copy pass k's clips into clips/, make their sheets, write clips.json
     python film.py slides <folder> <k>             build a deck of pass k's collected takes, film/pass-<k>/slides/index.html
+    python film.py stills <folder> <j> <dir>       measure the stills in <dir> (a manifest.json and its PNGs) and make a deck, film/stills-<j>/slides/index.html
     python film.py encode <folder> <k>             encode the takes of a pass whose theatre ended at its wall, film/pass-<k>/encode.log
     python film.py stop <folder> <k> <reason...>   end a running pass cleanly: the scene under way completes, then the theatre writes scenes.tsv
 
@@ -1805,6 +1806,26 @@ def esc(x):
     return str(x).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
+def table_html(rows):
+    return "".join(f"<tr><th>{esc(a)}</th><td>{esc(b)}</td></tr>" for a, b in rows)
+
+
+def tags_html(flags):
+    return "".join(f'<span class="flag">{esc(f)}</span>' for f in (flags or [])) or "no flags"
+
+
+def deck_page(title, first, slides):
+    """A deck's page: its first slide, the take slides and the bar last, with the shared style and keys."""
+    last = ('<section class="slide">\n<h2>The bar</h2>\n<div class="panel"><ul>'
+            + "".join(f"<li>{esc(b)}</li>" for b in BAR) + "</ul></div>\n</section>")
+    return ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+            f"<title>{esc(title)}</title>\n<style>\n{SLIDE_CSS}\n</style>\n</head>\n<body>\n"
+            + first + "\n" + "\n".join(slides) + "\n" + last
+            + '\n<nav><button id="prev">Previous</button><span id="count"></span><button id="next">Next</button></nav>\n'
+            f"<script>\n{SLIDE_JS}\n</script>\n</body>\n</html>\n")
+
+
 def cmd_slides(folder, k):
     """A deck of pass k's collected takes: a first slide, one slide a take in the shot list's order, and the bar last.
     Its images are copies, so the deck survives a later collect."""
@@ -1848,8 +1869,7 @@ def cmd_slides(folder, k):
         rows = [("luma", f"{c['luma']} (reference {ref.get('luma')})"), ("tone", tone_row), ("edges", edge_row),
                 ("largest change", f"{c['jump_ratio']} times the median"),
                 ("provenance", c.get("provenance") or "none"), ("size", f"{c['width']}x{c['height']}")]
-        table = "".join(f"<tr><th>{esc(a)}</th><td>{esc(b)}</td></tr>" for a, b in rows)
-        tags = "".join(f'<span class="flag">{esc(f)}</span>' for f in (c.get("flags") or [])) or "no flags"
+        table, tags = table_html(rows), tags_html(c.get("flags"))
         slides.append(
             f'<section class="slide">\n<h2>{esc(sid)} &middot; {esc(x.get("camera", ""))}</h2>\n'
             f'<p class="sub">run {esc(c["run"])}, from {c["clip_start_s"]:g} s of the run; the action lies at '
@@ -1863,16 +1883,219 @@ def cmd_slides(folder, k):
     first = (f'<section class="slide">\n<h1>{esc(folder.name)}</h1>\n<p class="sub">Pass {k}, {esc(plan.get("size", ""))}, '
              f'{len(order)} takes, {esc(now()[:10])}</p>\n<div class="panel">Each slide holds a take: what the viewer should '
              "see, the take's sheet, a full-size frame and its numbers. The last slide is the bar. Arrow keys move.</div>\n</section>")
-    last = ('<section class="slide">\n<h2>The bar</h2>\n<div class="panel"><ul>'
-            + "".join(f"<li>{esc(b)}</li>" for b in BAR) + "</ul></div>\n</section>")
-    html = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
-            '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
-            f"<title>{esc(folder.name)} pass {k}</title>\n<style>\n{SLIDE_CSS}\n</style>\n</head>\n<body>\n"
-            + first + "\n" + "\n".join(slides) + "\n" + last
-            + '\n<nav><button id="prev">Previous</button><span id="count"></span><button id="next">Next</button></nav>\n'
-            f"<script>\n{SLIDE_JS}\n</script>\n</body>\n</html>\n")
+    html = deck_page(f"{folder.name} pass {k}", first, slides)
     (deck / "index.html").write_text(html, encoding="utf-8")
     return "SLIDES: READY", [f"pass {k}: {len(order)} takes, {len(order) + 2} slides", f"deck: {deck / 'index.html'}"]
+
+
+STILLS_MAX = 3                     # frames a take's stills may hold
+STILLS_TOP = {"stills", "head", "provenance", "takes"}
+
+
+def png_size(path):
+    """A PNG's (width, height) from its header, or None when the file is not a PNG."""
+    with open(path, "rb") as f:
+        head = f.read(24)
+    if len(head) < 24 or head[:8] != b"\x89PNG\r\n\x1a\n" or head[12:16] != b"IHDR":
+        return None
+    return int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")
+
+
+def stills_manifest(folder, j, src, s, shots):
+    """The stills manifest read and checked against the shot list and the film's size, and the takes it holds in the
+    shot list's order and then the variant's letter. Every fault is a line of its own; none stops at the first."""
+    m = None
+    try:
+        m = read_json(src / "manifest.json")
+    except (ValueError, OSError):
+        m = None
+    if m is None:
+        raise Refused(f"{src / 'manifest.json'} is missing or cannot be read")
+    if not isinstance(m, dict) or not isinstance(m.get("takes"), list):
+        raise Refused(f"{src / 'manifest.json'} is not in its form: an object with stills, head, provenance and a list of takes")
+    if m.get("stills") != j or isinstance(m.get("stills"), bool):
+        raise Refused(f"the manifest is for stills round {m.get('stills')!r}, not {j}")
+    errors = []
+    if m.get("provenance") not in ("FAITHFUL", "COUSIN"):
+        errors.append(f"the manifest's provenance is {m.get('provenance')!r}, not FAITHFUL or COUSIN")
+    known = {x["id"]: x for x in shots["shots"] if isinstance(x, dict) and "id" in x}
+    order = [x["id"] for x in shots["shots"] if isinstance(x, dict) and "id" in x]
+    want = SIZE.fullmatch(str(s["size"]))
+    wanted = (int(want.group(1)), int(want.group(2)))
+    seen, takes = set(), []
+    for n, t in enumerate(m["takes"], 1):
+        if not isinstance(t, dict):
+            errors.append(f"take {n} is not an object")
+            continue
+        shot, variant = t.get("shot"), t.get("variant")
+        name = f"{shot}:{variant}"
+        x = known.get(shot)
+        if x is None:
+            errors.append(f"take {name}: shot {shot!r} is not in shots.json")
+            continue
+        if not x.get("run"):
+            errors.append(f"take {name}: shot {shot} has no run in shots.json")
+            continue
+        if t.get("run") != x["run"]:
+            errors.append(f"take {name}: its run {t.get('run')!r} is not shot {shot}'s, {x['run']}")
+        if not isinstance(variant, str) or not re.fullmatch("[A-Z]", variant):
+            errors.append(f"take {name}: the variant is one capital letter")
+            continue
+        if (shot, variant) in seen:
+            errors.append(f"take {name} is given twice")
+            continue
+        seen.add((shot, variant))
+        dials = t.get("dials", {})
+        if not isinstance(dials, dict) or not all(isinstance(k, str) and isinstance(v, (str, int, float))
+                                                  for k, v in dials.items()):
+            errors.append(f"take {name}: dials is an object of dial names and values")
+            dials = {}
+        frames = t.get("frames")
+        if not isinstance(frames, list) or not 1 <= len(frames) <= STILLS_MAX:
+            errors.append(f"take {name}: it holds {len(frames) if isinstance(frames, list) else 'no list of'} frames, "
+                          f"1 to {STILLS_MAX} are allowed")
+            continue
+        before, okay = None, True
+        for i, fr in enumerate(frames, 1):
+            fr = fr if isinstance(fr, dict) else {}
+            file, second = fr.get("file"), fr.get("second")
+            where = f"take {name}, frame {i}"
+            path = src / file if isinstance(file, str) and file and Path(file).name == file else None
+            if path is None or not path.is_file():
+                errors.append(f"{where}: {file!r} is not a file in {src}")
+                okay = False
+                continue
+            size = png_size(path)
+            if size is None:
+                errors.append(f"{where}: {file} is not a PNG")
+                okay = False
+            elif size != wanted:
+                errors.append(f"{where}: {file} is {size[0]}x{size[1]}, the film's size is {s['size']}")
+                okay = False
+            if not number(second):
+                errors.append(f"{where}: its second is not a number")
+                okay = False
+                continue
+            if not (x["run_from_s"] <= second <= x["run_to_s"]):
+                errors.append(f"{where}: second {second:g} lies outside shot {shot}'s {x['run_from_s']:g} to "
+                              f"{x['run_to_s']:g} s of the run")
+                okay = False
+            if before is not None and second < before:
+                errors.append(f"{where}: second {second:g} comes before the frame before it, {before:g}; "
+                              "frames go in time order")
+                okay = False
+            before = second
+        if okay:
+            takes.append((order.index(shot), variant, x, t, dials))
+    if errors:
+        raise Refused(*errors)
+    return m, sorted(takes, key=lambda r: (r[0], r[1])), wanted
+
+
+def cmd_stills(folder, j, src):
+    """A stills round: the theatre lane's stills of a shot under up to three variants of dials, measured as collect
+    measures a clip and made into a deck for the reviewer. Written once to film/stills-<j>/; the pass is not touched."""
+    lines = []
+    s = film_settings(folder, lines)
+    shots = read_json(folder / "shots.json")
+    if shots is None:
+        raise Refused(f"{folder / 'shots.json'} is not there")
+    out = folder / "film" / f"stills-{j}"
+    # The manifest is read first, so its faults are named before a round that exists already.
+    manifest, takes, (w0, h0) = stills_manifest(folder, j, src, s, shots)
+    if out.exists():
+        raise Refused(f"film/stills-{j}/ exists already; a stills round is made once, so the next is stills round {j + 1}")
+    w = min(w0, 1920)
+    ref = reference(folder, s)
+    unsuited = reference_unsuited(ref, w, {"width": w0, "height": h0})
+    rl = None if unsuited else reference(folder, s, w)
+    try:
+        (out / "frames").mkdir(parents=True)
+        slides = out / "slides"
+        (slides / "img").mkdir(parents=True)
+        rows = []
+        for _, variant, x, t, dials in takes:
+            sid = x["id"]
+            name = f"{sid}-{variant}"
+            frames, lumas, tones, edges = [], [], [], []
+            for i, fr in enumerate(t["frames"], 1):
+                shutil.copyfile(src / fr["file"], out / "frames" / fr["file"])
+                path = out / "frames" / fr["file"]
+                lu = yavg(path, out, f"{name}-{i}-luma.txt")
+                tn, ed = look(path, out, f"{name}-{i}-look.txt", width=w)
+                lumas.append(sum(lu) / len(lu))
+                tones.append(tn[0])
+                edges.append(ed[0])
+                frames.append({"file": f"film/stills-{j}/frames/{fr['file']}", "second": fr["second"],
+                               "what": fr.get("what", ""), "luma": round(lumas[-1], 2), "tone": round(tones[-1], 2),
+                               "edges": round(edges[-1], 2)})
+            luma = round(sum(lumas) / len(lumas), 2)
+            tone, edge = round(sum(tones) / len(tones), 2), round(sum(edges) / len(edges), 2)
+            flags = []
+            if luma < ref["luma"]:
+                flags.append("dark")
+            if rl is not None and tone < rl["tone_p10"]:
+                flags.append("flat")
+            if rl is not None and edge < rl["edges_p10"]:
+                flags.append("soft")
+            paths = [out / "frames" / fr["file"] for fr in t["frames"]]
+            if len(paths) == 1:
+                shutil.copyfile(paths[0], slides / "img" / f"{name}-sheet.png")
+            else:
+                scale = ";".join(f"[{n}:v]scale=480:-2[a{n}]" for n in range(len(paths)))
+                joined = "".join(f"[a{n}]" for n in range(len(paths)))
+                ffmpeg([a for p in paths for a in ("-i", str(p))] + ["-filter_complex",
+                        f"{scale};{joined}hstack=inputs={len(paths)}", "-frames:v", "1", str(slides / "img" / f"{name}-sheet.png")])
+            shutil.copyfile(paths[len(paths) // 2], slides / "img" / f"{name}-frame.png")
+            rows.append({"take": f"{sid}:{variant}", "shot": sid, "variant": variant, "run": t["run"], "dials": dials,
+                         "provenance": manifest["provenance"], "size": f"{w0}x{h0}", "frames": frames, "luma": luma,
+                         "tone": tone, "edges": edge, "look_width": w,
+                         "reference_look": {key: rl[key] for key in LOOK_KEYS} if rl else None, "flags": flags,
+                         "camera": x.get("camera", ""), "see": x.get("see", "")})
+        data = {"stills": j, "head": manifest.get("head", ""), "provenance": manifest["provenance"], "made": now(),
+                "size": f"{w0}x{h0}", "reference": ref if rl is None else {**ref, **{k: rl[k] for k in LOOK_KEYS}, "look_width": w},
+                "takes": [{k: v for k, v in r.items() if k not in ("camera", "see")} for r in rows]}
+        write_json(out / "stills.json", data)
+        deck = []
+        for r in rows:
+            if rl:
+                wide = f"at {w} wide"
+                tone_row = f"{r['tone']} (reference {rl.get('tone')}, tenth percentile {rl.get('tone_p10')}, {wide})"
+                edge_row = f"{r['edges']} (reference {rl.get('edges')}, tenth percentile {rl.get('edges_p10')}, {wide})"
+            else:
+                tone_row = f"{r['tone']} (at {w} wide; not compared with the reference, judge by eye)"
+                edge_row = f"{r['edges']} (at {w} wide; not compared with the reference, judge by eye)"
+            table = table_html([("luma", f"{r['luma']} (reference {ref.get('luma')})"), ("tone", tone_row),
+                                ("edges", edge_row), ("stills", str(len(r["frames"]))), ("provenance", r["provenance"]),
+                                ("size", r["size"])])
+            seconds = ", ".join(f"{fr['second']:g}" for fr in r["frames"])
+            what = ", ".join(f"{fr['what']} ({fr['second']:g} s)" for fr in r["frames"] if fr["what"])
+            dial = ("; ".join(f"{k} {v}" for k, v in r["dials"].items())) or "the film look's own"
+            name = f"{r['shot']}-{r['variant']}"
+            deck.append(
+                f'<section class="slide">\n<h2>{esc(r["shot"])}:{esc(r["variant"])} &middot; {esc(r["camera"])}</h2>\n'
+                f'<p class="sub">run {esc(r["run"])}, stills at {esc(seconds)} s of the run; dials: {esc(dial)}</p>\n'
+                f'<div class="panel"><b>The viewer should see:</b> {esc(r["see"])}</div>\n'
+                f'<div class="row"><div class="col"><img src="img/{esc(name)}-sheet.png" alt="the sheet of {esc(name)}">'
+                f'<p class="cap">The sheet: {len(r["frames"])} stills side by side in time order'
+                f'{esc(": " + what) if what else ""}.</p></div>\n'
+                f'<div class="col"><img src="img/{esc(name)}-frame.png" alt="the middle still of {esc(name)}">'
+                f'<p class="cap">The middle still at full size, {esc(r["size"])}.</p>\n'
+                f'<table>{table}</table><p>{tags_html(r["flags"])}</p></div></div>\n</section>')
+        shot_ids = {r["shot"] for r in rows}
+        first = (f'<section class="slide">\n<h1>{esc(folder.name)}</h1>\n<p class="sub">Stills {j}, {w0}x{h0}, '
+                 f'{len(rows)} takes of {len(shot_ids)} shots, head {esc(data["head"])}, {esc(data["provenance"])}, '
+                 f'{esc(now()[:10])}</p>\n<div class="panel">Each slide holds a take, one variant of a shot: what the viewer '
+                 "should see, its dials, its stills side by side, the middle still at full size and the numbers. Judge each "
+                 "take against the bar alone. The last slide is the bar. Arrow keys move.</div>\n</section>")
+        (slides / "index.html").write_text(deck_page(f"{folder.name} stills {j}", first, deck), encoding="utf-8")
+    except BaseException:
+        shutil.rmtree(out, ignore_errors=True)
+        raise
+    head = [f"stills {j}: {len(rows)} takes of {len(shot_ids)} shots, {len(rows) + 2} slides"]
+    notes = [f"{r['take']}: luma {r['luma']}, tone {r['tone']}, edges {r['edges']}"
+             + (f", flags {', '.join(r['flags'])}" if r["flags"] else "") for r in rows]
+    return "STILLS: READY", head + lines + notes + [f"deck: {slides / 'index.html'}"]
 
 
 def run_pinned(args, cores):
@@ -2072,6 +2295,7 @@ COMMANDS = {"plan": (cmd_plan, "FILM PLAN: REFUSED", ["folder", "n"]),
             "wait": (cmd_wait, "FILMING: FAILED", ["folder", "n", "n"]),
             "collect": (cmd_collect, "CLIPS: REFUSED", ["folder", "n"]),
             "slides": (cmd_slides, "SLIDES: REFUSED", ["folder", "n"]),
+            "stills": (cmd_stills, "STILLS: REFUSED", ["folder", "n", "path"]),
             "encode": (cmd_encode, "ENCODE: REFUSED", ["folder", "n"]),
             "stop": (cmd_stop, "STOP: REFUSED", ["folder", "n", "text"])}
 PASSING = ("WRITTEN", "READY", "NOTHING TO FILM", "NOTHING TO ENCODE", "FREE", "STARTED", "DONE", "PASS")
@@ -2084,11 +2308,11 @@ def main(argv):
     if rest:
         argv = argv[:2 + len(spec[2]) - 1] + [" ".join(argv[2 + len(spec[2]) - 1:])]
     if spec is None or len(argv) != 2 + len(spec[2]) or not all(
-            kind in ("folder", "text") or (v.isdigit() and int(v) >= 1) for kind, v in zip(spec[2], argv[2:])):
+            kind in ("folder", "text", "path") or (v.isdigit() and int(v) >= 1) for kind, v in zip(spec[2], argv[2:])):
         print(__doc__.strip(), file=sys.stderr)
         return 2
     command, refused, kinds = spec
-    args = [Path(v).resolve() if kind == "folder" else v if kind == "text" else int(v)
+    args = [Path(v).resolve() if kind in ("folder", "path") else v if kind == "text" else int(v)
             for kind, v in zip(kinds, argv[2:])]
     if not args[0].is_dir():
         verdict, lines = refused, [f"cannot read the film's folder {args[0]}"]
