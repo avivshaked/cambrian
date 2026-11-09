@@ -516,6 +516,8 @@ def shot_key(shot, s, colours=None):
         fields["colour_sha256"] = colours[shot["colour"]]["sha256"]
     if shot.get("canopy"):
         fields["canopy"] = True        # likewise: only a canopy shot, so no other shot is filmed again
+    if shot.get("focus") is not None:
+        fields["focus_level"] = shot["focus"]   # likewise: only a shot that names a focus level
     if far_fog(shot, s) is not None:
         fields["fog"] = far_fog(shot, s)
     if close_focus(shot, s) is not None:
@@ -771,6 +773,44 @@ def canopy_faults(shot):
     return []
 
 
+FOCUS_LEVELS = ("off", "full")              # the levels a shot may ask of the theatre's focus rule (EVOSIM_THEATRE_FOCUS_RULE)
+FOCUS_FULL_CAMERAS = ("Portrait", "Birth")  # the hero shots: the only ones depth of field at full may be asked of
+
+
+def focus_faults(shot):
+    """Why a shot's focus level cannot be filmed, as lines without the shot's name; none when it has none or is sound."""
+    if "focus" not in shot:
+        return []
+    if not isinstance(shot["focus"], str) or shot["focus"] not in FOCUS_LEVELS:
+        return [f"focus is off or full, or left out, not {json.dumps(shot['focus'])}"]
+    if "run" not in shot:
+        return ["focus is on a shot with no footage; only a shot with footage is filmed at a focus level"]
+    if shot["focus"] == "full" and shot.get("camera") not in FOCUS_FULL_CAMERAS:
+        return [f"focus full is on a {shot.get('camera')} shot; only a hero shot, a Portrait or a Birth, is filmed at full"]
+    return []
+
+
+def focus_log_fault(slug, log, mode, level):
+    """Why a theatre log does not show a scene's focus as asked, or None. Under EVOSIM_THEATRE_FOCUS_RULE the theatre
+    writes '[Theatre] focus rule: take N of <slug>: level X (why), hero body ID' for each take, and the level
+    overrides the scene's mode, so the older 'focus <mode> ..., the scene's own' line may be absent. With the rule
+    off there is no such line. `level` is what the scene asked for, or None; `mode` is the close focus mode, or None."""
+    lines = re.findall(r"focus rule: take [0-9]+ of " + re.escape(slug) + r": level ([A-Za-z]+)", log)
+    if lines:
+        if level is not None:
+            wrong = sorted({x for x in lines if x != level})
+            if wrong:
+                return (f"the theatre's log gives {slug} focus level {', '.join(wrong)} where the scene asked for {level}")
+        return None
+    if level is not None:
+        return (f"the theatre's log has no focus rule line for {slug}, so the level {level} was not read; "
+                "EVOSIM_THEATRE_FOCUS_RULE may be off")
+    if mode is not None and not re.search("take [0-9]+ of " + re.escape(slug) + ": focus " + re.escape(mode)
+                                          + ".*, the scene's own", log):
+        return f"the theatre's log does not say its takes were focused {mode}, the scene's own"
+    return None
+
+
 def canopy_log_fault(slug, log):
     """Why a theatre log does not show the canopy plan for a scene, or None. The director writes
     'take N of <slug> at T s: canopy: ...' for each take planned as the canopy shot (FilmPlans Plan_). Under
@@ -991,8 +1031,11 @@ def cmd_plan(folder, k):
         if fog is not None:
             scene["fog"] = fog
         focus, side = close_focus(shot, s), side_of(shot)
+        level = shot.get("focus")
         if focus is not None:
-            scene["focus"] = focus
+            scene["focus"] = dict(focus)
+        if level is not None:
+            scene["focus"] = dict(scene.get("focus") or {}, level=level)   # the theatre's focus rule reads it
         if side is not None:
             scene["side"] = side
         if child:
@@ -1006,6 +1049,8 @@ def cmd_plan(folder, k):
                         "handle_before_s": round(before, 3), "handle_after_s": round(after, 3),
                         "birth_s": second if shot["camera"] == "Birth" else None, "fog": fog, "canopy": bool(shot.get("canopy")),
                         "focus": focus, "side": side})
+        if level is not None:
+            entries[-1]["focus_level"] = level
         why = []
         if before < h - EPS:
             why.append(f"{before:.1f} s before" + (" (a birth's take opens 8 s before it)" if shot["camera"] == "Birth"
@@ -1016,6 +1061,7 @@ def cmd_plan(folder, k):
         lines.append(f"{where}: {shot['camera']} on {subject(shot, s)}, run {start:g} to {start + seconds:g} s, "
                      f"handles {before:.1f} and {after:.1f} s" + (f", fog {fog_text(fog)}" if fog is not None else "")
                      + (f", focus {focus['mode']}" if focus is not None else "")
+                     + (f", focus level {level}" if level is not None else "")
                      + (f", subject {side}" if side is not None else "")
                      + (f"; short: {', '.join(why)}" if why else ""))
     if errors:
@@ -1774,9 +1820,10 @@ def cmd_collect(folder, k):
         if skin_of(s) and not re.search(skin_pattern(s), log):
             errors.append(f"{where}: the theatre's log does not show the skin it was asked for ({skin_of(s)})")
             continue
-        if focus is not None and not re.search("take [0-9]+ of " + re.escape(row["slug"]) + ": focus "
-                                               + re.escape(focus["mode"]) + ".*, the scene's own", log):
-            errors.append(f"{where}: the theatre's log does not say its takes were focused {focus['mode']}, the scene's own")
+        focus_fault = focus_log_fault(row["slug"], log, focus.get("mode") if focus is not None else None,
+                                      e.get("focus_level"))
+        if focus_fault:
+            errors.append(f"{where}: {focus_fault}")
             continue
         if side is not None and not re.search("take [0-9]+ of " + re.escape(row["slug"]) + " at .*: portrait of "
                                               ".*subject a third off centre on the " + side, log):

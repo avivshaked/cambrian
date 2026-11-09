@@ -207,6 +207,21 @@ theatre as a field of that shot's scene and a canopy shot shares its run's pass 
   `EVOSIM_THEATRE_CANOPY_GROUP` the director's group descent in the canopy's place counts too, shown by its line's
   `in place of the canopy descent under the densest column of leaves`.
 
+## A shot's focus level
+
+A shot with footage may carry `"focus": "off"` or `"full"`, and `full` only on a Portrait or Birth shot (the form is in
+[shots-schema.md](shots-schema.md)). It sets the depth of field of that shot's takes.
+
+- **`plan` writes it into the shot's scene** as `focus.level`, beside the `mode` a close shot's `close_focus` already
+  puts there. Each plan entry records `focus_level`, and the level is in the shot's key only when the shot has it.
+- **The theatre reads the level only under `EVOSIM_THEATRE_FOCUS_RULE=1`**, a run-wide switch of the film look. With the
+  rule on, a scene without a level gets one from the hero's width at the take's first frame, and the level overrides the
+  scene's `mode`.
+- **`collect` reads the theatre's log.** Under the rule the theatre writes `[Theatre] focus rule: take N of <slug>:
+  level X (why), hero body ID`. When the shot asked for a level, `collect` refuses a clip whose log has any such line
+  for its scene with another level, and a clip whose log has none (the rule may be off). When the shot asked for no
+  level and the log has the line, the older check of the close focus's `mode` is skipped.
+
 ## clips.json
 
 ```json

@@ -259,7 +259,7 @@ def check_shots(data, folder):
     order, by_passage, ids = [p["id"] for p in narration["passages"]], {}, []
     for i, shot in enumerate(shots, 1):
         where = f"shot {shot.get('id')}" if isinstance(shot, dict) and shot.get("id") else f"shot {i}"
-        if not isinstance(shot, dict) or shot.get("kind") not in KEYS or set(shot) - {"colour", "canopy"} not in KEYS[shot["kind"]]:
+        if not isinstance(shot, dict) or shot.get("kind") not in KEYS or set(shot) - {"colour", "canopy", "focus"} not in KEYS[shot["kind"]]:
             errors.append(f"{where}: kind is run or graphic, and the shot holds exactly its kind's fields: a run "
                           "shot the footage's, and a graphic its beats and stills and either the footage's or alone")
             continue
@@ -284,6 +284,7 @@ def check_shots(data, folder):
         check_text(shot, where, lines, given, errors)
         errors += [f"{where}: {x}" for x in film_tool().colour_faults(shot, colours)]
         errors += [f"{where}: {x}" for x in film_tool().canopy_faults(shot)]
+        errors += [f"{where}: {x}" for x in film_tool().focus_faults(shot)]
         if "run" in shot:
             check_footage(shot, where, facts, errors)
         if shot["kind"] == "graphic":

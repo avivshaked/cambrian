@@ -75,6 +75,12 @@ films that scene as the canopy shot: the eye under the densest column of leaves,
 window. Without the field the shot is filmed as the plain Arrival or Descent. Filming writes the field into the
 shot's scene in the story, so the other shots of its run are unaffected ([filming.md](filming.md)).
 
+**A focus level.** A shot with footage may also carry `"focus"`: `"off"` or `"full"`, and no other value.
+`off` is no depth of field, and sits on any shot with footage; `full` keeps the hero sharp and blurs the background,
+and sits only on a hero shot, one whose `camera` is `Portrait` or `Birth`. It is optional. Without it the theatre's focus rule picks the level from the hero's width at the take's first frame. Filming
+writes it into the shot's scene as `focus.level` and the theatre reads it only under `EVOSIM_THEATRE_FOCUS_RULE=1`
+([filming.md](filming.md)).
+
 **A colour.** A shot with footage may also carry `colour`, the name of a colour in the film's `colours.json`.
 The theatre turns the hue of the bodies that colour's map names, so two teams or one family can be told apart
 in the picture. Without it the shot is filmed in the bodies' own colours. `colours.json` sits in the film's
@@ -118,6 +124,8 @@ footage, in a few words. The edit lays it over the plate, a flat colour.
   show inside their shot.
 - A shot's `canopy` is `true` and sits on a shot with footage whose `camera` is `Arrival` or `Descent`. `false`,
   any other value, a graphic with no footage and any other camera are refused.
+- A shot's `focus` is `off` or `full`, and sits on a shot with footage. `full` also needs a `Portrait` or `Birth`
+  camera. Any other value (`light` among them), and a graphic with no footage, are refused.
 - A shot's `colour` is a string, and sits on a shot with footage whose `run` is one the colour lists. The
   film has a `colours.json` that names it, in its form, whose files are there and whose `sha256` is each
   file's. A film with neither a `colours.json` nor a `colour` is checked as it always was.
