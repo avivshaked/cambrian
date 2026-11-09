@@ -326,10 +326,15 @@ actually verifying it.
   found by the owner and not by the agent, who had looked at the contact sheets only for the
   fault last reported. The check: a side-by-side sheet of the new frames and the reference
   (the last film the owner accepted, at the same run and second where there is one), read for
-  size, brightness, the bed, the reef, the caustics and the shafts, the bodies' shapes and
-  motion between consecutive frames, and the captions; a number for what a number can say
-  (mean luma, the largest frame-to-frame jump against its neighbours); and what was checked
-  said in the same message as the clip's path. A change to a render path is checked against
+  size, brightness, the bed, the reef, the caustics and the shafts, the focus near, middle and
+  far (D341), the bodies' shapes and motion between consecutive frames, and the captions; a
+  number for what a number can say (mean luma, edges, the largest frame-to-frame jump against
+  its neighbours); and what was checked said in the same message as the clip's path. A number
+  under the reference's floor is traced to its cause before the sheet passes. Whoever passes a
+  sheet has read it, never relying on another session's word. Round 67's pass 11 sheet measured a
+  shot's edges at under half the reference's and called it soft. The agent passed it, and the
+  cause, a lens at f/1.4 on every shot, reached the owner in a filmed take thirteen hours later.
+  A change to a render path is checked against
   the path it replaces before anything else is judged. A new effect is also read at full size against
   real footage of what it stands for, for whether it looks natural: the birth cloud of 2026-11-02 passed
   every check against the film before it, and reached the owner as a scatter of identical flat grey
