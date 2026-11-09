@@ -353,6 +353,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D329](#d329) | Round 67's refilm takes the lit surface, a meter at 0.22, rounded family parts and the new cameras | 2026-11-08 | decided by the coordinator on 2026-11-08, under the owner's delegation of the films' look (D327), which the owner restated that night |
 | [D330](#d330) | Round 67's world shots close on the nearest group from above, and the water goes back to teal | 2026-11-08 | decided by the coordinator on 2026-11-08, under the owner's delegation of the films' look (D327) |
 | [D331](#d331) | Round 67's group shots close on one slow animal and end looking up, under the edge of Snell's window | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327) |
+| [D332](#d332) | Round 67's shots show the sunlit surface above the subject, and the director follows the shot list | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327) |
 
 ---
 
@@ -11626,3 +11627,46 @@ bright teal water (luma 82.9, green over blue 0.87, edges 17.0), 3.1a ends on a 
 - The plan's check for bodies cut by the frame's edge missed a second body cut by the top edge in 1.4a's last frame, and
   it does not count coral, such as the plate cut at 3.1a's lower left. The fix is the theatre lane's, under its dials-off
   check.
+
+### D332
+**Round 67's shots show the sunlit surface above the subject, and the director follows the shot list** · 2026-11-09
+
+**Status:** decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327). It amends
+D331: the window cap moves from 2° under Snell's window to 6° past its edge, and the group frame looks up to 25°, not
+15°. Judged at full size on the theatre lane's two pass 12 sheets (`scratch/film-light/c8/pass12/`), built on
+`theatre-look-pass7`'s `pass12/director` at `18c1a886` and `c7061b25`, whose dials-off check is identical to its reference.
+`c7061b25` is pass 12's theatre commit.
+
+**Decision.** In `wide`, the film look (`scripts/theatre-film-look.json`) sets:
+- the surface: `WINDOW_CAP` -6, `GROUP_LOOKUP` 25, `WATER_EDGE` 1, `WATER_WINDOW` 1 and `WATER_GLOW` 1, with
+  `MIRROR_LIT` at 0;
+- the director: `GROUP_NEAREST` 0.25, `CANOPY_GROUP` 1, `DESCENT_DOLLY` 1, `BIRTH_PARENT_SHARE` 0.2 and `DOLLY_TOP` 1.2.
+
+The head also corrects the camera's aim. A portrait or a group frame aimed with its subject's displacement over the
+wrong second, so a subject that turned slid off-centre. Shot 2.3a frames plants, through the story's subject for that
+shot. Shot 3.1a's see line is now a slow descent onto a group one to three metres down, since the surface-to-bed dolly
+would cross about 23 m of empty water at four times the camera's speed ceiling.
+
+**Why.** Pass 11 failed 10 of its 12 takes on a dark navy top. Under D331's cap the frame's top stayed under Snell's
+window, so all the sky in frame was the unlit mirror, and real footage brightens toward the surface. With the window in
+frame and the water's edge on, the top third reads as sunlit ripples, bright cyan patches between darker mirror, with no
+seam. Tone stays over the reference's floor of 44 on all three test shots (56, 58 and 45). On the director's side, 1.2a
+ends on a red animal in the shafts at a quarter of the width, the turning subject stays centred to the last frame, and
+3.1a's eye sinks from 1.2 to 2.6 m deep while its look turns from down onto the group to up at the subject.
+
+**Rejected.**
+- D331's dark lid, which the review failed on 10 takes.
+- `MIRROR_LIT` 0.3 at D331's cap. It lifts the top without a seam but brings no glow, and takes tone under 44 on four of
+  five shots (2.4b to 21).
+- The window band without the water's edge, a flat white cut-out with a crisp outline and a yellow fringe.
+- `MIRROR_LIT` 0.15 with the band, and the band with `WATER_EDGE` 0.5. Both take 2.4b's tone under 44 (32 and 38), and
+  the half edge did not soften the patches.
+- A 40 s action for 3.1a, which is long for one shot.
+
+**Not settled.**
+- The patches' edges are crisp and dense, most of all on 2.4b, and this overshoots on purpose (D262). The take reviews
+  decide whether they are dialled back.
+- `WATER_GLOW`'s halo cannot show in these frames, since the sun stands at 67° and the frames' tops reach about 47°.
+- 2.4b's second take is built to hold the parent beside the newborn. It was not stilled, and its review decides.
+- The group shots have no depth of field. 2.1a's low edge count comes from a frame of open water: its subject is about
+  four times sharper than the frame as a whole.
