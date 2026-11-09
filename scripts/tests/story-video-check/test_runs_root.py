@@ -87,8 +87,8 @@ def plan_film(tmp_path, monkeypatch, shots, windows_args, **settings):
     monkeypatch.setattr(film, "stale_worker", lambda s: None)
 
     def fake_windows(args, **kw):
+        story = json.loads(Path(args[2]).read_text(encoding="utf-8"))   # a git call (look_file) raises here, unrecorded
         windows_args.append(list(args))
-        story = json.loads(Path(args[2]).read_text(encoding="utf-8"))
         out = Path(args[4])
         out.mkdir(parents=True, exist_ok=True)
         ws = [{"scene": sc["n"], "part": "main", "station": sc["station"], "start": sc["second"]}
