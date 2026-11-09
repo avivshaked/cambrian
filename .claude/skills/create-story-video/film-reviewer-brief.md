@@ -54,7 +54,10 @@ Read every sheet and every full-size frame whole. Read nothing else.
   lies off the centre and the thirds, or the event does not happen in frame. A portrait or a birth is a hero shot,
   and its hero holds much of the frame (the coordinator, 2026-11-09, after the owner's focus rulings).
 - **B4, camera.** The camera looks down into empty dark water, or level over an empty floor, or away from the
-  light, or a descent does not end on life.
+  light, or a descent does not end on life. A camera that is still, or so slow it reads as still, also fails
+  here unless an action carries the shot: an animal coming in to eat, a birth, a fight or a death (the owner,
+  2026-11-09). Without one, the camera moves slowly with a purpose (a push-in, a rise, an orbit, or a drift past near
+  bodies so the depth shows), and the move shows plainly between the first and last frames.
 
 ## The faults
 
