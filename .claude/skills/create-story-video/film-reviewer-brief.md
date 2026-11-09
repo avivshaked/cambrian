@@ -49,9 +49,10 @@ Read every sheet and every full-size frame whole. Read nothing else.
 - **B1, light.** The take is not luminous: `luma` is under the reference's, or the surface is a dark ceiling, the
   shadow sides are not lit by the water, or the shafts are gone.
 - **B2, water.** The water reads navy-black and not clear teal, or haze lies over the near field.
-- **B3, subject.** The take has no subject, or its subject is cut by the frame, or a portrait's or an event's
-  subject fills less than a fifth of the width or lies off the centre and the thirds, or the event does not
-  happen in frame.
+- **B3, subject.** The take has no subject, or its subject is cut by the frame, or a portrait's or a birth's
+  subject fills less than two fifths of the width, or another event's subject less than a fifth, or the subject
+  lies off the centre and the thirds, or the event does not happen in frame. A portrait or a birth is a hero shot,
+  and its hero holds much of the frame (the coordinator, 2026-11-09, after the owner's focus rulings).
 - **B4, camera.** The camera looks down into empty dark water, or level over an empty floor, or away from the
   light, or a descent does not end on life.
 

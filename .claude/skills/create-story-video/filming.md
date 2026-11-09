@@ -449,6 +449,9 @@ The main session runs only the lines below that name it. `plan`, `start` and `co
    5. Test takes first: every shot at 960x540 before any 4K pass. Slides of each take, its sheet and a full-size frame, judged against this bar by eye first, directed and refilmed until it passes. The owner sees only passing takes, with their slides.
    ```
 
+   Amendment to item 3 (the coordinator, 2026-11-09, after the owner's focus rulings, D336 to D339): a portrait or a
+   birth is a hero shot, and its hero fills at least two fifths of the width. Any other event's subject keeps a fifth.
+
    - A stills round comes before the filmer is launched for a pass that refilms shots failed for their light, framing or
      subject: the theatre lane renders those shots as stills, up to three variants each; the main session runs `stills`
      and the reviewer ("A stills review" in its brief, `film-stills-<j>.txt` and `film-stills-<j>-review.md`); only shots
