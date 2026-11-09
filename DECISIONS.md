@@ -360,6 +360,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D336](#d336) | Every shot either holds one clear hero in focus with the rest blurred, or holds nearly everything in focus | 2026-11-09 | ruled by the owner on 2026-11-09, on watching round 67's first two passing takes, 2.3a and 2.4b of pass 15 (`scratch/owner/round67-pass15-first-passing-takes/`) |
 | [D337](#d337) | No shot blurs: a hero holds much of the frame and is clear, a crowded frame keeps everything clear, and fog alone makes the background recede | 2026-11-09 | ruled by the owner on 2026-11-09, refining their focus ruling of the same day (D336) |
 | [D338](#d338) | Depth of field only when a clear hero takes up much of the frame; otherwise everything near is clear and fog makes the background recede | 2026-11-09 | ruled by the owner on 2026-11-09, correcting the coordinator's reading recorded as D337 |
+| [D339](#d339) | Focus is set per shot and judged frame by frame; the two-fifths line only sets the default | 2026-11-09 | ruled by the owner on 2026-11-09, refining D338 |
 
 ---
 
@@ -11832,3 +11833,19 @@ focus moving off it. 2.3a, a column of plants with no single hero, was evenly so
 
 **Not settled.** What softens 2.3a, which ran no depth of field, is still being traced. Whether the fog needs to start
 nearer is settled on stills. Whether two fifths is the right line is the owner's to adjust.
+
+### D339
+**Focus is set per shot and judged frame by frame; the two-fifths line only sets the default** · 2026-11-09
+
+**Status:** ruled by the owner on 2026-11-09, refining D338. It amends D338's line: the hero's width of two fifths no
+longer decides depth of field on its own.
+
+**Decision.** In a shot with no big hero, everything near stays clear only to a degree, judged frame by frame. Each shot
+carries its own focus setting, off, light or full. Light is a small blur far back, with most of the depth left to fog.
+Full is shallow and locked on the hero. The hero's width sets the default, full from two fifths of the frame and off
+below it, and the shot's own setting overrides it after stills. The focus never moves off the hero to another body, at
+any setting. A take fails when its focus does not serve the frame: a big hero that goes soft, a blur that muddies a busy
+frame or its near bodies, or a frame that is evenly soft.
+
+**Why.** The owner judges clarity frame by frame. A light softness far back can sit well in one frame and muddy another,
+and no single rule decides that.
