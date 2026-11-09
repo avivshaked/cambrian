@@ -239,7 +239,7 @@ def parse_subject_text(t, shot):
         shot.body = int(body.group(1))
     if parent:
         shot.parent_body = int(parent.group(1))
-    if child:
+    if child and shot.child_body < 0:      # a scene's own "child" field, read first, wins over the subject's words
         shot.child_body = int(child.group(1))
     if guide:
         shot.guide_index = int(guide.group(1))
@@ -275,6 +275,11 @@ def read_shot(node, position):
         shot.number = n
     shot.run = text(first_of(node, RUN_KEYS))
     shot.station_text = text(first_of(node, STATION_KEYS))
+    named = node.get("child") if isinstance(node, dict) else None   # film.py's child_by_shot writes "body <id>"
+    if isinstance(named, (int, float)) and not isinstance(named, bool):
+        shot.child_body = int(named)
+    elif isinstance(named, str) and re.search(r"\d+", named):
+        shot.child_body = int(re.search(r"\d+", named).group(0))
     shot.description = text(first_of(node, DESCRIPTION_KEYS))
     shot.chapter = text(first_of(node, CHAPTER_KEYS))
     shot.flexible = switch(first_of(node, FLEXIBLE_KEYS))

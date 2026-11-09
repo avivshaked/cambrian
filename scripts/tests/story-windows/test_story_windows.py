@@ -174,6 +174,22 @@ class PlannerTests(unittest.TestCase):
         self.assertTrue(planner.same_run("s1", "r48-s1"))
         self.assertFalse(planner.same_run("s2", "r48-s1"))
 
+    def test_a_scenes_child_field_names_the_child_and_wins_over_the_subjects_words(self):
+        shot = planner.read_shot({"station": "Birth", "second": 600, "subject": "body 5", "child": "body 9"}, 0)
+        self.assertEqual((5, 9), (shot.body, shot.child_body))
+        shot = planner.read_shot({"station": "Birth", "second": 600, "subject": "parent body 5, child body 7", "child": "body 9"}, 0)
+        self.assertEqual(9, shot.child_body)
+        shot = planner.read_shot({"station": "Birth", "second": 600, "subject": "body 5"}, 0)
+        self.assertEqual(-1, shot.child_body)
+
+    def test_a_named_child_is_filmed_though_a_sibling_is_born_nearer_the_second(self):
+        from types import SimpleNamespace
+        lineage = SimpleNamespace(present=True, born={7: (5, 599.5, None), 9: (5, 601.0, None)}, children={5: [7, 9]})
+        shot = planner.read_shot({"station": "Birth", "second": 599.5, "subject": "body 5", "child": "body 9"}, 0)
+        notes = []
+        self.assertEqual((5, 9, 601.0), planner.find_birth(shot, 599.5, lineage, None, notes))
+        self.assertTrue(any("child body 9, which the story names" in n for n in notes))
+
 
 def write_run(root, arm, name, rows, resumed=None, end=100.0):
     """A run under root/arm/name: rows are (id, parent, second); resumed is (arm, run, seconds) or None."""
