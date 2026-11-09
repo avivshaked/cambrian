@@ -176,6 +176,10 @@ def film_settings(folder, lines):
     if ro is not None and not (isinstance(ro, list) and ro and all(isinstance(r, str) and r for r in ro)):
         problems.append("runs_only is null (a pass films every run's shots) or a list of run names, the only runs "
                         "the next pass films")
+    so = s.get("shots_only")
+    if so is not None and not (isinstance(so, list) and so and all(isinstance(r, str) and r for r in so)):
+        problems.append("shots_only is null (a pass films every shot it would) or a list of shot ids, the only shots "
+                        "the next pass films")
     ms = s.get("max_scenes")
     if ms is not None and not (isinstance(ms, int) and not isinstance(ms, bool) and ms >= 1):
         problems.append("max_scenes is null (a pass films every shot it plans) or a whole number of 1 or more, the "
@@ -792,6 +796,12 @@ def cmd_plan(folder, k):
     colours = colours_of(folder, [x for x in shots["shots"] if isinstance(x, dict)])
     runs = [x for x in shots["shots"] if "run" in x]           # every shot with footage, graphics' included
     todo = [x for x in runs if filmed.get(x["id"]) != shot_key(x, s, colours)]
+    if s.get("shots_only"):
+        bad = [f"shots_only names {i}, which is not in shots.json" for i in s["shots_only"] if i not in by_id]
+        bad += [f"shots_only names {i}, which has no run, so no footage to film" for i in s["shots_only"]
+                if i in by_id and "run" not in by_id[i]]
+        if bad:
+            raise Refused(*bad)
     if not todo:
         return "FILM PLAN: NOTHING TO FILM", lines + [f"every one of the {len(runs)} shots with footage has its clip"]
     filmed_count = len(runs) - len(todo)       # shots whose clip is current; the shots held back are not counted as filmed
@@ -807,6 +817,21 @@ def cmd_plan(folder, k):
         if waiting:
             lines.append(f"{len(waiting)} shots on runs not in runs_only wait for the next passes: "
                          + ", ".join(sorted({x['run'] for x in waiting})))
+    # shots_only films the named shots alone, as runs_only films the named runs: a stills round passes some shots of a
+    # run that holds many, and only those are filmed. It narrows what runs_only left.
+    if s.get("shots_only"):
+        named = list(dict.fromkeys(s["shots_only"]))
+        left = {x["id"] for x in todo}
+        for i in named:
+            if i not in left:
+                lines.append(f"shots_only names {i}, whose clip is current; it is not filmed")
+        waiting = [x for x in todo if x["id"] not in named]
+        todo = [x for x in todo if x["id"] in named]
+        if not todo:
+            raise Refused("shots_only names " + ", ".join(named) + ", and none of them is left to film: set it to "
+                          "null, or name a shot with a clip to film")
+        if waiting:
+            lines.append(f"{len(waiting)} shots not in shots_only wait for the next passes")
     errors, scenes, entries, dirs = [], [], [], {}
     # The director films a run at one size, so a pass does too: an offline pass is the shots set small in
     # size_by_shot, and the 4K pass that follows it is the same shots once they are taken out of it.
