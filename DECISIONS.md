@@ -358,6 +358,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D334](#d334) | Round 67's director dials of pass 13 join the film look, the band stays unlit, and pass 15 films the three shots that passed their stills | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of the first two stills rounds, saved as they came… |
 | [D335](#d335) | Round 3's five director dials join the film look, and pass 16 films 1.3a and 3.1a and refilms 2.3a and 2.4b | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 3, saved as they came… |
 | [D336](#d336) | Every shot either holds one clear hero in focus with the rest blurred, or holds nearly everything in focus | 2026-11-09 | ruled by the owner on 2026-11-09, on watching round 67's first two passing takes, 2.3a and 2.4b of pass 15 (`scratch/owner/round67-pass15-first-passing-takes/`) |
+| [D337](#d337) | No shot blurs: a hero holds much of the frame and is clear, a crowded frame keeps everything clear, and fog alone makes the background recede | 2026-11-09 | ruled by the owner on 2026-11-09, refining their focus ruling of the same day (D336) |
 
 ---
 
@@ -11792,3 +11793,22 @@ had no fault for focus, and the coordinator did not see it either.
 **Not settled.** Where the softness comes from in each shot is traced before anything is built: the depth of field's
 settings, the water's haze, the box filter and the encode. The fix is built behind dials and stilled on 2.3a, 2.4b, 1.3a
 and a founder portrait. Every passing shot is filmed again once it is in the look.
+
+### D337
+**No shot blurs: a hero holds much of the frame and is clear, a crowded frame keeps everything clear, and fog alone makes the background recede** · 2026-11-09
+
+**Status:** ruled by the owner on 2026-11-09, refining their focus ruling of the same day (D336). It supersedes D336's
+blurred background for hero shots, and it reverses the shallow depth of field with bokeh that D202 records the owner
+wanting. D336's fault for a frame that is evenly soft stands.
+
+**Decision.** No film shot uses depth-of-field blur. In a hero shot the hero holds much of the frame and is sharp. In a
+shot with many things in it, all of them are clear. The water's fog, not blur, makes the background fade. The theatre
+lane turns depth of field off in every film shot, the story's per-scene focus included, and removes anything else that
+softens a near body. Hero shots start with the hero at about half the frame's width and are dialled back from there
+(D262). The film reviewer's brief and the shot list's hero lines change to match.
+
+**Why.** The owner judged round 67's first passing takes. In 2.4b the focus moved off the parent, the animal being
+watched, and the birth was too far from the camera to be seen. In 2.3a nothing was crisp.
+
+**Not settled.** What softens 2.3a, which ran no depth of field, is still being traced. Whether the fog needs to start
+nearer once nothing blurs is settled on stills. The safari keeps its own look unless the owner rules otherwise.
