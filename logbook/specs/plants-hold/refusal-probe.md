@@ -129,3 +129,30 @@ and `plrc-6204`, then on the probe build as `plrf-6203` and `plrf-6204`. It runs
 - **What it decides.** If the overlap test carries most of the plants' refusals, the overlap rule is now what limits a
   plant's growth, and it goes to the owner with this count. If "no larger" carries most of them, the module rule has
   another fault, which is agent work under D298. Either way D308's urge waits for the answer.
+
+## What the fixed build found (2026-11-09)
+
+Both groups ran on the card on 2026-11-09, `plrc-*` from 02:25 and `plrf-*` from 02:38. The second group's first launch
+was refused while the first group's driver watch was still running, and the launcher now waits 30 s between groups. The
+probe changes nothing in the world. Over the 150 shared rows of each world, every stats field the two runs share is
+equal, and the lineage rows are identical, 5,325 on 6203 and 3,649 on 6204. Only the probe's own 48 columns differ,
+since its twin has none. Both worlds' books close.
+
+The plants' additions refused for shape, counted over 10,500 to 12,000 s:
+
+| cause | `plrf-6203` (the control) | `plrf-6204` (light at each part) |
+|---|---|---|
+| would stand inside itself (D101) | 2,445 (64 %) | 4,557 (51 %) |
+| past the body plan's depth limit (`MaxDepth`) | 1,209 (32 %) | 4,309 (48 %) |
+| no larger, the node off every cycle | 153 (4 %) | 0 |
+| no larger, the node on a cycle | 0 | 25 (0.3 %) |
+| a dormant node | 0 | 0 |
+| several at once | 0 | 0 |
+
+No refusal names a dormant node, so the module rule's fix holds on this build. "No larger" carries 4 % and 0.3 %, so
+the module rule has no second fault of any size. The overlap test carries most of the plants' refusals on both worlds,
+a bare majority on 6204. By the test written before the run, the overlap rule is now what limits a plant's growth, and
+it goes to the owner with this count. The probe's list of causes held one the pre-statement did not name. The body
+plan's depth limit carries a third to a half of the refusals: a module whose subtree would sit deeper in the body graph
+than development allows is pruned. Regrowths of bitten modules were refused 55 times on 6203, all for overlap, and none
+on 6204.
