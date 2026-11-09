@@ -361,6 +361,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D337](#d337) | No shot blurs: a hero holds much of the frame and is clear, a crowded frame keeps everything clear, and fog alone makes the background recede | 2026-11-09 | ruled by the owner on 2026-11-09, refining their focus ruling of the same day (D336) |
 | [D338](#d338) | Depth of field only when a clear hero takes up much of the frame; otherwise everything near is clear and fog makes the background recede | 2026-11-09 | ruled by the owner on 2026-11-09, correcting the coordinator's reading recorded as D337 |
 | [D339](#d339) | Focus is set per shot and judged frame by frame; the two-fifths line only sets the default | 2026-11-09 | ruled by the owner on 2026-11-09, refining D338 |
+| [D340](#d340) | The camera holds still only when an action carries the shot; otherwise it moves slowly, with a purpose | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327), after the owner asked that day why the camera stays still when nothing much is happening |
 
 ---
 
@@ -11849,3 +11850,23 @@ frame or its near bodies, or a frame that is evenly soft.
 
 **Why.** The owner judges clarity frame by frame. A light softness far back can sit well in one frame and muddy another,
 and no single rule decides that.
+
+### D340
+**The camera holds still only when an action carries the shot; otherwise it moves slowly, with a purpose** · 2026-11-09
+
+**Status:** decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327), after the
+owner asked that day why the camera stays still when nothing much is happening. The owner accepts a still camera when
+the action carries the shot, such as a creature swimming into frame to eat a leaf.
+
+**Decision.** A shot's camera holds still only when an action in frame carries it: an animal enters and eats, a birth, a
+fight, a death. Every other shot moves, slowly and with a purpose: a push toward the subject, a rise up a column, an orbit
+round a group, or a drift past near bodies so the depth shows. A text card in the corner sits over the moving picture.
+The moves start clearly visible and are dialled back (D262). The reviewer fails a still or near-still camera on a frame
+where nothing happens.
+
+**Why.** Eight of round 67's 27 filmed shots are cards, built as a calm, near-still frame so their text reads. 2.3a's
+sideways drift is so slow that its frames barely differ, and nothing happens in it. The reason for holding still was the
+card, never the picture, and no review had judged motion against it.
+
+**Not settled.** The moves' speeds are judged on clips, since stills cannot show them. Which card shots keep a still
+camera is decided shot by shot in the shot list, by whether the see line names an action.
