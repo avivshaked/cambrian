@@ -540,6 +540,30 @@
     "EVOSIM_THEATRE_WATER_GLOW": {
       "value": "1",
       "ruling": "D332: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), judged on the pass 12 sheets at theatre-look-pass7's pass12/director c7061b25: a warm halo round the sun on the window alone; it shows only where the frame reaches the sun; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_SUBJECT_SCREEN": {
+      "value": "0.25",
+      "ruling": "D334: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 1 at theatre-look-pass7's pass13/director aa3a4043, where 2.3a, 2.4b and 3.1a passed on these dials: a subject is sized by its width on screen, each drawn box measured as the ellipsoid inscribed in it, so a body seen at an angle still fills a quarter of the width (pass 12 measured 14 to 18 % where the plan said 0.25); in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_CANOPY_PLANTS": {
+      "value": "1",
+      "ruling": "D334: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 1 at theatre-look-pass7's pass13/director aa3a4043, where 2.3a, 2.4b and 3.1a passed on these dials: under CANOPY_GROUP the canopy descent searches producers round the densest column, so the leaves are the group and the subject; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_PLANTS_CLUSTER": {
+      "value": "1",
+      "ruling": "D334: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 1 at theatre-look-pass7's pass13/director aa3a4043, where 2.3a, 2.4b and 3.1a passed on these dials: a plants scene's heart is the nearest candidate with 4 or more producers within 1 m (then 1.5 and 2 m), so 2.3a frames one cluster of blades rather than 20 spread over 5.5 m; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_COLONY_LOW": {
+      "value": "1",
+      "ruling": "D334: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 1 at theatre-look-pass7's pass13/director aa3a4043, where 2.3a, 2.4b and 3.1a passed on these dials: the colony's pull-back look follows the anchor's and the kin's recorded paths and ends with the kin's lowest point a fifth up the frame; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_DOLLY_CUE": {
+      "value": "1",
+      "ruling": "D334: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 1 at theatre-look-pass7's pass13/director aa3a4043, where 2.3a, 2.4b and 3.1a passed on these dials: the dolly's bearing prefers leaves 1 to 4 m away that rise through the frame as the eye sinks, so the sink reads; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_SUBJECT_PROBE": {
+      "value": "1",
+      "ruling": "D334: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 1 at theatre-look-pass7's pass13/director aa3a4043, where 2.3a, 2.4b and 3.1a passed on these dials: logging only: each frame logs where the followed subject is drawn, so the film runs as its stills ran and its aim can be checked; in wide because the safari takes wide and events only"
     }
   },
   "close": {

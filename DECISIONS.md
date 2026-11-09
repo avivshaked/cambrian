@@ -355,6 +355,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D331](#d331) | Round 67's group shots close on one slow animal and end looking up, under the edge of Snell's window | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327) |
 | [D332](#d332) | Round 67's shots show the sunlit surface above the subject, and the director follows the shot list | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327) |
 | [D333](#d333) | The overlap rule stays for plants, and the body plan's depth limit is screened first | 2026-11-09 | ruled by the owner on 2026-11-09, option (a) of the coordinator's recommendation, after the refusal probe on the fixed build (`logbook/specs/plants-hold/refusal-probe.md`, "What the fixed build… |
+| [D334](#d334) | Round 67's director dials of pass 13 join the film look, the band stays unlit, and pass 15 films the three shots that passed their stills | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of the first two stills rounds, saved as they came… |
 
 ---
 
@@ -11698,3 +11699,40 @@ which would leave the forest as it is.
 screen's pre-registration, since `MaxDepth` today bounds every body's development, animals' included. So are the limit's
 value and the screen's marks. Each forest world after the change is a new realisation, and each part costs about 22 µs
 of compute per simulated second.
+
+### D334
+**Round 67's director dials of pass 13 join the film look, the band stays unlit, and pass 15 films the three shots that passed their stills** · 2026-11-09
+
+**Status:** decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327), on the
+reviewer's verdicts of the first two stills rounds, saved as they came
+(`scratch/story-video/round-67-202611061206/film-stills-1-review.md` and `film-stills-2-review.md`). It adds to D332 and
+keeps D332's `MIRROR_LIT` 0. The stills were rendered on `theatre-look-pass7`'s `pass13/director` at `aa3a4043`, which is
+pass 15's theatre commit once its dials-off check reads identical to its reference.
+
+**Decision.** In `wide`, the film look (`scripts/theatre-film-look.json`) adds `SUBJECT_SCREEN` 0.25, `CANOPY_PLANTS` 1,
+`PLANTS_CLUSTER` 1, `COLONY_LOW` 1, `DOLLY_CUE` 1 and `SUBJECT_PROBE` 1, which only logs. Pass 15 films the three shots
+that passed, 2.3a, 2.4b and 3.1a, now. The other nine shots and the three founder portraits go to a third stills round.
+
+**Why.** Twelve shots were stilled in three versions: the look as it stood (A), the band under the surface lit to half (B,
+`MIRROR_LIT` 0.5) and lit fully (C, 1.0). Three shots passed, each on A alone, so there was no choice among versions to
+make. Every B and C failed, and wherever the dial changed the picture it took tone and edges under the reference's floors.
+The frame's mean luma moved by 3 at most across the versions, so lifting the band darkened the lower frame by about as
+much (inference: the look renormalises exposure, not traced). With the subject sized by its width on screen, subjects
+measured 0.23 to 0.25 of the width, against 14 to 18 % in pass 12. 2.4b's second take holds the newborn beside the parent,
+and no review called the window's patches overdone, which settles two of D332's open points. Motion can be judged only on a
+filmed clip, and the three shots cost about 25 minutes of card.
+
+**Rejected.**
+- `MIRROR_LIT` 0.5 and 1.0 as the band's fix.
+- Holding the three passing shots until a later stills round, so that one pass films every shot. It would leave their
+  motion unjudged for hours with the card free.
+
+**Not settled.**
+- The band under the surface still reads dark on 1.3a, 1.6a, 2.2a, 2.4a, 2.6a and the portraits, and needs a lever that does
+  not feed the exposure. The theatre lane looks for one.
+- Most of the nine failing shots fail on framing and subject: an empty lower half, animals as specks, a lone body where a
+  crowd was asked. 2.5a still plays as a card. The founder portraits are dark, flat and soft, and 6.3a's re-plans ran out at
+  0.18 of the width.
+- 2.5a's portrait plan evaluated no candidate in its clash search. The fix is built behind a dial that stays off unless a
+  review fails a shot for it.
+- The reviewer saw a faint square grid in 1.2a's water, which may be an artefact.
