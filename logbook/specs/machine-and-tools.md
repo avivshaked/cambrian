@@ -286,6 +286,13 @@ The root file's rules still apply. The entries below were moved word for word, s
     `powershell` names from Git Bash, it printed "cpu temp n/a" on 2026-11-10 while Afterburner ran and
     `pwsh` read 71 °C from the same shared memory. Its catch swallows the failure, so a 5.1 look reads as if
     Afterburner were down.
+  - **VS Code's Python tooling can flood the machine with file scans.** From 11:16 on 2026-11-10 it ran
+    `rg.exe --files --hidden --no-ignore --follow -g **/{*.py,...,pyvenv.cfg,...}` over the whole workspace,
+    children of VS Code's NodeService, faster than they finished: over 3,700 at once and committed memory at
+    125.7 GiB, until the owner restarted the machine. A new worktree of 5,019 files under `scratch/` is the
+    likely trigger (inference). The extension passes VS Code its own exclude list, so workspace settings
+    (`search.exclude`, `files.watcherExclude`) did not stop it. Over 200 `rg.exe` is a storm: tell the owner at
+    once. Until the extension is switched off for this workspace, no new worktree goes under `scratch/`.
   - **Closing Afterburner stops every Unity lane.** The guards refuse a launch, and stop a running one,
     once the CPU is unreadable for 10 s. On 2026-11-10 the owner closed it while changing its on-screen
     display, and check7 and two batches stopped until it was started again. To hide the readout that
