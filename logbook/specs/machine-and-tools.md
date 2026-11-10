@@ -304,6 +304,9 @@ The root file's rules still apply. The entries below were moved word for word, s
     `chrome-headless-shell` child ran on all 32 cores and took about 12.8 of them, and the heat guard stopped a theatre
     render at 94 °C read twice. Check a pinned job's children's affinity within minutes of its start. Grant a heavy CPU
     job only beside at most one Unity lane, and stop it if its guard's reading and `temp-check.ps1` disagree.
+    At 18:13 the same day a chunked render under a 20 % CPU rate cap tripped the heat guard at 91 °C twice
+    within nine seconds of its first chrome starting, beside a single Unity lane. A rate cap does not bound the start-up
+    spike. Another project's heavy CPU job runs only while every Unity lane is idle.
   - **Closing Afterburner stops every Unity lane.** The guards refuse a launch, and stop a running one,
     once the CPU is unreadable for 10 s. On 2026-11-10 the owner closed it while changing its on-screen
     display, and check7 and two batches stopped until it was started again. To hide the readout that
