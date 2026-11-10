@@ -23,7 +23,23 @@ if (-not $running) {
 $check = Join-Path $PSScriptRoot 'temp-check.ps1'
 for ($i = 0; $i -lt $WaitSeconds; $i += 5) {
     $line = & pwsh -NoProfile -File $check 2>&1 | Select-Object -Last 1
-    if ($line -match 'cpu \d+C') { "{0}  CPU reading present: {1}" -f (& $stamp), $line; exit 0 }
+    if ($line -match 'cpu \d+C') {
+        "{0}  CPU reading present: {1}" -f (& $stamp), $line
+        # The theatre's render guard writes the global STOP with its time and reason on a trip. A trip for the missing reading is
+        # cleared here once the reading is back. A heat trip's STOP, or one with no reason inside, stays for a person (the
+        # coordinator, 2026-11-10).
+        $stop = Join-Path (Split-Path -Parent $PSScriptRoot) 'scratch\theatre-realism\STOP'
+        if (Test-Path -LiteralPath $stop) {
+            $why = (Get-Content -LiteralPath $stop -Raw)
+            if ($why -match 'CPU temperature unreadable') {
+                Remove-Item -LiteralPath $stop
+                "{0}  cleared the global STOP, a trip for the missing reading: {1}" -f (& $stamp), $why.Trim()
+            } else {
+                "{0}  the global STOP stays (not a missing-reading trip): {1}" -f (& $stamp), $(if ($why) { $why.Trim() } else { 'no reason inside' })
+            }
+        }
+        exit 0
+    }
     Start-Sleep -Seconds 5
 }
 "{0}  no CPU reading after {1} s: tell the owner" -f (& $stamp), $WaitSeconds
