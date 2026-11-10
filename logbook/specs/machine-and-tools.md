@@ -289,10 +289,16 @@ The root file's rules still apply. The entries below were moved word for word, s
   - **VS Code's Python tooling can flood the machine with file scans.** From 11:16 on 2026-11-10 it ran
     `rg.exe --files --hidden --no-ignore --follow -g **/{*.py,...,pyvenv.cfg,...}` over the whole workspace,
     children of VS Code's NodeService, faster than they finished: over 3,700 at once and committed memory at
-    125.7 GiB, until the owner restarted the machine. A new worktree of 5,019 files under `scratch/` is the
-    likely trigger (inference). The extension passes VS Code its own exclude list, so workspace settings
-    (`search.exclude`, `files.watcherExclude`) did not stop it. Over 200 `rg.exe` is a storm: tell the owner at
-    once. Until the extension is switched off for this workspace, no new worktree goes under `scratch/`.
+    125.7 GiB, until the owner restarted the machine. The trigger was very likely a new Python virtual environment
+    of about 24,000 files in the music-video project, whose `pyvenv.cfg` was written at 11:16:23, four seconds
+    before the first scan; a worktree of 5,019 files under `scratch/` came at about the same minute. The
+    scans look for environments, so the Python Environments extension is the likely source (inference). It
+    passes VS Code its own exclude list, so workspace settings (`search.exclude`, `files.watcherExclude`) did
+    not stop it. The fix at the source is the Python extensions switched off per workspace (the owner's action).
+    Over 200 `rg.exe` is a storm: tell the owner at once. The owner ruled on 2026-11-10 that any session may stop
+    VS Code's `rg.exe` children when more than 300 are alive, and tell the owner after:
+    `pwsh -File scripts/storm-stop.ps1 -Stop` (without `-Stop` it only reports). No new worktree or virtual
+    environment goes into a workspace while its Python extensions are on.
   - **Closing Afterburner stops every Unity lane.** The guards refuse a launch, and stop a running one,
     once the CPU is unreadable for 10 s. On 2026-11-10 the owner closed it while changing its on-screen
     display, and check7 and two batches stopped until it was started again. To hide the readout that
