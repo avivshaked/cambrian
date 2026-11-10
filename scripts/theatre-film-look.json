@@ -592,6 +592,42 @@
     "EVOSIM_THEATRE_FOCUS_RULE": {
       "value": "1",
       "ruling": "D342: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills rounds 4 and 5 at theatre-look-pass7's pass13 e49e12eb and the coordinator's full-size read (logbook/specs/r67-film-look/); in wide because the safari takes wide and events only; the lens follows D341 per take: off unless a hero holds 0.4 of the width or more, then full and locked on the hero; 1.3a and 2.3a pass with it and fail F9 without it"
+    },
+    "EVOSIM_THEATRE_HERO_SCREEN": {
+      "value": "0.5",
+      "ruling": "D344: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 18's 2.3a J, which passed stills 8 (logbook/specs/r67-film-look/stills8-review.md); in wide because film.py sets the theatre's dials from the look alone; the share of the width a hero is asked to hold, wherever SUBJECT_SCREEN is asked (the F set, under every stills variant since round 5)"
+    },
+    "EVOSIM_THEATRE_BIRTH_PUSH": {
+      "value": "0.15",
+      "ruling": "D344: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 18's 2.3a J, which passed stills 8 (logbook/specs/r67-film-look/stills8-review.md); in wide because film.py sets the theatre's dials from the look alone; a birth welcomes the newborn with a slight push-in, as the owner ruled on 2026-11-09 (the F set)"
+    },
+    "EVOSIM_THEATRE_BIRTH_NEAR_CHILD": {
+      "value": "1",
+      "ruling": "D344: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 18's 2.3a J, which passed stills 8 (logbook/specs/r67-film-look/stills8-review.md); in wide because film.py sets the theatre's dials from the look alone; a birth's planner takes a child that lands near its parent, since most newborns land 14 to 26 m off (the F set)"
+    },
+    "EVOSIM_THEATRE_DOLLY_GROUP": {
+      "value": "1",
+      "ruling": "D344: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 18's 2.3a J, which passed stills 8 (logbook/specs/r67-film-look/stills8-review.md); in wide because film.py sets the theatre's dials from the look alone; on a descent with the dolly, the dolly sinks beside its group instead of above it, so the group stays in frame (the F set)"
+    },
+    "EVOSIM_THEATRE_CARD_MOVE": {
+      "value": "4",
+      "ruling": "D344: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 18's 2.3a J, which passed stills 8 (logbook/specs/r67-film-look/stills8-review.md); in wide because film.py sets the theatre's dials from the look alone; a card's camera moves rather than holds still, as D340 asks (2.3a J); every other card shot is stilled under it before it films"
+    },
+    "EVOSIM_THEATRE_CARD_RISE": {
+      "value": "4",
+      "ruling": "D344: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 18's 2.3a J, which passed stills 8 (logbook/specs/r67-film-look/stills8-review.md); in wide because film.py sets the theatre's dials from the look alone; a card rises along its column of plants (2.3a J)"
+    },
+    "EVOSIM_THEATRE_CARD_PUSH": {
+      "value": "0.5",
+      "ruling": "D344: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 18's 2.3a J, which passed stills 8 (logbook/specs/r67-film-look/stills8-review.md); in wide because film.py sets the theatre's dials from the look alone; a card's push-in (2.3a J), the move that carried J's B4"
+    },
+    "EVOSIM_THEATRE_CARD_NEAR": {
+      "value": "2",
+      "ruling": "D344: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 18's 2.3a J, which passed stills 8 (logbook/specs/r67-film-look/stills8-review.md); in wide because film.py sets the theatre's dials from the look alone; a card's group ranked by the surface's limit alone, as round 5 did (2.3a J's blade group 119608)"
+    },
+    "EVOSIM_THEATRE_CARD_EDGE": {
+      "value": "1",
+      "ruling": "D344: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 18's 2.3a J, which passed stills 8 (logbook/specs/r67-film-look/stills8-review.md); in wide because film.py sets the theatre's dials from the look alone; a card's search for a framing with no near body cut (2.3a J); where none holds, today's choice stands"
     }
   },
   "close": {

@@ -365,6 +365,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D341](#d341) | A shot without a hero has no blur at all: everything is clear, and fog alone makes the far field disappear | 2026-11-09 | ruled by the owner on 2026-11-09, on looking at the 3840 by 2160 still of 2.3a, rendered with pass 15's lens |
 | [D342](#d342) | Round 67's film look takes the focus rule, the nearer fog, the half-float target and a higher window cap | 2026-11-10 | decided by the coordinator on 2026-11-10, under the owner's delegation of the films' look (D327) |
 | [D343](#d343) | Round 67's film reviewer judges a hero's sharpness by eye and the film's effects as effects, the meter rises to 0.24, and the near shots go first | 2026-11-10 | ruled by the owner on 2026-11-10, who chose to clarify the reviewer's bar and work the near shots first |
+| [D344](#d344) | Round 67's film look takes the focus set and 2.3a J's card dials, and pass 18 films 2.3a | 2026-11-10 | decided by the coordinator on 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order |
 
 ---
 
@@ -11993,3 +11994,27 @@ parts are decided by the coordinator, under the owner's delegation of the films'
   20426.25 s, which reads as the newborn (the coordinator's inference). The pair search finds no framing that holds both
   bodies whole with the parent at 0.4 of the width.
 - 6.4a's first take: the newborn lands away from its parent, so the two may not share a frame at 0.4.
+
+### D344
+**Round 67's film look takes the focus set and 2.3a J's card dials, and pass 18 films 2.3a** · 2026-11-10
+
+**Status:** decided by the coordinator on 2026-11-10, under the owner's delegation of the films' look (D327) and D343's
+order. It adds nine dials to the film look's `wide` section; nothing it amends is reversed.
+- **What it rests on:** stills 8 at `pass13/hero` `81262eb6`, whose dials-off check is identical to its reference. The
+  reviewer passed 2.3a J (`film-stills-8-review.md` in the round's film folder), and the coordinator read J's five stills
+  at full size and agreed (`logbook/specs/r67-film-look/stills8-review.md`).
+
+**Decision.** The film look's `wide` section sets:
+- **The focus set,** under every stills variant since round 5: `HERO_SCREEN` 0.5, `BIRTH_PUSH` 0.15,
+  `BIRTH_NEAR_CHILD` 1 and `DOLLY_GROUP` 1, beside D342's `FOCUS_RULE` 1.
+- **J's card dials:** `CARD_MOVE` 4, `CARD_RISE` 4, `CARD_PUSH` 0.5, `CARD_NEAR` 2 and `CARD_EDGE` 1.
+
+Pass 18 films 2.3a alone on worker 7 at `81262eb6`, one Unity on the machine at a time.
+
+**Why.** `film.py` sets the theatre's dials from the look alone, with no dials for one shot. A pass filmed without the
+nine would film a different take from the one that passed. The focus set has framed every stills round since round 5,
+so the look should hold it anyway. The card dials act on card shots alone, and every other card shot is stilled under
+them before it films, so none is filmed under them unseen. D334 and D335 put director dials in the look the same way.
+
+**Rejected:** a setting in `film.py` for one shot's dials. It keeps the look as ruled, but costs about an hour of building
+before pass 18; it stays the route if a card dial proves wrong for another card shot.
