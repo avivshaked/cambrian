@@ -299,6 +299,11 @@ The root file's rules still apply. The entries below were moved word for word, s
     VS Code's `rg.exe` children when more than 300 are alive, and tell the owner after:
     `pwsh -File scripts/storm-stop.ps1 -Stop` (without `-Stop` it only reports). No new worktree or virtual
     environment goes into a workspace while its Python extensions are on.
+  - **A pinned job can leak its affinity, and a CPU job beside two Unity lanes ran the CPU to 94 °C.** On 2026-11-10
+    the coordinator gave another project's Remotion render 8 cores (mask 0xF0F000) beside both theatre lanes. One
+    `chrome-headless-shell` child ran on all 32 cores and took about 12.8 of them, and the heat guard stopped a theatre
+    render at 94 °C read twice. Check a pinned job's children's affinity within minutes of its start. Grant a heavy CPU
+    job only beside at most one Unity lane, and stop it if its guard's reading and `temp-check.ps1` disagree.
   - **Closing Afterburner stops every Unity lane.** The guards refuse a launch, and stop a running one,
     once the CPU is unreadable for 10 s. On 2026-11-10 the owner closed it while changing its on-screen
     display, and check7 and two batches stopped until it was started again. To hide the readout that
