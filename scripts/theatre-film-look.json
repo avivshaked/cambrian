@@ -628,6 +628,42 @@
     "EVOSIM_THEATRE_CARD_EDGE": {
       "value": "1",
       "ruling": "D344: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 18's 2.3a J, which passed stills 8 (logbook/specs/r67-film-look/stills8-review.md); in wide because film.py sets the theatre's dials from the look alone; a card's search for a framing with no near body cut (2.3a J); where none holds, today's choice stands"
+    },
+    "EVOSIM_THEATRE_SUBJECT_HOLD": {
+      "value": "1",
+      "ruling": "D345: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 19's 4.1a A, which passed stills 9 (the reviewer and the coordinator's full-size read); in wide because film.py sets the theatre's dials from the look alone; a portrait holds its subject's size on screen for the whole take, moving the eye in or out frame by frame"
+    },
+    "EVOSIM_THEATRE_HERO_ROOM": {
+      "value": "1",
+      "ruling": "D345: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 19's 4.1a A, which passed stills 9 (the reviewer and the coordinator's full-size read); in wide because film.py sets the theatre's dials from the look alone; a hero portrait keeps a margin between the hero's far edge and the frame's edge"
+    },
+    "EVOSIM_THEATRE_HERO_FOLLOW": {
+      "value": "0.5",
+      "ruling": "D345: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 19's 4.1a A, which passed stills 9 (the reviewer and the coordinator's full-size read); in wide because film.py sets the theatre's dials from the look alone; a hero portrait's followed centre eases toward the drawn body in 0.5 s, not 1.5 s"
+    },
+    "EVOSIM_THEATRE_HERO_ZOOM": {
+      "value": "1",
+      "ruling": "D345: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 19's 4.1a A, which passed stills 9 (the reviewer and the coordinator's full-size read); in wide because film.py sets the theatre's dials from the look alone; a hero portrait narrows its lens when the hold is at its nearest and the hero takes less of the width than asked"
+    },
+    "EVOSIM_THEATRE_FOCUS_FOLLOW": {
+      "value": "1",
+      "ruling": "D345: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 19's 4.1a A, which passed stills 9 (the reviewer and the coordinator's full-size read); in wide because film.py sets the theatre's dials from the look alone; on a take whose focus level the rule judged by the hero's width, the blur follows that width, easing off when the hero falls under two fifths, as F9 asks; it reaches births as well as portraits"
+    },
+    "EVOSIM_THEATRE_PORTRAIT_LOW": {
+      "value": "1",
+      "ruling": "D345: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 19's 4.1a A, which passed stills 9 (the reviewer and the coordinator's full-size read); in wide because film.py sets the theatre's dials from the look alone; a portrait holds its orbit low and tilted up, so the lit surface stays in frame behind the hero"
+    },
+    "EVOSIM_THEATRE_PORTRAIT_WHOLE": {
+      "value": "2",
+      "ruling": "D345: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 19's 4.1a A, which passed stills 9 (the reviewer and the coordinator's full-size read); in wide because film.py sets the theatre's dials from the look alone; a portrait keeps its hero whole inside all four edges, lowering the look and then widening the lens"
+    },
+    "EVOSIM_THEATRE_PORTRAIT_BACKDROP": {
+      "value": "1",
+      "ruling": "D345: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 19's 4.1a A, which passed stills 9 (the reviewer and the coordinator's full-size read); in wide because film.py sets the theatre's dials from the look alone; a portrait's orbit bearing is chosen for the bodies and plants standing behind the hero"
+    },
+    "EVOSIM_THEATRE_PORTRAIT_NEAR": {
+      "value": "0.4",
+      "ruling": "D345: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 19's 4.1a A, which passed stills 9 (the reviewer and the coordinator's full-size read); in wide because film.py sets the theatre's dials from the look alone; a portrait's hold may come in to 0.4 m from the hero's nearest drawn corner, so the hero fills its share before the lens narrows"
     }
   },
   "close": {

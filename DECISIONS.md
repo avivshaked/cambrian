@@ -366,6 +366,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D342](#d342) | Round 67's film look takes the focus rule, the nearer fog, the half-float target and a higher window cap | 2026-11-10 | decided by the coordinator on 2026-11-10, under the owner's delegation of the films' look (D327) |
 | [D343](#d343) | Round 67's film reviewer judges a hero's sharpness by eye and the film's effects as effects, the meter rises to 0.24, and the near shots go first | 2026-11-10 | ruled by the owner on 2026-11-10, who chose to clarify the reviewer's bar and work the near shots first |
 | [D344](#d344) | Round 67's film look takes the focus set and 2.3a J's card dials, and pass 18 films 2.3a | 2026-11-10 | decided by the coordinator on 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order |
+| [D345](#d345) | Round 67's film look takes 4.1a A's portrait dials, and pass 19 films 4.1a | 2026-11-10 | decided by the coordinator on 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, as D344 was |
 
 ---
 
@@ -12018,3 +12019,25 @@ them before it films, so none is filmed under them unseen. D334 and D335 put dir
 
 **Rejected:** a setting in `film.py` for one shot's dials. It keeps the look as ruled, but costs about an hour of building
 before pass 18; it stays the route if a card dial proves wrong for another card shot.
+
+### D345
+**Round 67's film look takes 4.1a A's portrait dials, and pass 19 films 4.1a** · 2026-11-10
+
+**Status:** decided by the coordinator on 2026-11-10, under the owner's delegation of the films' look (D327) and D343's
+order, as D344 was. It adds nine dials to the film look's `wide` section.
+- **What it rests on:** stills 9 at `pass13/hero` `87b3fd50`, whose dials-off check is identical to its reference. The
+  reviewer passed 4.1a A and B (`film-stills-9-review.md` in the round's film folder). The coordinator read A's five stills
+  at full size: 19 holds two fifths to half of the width, whole and sharp under the lit surface, with coral behind it.
+
+**Decision.** The film look's `wide` section sets `SUBJECT_HOLD` 1, `HERO_ROOM` 1, `HERO_FOLLOW` 0.5, `HERO_ZOOM` 1,
+`FOCUS_FOLLOW` 1, `PORTRAIT_LOW` 1, `PORTRAIT_WHOLE` 2, `PORTRAIT_BACKDROP` 1 and `PORTRAIT_NEAR` 0.4. Pass 19 films 4.1a
+alone on worker 7, one Unity on the machine at a time. A is filmed, not B, because the coordinator read A, and A's nearer
+limit of 0.4 m stretches the neck less in perspective than B's 0.3 m.
+
+**Why.** `film.py` sets the theatre's dials from the look alone (D344). Seven of the nine act on hero portraits only, and
+every other portrait is stilled under them before it films. `FOCUS_FOLLOW` reaches births too, but only to ease the blur
+off when the hero falls under two fifths of the width, which is F9's own rule.
+
+**Not settled.** The reviewer noted, as no fault, that 19 sits near the centre with its tail reaching the right third,
+where the see line asks for it a third off centre to the left and the corner card stands. The edit decides whether the
+card and the tail clash; a framing shifted left is the fix if they do.
