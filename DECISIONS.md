@@ -370,6 +370,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D346](#d346) | A birth's bubbles start half a second early, and the wound's see-through plume waits on a look in motion | 2026-11-10 | ruled by the owner on 2026-11-10, on the coordinator's recommendations, after the full-size pairs in `scratch/owner/r67-effects-pairs-full-size/` |
 | [D347](#d347) | Round 67's hard shots are framed by a camera rig per shot type, with named subjects, and are no longer retried | 2026-11-10 | ruled by the owner on 2026-11-10, when the coordinator asked whether the hard shots should be capped at two more stills rounds |
 | [D348](#d348) | A shot's camera is keyed on its subject and second, never on its place in a story | 2026-11-10 | decided by the coordinator on 2026-11-10, under D347 and the owner's delegation of the films' look (D327) |
+| [D349](#d349) | A bite's crumbs are drawn as small torn flakes, not soft discs | 2026-11-10 | ruled by the owner on 2026-11-10, on the coordinator's recommendation, after the full-size pairs in `scratch/owner/r67-crumb-flakes-full-size/` |
 
 ---
 
@@ -12132,3 +12133,22 @@ build, `pass13/hero` `3aff7ad1`, is identical to its reference with the dial off
 
 **Rejected.** Keeping the index key and matching each shot's index across passes, which ties the final pass's order to
 the stills' order across 70 shots.
+
+### D349
+**A bite's crumbs are drawn as small torn flakes, not soft discs** · 2026-11-10
+
+**Status:** ruled by the owner on 2026-11-10, on the coordinator's recommendation, after the full-size pairs in
+`scratch/owner/r67-crumb-flakes-full-size/`. It amends how D281, D289 and D290's crumbs are drawn, and closes D346's
+open item on the flakes.
+
+**Decision.** The look's `events` section sets `CRUMB_FLAKES` 3, and the dial leaves the `trial` list. A bite's crumbs,
+an animal's and a plant's alike, are small torn flakes in the crumbs' own colour. None is drawn longer than 3 times its
+width or wider than 2 % of the frame, and a crumb fades out within 0.6 m of the eye and is gone at 0.3 m
+(`pass13/hero` `1a4ba5e5`). The safari reads the same section, so it draws the same crumbs.
+
+**Why.** In pairs U (2.4b) and W (6.4a), the discs read as lens blur and the flakes as torn tissue or leaf. The first
+flakes drew needles, edge-on strips one pixel wide, which the length cap removed. The next drew slabs, flakes close to
+the lens, which the size cap and the near fade removed. The coordinator read all six seconds at full size and found
+neither in the last version. The flakes are smaller than the discs and may be easier to miss in a wide shot (inference).
+
+**Rejected.** Keeping the discs.

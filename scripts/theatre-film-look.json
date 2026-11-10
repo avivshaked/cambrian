@@ -701,6 +701,10 @@
       "value": "1",
       "ruling": "D281: a bite shows its crumbs and no flash"
     },
+    "EVOSIM_THEATRE_CRUMB_FLAKES": {
+      "value": "3",
+      "ruling": "D349: the owner, 2026-11-10, on the coordinator's recommendation after pairs U and W (scratch/owner/r67-crumb-flakes-full-size/): a bite's crumbs are small torn flakes in the crumbs' colour, none drawn longer than 3 times its width or wider than 0.02 of the frame, fading out within 0.6 m of the eye (pass13/hero 1a4ba5e5)"
+    },
     "EVOSIM_THEATRE_PLANT_CRUMBS": {
       "value": "1",
       "ruling": "D289 and D290: a bitten plant throws off its own fragments, more at a kill"
@@ -764,7 +768,6 @@
   },
   "trial": {
     "EVOSIM_THEATRE_WOUND_PLUME_HAZE": "the plume as a murk; under A/B",
-    "EVOSIM_THEATRE_CRUMB_FLAKES": "the crumbs as torn flakes; an A/B only (D290)",
     "EVOSIM_THEATRE_BIRTH_BUBBLES_COVER": "the bubbles' cover and cluster; under A/B",
     "EVOSIM_THEATRE_BIRTH_BUBBLES_OBLATE": "under A/B",
     "EVOSIM_THEATRE_BIRTH_BUBBLES_RISE2": "under A/B",
