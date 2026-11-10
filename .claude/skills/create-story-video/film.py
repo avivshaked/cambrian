@@ -1764,6 +1764,29 @@ def read_tsv(path):
     return [dict(zip(rows[0], r)) for r in rows[1:]] if rows else []
 
 
+# From a4ee1687 every film window writes one line at its first frame, always on. Round 67's pass 21 drew no gripping
+# plant in any plant window, because the theatre developed bodies without the run's cell table, and the only sign was
+# one unread "Genome is not well-formed" warning. These reasons are bodies the window failed to draw; the others
+# (remains, drawn by the remains view, and place-refused, a pose kept where it stood) are not faults.
+DROPS = re.compile(r"\[Theatre\] window drops at the first frame: (?P<n>\d+) of (?P<m>\d+) bodies(?: at (?P<t>[0-9.]+) s)?; "
+                   r"by reason (?P<reasons>[^;]*);")
+DROP_FAULTS = {"no-plan", "pose-refused", "no-genome-row", "null-genome"}
+
+
+def drops_log_fault(log, start_s):
+    """(fault, note) for the film window that opens at start_s: fault names the bodies it left undrawn, or is None;
+    note is "drawn bodies unchecked" when the log holds no drops line for that second (a build before a4ee1687)."""
+    found = [d for d in DROPS.finditer(log) if d.group("t") is not None and abs(float(d.group("t")) - start_s) <= 0.5]
+    if not found:
+        return None, "drawn bodies unchecked (the theatre's log has no window drops line at its first frame)"
+    for d in found:
+        bad = [(w, int(c)) for w, c in re.findall(r"([a-z-]+) (\d+)", d.group("reasons")) if w in DROP_FAULTS]
+        if bad:
+            return (f"the film window left bodies undrawn at its first frame, {d.group('t')} s: "
+                    + ", ".join(f"{w} {c}" for w, c in bad) + f" of {d.group('m')} bodies"), None
+    return None, None
+
+
 def take_frames(log, slug):
     """The frames of each take of a scene, in order, from the theatre's log, or None when the log holds no take
     line for exactly this slug. A scene filmed again in the same log is read from its last take 1 on."""
@@ -1891,6 +1914,10 @@ def cmd_collect(folder, k):
         if held_fault:
             errors.append(f"{where}: {held_fault}; its log film/pass-{k}/theatre-{e['arm']}.log")
             continue
+        drops_fault, drops_note = drops_log_fault(log, e["clip_start_s"])
+        if drops_fault:
+            errors.append(f"{where}: {drops_fault}; its log film/pass-{k}/theatre-{e['arm']}.log")
+            continue
         if skin_of(s) and not re.search(skin_pattern(s), log):
             errors.append(f"{where}: the theatre's log does not show the skin it was asked for ({skin_of(s)})")
             continue
@@ -1924,6 +1951,8 @@ def cmd_collect(folder, k):
         if ratio is not None and ratio >= JUMP_FLAG:
             notes.append(f"a frame-to-frame change {ratio} times the clip's median")
             flags.append("jump")
+        if drops_note:
+            notes.append(drops_note)
         if takes is None:
             notes.append("the take boundaries were not read (" + ("the theatre's log has no take line for this scene"
                          if not take_frames(logs.get(e["arm"], ""), row["slug"]) else

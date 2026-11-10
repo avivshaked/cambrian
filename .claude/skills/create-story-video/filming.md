@@ -192,6 +192,14 @@ each named body's hue by its turn, a signed fraction of the colour wheel. It rea
   holds that second, and its bodies freeze while the camera moves on. The director then logs
   `WARNING: N frame(s) of <slug> were asked for past the window's last frame at T s and show it held; plan the window
   longer`, and `collect` refuses that clip with the frames and the second.
+- **`collect` refuses a take whose window left bodies undrawn.** From build a4ee1687 every film window writes
+  `[Theatre] window drops at the first frame: <n> of <m> bodies at <second> s; by reason <word k, ...>; by flags ...`.
+  `collect` reads the line whose second is the scene's clip start. It refuses the clip when a reason is `no-plan`,
+  `pose-refused`, `no-genome-row` or `null-genome`, and names the second and the counts. `remains` (drawn by the remains
+  view) and `place-refused` (a pose that is not finite, kept where it stood) are not faults. A log with no such line, from
+  an earlier build, is noted as "drawn bodies unchecked", never passed. Round 67's pass 21 drew no gripping plant in any
+  plant window, because the theatre developed bodies without the run's cell table, and the only sign was one unread
+  warning.
 
 ## A shot's canopy
 
