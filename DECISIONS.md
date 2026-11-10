@@ -363,7 +363,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D339](#d339) | Focus is set per shot and judged frame by frame; the two-fifths line only sets the default | 2026-11-09 | ruled by the owner on 2026-11-09, refining D338 |
 | [D340](#d340) | The camera holds still only when an action carries the shot; otherwise it moves slowly, with a purpose | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327), after the owner asked that day why the camera stays still when nothing much is happening |
 | [D341](#d341) | A shot without a hero has no blur at all: everything is clear, and fog alone makes the far field disappear | 2026-11-09 | ruled by the owner on 2026-11-09, on looking at the 3840 by 2160 still of 2.3a, rendered with pass 15's lens |
-| [D342](#d342) | Round 67's film look takes the focus rule, the nearer fog, the half-float target and a higher window cap | 2026-11-10 | decided by the coordinator on 2026-11-10, under the owner's delegation of the films' look (D327). - **It amends D330's fog,** from 6 to 20 m to 3 to 10 m |
+| [D342](#d342) | Round 67's film look takes the focus rule, the nearer fog, the half-float target and a higher window cap | 2026-11-10 | decided by the coordinator on 2026-11-10, under the owner's delegation of the films' look (D327) |
 
 ---
 
