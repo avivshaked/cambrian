@@ -85,7 +85,9 @@ the subjects at half the size, and only an eye on the sheet caught it.
 Every theatre build renders a fixed reference scene and reports minutes per scene, seconds per frame and log lines per
 frame. A build over its budget fails like a failing test. The log budget alone would have caught the printing fault in
 seconds. Distance culling of skins and drawing (`SKIN_CULL`) becomes the default once its
-pixel proof passes.
+pixel proof passes. At 20 m it built 3.7 times fewer skins and cut a frame's main-thread time by a third, but it is
+not invisible: far bodies still show through the fog at 20 m, and the culled frames lose them (cull proof 2, 2026-11-10).
+The next proof tries a longer distance.
 
 ### 6. One script runs the film
 
