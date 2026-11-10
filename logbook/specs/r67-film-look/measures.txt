@@ -1,0 +1,37 @@
+1.2a-A-1.png           luma   76.4 tone    63 edges  16.00 top5   59.5 bottom5   71.3 G/B 0.84
+1.2a-R-1.png           luma   76.3 tone    63 edges  15.88 top5   59.5 bottom5   71.3 G/B 0.84
+1.6a-A-1.png           luma   64.2 tone    72 edges  22.04 top5   61.5 bottom5   52.3 G/B 0.90
+1.6a-H-1.png           luma   65.4 tone    56 edges  17.99 top5   70.0 bottom5   42.3 G/B 0.85
+1.6a-I-1.png           luma   64.6 tone    58 edges  17.97 top5   66.4 bottom5   46.7 G/B 0.88
+1.6a-L-1.png           luma   64.0 tone    60 edges  19.90 top5   65.0 bottom5   46.6 G/B 0.87
+1.6a-W-1.png           luma   66.0 tone    86 edges  23.53 top5   78.4 bottom5   53.3 G/B 0.91
+2.2a-A-1.png           luma   62.0 tone    41 edges  14.94 top5   60.4 bottom5   48.1 G/B 0.86
+2.2a-H-1.png           luma   62.0 tone    37 edges  12.69 top5   67.1 bottom5   41.3 G/B 0.79
+2.2a-I-1.png           luma   61.0 tone    35 edges  12.55 top5   62.9 bottom5   42.9 G/B 0.82
+2.2a-L-1.png           luma   60.5 tone    35 edges  13.67 top5   62.2 bottom5   43.6 G/B 0.83
+2.2a-R-1.png           luma   61.9 tone    42 edges  14.71 top5   60.4 bottom5   48.1 G/B 0.86
+2.2a-W-1.png           luma   62.2 tone    43 edges  15.86 top5   63.7 bottom5   50.2 G/B 0.87
+2.5a-A-1.png           luma   65.0 tone    40 edges   7.15 top5   45.8 bottom5   55.7 G/B 0.78
+2.5a-H-1.png           luma   62.9 tone    37 edges   7.29 top5   61.3 bottom5   40.7 G/B 0.74
+2.5a-I-1.png           luma   62.2 tone    29 edges   5.18 top5   56.3 bottom5   45.6 G/B 0.76
+2.5a-L-1.png           luma   61.1 tone    31 edges   7.11 top5   51.4 bottom5   45.4 G/B 0.76
+2.5a-W-1.png           luma   64.8 tone    40 edges   7.62 top5   46.1 bottom5   58.4 G/B 0.78
+2.6a-A-1.png           luma   65.3 tone    37 edges  16.09 top5   51.8 bottom5   51.8 G/B 0.87
+2.6a-H-1.png           luma   72.0 tone    56 edges  18.15 top5   80.3 bottom5   45.8 G/B 0.84
+2.6a-I-1.png           luma   65.8 tone    31 edges   9.58 top5   61.9 bottom5   48.6 G/B 0.87
+2.6a-L-1.png           luma   67.2 tone    42 edges  16.82 top5   65.0 bottom5   47.6 G/B 0.86
+2.6a-W-1.png           luma   65.3 tone    37 edges  16.09 top5   51.8 bottom5   51.8 G/B 0.87
+4.1a-A-1.png           luma   60.0 tone    47 edges  12.69 top5   53.3 bottom5   62.6 G/B 0.80
+4.1a-H-1.png           luma   61.2 tone    35 edges  11.14 top5   62.4 bottom5   51.4 G/B 0.75
+4.1a-I-1.png           luma   59.9 tone    33 edges  10.46 top5   58.1 bottom5   55.0 G/B 0.78
+4.1a-L-1.png           luma   59.2 tone    39 edges  11.80 top5   56.6 bottom5   55.7 G/B 0.78
+4.1a-W-1.png           luma   59.8 tone    55 edges  13.20 top5   60.6 bottom5   62.1 G/B 0.80
+6.3a-A-1.png           luma   63.1 tone    41 edges  11.99 top5   52.6 bottom5   61.0 G/B 0.80
+6.3a-H-1.png           luma   63.3 tone    32 edges  10.35 top5   63.9 bottom5   44.6 G/B 0.76
+6.3a-I-1.png           luma   62.4 tone    25 edges   7.71 top5   59.6 bottom5   51.1 G/B 0.79
+6.3a-L-1.png           luma   61.6 tone    29 edges  11.14 top5   57.0 bottom5   51.0 G/B 0.78
+6.3a-W-1.png           luma   63.1 tone    40 edges  13.78 top5   57.7 bottom5   63.4 G/B 0.81
+ref ref-40.png             luma   54.8 tone    62 edges  36.85 top5   74.2 bottom5   41.3 G/B 0.93
+ref ref-100.png            luma   60.3 tone    47 edges  17.81 top5   81.0 bottom5   49.6 G/B 0.88
+ref ref-160.png            luma   59.2 tone    51 edges  24.87 top5   77.4 bottom5   40.6 G/B 0.92
+ref ref-220.png            luma   68.2 tone    63 edges  30.97 top5   88.4 bottom5   42.0 G/B 0.96

@@ -1,0 +1,2 @@
+story-03-r67-6202-portrait-remigia-traplusens/take-1: frames 64, median 10.18, max 13.48; top: frame 2 10.00 (1.1x), frame 21 13.48 (1.1x), frame 12 10.18 (1.1x)
+story-03-r67-6202-portrait-remigia-traplusens/take-1: frames 64, median 10.44, max 13.89; top: frame 2 10.27 (1.1x), frame 21 13.89 (1.1x), frame 12 10.49 (1.1x)

@@ -394,8 +394,8 @@
       "ruling": "D327 (amends D290): the story look's exposure meter joins the one agreed look; every other lift of the story look is held at the census's own value by the eight dials below, so the meter is the only change from the agreed look. Without them StoryLook's own defaults return v3's whole look, which D290 rejected"
     },
     "EVOSIM_THEATRE_STORY_LUMA": {
-      "value": "0.22",
-      "ruling": "D329: D327 meter, its aim raised from 0.21 to 0.22 beside MIRROR_LIT 1 (the coordinator, 2026-11-08, under the owner's delegation, from the one sitting on chain201b-205's sheets (scratch/film-light/c8/sheets201 to sheets205)): at 0.21 alone, 1.6a and 3.4a read under the 66.65 floor (63.91 and 65.42); MIRROR_LIT 1 with 0.22 read 67.71 on 1.6a, and each alone cleared 3.4a and 5.6a (sheets203/exposure.tsv)"
+      "value": "0.24",
+      "ruling": "D343: the aim raised from 0.22 to 0.24 (the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and the owner's ruling of 2026-11-10 to fix the reviewer's bar and work the near shots first): on stills 7 every take at 0.24 cleared the reference's luma of 64.52 and the reviewer failed none of them for luma, where 4.1a at 0.22 read 61.9 and failed B1 (logbook/specs/r67-film-look/measures-7.txt). Before it, D329: D327 meter, its aim raised from 0.21 to 0.22 beside MIRROR_LIT 1 (the coordinator, 2026-11-08, under the owner's delegation, from the one sitting on chain201b-205's sheets (scratch/film-light/c8/sheets201 to sheets205)): at 0.21 alone, 1.6a and 3.4a read under the 66.65 floor (63.91 and 65.42); MIRROR_LIT 1 with 0.22 read 67.71 on 1.6a, and each alone cleared 3.4a and 5.6a (sheets203/exposure.tsv)"
     },
     "EVOSIM_THEATRE_STORY_DEEP": {
       "value": "1",
@@ -495,11 +495,11 @@
     },
     "EVOSIM_THEATRE_FADE_START": {
       "value": "3",
-      "ruling": "D342: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills rounds 4 and 5 at theatre-look-pass7's pass13 e49e12eb and the coordinator's full-size read (scratch/coord/r4review/); in wide because the safari takes wide and events only; the fog from 3 m, from D330's 6 (stills 5's O, which passed on 1.3a and 2.3a): fog, not blur, makes the far field recede (D341); dialled back toward 4 to 14 m if round 5's group shots lose members at 4 to 6 m to it"
+      "ruling": "D342: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills rounds 4 and 5 at theatre-look-pass7's pass13 e49e12eb and the coordinator's full-size read (logbook/specs/r67-film-look/); in wide because the safari takes wide and events only; the fog from 3 m, from D330's 6 (stills 5's O, which passed on 1.3a and 2.3a): fog, not blur, makes the far field recede (D341); dialled back toward 4 to 14 m if round 5's group shots lose members at 4 to 6 m to it"
     },
     "EVOSIM_THEATRE_FADE_FULL": {
       "value": "10",
-      "ruling": "D342: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills rounds 4 and 5 at theatre-look-pass7's pass13 e49e12eb and the coordinator's full-size read (scratch/coord/r4review/); in wide because the safari takes wide and events only; the fog full at 10 m, from D330's 20 (stills 5's O; see FADE_START)"
+      "ruling": "D342: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills rounds 4 and 5 at theatre-look-pass7's pass13 e49e12eb and the coordinator's full-size read (logbook/specs/r67-film-look/); in wide because the safari takes wide and events only; the fog full at 10 m, from D330's 20 (stills 5's O; see FADE_START)"
     },
     "EVOSIM_THEATRE_GROUP_NEAREST": {
       "value": "0.25",
@@ -511,7 +511,7 @@
     },
     "EVOSIM_THEATRE_WINDOW_CAP": {
       "value": "-10",
-      "ruling": "D342: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills rounds 4 and 5 at theatre-look-pass7's pass13 e49e12eb and the coordinator's full-size read (scratch/coord/r4review/); in wide because the safari takes wide and events only; the up-look's cap 10 degrees past Snell's window, from D332's 6: more lit ripple and less dark band in frame, tone and edges up on 1.6a, 4.1a, 6.3a and 2.2a, and 1.6a passing"
+      "ruling": "D342: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills rounds 4 and 5 at theatre-look-pass7's pass13 e49e12eb and the coordinator's full-size read (logbook/specs/r67-film-look/); in wide because the safari takes wide and events only; the up-look's cap 10 degrees past Snell's window, from D332's 6: more lit ripple and less dark band in frame, tone and edges up on 1.6a, 4.1a, 6.3a and 2.2a, and 1.6a passing"
     },
     "EVOSIM_THEATRE_CANOPY_GROUP": {
       "value": "1",
@@ -587,11 +587,11 @@
     },
     "EVOSIM_THEATRE_HDR_TARGET": {
       "value": "1",
-      "ruling": "D342: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills rounds 4 and 5 at theatre-look-pass7's pass13 e49e12eb and the coordinator's full-size read (scratch/coord/r4review/); in wide because the safari takes wide and events only; the camera renders into a half-float target before the 8-bit one, which removes the 8-bit contour steps the grade stretched into a grid (flat plateaus 0.23 to 0.10 on 2.2a, 0.25 to 0.05 on 1.2a) and changes nothing else the eye sees"
+      "ruling": "D342: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills rounds 4 and 5 at theatre-look-pass7's pass13 e49e12eb and the coordinator's full-size read (logbook/specs/r67-film-look/); in wide because the safari takes wide and events only; the camera renders into a half-float target before the 8-bit one, which removes the 8-bit contour steps the grade stretched into a grid (flat plateaus 0.23 to 0.10 on 2.2a, 0.25 to 0.05 on 1.2a) and changes nothing else the eye sees"
     },
     "EVOSIM_THEATRE_FOCUS_RULE": {
       "value": "1",
-      "ruling": "D342: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills rounds 4 and 5 at theatre-look-pass7's pass13 e49e12eb and the coordinator's full-size read (scratch/coord/r4review/); in wide because the safari takes wide and events only; the lens follows D341 per take: off unless a hero holds 0.4 of the width or more, then full and locked on the hero; 1.3a and 2.3a pass with it and fail F9 without it"
+      "ruling": "D342: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills rounds 4 and 5 at theatre-look-pass7's pass13 e49e12eb and the coordinator's full-size read (logbook/specs/r67-film-look/); in wide because the safari takes wide and events only; the lens follows D341 per take: off unless a hero holds 0.4 of the width or more, then full and locked on the hero; 1.3a and 2.3a pass with it and fail F9 without it"
     }
   },
   "close": {

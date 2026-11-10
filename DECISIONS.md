@@ -364,6 +364,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D340](#d340) | The camera holds still only when an action carries the shot; otherwise it moves slowly, with a purpose | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327), after the owner asked that day why the camera stays still when nothing much is happening |
 | [D341](#d341) | A shot without a hero has no blur at all: everything is clear, and fog alone makes the far field disappear | 2026-11-09 | ruled by the owner on 2026-11-09, on looking at the 3840 by 2160 still of 2.3a, rendered with pass 15's lens |
 | [D342](#d342) | Round 67's film look takes the focus rule, the nearer fog, the half-float target and a higher window cap | 2026-11-10 | decided by the coordinator on 2026-11-10, under the owner's delegation of the films' look (D327) |
+| [D343](#d343) | Round 67's film reviewer judges a hero's sharpness by eye and the film's effects as effects, the meter rises to 0.24, and the near shots go first | 2026-11-10 | ruled by the owner on 2026-11-10, who chose to clarify the reviewer's bar and work the near shots first |
 
 ---
 
@@ -11903,7 +11904,7 @@ D330's fog and D332's window cap.
   `e49e12eb`, whose dials-off check is identical to its reference. The verdicts are in
   `film-stills-4-review.md` and `film-stills-5-review.md` in the round's film folder.
 - **The coordinator's own read:** every still was read at full size against CLAUDE.md's render-check list, and each take's
-  sheet for its motion (`scratch/coord/r4review/`).
+  sheet for its motion (`logbook/specs/r67-film-look/`).
 
 **Decision.** In `wide`, the film look (`scripts/theatre-film-look.json`) sets:
 - **`FOCUS_RULE` 1.** The lens follows D341 take by take. It is off unless a hero holds 0.4 of the width or more, and then
@@ -11939,3 +11940,56 @@ Filming pass 17 waits for round 5's stills. Those test the hero, birth and desce
 - 3.1a: a descent that reads as a push forward. Round 5 tests `DESCENT_THROUGH` and the dolly's edge check.
 - 2.3a: a move that rises visibly and finds a blade group. Under the focus rule alone its camera holds still, which fails
   D340.
+
+### D343
+**Round 67's film reviewer judges a hero's sharpness by eye and the film's effects as effects, the meter rises to 0.24, and the near shots go first** · 2026-11-10
+
+**Status:** ruled by the owner on 2026-11-10, who chose to clarify the reviewer's bar and work the near shots first. Its
+parts are decided by the coordinator, under the owner's delegation of the films' look (D327).
+- **It amends the film reviewer's F8.** A hero shot whose background blurs as F9 allows is not held to the `edges` floor.
+- **It amends how F9 reads D338 and D341.** The film's effects are not blur: D286's blood, the bite crumbs of D281, D289
+  and D290, and the birth's cloud and bubbles of D279 and D290.
+- **It amends D329's meter aim,** from 0.22 to 0.24.
+- D338 and D341 stand, as do D342's look and the reviewer's other bars.
+- **What it rests on:** stills 7, the sixth stills round without a passing shot, at `theatre-look-pass7`'s `pass13/hero`
+  `81f97548`, whose dials-off check is identical to its reference. The reviewer's verdicts are in
+  `film-stills-7-review.md` in the round's film folder. The coordinator read every still at full size
+  (`logbook/specs/r67-film-look/stills7-review.md`) and, as promised, brought the film to the owner instead of a seventh round.
+
+**Decision.**
+- **F8.** A hero shot whose background blurs is judged sharp on its hero, by eye at full size, under F9. Its `tone` floor
+  still holds.
+- **F9.** A soft cloud, puff or halo at a bite, a wound or a birth is one of the film's effects and fails nothing under
+  F9. It still counts under B0 and F1 if it hides the subject.
+- **The meter.** `STORY_LUMA` is 0.24 in the film look's `wide` section.
+- **The order.** The next stills round works the near shots: 4.1a, 6.4a's first take, 2.4b, 2.3a on its blade group and
+  3.1a at its new moment (shot list draft 18). What passes is filmed at once, in pass 17. The crowd shots (1.2a, 1.3a,
+  1.4a, 2.1a and 2.6a) follow on the redesigned crowd camera.
+
+**Why.**
+- **F8 against F9.** The `edges` floor is the reference film's, read across the whole frame, and the reference has no lens
+  blur. A portrait that blurs its background, as D338 and D341 allow, lowers the frame's edges by design. The portrait of
+  4.1a read 13.1 to 13.7 against the floor of 16.09, with its hero at about 48 % of the width. Stills 6 failed its T
+  variant on the same number. On a hero shot the two rules cannot both hold.
+- **The effects.** Stills 6 and 7 failed 1.3a and 2.3a under F9 for a soft red blob and a soft red halo, which are D286's
+  blood at a wound. The owner's rulings draw the effects soft, so faulting them as blur would fail every bite and every
+  birth.
+- **The meter.** Every take at 0.24 cleared the reference's luma of 64.52, with take means of 66 to 77, and the reviewer
+  failed none of them for luma. The portrait of 4.1a read 61.9 at 0.22 and failed B1, and 70.8 at 0.26, an aim that
+  stays a dial.
+- **The order.** Six rounds fixed the named faults one at a time, while the automatic camera showed the next, worst on
+  the crowd shots. Three shots are near. The portrait of 4.1a fails only on its neck at the top edge at 25 % and on F8.
+  The second take of 6.4a passes. The large body of 2.4b reads 37 % of the width, where 40 % is asked.
+
+**Rejected:**
+- keeping the brief as it was, under which a portrait or a birth needs its lens off, or plants within a body length
+  behind its hero, against D338;
+- replacing the crowd shots in the shot list if they have not passed after two more rounds, which stays open should the
+  crowd camera not converge;
+- a pause for the owner to judge the closest stills at full size first.
+
+**Not settled.**
+- 2.4b: the reviewer named the large body in G's last three stills the parent. It appears over the birth's bubbles at
+  20426.25 s, which reads as the newborn (the coordinator's inference). The pair search finds no framing that holds both
+  bodies whole with the parent at 0.4 of the width.
+- 6.4a's first take: the newborn lands away from its parent, so the two may not share a frame at 0.4.

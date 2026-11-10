@@ -76,7 +76,10 @@ Read every sheet and every full-size frame whole. Read nothing else.
   or over 1.5 times the reference's.
 - **F8, flat or soft.** The frames are murkier or softer than the reference sheet's, or a clip's `tone` is under
   its own `reference_look`'s `tone_p10`, or its `edges` under that `reference_look`'s `edges_p10` (the reference read
-  at the clip's `look_width`). A clip whose `reference_look` is null is judged by eye against the reference sheet.
+  at the clip's `look_width`). A clip whose `reference_look` is null is judged by eye against the reference sheet. A
+  hero shot whose background blurs as F9 allows is not held to the `edges` floor, since the blur lowers the whole frame's
+  edges by design. Its hero is judged sharp by eye at full size, under F9. Its `tone` floor still holds (the owner,
+  2026-11-10, D343).
 - **F9, focus.** Only a hero shot may blur: a shot whose clear hero holds at least two fifths of the frame's width may
   blur its background, and its hero stays sharp for the whole shot. In any other shot everything is clear, near and
   far, and only fog may fade the far field (the owner, 2026-11-09). The take fails when:
@@ -85,6 +88,11 @@ Read every sheet and every full-size frame whole. Read nothing else.
   - a frame is evenly soft.
 
   Judge it frame by frame at full size, on the full-size frame and in frames 2 to 6.
+
+  The film's own effects are drawn soft by design, and none of them is blur: the blood at a wound, the crumbs at a bite,
+  and the bubbles or cloud at a birth. A soft red, orange or yellow cloud, puff or halo at a bite, a wound or a birth is
+  one of them. It fails nothing under F9, though it still counts under B0 and F1 if it hides the subject (the owner,
+  2026-11-10, D343).
 - **F6, words.** Words, numbers or labels are burned into the frames. The clips carry none; the edit adds
   them.
 - **F7, provenance.** `provenance` is missing, or is neither `FAITHFUL` nor `COUSIN`. A take of a run recorded on
