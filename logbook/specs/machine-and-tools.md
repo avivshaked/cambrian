@@ -282,6 +282,15 @@ The root file's rules still apply. The entries below were moved word for word, s
     i9-13900K protects itself at 100 °C. Nothing else on this machine gives the die's temperature
     without an administrator. The motherboard's ACPI zone is not the die, the WMI sensor needs an
     administrator, and `root\Hardware` holds no sensors. The ASUS WMI classes are never called.
+  - **Run `temp-check.ps1` under PowerShell 7 (`pwsh`), never Windows PowerShell 5.1.** Under 5.1, which
+    `powershell` names from Git Bash, it printed "cpu temp n/a" on 2026-11-10 while Afterburner ran and
+    `pwsh` read 71 °C from the same shared memory. Its catch swallows the failure, so a 5.1 look reads as if
+    Afterburner were down.
+  - **Closing Afterburner stops every Unity lane.** The guards refuse a launch, and stop a running one,
+    once the CPU is unreadable for 10 s. On 2026-11-10 the owner closed it while changing its on-screen
+    display, and check7 and two batches stopped until it was started again. To hide the readout that
+    RivaTuner draws in other programs, such as Zoom, untick "Show in On-Screen Display" in Afterburner's
+    Monitoring tab, and leave Afterburner running.
   - Whether or not Afterburner runs, the chip's own protection is read too. WARN when
     `Performance Limit Flags` is not 0, or when firmware limiting (Kernel-Processor-Power, event 37)
     is logged in the last 15 minutes. HOT when both are.
