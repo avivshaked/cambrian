@@ -239,6 +239,14 @@ namespace Evosim.Theatre
         /// <summary>Bodies flagged as remains in the frame shown that the window has no remains row for, drawn as they always were.</summary>
         public int RemainsWithoutARow { get; private set; }
 
+        /// <summary>EVOSIM_THEATRE_WINDOW_DROPS (0 or 1, off at 0): at the first shown frame, one log line per body the frame loop does not draw. The summary line is always on.</summary>
+        private static readonly bool DropsDial = TheatreSkin.Dial("EVOSIM_THEATRE_WINDOW_DROPS", 0f, 0f, 1f) >= 0.5f;
+
+        private bool _dropsDone;
+        private int _dropsCount;
+        private readonly Dictionary<string, int> _dropsByReason = new Dictionary<string, int>();
+        private readonly Dictionary<int, int> _dropsByFlags = new Dictionary<int, int>();
+
         private static readonly bool RemainsDial = TheatreSkin.Dial("EVOSIM_THEATRE_REMAINS", 0f, 0f, 1f) > 0f;
 
         /// <summary>
@@ -600,6 +608,13 @@ namespace Evosim.Theatre
             RemainsWithoutARow = 0;
             RemainsView?.BeginFrame();
 
+            // The first frame's drops are always counted and summed in one line (the coordinator, 2026-11-10: a development that failed
+            // for every gripping plant printed one warning nobody read); the per-body lines need the dial.
+            bool dropsOn = !_dropsDone;
+            _dropsCount = 0;
+            _dropsByReason.Clear();
+            _dropsByFlags.Clear();
+
             for (int i = 0; i < poses.Bodies.Length; i++)
             {
                 PoseBody body = poses.Bodies[i];
@@ -613,6 +628,7 @@ namespace Evosim.Theatre
                     if (Window.TryRemains(id, out FilmWindowRemains remains))
                     {
                         ShowRemains(body, remains);
+                        if (dropsOn) Drop(body, "remains", null);
                         continue;
                     }
 
@@ -624,10 +640,15 @@ namespace Evosim.Theatre
                 if (grown == null)
                 {
                     WithoutAGenome++;
+                    if (dropsOn) Drop(body, "no-genome-row", null);
                     continue;
                 }
 
-                if (grown.Genome == null) continue;
+                if (grown.Genome == null)
+                {
+                    if (dropsOn) Drop(body, "null-genome", null);
+                    continue;
+                }
 
                 // The skin pattern's key, from the genome (EVOSIM_THEATRE_PATTERN; returns at once with it off).
                 TheatrePattern.Register(id, grown.Genome);
@@ -640,6 +661,7 @@ namespace Evosim.Theatre
                 {
                     Refused(id, "no plan in the window develops into the " + pose.Joint.Length +
                                 " joint coordinate(s) the frame carries");
+                    if (dropsOn) Drop(body, "no-plan", DropsDial ? "frame joints " + pose.Joint.Length + ", plan " + DropPlanNote(id, grown, pose.Joint.Length) : null);
                     continue;
                 }
 
@@ -660,6 +682,7 @@ namespace Evosim.Theatre
                 if (!RecordedPoses.Apply(phenotype, pose, adult.Positions, adult.Rotations, out string refusal))
                 {
                     Refused(id, refusal);
+                    if (dropsOn) Drop(body, "pose-refused", DropsDial ? "frame joints " + pose.Joint.Length + ", plan " + DropPlanNote(id, grown, pose.Joint.Length) + ", refusal " + refusal : null);
                     continue;
                 }
 
@@ -693,7 +716,11 @@ namespace Evosim.Theatre
                 if (GrowthEase && sized) grow *= EaseFactor(id, body.BodyFraction);
 
                 // A pose that is not finite leaves the body where it last stood, inside the view.
-                if (!View.Place(id, adult.Body, phenotype, pose.Root, adult.Positions, adult.Rotations, tint, grow, appear)) continue;
+                if (!View.Place(id, adult.Body, phenotype, pose.Root, adult.Positions, adult.Rotations, tint, grow, appear))
+                {
+                    if (dropsOn) Drop(body, "place-refused", null);
+                    continue;
+                }
 
                 _indexOf[id] = _drawn.Count;
                 _drawn.Add(new Drawn
@@ -717,6 +744,19 @@ namespace Evosim.Theatre
                 });
             }
 
+            if (dropsOn)
+            {
+                _dropsDone = true;
+                // A body that could not be developed or posed is a fault the gates fail on (rig-gate.py, film.py); remains are not.
+                string summary = "[Theatre] window drops at the first frame: " + _dropsCount + " of " + poses.Bodies.Length + " bodies at " +
+                                 Second.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + " s; by reason " +
+                                 DropsList(_dropsByReason) + "; by flags " + DropsList(_dropsByFlags);
+                bool fault = _dropsByReason.ContainsKey("no-plan") || _dropsByReason.ContainsKey("pose-refused") ||
+                             _dropsByReason.ContainsKey("no-genome-row") || _dropsByReason.ContainsKey("null-genome");
+                if (fault) Debug.LogWarning(summary + " (bodies not drawn)");
+                else Debug.Log(summary);
+            }
+
             View.EndFrame();
             RemainsView?.EndFrame();
 
@@ -736,6 +776,54 @@ namespace Evosim.Theatre
             // Oxygen pearling (EVOSIM_THEATRE_PEARLING, off at 0): the leaf parts this frame draws and the light income each earns, for
             // the next camera render to draw their pearls. With the dial off nothing is touched.
             if (TheatrePearling.On) TheatrePearling.Frame(this);
+        }
+
+        /// <summary>One line for a body the frame loop did not draw, with the dial on (EVOSIM_THEATRE_WINDOW_DROPS).</summary>
+        private void Drop(PoseBody body, string reason, string planNote)
+        {
+            _dropsCount++;
+            _dropsByReason.TryGetValue(reason, out int r);
+            _dropsByReason[reason] = r + 1;
+            _dropsByFlags.TryGetValue(body.Flags, out int f);
+            _dropsByFlags[body.Flags] = f + 1;
+
+            if (!DropsDial) return;
+
+            string line = "[Theatre] window drop: body " + body.Id + ", flags " + body.Flags + ", fraction " + body.BodyFraction + ", reason " + reason;
+            if (planNote != null) line += ", " + planNote;
+            Debug.Log(line);
+        }
+
+        private static string DropsList<T>(Dictionary<T, int> counts)
+        {
+            var parts = new List<string>();
+            foreach (KeyValuePair<T, int> pair in counts) parts.Add(pair.Key + " " + pair.Value);
+            return parts.Count == 0 ? "none" : string.Join(", ", parts);
+        }
+
+        /// <summary>What the plan search finds for a body, as <see cref="AdultFor(long, Grown, int, double, out bool)"/> walks it: the plans held, the primary one, and each candidate's joint count.</summary>
+        private string DropPlanNote(long id, Grown grown, int dof)
+        {
+            IReadOnlyList<FilmWindowPlan> plans = Window.PlansOf(id);
+            int primary = -1;
+
+            for (int i = 0; i < plans.Count; i++)
+            {
+                double at = plans[i].Seconds;
+                if (at <= _startCut || at < Second - 1e-6) primary = i;
+                else break;
+            }
+
+            var sb = new System.Text.StringBuilder();
+            sb.Append(plans.Count).Append(" plan(s), primary ").Append(primary).Append(", wanted ").Append(dof).Append(" joints, candidates");
+
+            for (int i = primary; i >= -1; i--)
+            {
+                Adult adult = Develop(grown, i >= 0 ? plans[i] : null);
+                sb.Append(" [").Append(i).Append(adult.Failed ? ": failed" : ": " + adult.Dof + " joints").Append(']');
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>A body the frame could not lay on any plan: kept standing if it stands, counted.</summary>

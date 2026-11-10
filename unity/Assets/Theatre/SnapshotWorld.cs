@@ -850,14 +850,16 @@ namespace Evosim.Theatre
         /// </remarks>
         public static Phenotype DevelopWithPlan(Genome genome, RunConfig config, int[] counts, List<int[]> lost)
         {
+            // The run's cell table, as World develops with it: a type that enters a world through the table only (anchoring, fat)
+            // is not in the standard registry, and without the table every body carrying one fails to develop and is not drawn.
             if (counts == null && lost == null)
             {
-                return Developer.Develop(genome, config.Development, null, config.Shapes);
+                return Developer.Develop(genome, config.Development, null, config.Shapes, cellTypes: config.CellTypes);
             }
 
             var paths = new List<int[]>();
             Phenotype phenotype = Developer.Develop(
-                genome, config.Development, null, config.Shapes, counts, paths);
+                genome, config.Development, null, config.Shapes, counts, paths, config.CellTypes);
 
             if (lost == null || lost.Count == 0) return phenotype;
 

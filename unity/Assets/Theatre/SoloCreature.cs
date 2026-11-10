@@ -146,10 +146,10 @@ namespace Evosim.Theatre
             FluidEnvironment.ConfigureScene(selfCollision: true);
             solo._sceneConfigured = true;
 
-            // Developed exactly as World develops one: same limits, same shape registry. A
-            // different registry would give a body whose colliders and drag panels disagreed with
-            // the one the run measured.
-            solo.Phenotype = Developer.Develop(genome, config.Development, null, config.Shapes);
+            // Developed exactly as World develops one: same limits, same shape registry, same cell
+            // table. A different registry would give a body whose colliders and drag panels
+            // disagreed with the one the run measured.
+            solo.Phenotype = Developer.Develop(genome, config.Development, null, config.Shapes, cellTypes: config.CellTypes);
 
             if (solo.Phenotype.PartCount == 0)
             {

@@ -294,10 +294,10 @@ namespace Evosim.Theatre.EditorTools
         /// <summary>The body the row's plan grew: <c>SnapshotWorld.DevelopWithPlan</c>'s rule.</summary>
         private static Phenotype Develop(Genome genome, RunConfig config, int[] counts, List<int[]> lost)
         {
-            if (counts == null && lost == null) return Developer.Develop(genome, config.Development, null, config.Shapes);
+            if (counts == null && lost == null) return Developer.Develop(genome, config.Development, null, config.Shapes, cellTypes: config.CellTypes);
 
             var paths = new List<int[]>();
-            Phenotype phenotype = Developer.Develop(genome, config.Development, null, config.Shapes, counts, paths);
+            Phenotype phenotype = Developer.Develop(genome, config.Development, null, config.Shapes, counts, paths, config.CellTypes);
             if (lost == null || lost.Count == 0) return phenotype;
 
             var drop = new bool[phenotype.PartCount];
