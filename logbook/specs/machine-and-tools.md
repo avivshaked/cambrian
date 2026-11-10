@@ -298,7 +298,9 @@ The root file's rules still apply. The entries below were moved word for word, s
     Over 200 `rg.exe` is a storm: tell the owner at once. The owner ruled on 2026-11-10 that any session may stop
     VS Code's `rg.exe` children when more than 300 are alive, and tell the owner after:
     `pwsh -File scripts/storm-stop.ps1 -Stop` (without `-Stop` it only reports). No new worktree or virtual
-    environment goes into a workspace while its Python extensions are on.
+    environment goes into a workspace while its Python extensions are on. At 22:51 the same day a job-search
+    session's `uv sync` made a new `.venv` at 22:51:06, and a storm of about 1,100 rg.exe began nine seconds later and
+    stopped another project's render: every project's workspace needs its Python extensions off, not only this one's.
   - **A pinned job can leak its affinity, and a CPU job beside two Unity lanes ran the CPU to 94 °C.** On 2026-11-10
     the coordinator gave another project's Remotion render 8 cores (mask 0xF0F000) beside both theatre lanes. One
     `chrome-headless-shell` child ran on all 32 cores and took about 12.8 of them, and the heat guard stopped a theatre
