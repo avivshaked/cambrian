@@ -737,6 +737,10 @@
       "value": "4",
       "ruling": "the owner, 2026-11-03, relayed by the coordinator: four times the count, as in phase113's -bubbles-x4-81811 (D290 asked for more than take 1)"
     },
+    "EVOSIM_THEATRE_BIRTH_BUBBLES_LEAD": {
+      "value": "0.5",
+      "ruling": "D346: the owner, 2026-11-10, on the coordinator's recommendation after pair V (scratch/owner/r67-effects-pairs-full-size/): half of a birth's bubbles rise at the newborn's spot over the half second before it appears, packed to 0.9 of their reach (41b19db5); D290's count of 4 kept"
+    },
     "EVOSIM_THEATRE_BIRTH_CLOUD_LEAD": {
       "value": "0.8",
       "ruling": "practice adopted by the coordinator under D290 on 2026-11-03: the answer to the owner's phase105 verdict that the cloud seemed to start partway through; with D290's bubbles it times their onset, the early bubbles leaving over the lead (TheatreBirthCloud.cs, Make)"

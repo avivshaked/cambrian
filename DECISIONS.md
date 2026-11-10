@@ -367,6 +367,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D343](#d343) | Round 67's film reviewer judges a hero's sharpness by eye and the film's effects as effects, the meter rises to 0.24, and the near shots go first | 2026-11-10 | ruled by the owner on 2026-11-10, who chose to clarify the reviewer's bar and work the near shots first |
 | [D344](#d344) | Round 67's film look takes the focus set and 2.3a J's card dials, and pass 18 films 2.3a | 2026-11-10 | decided by the coordinator on 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order |
 | [D345](#d345) | Round 67's film look takes 4.1a A's portrait dials, and pass 19 films 4.1a | 2026-11-10 | decided by the coordinator on 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, as D344 was |
+| [D346](#d346) | A birth's bubbles start half a second early, and the wound's see-through plume waits on a look in motion | 2026-11-10 | ruled by the owner on 2026-11-10, on the coordinator's recommendations, after the full-size pairs in `scratch/owner/r67-effects-pairs-full-size/` |
+| [D347](#d347) | Round 67's hard shots are framed by a camera rig per shot type, with named subjects, and are no longer retried | 2026-11-10 | ruled by the owner on 2026-11-10, when the coordinator asked whether the hard shots should be capped at two more stills rounds |
 
 ---
 
@@ -12041,3 +12043,73 @@ off when the hero falls under two fifths of the width, which is F9's own rule.
 **Not settled.** The reviewer noted, as no fault, that 19 sits near the centre with its tail reaching the right third,
 where the see line asks for it a third off centre to the left and the corner card stands. The edit decides whether the
 card and the tail clash; a framing shifted left is the fix if they do.
+
+### D346
+**A birth's bubbles start half a second early, and the wound's see-through plume waits on a look in motion** · 2026-11-10
+
+**Status:** ruled by the owner on 2026-11-10, on the coordinator's recommendations, after the full-size pairs in
+`scratch/owner/r67-effects-pairs-full-size/`. It amends D290's birth bubbles and the onset practice beside them.
+- **What it rests on:** pair V, round 67's 2.4b birth at 20425.75 to 20426.25 s, and pair X, 1.3a's bite at 27001.25 to
+  27003 s, each at 1920x1080 in the film look with one setting changed. The coordinator read every half at full size.
+
+**Decision.**
+- The look's `events` section sets `BIRTH_BUBBLES_LEAD` 0.5. Half of a birth's bubbles rise at the newborn's spot over
+  the half second before it appears, packed to 0.9 of their reach so a fringe shows round it (`41b19db5`). D290's count
+  of 4 stays. The safari reads the same section, so it draws the same bubbles.
+- The wound's plume drawn as a see-through dark red haze (`WOUND_PLUME_HAZE` 2) replaces the opaque red ball only if it
+  still reads in motion. The coordinator judges that on a short 1920 clip of the same bite. Until then it stays in the
+  look's `trial` list.
+- The crumbs drawn as torn flakes stay out until a render without needles reaches the owner as a pair.
+
+**Why.** In pair V the leading bubbles mark where the newborn will appear, half a second before it does, and from its
+appearance on both halves look nearly alike. It carries further D290's onset practice, which answered the owner's verdict
+that a birth seemed to start partway through. The plume is more natural than
+the ball and lets the bodies behind it show, but at full size it is faint. In a still the coordinator could not tell
+whether it would be missed in motion (inference).
+
+**Rejected.** Taking the plume on the stills alone.
+
+### D347
+**Round 67's hard shots are framed by a camera rig per shot type, with named subjects, and are no longer retried**
+· 2026-11-10
+
+**Status:** ruled by the owner on 2026-11-10, when the coordinator asked whether the hard shots should be capped at two
+more stills rounds. The owner answered that the causes should be found and solved instead of retried, and that game
+development solved this long ago with a camera action per type of shot. It closes D343's open question of a cap, and
+replaces the route of D344 and D345, a camera dial per fault, for the shots that still fail. The dials those entries
+put in the look stay for the shots that pass under them.
+
+**Decision.**
+- No new camera dials for round 67's film. Two proposed that morning, a canopy descent and a clear side for the card,
+  are held.
+- Each failing shot is first traced to its cause. Where its moment does not hold what its see line asks, the moment
+  moves to one the recorded window does hold (2.1a moves to 31,504 s, where twelve animals stand within 3 m of each
+  other beneath the tallest coral).
+- Where the cause is the camera, the shot gets a written spec: its shot type, its subjects named by body id from the
+  window's scan, their size and place on screen, and the camera's side and height. A rig for that type frames the named
+  subjects directly. Their bounds and the lens give the distance, a composer holds them at their place on screen, and a
+  body in the way moves the camera rather than cropping the frame. Nothing searches and nothing falls back.
+- The first choice of rig is Cinemachine 3, Unity's own camera package, installed into `unity/` from Unity's registry.
+  If it cannot be stepped frame by frame in the filming path, the same rules go into the theatre's own camera. The rig
+  is off by default, the theatre's dials-off check stays identical, and `simHash` does not change.
+- Each spec's framing is checked by numbers before it renders. The named subjects are projected through the rig's
+  camera at each still time, giving their width share, their margins to the edges, their distance in the fog and any
+  body in front. Only a spec that passes renders.
+- The first test is the two births that have failed longest, 2.4b and 6.4a. If they pass, 1.2a, 2.1a and 1.3a follow as
+  rig shots. The theatre lane plans and reviews the rig, and a builder writes it.
+
+**Why.** Seven stills rounds passed two of the twelve hard shots. On c8's planner's measures, the causes were of three
+kinds:
+- a moment whose window did not hold the material;
+- a camera that chose its own subject (1.2a's took a pair 20.7 m from the canopy column);
+- a camera that searched bearings and fell back to a default when none passed, which cut 6.4a's parent at the edge in
+  every still.
+
+Each round's fix added a dial for one fault, and the next render showed the next fault, hours later. A rig that is told
+its subjects and solves the framing removes the choice and the fallback, and the numbers show a framing fault before
+any render.
+
+**Rejected.**
+- A cap of two more rounds per hard shot, with a replacement moment after it. The owner rejected it as retrying with a
+  limit, not finding the cause.
+- More dials, one per fault.
