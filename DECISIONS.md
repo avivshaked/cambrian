@@ -363,6 +363,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D339](#d339) | Focus is set per shot and judged frame by frame; the two-fifths line only sets the default | 2026-11-09 | ruled by the owner on 2026-11-09, refining D338 |
 | [D340](#d340) | The camera holds still only when an action carries the shot; otherwise it moves slowly, with a purpose | 2026-11-09 | decided by the coordinator on 2026-11-09, under the owner's delegation of the films' look (D327), after the owner asked that day why the camera stays still when nothing much is happening |
 | [D341](#d341) | A shot without a hero has no blur at all: everything is clear, and fog alone makes the far field disappear | 2026-11-09 | ruled by the owner on 2026-11-09, on looking at the 3840 by 2160 still of 2.3a, rendered with pass 15's lens |
+| [D342](#d342) | Round 67's film look takes the focus rule, the nearer fog, the half-float target and a higher window cap | 2026-11-10 | decided by the coordinator on 2026-11-10, under the owner's delegation of the films' look (D327). - **It amends D330's fog,** from 6 to 20 m to 3 to 10 m |
 
 ---
 
@@ -11888,3 +11889,53 @@ full. Where the far field clutters, the fog comes nearer; blur is never the answ
 
 **Not settled.** How near the fog must start before the far field disappears rather than clutters is set on stills, at
 today's 6 to 20 m against 4 to 14 m and 3 to 10 m.
+
+### D342
+**Round 67's film look takes the focus rule, the nearer fog, the half-float target and a higher window cap** · 2026-11-10
+
+**Status:** decided by the coordinator on 2026-11-10, under the owner's delegation of the films' look (D327). It amends
+D330's fog and D332's window cap.
+
+- **It amends D330's fog,** from 6 to 20 m to 3 to 10 m. That settles D341's open question, on stills. D341 itself and
+  D338's hero depth of field stand.
+- **It amends D332's window cap,** from 6° past Snell's window to 10° past it.
+- **What it rests on:** the film reviewer's verdicts on stills rounds 4 and 5, at `theatre-look-pass7`'s `pass13` head
+  `e49e12eb`, whose dials-off check is identical to its reference. The verdicts are in
+  `film-stills-4-review.md` and `film-stills-5-review.md` in the round's film folder.
+- **The coordinator's own read:** every still was read at full size against CLAUDE.md's render-check list, and each take's
+  sheet for its motion (`scratch/coord/r4review/`).
+
+**Decision.** In `wide`, the film look (`scripts/theatre-film-look.json`) sets:
+- **`FOCUS_RULE` 1.** The lens follows D341 take by take. It is off unless a hero holds 0.4 of the width or more, and then
+  full and locked on the hero.
+- **`FADE_START` 3 and `FADE_FULL` 10.** The fog starts at 3 m and is full at 10 m.
+- **`HDR_TARGET` 1.** The camera renders into a half-float target before the 8-bit one.
+- **`WINDOW_CAP` -10.** More lit ripple and less of the dark band sit in frame.
+
+The surface levers that were tried are rejected:
+- `MIRROR_GAIN` at 1.8 and 3, with `METER_TOP` 0.33;
+- `MIRROR_INSCATTER` 1, with `METER_TOP` 0.33.
+
+Filming pass 17 waits for round 5's stills. Those test the hero, birth and descent fixes on this look.
+
+**Why.**
+- **The focus rule.** With the lens on (A), 1.3a and 2.3a fail F9: soft all over, with no hero at two fifths. With the rule
+  (F), both pass, and their edges rise by a quarter to a third.
+- **The fog.** All three fogs pass on 1.3a and 2.3a. The nearest (O) is the one where the far animals dim and recede while
+  the near ones stay crisp, as D341 asks. It enters strong, as D262 asks of a new setting. If round 5's group shots lose
+  members at 4 to 6 m to it, it is dialled back toward 4 to 14 m.
+- **The half-float target.** It removes the 8-bit contour steps that the grade stretched into a grid. Flat plateaus in the
+  lower-right water fall from 0.23 to 0.10 of the area on 2.2a. On 1.2a they fall from 0.25 to 0.05. It changes nothing else
+  the eye sees, at most 14 levels.
+- **The window cap.** It raises tone and edges against the look before it on 1.6a, 4.1a, 6.3a and 2.2a, with 1.6a passing.
+  It changes nothing where the look is level (2.6a).
+- **The rejected levers.** Each darkens the bottom fifth in every shot. The gain at 3 cuts a hard seam across 2.6a at half
+  height, and the gain at 1.8 a faint one at the same place. The in-scatter flattens the surface's ripples into haze. On
+  1.6a three variants passed, but a look dial covers every shot, so only the cap qualifies.
+
+**Not settled.**
+- 2.4b: a cut to the newborn as a close hero, or the parent's frame held for the whole take. Round 5 tests both.
+- 4.1a: the shrinking hero. Round 5's `HERO_ROOM`, `HERO_FOLLOW`, `HERO_ZOOM` and `FOCUS_FOLLOW` address it.
+- 3.1a: a descent that reads as a push forward. Round 5 tests `DESCENT_THROUGH` and the dolly's edge check.
+- 2.3a: a move that rises visibly and finds a blade group. Under the focus rule alone its camera holds still, which fails
+  D340.

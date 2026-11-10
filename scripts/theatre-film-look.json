@@ -494,12 +494,12 @@
       "ruling": "D330: the coordinator, 2026-11-08, under the owner's delegation, from the pass 7 stills sheet of 2.1a, 4.2a, 8.5b and 6.6a (scratch/owner/round67-pass7-stills-sheet/), built at a0334b16 (theatre-look-pass7): the scene's fill, opposite the sun and so from below, from 0.8 to 2.4, so a leaf or body against the surface reads as coloured, not black (3% of the pixels, the bodies, moved by up to 39 levels); it lights portraits too. STORY_AMBIENT does nothing under LOOK 4; in wide because the safari takes wide and events only"
     },
     "EVOSIM_THEATRE_FADE_START": {
-      "value": "6",
-      "ruling": "D330: the coordinator, 2026-11-08, under the owner's delegation, from the pass 7 stills sheet of 2.1a, 4.2a, 8.5b and 6.6a (scratch/owner/round67-pass7-stills-sheet/), built at a0334b16 (theatre-look-pass7): the second batch's fade starts 6 m from the eye, not 3, which clears the near haze (2.1a's tone 64 to 72). STORY_FOG does nothing under LOOK 4; in wide because the safari takes wide and events only"
+      "value": "3",
+      "ruling": "D342: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills rounds 4 and 5 at theatre-look-pass7's pass13 e49e12eb and the coordinator's full-size read (scratch/coord/r4review/); in wide because the safari takes wide and events only; the fog from 3 m, from D330's 6 (stills 5's O, which passed on 1.3a and 2.3a): fog, not blur, makes the far field recede (D341); dialled back toward 4 to 14 m if round 5's group shots lose members at 4 to 6 m to it"
     },
     "EVOSIM_THEATRE_FADE_FULL": {
-      "value": "20",
-      "ruling": "D330: the coordinator, 2026-11-08, under the owner's delegation, from the pass 7 stills sheet of 2.1a, 4.2a, 8.5b and 6.6a (scratch/owner/round67-pass7-stills-sheet/), built at a0334b16 (theatre-look-pass7): the fade reaches its full rate at 20 m, not 12, with FADE_START 6; in wide because the safari takes wide and events only"
+      "value": "10",
+      "ruling": "D342: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills rounds 4 and 5 at theatre-look-pass7's pass13 e49e12eb and the coordinator's full-size read (scratch/coord/r4review/); in wide because the safari takes wide and events only; the fog full at 10 m, from D330's 20 (stills 5's O; see FADE_START)"
     },
     "EVOSIM_THEATRE_GROUP_NEAREST": {
       "value": "0.25",
@@ -510,8 +510,8 @@
       "ruling": "D332: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), judged on the pass 12 sheets at theatre-look-pass7's pass12/director c7061b25: a group frame ends looking up far enough for the window cap to bind and the surface to show (was 15); in wide because the safari takes wide and events only"
     },
     "EVOSIM_THEATRE_WINDOW_CAP": {
-      "value": "-6",
-      "ruling": "D332: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), judged on the pass 12 sheets at theatre-look-pass7's pass12/director c7061b25: the frame's top may reach 6 deg past the edge of Snell's window, so the lit surface shows at the top as the glow behind the subject (was 2 deg under it, which left a dark lid); in wide because the safari takes wide and events only"
+      "value": "-10",
+      "ruling": "D342: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills rounds 4 and 5 at theatre-look-pass7's pass13 e49e12eb and the coordinator's full-size read (scratch/coord/r4review/); in wide because the safari takes wide and events only; the up-look's cap 10 degrees past Snell's window, from D332's 6: more lit ripple and less dark band in frame, tone and edges up on 1.6a, 4.1a, 6.3a and 2.2a, and 1.6a passing"
     },
     "EVOSIM_THEATRE_CANOPY_GROUP": {
       "value": "1",
@@ -584,6 +584,14 @@
     "EVOSIM_THEATRE_SUBJECT_TRACE": {
       "value": "1",
       "ruling": "D335: the coordinator, 2026-11-09, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills round 3 at theatre-look-pass7's pass13/arcfit c4381575, where 1.3a and 3.1a passed on these dials: logging only: each take names every box its subject's measures count, so the film runs as its stills ran; in wide because the safari takes wide and events only"
+    },
+    "EVOSIM_THEATRE_HDR_TARGET": {
+      "value": "1",
+      "ruling": "D342: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills rounds 4 and 5 at theatre-look-pass7's pass13 e49e12eb and the coordinator's full-size read (scratch/coord/r4review/); in wide because the safari takes wide and events only; the camera renders into a half-float target before the 8-bit one, which removes the 8-bit contour steps the grade stretched into a grid (flat plateaus 0.23 to 0.10 on 2.2a, 0.25 to 0.05 on 1.2a) and changes nothing else the eye sees"
+    },
+    "EVOSIM_THEATRE_FOCUS_RULE": {
+      "value": "1",
+      "ruling": "D342: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327), on the reviewer's verdicts of stills rounds 4 and 5 at theatre-look-pass7's pass13 e49e12eb and the coordinator's full-size read (scratch/coord/r4review/); in wide because the safari takes wide and events only; the lens follows D341 per take: off unless a hero holds 0.4 of the width or more, then full and locked on the hero; 1.3a and 2.3a pass with it and fail F9 without it"
     }
   },
   "close": {
