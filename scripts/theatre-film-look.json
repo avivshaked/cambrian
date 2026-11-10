@@ -664,6 +664,10 @@
     "EVOSIM_THEATRE_PORTRAIT_NEAR": {
       "value": "0.4",
       "ruling": "D345: the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, for pass 19's 4.1a A, which passed stills 9 (the reviewer and the coordinator's full-size read); in wide because film.py sets the theatre's dials from the look alone; a portrait's hold may come in to 0.4 m from the hero's nearest drawn corner, so the hero fills its share before the lens narrows"
+    },
+    "EVOSIM_THEATRE_SHOT_KEY": {
+      "value": "1",
+      "ruling": "D348: the coordinator, 2026-11-10, under D347 and the owner's delegation of the films' look (D327); a portrait's arc and a clade-less scene's camera key on the subject and the scene's asked second, never the scene's place in its story, so a still predicts its clip (pass13/hero 3aff7ad1, dials-off identical on worker 9)"
     }
   },
   "close": {

@@ -369,6 +369,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D345](#d345) | Round 67's film look takes 4.1a A's portrait dials, and pass 19 films 4.1a | 2026-11-10 | decided by the coordinator on 2026-11-10, under the owner's delegation of the films' look (D327) and D343's order, as D344 was |
 | [D346](#d346) | A birth's bubbles start half a second early, and the wound's see-through plume waits on a look in motion | 2026-11-10 | ruled by the owner on 2026-11-10, on the coordinator's recommendations, after the full-size pairs in `scratch/owner/r67-effects-pairs-full-size/` |
 | [D347](#d347) | Round 67's hard shots are framed by a camera rig per shot type, with named subjects, and are no longer retried | 2026-11-10 | ruled by the owner on 2026-11-10, when the coordinator asked whether the hard shots should be capped at two more stills rounds |
+| [D348](#d348) | A shot's camera is keyed on its subject and second, never on its place in a story | 2026-11-10 | decided by the coordinator on 2026-11-10, under D347 and the owner's delegation of the films' look (D327) |
 
 ---
 
@@ -12113,3 +12114,21 @@ any render.
 - A cap of two more rounds per hard shot, with a replacement moment after it. The owner rejected it as retrying with a
   limit, not finding the cause.
 - More dials, one per fault.
+
+### D348
+**A shot's camera is keyed on its subject and second, never on its place in a story** · 2026-11-10
+
+**Status:** decided by the coordinator on 2026-11-10, under D347 and the owner's delegation of the films' look (D327). It
+adds `SHOT_KEY` 1 to the film look's `wide` section, which the safari reads as well.
+
+**Decision.** With `SHOT_KEY` 1, a portrait's arc family and a camera for a scene with no clade (cards and world descents)
+are keyed on the subject's id and the scene's asked second. Without it they keyed on the scene's index in its story.
+Every shot already passed on the old key (4.1a, 2.3a, 1.6a, 9.2a) is stilled again under it before the final pass.
+
+**Why.** Pass 19 filmed 4.1a on a vertical arc where stills 9 had judged a horizontal one, with the same dials. The film
+lane traced it to the arc family keyed on the scene's index (`SafariPlans.cs`), and the theatre lane found a second such key
+(`SafariDirector.cs`). A still judged in one story then predicts a take in another only when the shot keeps its index. The
+build, `pass13/hero` `3aff7ad1`, is identical to its reference with the dial off.
+
+**Rejected.** Keeping the index key and matching each shot's index across passes, which ties the final pass's order to
+the stills' order across 70 shots.
