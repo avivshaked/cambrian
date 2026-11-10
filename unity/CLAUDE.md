@@ -190,7 +190,12 @@ Don't waste time on it; use the Hub GUI.
   as an open Editor; on 2026-09-20 four workers were "refreshed" this way, none moved, and
   the smoke that followed recorded the previous build's `simHash` with a header missing the
   new tokens. With no Unity process running, delete the lock and refresh again, and read
-  the header tokens of the smoke before taking its hash. A worktree's worker is a copy too:
+  the header tokens of the smoke before taking its hash. A theatre launch on such a worker
+  fails before Unity starts, and a wrapper that then copies the safari log finds the
+  previous run's: on 2026-11-10 a rig batch gated a stale log as its result. Set the old log
+  aside before each launch and count a launch with no fresh log as failed. Stop a theatre
+  render with the `STOP` file in its frames folder, which ends it at a scene boundary, and
+  never by a kill. A worktree's worker is a copy too:
   an edit in the worktree reaches `<worktree>/unity-wN` only by a refresh from the worktree.
 - **Before seating a branch on a worker, move aside every untracked `.meta` file that
   `git -C <worker> status --porcelain` lists.** Unity writes a `.meta` beside each source it
