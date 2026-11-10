@@ -2234,9 +2234,16 @@ def cmd_stills(folder, j, src):
             flags = []
             if luma < ref["luma"]:
                 flags.append("dark")
-            if rl is not None and tone < rl["tone_p10"]:
+            # F8 is held by every still, not only by the take's mean: a take whose mean passes on its good stills
+            # still fails on a flat or soft one (round 67's stills 13, whose parent take measured tone 42 under a mean of 52.4).
+            flat_at = [i for i, fr in enumerate(frames, 1) if rl is not None and fr["tone"] < rl["tone_p10"]]
+            soft_at = [i for i, fr in enumerate(frames, 1) if rl is not None and fr["edges"] < rl["edges_p10"]]
+            for fr in frames:
+                fr["flags"] = [f for f, low in (("flat", rl is not None and fr["tone"] < rl["tone_p10"]),
+                                                ("soft", rl is not None and fr["edges"] < rl["edges_p10"])) if low]
+            if flat_at or (rl is not None and tone < rl["tone_p10"]):
                 flags.append("flat")
-            if rl is not None and edge < rl["edges_p10"]:
+            if soft_at or (rl is not None and edge < rl["edges_p10"]):
                 flags.append("soft")
             paths = [out / "frames" / fr["file"] for fr in t["frames"]]
             if len(paths) == 1:
@@ -2294,7 +2301,9 @@ def cmd_stills(folder, j, src):
         raise
     head = [f"stills {j}: {len(rows)} takes of {len(shot_ids)} shots, {len(rows) + 2} slides"]
     notes = [f"{r['take']}: luma {r['luma']}, tone {r['tone']}, edges {r['edges']}"
-             + (f", flags {', '.join(r['flags'])}" if r["flags"] else "") for r in rows]
+             + (f", flags {', '.join(r['flags'])}" if r["flags"] else "")
+             + "".join(f"; still {i} at {fr['second']:g} s {' and '.join(fr['flags'])} (tone {fr['tone']}, edges {fr['edges']})"
+                       for i, fr in enumerate(r["frames"], 1) if fr["flags"]) for r in rows]
     return "STILLS: READY", head + lines + notes + [f"deck: {slides / 'index.html'}"]
 
 

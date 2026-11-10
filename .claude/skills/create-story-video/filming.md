@@ -343,7 +343,9 @@ on its first line and how long it took on its last.
   variant given twice; a take with no frames or more than three; a frame missing, not a PNG or not at the settings'
   `size`; a second outside its shot's `run_from_s` to `run_to_s`; frames out of time order; another provenance. It
   measures each frame's luma, tone and edges as `collect` measures a clip, each take's as the mean over its frames,
-  against the reference at the frames' width, with the flags `dark`, `flat` and `soft`. It writes
+  against the reference at the frames' width, with the flags `dark` (the take's mean), and `flat` and `soft`, raised by
+  the take's mean or by any one still under the floor, each such still named in what it prints and flagged in
+  `stills.json`: a take whose good stills carry its mean past the floor still fails on its flat or soft one. It writes
   `film/stills-<j>/stills.json` (the shot list's order, then the variant's letter) and a deck in the form of
   `slides`': a slide a take with its dials (or the film look's own), the see panel, a sheet of its stills side by
   side at 480 wide, its middle still at full size, and the numbers. The pass is untouched. `STILLS: READY`, the
