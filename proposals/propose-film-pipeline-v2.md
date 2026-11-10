@@ -30,14 +30,27 @@ Six changes, one for each cause.
 
 ### 1. Moments before words
 
-A new step comes after the facts and before the story. A tool mines the film's runs for **moments**, each one an event
+A new step comes after the facts and the story's question, and before the story itself. The order is: facts, the story's
+question, the mining, then story and prose. The question tells the miner what to look for, so the catalogue serves a story
+and is not a highlight reel (the film lane's point). A tool mines the film's runs for **moments**, each one an event
 a rig can film: a birth, a bite, a crowd, a portrait, a canopy from below, a descent. It does three things:
 
 - it records each candidate's window on the farm, as the films do now;
 - it scans that window's own frames for the event's bodies;
 - it runs the rig's preflight on the moment and keeps only those whose numbers pass.
 
-The result is a catalogue of filmable moments, each with its subjects' ids, its rig spec and its numbers. The story,
+It ranks a candidate by a clear line of sight across its whole window, not only at the asked second: on 2026-11-10
+another body crossed 6.4a's parent in the last second before the cut. Many candidates share one Unity launch, a window
+load and a preflight with no frames, at about 20 to 40 s a candidate (the theatre lane's estimate).
+
+The result is a catalogue of filmable moments. Each moment carries:
+- its subjects' ids, its rig spec and its numbers, over the whole take and its handles;
+- its usable span, so the prose fits the picture;
+- its own source-checked fact lines (the place, the depth, the counts, the team), which the writer cites, so that no
+  questions file and no new source check follows.
+
+Each moment's window is recorded once, at mining, and filming reuses it. On 2026-11-10 passes 20 and 21 recorded
+windows again. The story,
 the prose and the shot list choose their pictures from the catalogue and nowhere else. When a line of narration needs a
 picture the catalogue lacks, the writer changes the line or asks the miner for a named moment. The camera is never
 asked to find a picture that is not there.
@@ -45,7 +58,8 @@ asked to find a picture that is not there.
 ### 2. The look is frozen before a film starts
 
 Look work moves to its own phase between films, in the safari and the theatre, where it already belongs ("the films
-follow the safari"). A film records the look's digest when it starts and films every shot on it. A change to the look
+follow the safari"). A film records the look's digest and the theatre's commit when it starts, and films every shot, stills and clips alike,
+on both. A shot's camera is keyed on the shot itself (D348), so its stills predict its clip. A change to the look
 that the owner wants mid-film waits for the next film, unless the owner rules otherwise for that one change.
 
 ### 3. The bar is set at the start
@@ -59,12 +73,18 @@ the film ships. A rise in the bar applies to the next film.
 The rig built on 2026-11-10 (D347) frames named subjects directly and prints its numbers in about a minute, before any
 frame renders. Every shot type gets a rig type: portrait, birth, group, canopy from below, descent, card. The
 automatic director's dials are retired for films. The stills round becomes one confirming look per shot, and stops
-being the search loop.
+being the search loop. Hero and box framing already cover the portrait, the hold and the group. The canopy from below,
+the descent and the card are still to build.
+
+A rendered still is checked against its preflight. A tool measures the subject's drawn outline in the still and compares
+its share and margins with the preflight's numbers. On 2026-11-10 the gate passed on spheres while the frame showed
+the subjects at half the size, and only an eye on the sheet caught it.
 
 ### 5. A speed budget on every theatre build
 
-Every theatre build renders a fixed reference scene and reports minutes per scene and seconds per frame. A build over
-its budget fails like a failing test. Distance culling of skins and drawing (`SKIN_CULL`) becomes the default once its
+Every theatre build renders a fixed reference scene and reports minutes per scene, seconds per frame and log lines per
+frame. A build over its budget fails like a failing test. The log budget alone would have caught the printing fault in
+seconds. Distance culling of skins and drawing (`SKIN_CULL`) becomes the default once its
 pixel proof passes.
 
 ### 6. One script runs the film
@@ -73,10 +93,17 @@ pixel proof passes.
 only at a gate that needs a judgement, the owner's or a reviewer's, and messages the owner when it does. The theatre
 lane builds tools between films. It no longer hands each step of a film over by message.
 
+One scheduler on the machine hands out the Unity workers and the graphics card, in place of pause files and slot
+races. Those cost three lost batches on 2026-11-10.
+
 ## What it would cost, and the target
 
-- **Build:** about two to three days of agent work after round 67 ships. The miner and the rig types are the largest
-  parts. The speed budget and the orchestrator are smaller. The film skill's steps 1 to 7 change, so its table and
+- **Build:** about two to three days of agent work after round 67 ships. By the theatre lane's estimates:
+  - the miner, about half a day;
+  - the three missing rig types, 1 to 2 hours each, about a day in all;
+  - the speed budget, about 2 hours.
+
+  The render-against-preflight check, the scheduler and the orchestrator are not yet estimated. The film skill's steps 1 to 7 change, so its table and
   briefs are rewritten too.
 - **Target:** a film in about one day of mostly unattended machine time, with the owner needed at three gates only:
   - the bars and the look at the start;
