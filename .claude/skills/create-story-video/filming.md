@@ -712,3 +712,11 @@ Round 57's film is the first under the underwater look, and its look test found 
 - **A change of dials and seat kept old takes.** Round 67's film, 2026-11-08: 33 takes were counted as filmed across a
   change of dials (D329) and of seat (2dc6d92c), because the key held only the look's version number. It now holds
   the look's digest and the seat (`scripts/tests/story-video-check/test_look_key.py`).
+- **A moment chosen from the run was not in its window.** Round 67's film, 2026-11-10: shot 3.1a was moved to
+  10,674 s of r67r1-6202, where the run's `positions.jsonl.gz` held four animals within 2 m of one another. Its
+  window restores the 10,500 s checkpoint, and the recorded window, a COUSIN, parted from the run at 10,510 s. By
+  10,680 s in the window the same animals were 4 to 7 m apart, and no cluster was left. A shot's moment is chosen
+  from what its recorded window holds, not from the run's positions. Where a shot needs bodies in a particular
+  place, open its stretch within about 10 s after one of the run's checkpoints, record its window as a record-only
+  pass, and read the window's own frames (`scripts/poses-read.py <window> --at <second>`) before the shot goes to a
+  stills round. No tool checks this yet.

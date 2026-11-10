@@ -64,6 +64,11 @@ so that what the words name happens inside the shot and not in its first or last
 least 10 seconds before and after, so the edit can move the cut or make a dissolve; you do not add them. A
 run's before and after is two shots, one at each second.
 
+**A stretch that needs bodies in one place starts just after a checkpoint.** A window replays the run from the
+checkpoint at or before it, and drifts from the run within seconds. Bodies sit in the footage where they sat in the
+run only near that checkpoint. When a shot's picture needs bodies close together, start its stretch within about 10
+seconds after one of the run's checkpoints, as `facts.md` lists them.
+
 **The cameras.** The director has one move for each. Name the bodies as `facts.md` gives their ids. Each
 shot is its own take, so its camera move starts again at its first frame: two shots in a row on the same
 body with the same camera show a jump at the cut. Change the camera, the body or the stretch between them.
