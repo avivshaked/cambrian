@@ -308,7 +308,11 @@ The root file's rules still apply. The entries below were moved word for word, s
     within nine seconds of its first chrome starting, beside a single Unity lane. A rate cap does not bound the start-up
     spike. Another project's heavy CPU job runs only while every Unity lane is idle.
   - **Closing Afterburner stops every Unity lane.** The guards refuse a launch, and stop a running one,
-    once the CPU is unreadable for 10 s. On 2026-11-10 the owner closed it while changing its on-screen
+    once the CPU is unreadable for 10 s. On 2026-11-10 at about 22:11:55 it exited with no crash logged and no
+    session or script that stopped it, and both theatre lanes stopped. The owner ruled that evening that a session
+    starts it again itself rather than wait: `pwsh -File scripts/afterburner-ensure.ps1` starts it through the
+    owner's logon task `MSIAfterburner` and waits for the CPU reading. A heavy job still waits for the reading to
+    return before it starts. On 2026-11-10 the owner closed it while changing its on-screen
     display, and check7 and two batches stopped until it was started again. To hide the readout that
     RivaTuner draws in other programs, such as Zoom, untick "Show in On-Screen Display" in Afterburner's
     Monitoring tab, and leave Afterburner running.
