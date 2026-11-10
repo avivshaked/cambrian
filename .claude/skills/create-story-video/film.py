@@ -128,6 +128,7 @@ def film_settings(folder, lines):
     cb = s.get("child_by_shot", {})
     if not isinstance(cb, dict) or not all(isinstance(k, str) and isinstance(v, str) and re.fullmatch(r"[0-9]+", v) for k, v in cb.items()):
         problems.append("child_by_shot is an object of shot ids and body ids, each a string of digits such as \"32873\"")
+    problems += dials_by_shot_problems(s.get("dials_by_shot", {}))
     sb = s.get("size_by_shot", {})
     if not isinstance(sb, dict) or not all(isinstance(k, str) and SIZE.fullmatch(str(v)) for k, v in sb.items()):
         problems.append("size_by_shot is an object of shot ids and sizes, <width>x<height>")
@@ -480,6 +481,51 @@ def look_dials():
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
 
+DIAL_NAME = re.compile(r"EVOSIM_THEATRE_[A-Z0-9_]+")
+
+
+def look_values():
+    """The dials the look file's wide and events sections set, as {name: value}; empty when the file cannot be read
+    (look_dials refuses on that where a key is made)."""
+    try:
+        look = json.loads(look_file().read_text(encoding="utf-8-sig"))
+        return {name: str(entry.get("value")) for k in LOOK_SECTIONS for name, entry in look[k].items()}
+    except (OSError, ValueError, KeyError, AttributeError):
+        return {}
+
+
+def dials_by_shot_problems(db):
+    """What is wrong with the dials_by_shot setting, as lines. A dial the look sets is refused: the look is ruled,
+    and a shot's dial must not quietly override it."""
+    if not isinstance(db, dict) or not all(isinstance(k, str) and isinstance(v, dict) for k, v in db.items()):
+        return ["dials_by_shot is an object of shot ids, each an object of dial names and values, such as "
+                "{\"2.3a\": {\"EVOSIM_THEATRE_<NAME>\": \"2\"}}"]
+    problems, look = [], None
+    for shot_id, dials in db.items():
+        for name, value in dials.items():
+            if not (isinstance(name, str) and DIAL_NAME.fullmatch(name)):
+                problems.append(f"dials_by_shot, shot {shot_id}: '{name}' is not a dial name (EVOSIM_THEATRE_ and "
+                                "capitals, digits and underscores)")
+            elif not (isinstance(value, str) and re.fullmatch(r"\S+", value)):
+                problems.append(f"dials_by_shot, shot {shot_id}: {name} is a non-empty string with no whitespace")
+            else:
+                look = look_values() if look is None else look
+                if name in look:
+                    problems.append(f"dials_by_shot, shot {shot_id}: {name} is set by the look (theatre-film-look.json "
+                                    f"gives {look[name]}); the look is ruled and a shot's dial must not override it, "
+                                    "so drop the entry")
+    return problems
+
+
+def dials_of(shot, s):
+    """The dials a shot carries beyond the look, as a list of [name, value] sorted by name; empty for a shot with none."""
+    return sorted(([k, v] for k, v in ((s.get("dials_by_shot") or {}).get(shot["id"]) or {}).items()))
+
+
+def dial_set_text(dials):
+    return ", ".join(f"{k}={v}" for k, v in dials)
+
+
 def seat_of(s):
     """The theatre build a take is filmed on: theatre_commit's first 8 characters, lower-cased."""
     return str(s.get("theatre_commit") or "")[:8].lower()
@@ -504,6 +550,8 @@ def shot_key(shot, s, colours=None):
         fields["subject"] = s["subject_by_shot"][shot["id"]]    # likewise: only a shot with an entry
     if (s.get("child_by_shot") or {}).get(shot["id"]):
         fields["child"] = s["child_by_shot"][shot["id"]]        # likewise: only a shot with an entry
+    if dials_of(shot, s):
+        fields["dials"] = dials_of(shot, s)    # likewise: a shot with dials of its own, sorted by name
     if s.get("snow"):
         fields["snow"] = s["snow"]     # only when set, so a film filmed before the setting keeps its keys
     skin = skin_of(s)
@@ -871,6 +919,9 @@ def cmd_plan(folder, k):
     for i in (s.get("child_by_shot") or {}):
         if i not in by_id:
             lines.append(f"warning: child_by_shot names shot {i}, which is not in shots.json")
+    for i in (s.get("dials_by_shot") or {}):
+        if i not in by_id:
+            lines.append(f"warning: dials_by_shot names shot {i}, which is not in shots.json")
     clips = (read_json(folder / "clips.json") or {}).get("clips", [])
     filmed = {c["shot"]: c["key"] for c in clips if (folder / c["file"]).is_file() and sha256_of(folder / c["file"]) == c["sha256"]}
     colours = colours_of(folder, [x for x in shots["shots"] if isinstance(x, dict)])
@@ -959,6 +1010,23 @@ def cmd_plan(folder, k):
                      + ") wait for the next passes: a pass films one colour")
     else:
         pass_colour = next(iter(by_colour))
+    # The dials reach the theatre through its environment when its job starts, so a pass films one dial set: the
+    # set with the most shots first (no dials counts as one set), ties to no dials and then by the sorted set's
+    # text, and the rest wait. A record-only pass holds no dials and does not split.
+    pass_dials = []
+    if not record_only:
+        by_dials = {}
+        for x in todo:
+            by_dials.setdefault(dial_set_text(dials_of(x, s)), []).append(x)
+        if len(by_dials) > 1:
+            first = sorted(by_dials, key=lambda t: (-len(by_dials[t]), t != "", t))[0]
+            waiting = [x for x in todo if dial_set_text(dials_of(x, s)) != first]
+            todo = by_dials[first]
+            dirs = {arm: rd for arm, rd in dirs.items() if arm in {x["run"] for x in todo}}
+            lines.append(f"{len(waiting)} shots of other dial sets ("
+                         + "; ".join(sorted({dial_set_text(dials_of(x, s)) or "none" for x in waiting}))
+                         + ") wait for the next passes: a pass films one dial set")
+        pass_dials = dials_of(todo[0], s) if todo else []
     # story-windows.py takes one runs root for the whole story, so a pass films the runs under one root: the root
     # with the most shots first, ties by its path, and the rest wait (round 67's film, 2026-11-07).
     by_root = {}
@@ -1121,7 +1189,8 @@ def cmd_plan(folder, k):
     write_json(out / "plan.json", {"pass": k, "planned": now(), "shots_sha256": sha256_of(folder / "shots.json"),
                                    "settings": s, "size": pass_size, "farm": farm, "scenes": entries,
                                    "record_only": record_only,
-                                   "colour": colour_of({"colour": pass_colour}, colours) if pass_colour else None})
+                                   "colour": colour_of({"colour": pass_colour}, colours) if pass_colour else None,
+                                   "dials": dict(pass_dials)})
     footage = sum(e["seconds"] for e in entries)
     head = [f"pass {k}: {len(entries)} shots to " + ("record, none filmed" if record_only else "film")
             + f" on {len(dirs)} run(s), {filmed_count} filmed already, {footage:.0f} s of footage with handles",
@@ -1132,6 +1201,7 @@ def cmd_plan(folder, k):
     if s.get("theatre_root"):
         head.append(f"theatre root: the render worker and theatre-safari.ps1 are taken from {theatre_root(s)}")
     head.append(f"look dials {fields_look(s)}, seat {seat_of(s) or 'none'}")
+    head.append("shot dials: " + (", ".join(f"{k}={v}" for k, v in pass_dials) if pass_dials else "none"))
     head.append(guard_text(s))
     if s.get("overlap") is False:
         head.append("overlap: off, the pass records every window first and films after, with no farm beside Unity")
@@ -1406,10 +1476,11 @@ def pin(pid, cores):
         kernel.CloseHandle(handle)
 
 
-def launch(args, sink=None, cores=None):
+def launch(args, sink=None, cores=None, env=None):
     """One child of the pass's job, its output to the job's own log or to sink, pinned to cores when given (before
-    it has started anything of its own, so its children inherit the pin). Tests stand in for it."""
-    proc = subprocess.Popen(args, cwd=REPO, stdout=sink, stderr=subprocess.STDOUT if sink else None)
+    it has started anything of its own, so its children inherit the pin). env, when given, is the child's whole
+    environment. Tests stand in for it."""
+    proc = subprocess.Popen(args, cwd=REPO, stdout=sink, stderr=subprocess.STDOUT if sink else None, env=env)
     pin(proc.pid, cores)
     return proc.wait()
 
@@ -1444,7 +1515,7 @@ def cmd_run(folder, k):
     if plan.get("colour"):
         os.environ[TEAMS_ENV] = str(repo_path(plan["colour"]["file"]))
     done = {"pass": k, "started": now(), "look": s["theatre_look"], "stream": bool(s.get("theatre_stream")),
-            "snow": s.get("snow"), "colour": plan.get("colour"),
+            "snow": s.get("snow"), "colour": plan.get("colour"), "dials": plan.get("dials") or {},
             "overlap": s.get("overlap") is not False, "stopped": None, "record_exit": 0, "recorded": {},
             "render_exit": {}, "safari": {}, "stop_file": None, "record_only": record_only_pass(plan)}
     record_only = done["record_only"]
@@ -1487,7 +1558,10 @@ def cmd_run(folder, k):
                 args.append("-Stream")     # the takes straight to the card's encoder (theatre-safari.ps1 -Stream)
             say(f"{now()} {arm}: filming, its log film/pass-{k}/film-{arm}.log: {' '.join(args)}")
             with open(out / f"film-{arm}.log", "w", encoding="utf-8") as sink:
-                done["render_exit"][arm] = launch(args, sink, cores=s.get("theatre_cores"))
+                # The pass's own dials go into this child's environment alone; the farm's child and this job's are
+                # left as they are. A call without dials is the call it always was.
+                extra = {"env": {**os.environ, **plan["dials"]}} if plan.get("dials") else {}
+                done["render_exit"][arm] = launch(args, sink, cores=s.get("theatre_cores"), **extra)
             # The theatre's own log, kept beside the pass: the next run's filming writes over it, and collect
             # reads each far take's fog from it.
             log = theatre_root(s) / "scratch" / "logs" / f"theatre-safari-{arm}.log"
