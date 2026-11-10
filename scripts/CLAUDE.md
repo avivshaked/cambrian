@@ -251,6 +251,12 @@ belongs to a run that has ended, so it can be stopped by its process id (2026-10
   median nearest neighbour are all read from a run with `scripts/positions-read.py`. Only in a
   shared world, where a coordinate is a place rather than a lattice artefact, and only from that
   build: a tiled world and every run recorded before it carry no such file.
+- **A body's flags in `positions.jsonl` and the film windows' poses are bits, not a guild**
+  (`PositionsRow.cs`): 1 absorptive, 2 jointed, 4 photosynthetic (any part), 8 remains, 16
+  holding a grip now. A gripping body need not be photosynthetic: in the forest runs of
+  2026-11-06 and 2026-11-07, 1 to 4 gripping bodies at a time carried no leaf. So say which you
+  count. "Gripping plants" (16 set, 8 clear) includes leafless grippers, and "leaf-bearers"
+  (4 set) excludes them.
 - **`stillb` and `mat orphan` read 0 in a healthy run, and the second is an invariant.** From
   the 2026-09-07 build the table carries the stillbirth total and the matter the ledger says
   is in bodies less what the living hold. A nonzero `mat orphan` means matter was charged to a
