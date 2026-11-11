@@ -256,7 +256,11 @@ belongs to a run that has ended, so it can be stopped by its process id (2026-10
   holding a grip now. A gripping body need not be photosynthetic: in the forest runs of
   2026-11-06 and 2026-11-07, 1 to 4 gripping bodies at a time carried no leaf. So say which you
   count. "Gripping plants" (16 set, 8 clear) includes leafless grippers, and "leaf-bearers"
-  (4 set) excludes them.
+  (4 set) excludes them. The positions flags are recomputed at every sample from the body as it
+  stands, but a lineage birth row's `jnt` is the body as born. A bite can take a jointed part off
+  for good (D106), so count working joints at a second from the positions bit 2, not from birth
+  rows: at 24,000 s in r67r1-6202, 844 of 1,055 living animals were born jointed and only 615 still
+  had a joint (`scratch/joint-dof-probe/census-check-24000.txt`).
 - **`stillb` and `mat orphan` read 0 in a healthy run, and the second is an invariant.** From
   the 2026-09-07 build the table carries the stillbirth total and the matter the ledger says
   is in bodies less what the living hold. A nonzero `mat orphan` means matter was charged to a
