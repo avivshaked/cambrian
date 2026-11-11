@@ -191,6 +191,15 @@ def film_settings(folder, lines):
     if not isinstance(s.get("record_only", False), bool):
         problems.append("record_only is true (a pass records the farm windows of every shot and films nothing) or "
                         "false, the default: a pass that films")
+    ow = s.get("own_workers", [])
+    if not (isinstance(ow, list) and all(isinstance(w, str) and w for w in ow)):
+        problems.append("own_workers is a list of render-worker folders that belong to this film (default []), each a "
+                        "string, absolute or from the repository root: a pass does not wait for a Unity on another "
+                        "of them")
+    else:
+        for w in ow:
+            if not own_worker_path(w).is_dir():
+                problems.append(f"own_workers names {w}, which is not an existing folder")
     for key, default in THEATRE_COSTS.items():
         v = s.get(key, default)
         if not number(v) or v < 0:
@@ -1282,6 +1291,37 @@ def narration_tool():
     return mod
 
 
+def own_worker_path(w):
+    """An own_workers entry as a Path: absolute, or from the repository root."""
+    p = Path(w)
+    return p if p.is_absolute() else REPO / p
+
+
+def norm_path(p):
+    """A path for comparing: forward slashes, no quotes or trailing slash, lower case."""
+    return str(p).strip().strip('"').replace("\\", "/").rstrip("/").lower()
+
+
+def unity_projects():
+    """{process id: its -projectPath, normalised} for every Unity.exe, or None when the processes cannot be read."""
+    try:
+        shell = subprocess.run(
+            ["powershell", "-NoProfile", "-Command",
+             "Get-CimInstance Win32_Process -Filter \"Name='Unity.exe'\" | Select-Object ProcessId,CommandLine "
+             "| ConvertTo-Json -Compress"], capture_output=True, timeout=120)
+        if shell.returncode != 0:
+            return None
+        found = json.loads(shell.stdout.decode("utf-8", "replace") or "null")
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+    found = found if isinstance(found, list) else [found] if found else []
+    out = {}
+    for p in found:
+        m = re.search(r'-projectPath"?\s+("[^"]*"|\S+)', p.get("CommandLine") or "", re.IGNORECASE)
+        out[p.get("ProcessId")] = norm_path(m.group(1)) if m else None
+    return out
+
+
 def cmd_machine(folder, record_only=False):
     """A record-only pass starts no theatre, so neither the render worker nor another lane's batchmode Unity bars it:
     on 2026-11-11 the coordinator asked for three windows recorded on cores 16-19 while the theatre lane's rig rounds
@@ -1295,6 +1335,23 @@ def cmd_machine(folder, record_only=False):
         if verdict.endswith("BUSY") and not found:
             verdict = "MACHINE: FREE"
         found += [f"{x}, which a record-only pass does not wait for" for x in unity]
+    own = [norm_path(own_worker_path(w)) for w in s.get("own_workers") or []]
+    if own and not record_only:
+        mine = norm_path(theatre_root(s) / f"unity-w{s['worker']}")
+        projects = unity_projects()
+        if projects is not None:
+            others, ignored = [], []
+            for x in found:
+                m = re.fullmatch(r"a batchmode Unity, process (\d+)", x)
+                path = projects.get(int(m.group(1))) if m else None
+                if path in own and path != mine:
+                    ignored.append(f"{x}, on this film's own worker {path}, which a pass on another worker does "
+                                   "not wait for")
+                else:
+                    others.append(x)
+            if verdict.endswith("BUSY") and not others:
+                verdict = "MACHINE: FREE"
+            found = others + ignored
     busy = verdict.endswith("BUSY")
     lines += found
     if record_only:
