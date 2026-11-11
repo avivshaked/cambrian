@@ -374,6 +374,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D350](#d350) | Every shot of round 67's film goes through the rig, under one set of bars | 2026-11-11 | decided by the coordinator on 2026-11-10 and 2026-11-11, under D347 and the owner's delegation of the films' look (D327) |
 | [D351](#d351) | The rig's bars after round 67's second gate round: a calibrated move, glow on every shot, heroes sized by their silhouette | 2026-11-11 | decided by the coordinator on 2026-11-11, under D347 and the owner's delegation of the films' look (D327) |
 | [D352](#d352) | The theatre draws coral at the world's heights with its lobed outline, and no lobe cuts in under a grip | 2026-11-11 | decided by the coordinator on 2026-11-11, under the owner's delegation of the films' look (D327) |
+| [D353](#d353) | The rig plans the camera that is drawn, spends each move on screen, and checks what the reviewer fails | 2026-11-11 | decided by the coordinator on 2026-11-11, under D347 and the owner's delegation of the films' look (D327) |
+| [D354](#d354) | Four look changes for round 67's film and the safari: exposure from the water, holdfasts, leafless plants, fixed family hue | 2026-11-11 | decided by the coordinator on 2026-11-11 under D327 |
 
 ---
 
@@ -12247,3 +12249,63 @@ so the drawing does too.
 **Rejected.** The full envelope everywhere, which seats every plant but loses the living outline. Accepting the five
 overhangs, which shows the same fault at a smaller size. A per-plant offset that moves plants onto the drawn coral,
 which would put them where the world does not.
+
+### D353
+**The rig plans the camera that is drawn, spends each move on screen, and checks what the reviewer fails** · 2026-11-11
+
+**Status:** decided by the coordinator on 2026-11-11, under D347 and the owner's delegation of the films' look (D327).
+It amends D350 and D351 where they differ. The calibrated lines are provisional and rest on the reviewed stills decks
+of round 67's film; their tables sit in `scratch/film-light/c8/pass13/rig/` on the theatre lane.
+
+**Decision.**
+
+- A rig shot is drawn from the rig's eye. The safari's reef bound uses the spec's reefClearance (no spec under 0.35 m;
+  other shots keep 1.5 m), and the gate fails any frame whose drawn camera left the rig's path by more than 0.10 m.
+- A move is spent inside the shot's run window from the shot list, at a steady pace, and carries on into the 3 s
+  handles, easing to rest at the take's ends. The rig tests the handles against every bound the drawn camera reads.
+- The move bars: eye path 0.65 for every shot; for plant shots, screen motion 0.21 passes too; and a take other than a
+  push turns plus pitches at least 25 degrees between the reviewer's first and last stills, read at their own seconds.
+- The light bars, read on the decoded take: mean luma 64.5 on every frame, the top fifth 55 and the darkest corner 31
+  at the quarter stills, and the background with the hero's box masked 64.0 on every frame.
+- In a hero shot the edge and card rules judge the hero alone. A pull-back's last still shows at least 3 named relatives
+  within 0.25 of the width of the hero, in the lower two thirds.
+- A sun offset never makes the worst still worse than offset 0's. Dark top is judged from the frame, not from the
+  rig's search, and a body the reef hides is never counted as cut.
+- Per shot: 9.10a is framed close on the leafless plant 5678 from 30 degrees above, its maxElevation lifted for it
+  alone, since every level or rising eye within reach stood in the rock. 1.4a keeps a share floor of 0.33, since the
+  reviewer passed its framing.
+
+**Why.** The first batch passed the gate and failed review on all nine shots. Each fault the reviewer named and the gate
+missed became a check, calibrated on the reviewed decks where there were enough of them. Two faults were the rig's own.
+Plant frames were drawn 1.5 m from a camera the gate measured. And every move was spread over the whole take while the
+film showed only its middle, so small moves read as still.
+
+**Rejected.** Screen motion as the animals' move bar, which did not separate the takes read as still. A luma floor on the
+darkest band, which did not separate navy from teal. Widening a shot's run window to show more of a move, which would
+change the edit.
+
+### D354
+**Four look changes for round 67's film and the safari: exposure from the water, holdfasts, leafless plants, fixed family hue** · 2026-11-11
+
+**Status:** decided by the coordinator on 2026-11-11 under D327. The films follow the safari, so each is the safari's
+default too. Each went to the owner as a still pair, and the work did not wait for a reply.
+
+**Decision.**
+
+- The story meter exposes each take with the hero's drawn box left out
+  (`EVOSIM_THEATRE_STORY_METER_HERO=1` in `scripts/theatre-film-look.json`), and reads the whole frame when the masked
+  region is under a fifth of it.
+- An anchoring part is drawn as holdfast tissue with no clade pattern, part by part.
+- A body whose root is anchoring and that has no jointed part takes no clade pattern or wide hue on any part.
+- In the family map a family body takes a fixed magenta-violet hue, keeping its own lightness and saturation, with a
+  lineage jitter of at most 8 degrees. The teams map follows if its pair passes.
+
+**Why.** Every portrait failed review on a navy background. The cause was the meter. Over 85 reviewed stills the
+background fell with the hero's share of the frame (R² 0.70), and the day factor explained none of it. With the hero
+masked, 8.2a's background rose from 50 to 75 with 0.56% of the hero clipped, and a bright day moved under a point.
+Anchoring cells had no look before the theatre's cell-table fix and fell to the animal skin, so a leafless plant read as
+a striped animal. A turn from each lineage's hue drifted the family to mint, yellow and green by 42,000 s.
+
+**Rejected.** Lowering the day gamma, which the meter undid. Clearing the window's sky of its day-factor cloud, and the
+scattered-light mirror, which lifted the background by under 3 points. A half-gap exposure target, which did not act
+on the cause.
