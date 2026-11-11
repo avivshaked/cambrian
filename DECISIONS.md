@@ -376,6 +376,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D352](#d352) | The theatre draws coral at the world's heights with its lobed outline, and no lobe cuts in under a grip | 2026-11-11 | decided by the coordinator on 2026-11-11, under the owner's delegation of the films' look (D327) |
 | [D353](#d353) | The rig plans the camera that is drawn, spends each move on screen, and checks what the reviewer fails | 2026-11-11 | decided by the coordinator on 2026-11-11, under D347 and the owner's delegation of the films' look (D327) |
 | [D354](#d354) | Four look changes for round 67's film and the safari: exposure from the water, holdfasts, leafless plants, fixed family hue | 2026-11-11 | decided by the coordinator on 2026-11-11 under D327 |
+| [D355](#d355) | Round 67's film is filmed whole as an assembly cut, and the stills review stops being a gate before filming | 2026-11-11 | ruled by the owner on 2026-11-11 in the evening, choosing the coordinator's recommendation |
 
 ---
 
@@ -12309,3 +12310,20 @@ a striped animal. A turn from each lineage's hue drifted the family to mint, yel
 **Rejected.** Lowering the day gamma, which the meter undid. Clearing the window's sky of its day-factor cloud, and the
 scattered-light mirror, which lifted the background by under 3 points. A half-gap exposure target, which did not act
 on the cause.
+
+### D355
+**Round 67's film is filmed whole as an assembly cut, and the stills review stops being a gate before filming** · 2026-11-11
+
+**Status:** ruled by the owner on 2026-11-11 in the evening, choosing the coordinator's recommendation. It changes the
+order of D350 and D353's flow, not their bars.
+
+**Decision.** Every one of the film's 68 shots is filmed at its best current take with the day's fixes, whether or not it
+has passed the stills reviewer, and the whole film is assembled on the Resolve timeline with the narration and cards.
+A shot whose take failed the rig's gate carries a marker with its failures. Weak shots are then replaced, worst first,
+with the owner judging the assembled film.
+
+**Why.** After a day of review rounds 3 of 68 shots had passed. Each review found a fault the gate did not yet check, and
+each became a check before anything was filmed. That improved the shots one by one but put the finished film days away.
+
+**Rejected.** Keeping the stills review as the gate before filming. Filming only shots that pass the automatic gate and
+leaving the rest in the review loop, which fills the film in but still leaves gaps.
