@@ -373,6 +373,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D349](#d349) | A bite's crumbs are drawn as small torn flakes, not soft discs | 2026-11-10 | ruled by the owner on 2026-11-10, on the coordinator's recommendation, after the full-size pairs in `scratch/owner/r67-crumb-flakes-full-size/` |
 | [D350](#d350) | Every shot of round 67's film goes through the rig, under one set of bars | 2026-11-11 | decided by the coordinator on 2026-11-10 and 2026-11-11, under D347 and the owner's delegation of the films' look (D327) |
 | [D351](#d351) | The rig's bars after round 67's second gate round: a calibrated move, glow on every shot, heroes sized by their silhouette | 2026-11-11 | decided by the coordinator on 2026-11-11, under D347 and the owner's delegation of the films' look (D327) |
+| [D352](#d352) | The theatre draws coral at the world's heights with its lobed outline, and no lobe cuts in under a grip | 2026-11-11 | decided by the coordinator on 2026-11-11, under the owner's delegation of the films' look (D327) |
 
 ---
 
@@ -12223,3 +12224,26 @@ times, against none before.
 **Rejected.** Keeping the look-down framing for the bare coral with more light, since it was the angle that read dark.
 Framing 9.10a as a portrait, which contradicted its see line. A fixed hero share without the height cap, which crops the
 tall founders.
+
+### D352
+**The theatre draws coral at the world's heights with its lobed outline, and no lobe cuts in under a grip** · 2026-11-11
+
+**Status:** decided by the coordinator on 2026-11-11, under the owner's delegation of the films' look (D327). It is a
+look, not a world rule: the world's rock is unchanged. Since the films follow the safari, it goes into both, as the
+default (`EVOSIM_THEATRE_CORAL_ENVELOPE`).
+
+**Decision.** The theatre draws each coral piece at the world's height (setting 2, `18b6a866`) and keeps the lobed
+outline, except that the outline never cuts inside a point where a plant grips, plus that plant's footprint radius and
+2 cm. The pass bar is the theatre's grip probe: no plant's lowest point more than 3 cm from the drawn coral, on the
+colonies of 9.8a and 9.10b. Stills of plant shots taken before it are re-rendered.
+
+**Why.** The drawing cut its lobes inward of the world's rock, and plants gripping the world's rock floated 5 to 30 cm
+above the drawn coral: 15 of 16 in the probe. Drawing every piece at the world's full size seated all 16, but the plates
+became plain stone discs. At the world's heights with the lobes kept, 9.10b's table read as living coral again, at the
+current look's brightness, and 11 of 16 plants seated. The other five gripped near a rim where a lobe cut in, up to
+18 cm off, and on 9.8a they showed hanging in open water past the plate's end. The world has rock under those grips,
+so the drawing does too.
+
+**Rejected.** The full envelope everywhere, which seats every plant but loses the living outline. Accepting the five
+overhangs, which shows the same fault at a smaller size. A per-plant offset that moves plants onto the drawn coral,
+which would put them where the world does not.
