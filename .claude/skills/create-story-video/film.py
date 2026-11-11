@@ -442,6 +442,17 @@ def side_of(shot):
     return "left" if shot.get("kind") == "graphic" and shot["camera"] == "Portrait" else None
 
 
+def rig_side_line(slug, side, log):
+    """Whether the camera rig's line for the slug's story puts the subject on the side: `safari story: story <n>: the
+    subject in the <side> third`, n the integer of the slug's story-NN- prefix, matched exactly. The rig prints it in
+    place of the director's line. A slug without the prefix has none."""
+    m = re.match(r"story-0*([0-9]+)-", slug)
+    if not m:
+        return False
+    return bool(re.search(r"safari story: story " + m.group(1) + r": the subject in the " + re.escape(side)
+                          + r" third", log))
+
+
 def size_of(shot, s):
     """A shot's size: its own from size_by_shot, an offline pass filmed small for review, or the film's."""
     return (s.get("size_by_shot") or {}).get(shot["id"], s["size"])
@@ -2043,8 +2054,9 @@ def cmd_collect(folder, k):
         if focus_fault:
             errors.append(f"{where}: {focus_fault}")
             continue
-        if side is not None and not re.search("take [0-9]+ of " + re.escape(row["slug"]) + " at .*: portrait of "
-                                              ".*subject a third off centre on the " + side, log):
+        if side is not None and not (re.search("take [0-9]+ of " + re.escape(row["slug"]) + " at .*: portrait of "
+                                               ".*subject a third off centre on the " + side, log)
+                                     or rig_side_line(row["slug"], side, log)):
             errors.append(f"{where}: the theatre's log does not put its subject on the {side}")
             continue
         record = {"shot": e["shot"], "key": e["key"], "pass": k, "file": f"clips/{clip.name}",
