@@ -1322,6 +1322,40 @@ def unity_projects():
     return out
 
 
+def farm_commands():
+    """{process id: command line} for every Evosim.Farm.exe, or None when the processes cannot be read."""
+    try:
+        shell = subprocess.run(
+            ["powershell", "-NoProfile", "-Command",
+             "Get-CimInstance Win32_Process -Filter \"Name='Evosim.Farm.exe'\" | Select-Object ProcessId,CommandLine "
+             "| ConvertTo-Json -Compress"], capture_output=True, timeout=120)
+        if shell.returncode != 0:
+            return None
+        found = json.loads(shell.stdout.decode("utf-8", "replace") or "null")
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+    found = found if isinstance(found, list) else [found] if found else []
+    return {p.get("ProcessId"): p.get("CommandLine") or "" for p in found}
+
+
+def own_window_recording(command, folder):
+    """True when a farm command line is a --film-window recording written under this film's own film directory."""
+    if "--film-window" not in command:
+        return False
+    root = norm_path(Path(folder) / "film")
+    for arg in re.findall(r'"[^"]*"|\S+', command):
+        a = norm_path(arg)
+        if a == root or a.startswith(root + "/"):
+            return True
+    return False
+
+
+def cores_overlap(a, b):
+    """True when two core lists such as "16-19" and "16-19,24-27" share a logical processor; False when either is unset."""
+    ma, mb = cores_mask(a), cores_mask(b)
+    return ma is None or mb is None or bool(ma & mb)
+
+
 def cmd_machine(folder, record_only=False):
     """A record-only pass starts no theatre, so neither the render worker nor another lane's batchmode Unity bars it:
     on 2026-11-11 the coordinator asked for three windows recorded on cores 16-19 while the theatre lane's rig rounds
@@ -1336,6 +1370,21 @@ def cmd_machine(folder, record_only=False):
             verdict = "MACHINE: FREE"
         found += [f"{x}, which a record-only pass does not wait for" for x in unity]
     own = [norm_path(own_worker_path(w)) for w in s.get("own_workers") or []]
+    window_lines = []
+    if own and not record_only and not cores_overlap(s.get("theatre_cores"), s.get("farm_cores")):
+        commands = farm_commands()
+        if commands is not None:
+            kept = []
+            for x in found:
+                m = re.fullmatch(r"a farm run, process (\d+)", x)
+                if m and own_window_recording(commands.get(int(m.group(1))) or "", folder):
+                    window_lines.append(f"{x}, this film's own window recording on cores {s['farm_cores']}, which a "
+                                        f"theatre pass on cores {s['theatre_cores']} does not wait for")
+                else:
+                    kept.append(x)
+            if verdict.endswith("BUSY") and not kept:
+                verdict = "MACHINE: FREE"
+            found = kept
     if own and not record_only:
         mine = norm_path(theatre_root(s) / f"unity-w{s['worker']}")
         projects = unity_projects()
@@ -1353,7 +1402,7 @@ def cmd_machine(folder, record_only=False):
                 verdict = "MACHINE: FREE"
             found = others + ignored
     busy = verdict.endswith("BUSY")
-    lines += found
+    lines += found + window_lines
     if record_only:
         return ("MACHINE: BUSY" if busy else "MACHINE: FREE"), lines
     lock = theatre_root(s) / f"unity-w{s['worker']}" / "Temp" / "UnityLockfile"
