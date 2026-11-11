@@ -301,6 +301,8 @@ The root file's rules still apply. The entries below were moved word for word, s
     environment goes into a workspace while its Python extensions are on. At 22:51 the same day a job-search
     session's `uv sync` made a new `.venv` at 22:51:06, and a storm of about 1,100 rg.exe began nine seconds later and
     stopped another project's render: every project's workspace needs its Python extensions off, not only this one's.
+    The owner switched them off for job-search on 2026-11-11. That day a `uv sync` adding three packages to the same
+    venv, and two test runs, kept `rg.exe` at 0 throughout, beside two theatre renders.
   - **A pinned job can leak its affinity, and a CPU job beside two Unity lanes ran the CPU to 94 °C.** On 2026-11-10
     the coordinator gave another project's Remotion render 8 cores (mask 0xF0F000) beside both theatre lanes. One
     `chrome-headless-shell` child ran on all 32 cores and took about 12.8 of them, and the heat guard stopped a theatre
