@@ -371,6 +371,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D347](#d347) | Round 67's hard shots are framed by a camera rig per shot type, with named subjects, and are no longer retried | 2026-11-10 | ruled by the owner on 2026-11-10, when the coordinator asked whether the hard shots should be capped at two more stills rounds |
 | [D348](#d348) | A shot's camera is keyed on its subject and second, never on its place in a story | 2026-11-10 | decided by the coordinator on 2026-11-10, under D347 and the owner's delegation of the films' look (D327) |
 | [D349](#d349) | A bite's crumbs are drawn as small torn flakes, not soft discs | 2026-11-10 | ruled by the owner on 2026-11-10, on the coordinator's recommendation, after the full-size pairs in `scratch/owner/r67-crumb-flakes-full-size/` |
+| [D350](#d350) | Every shot of round 67's film goes through the rig, under one set of bars | 2026-11-11 | decided by the coordinator on 2026-11-10 and 2026-11-11, under D347 and the owner's delegation of the films' look (D327) |
 
 ---
 
@@ -12152,3 +12153,39 @@ the lens, which the size cap and the near fade removed. The coordinator read all
 neither in the last version. The flakes are smaller than the discs and may be easier to miss in a wide shot (inference).
 
 **Rejected.** Keeping the discs.
+
+### D350
+**Every shot of round 67's film goes through the rig, under one set of bars** · 2026-11-11
+
+**Status:** decided by the coordinator on 2026-11-10 and 2026-11-11, under D347 and the owner's delegation of the films'
+look (D327). It extends D347 from the hard shots to all 68, and records the bars the rig's gate (`tools/rig-gate.py` on
+the theatre lane's `pass18` branches) holds. The values are this film's; whether they carry over is left to the
+pipeline proposal (`proposals/propose-film-pipeline-v2.md`).
+
+**Decision.** Stills 12 failed all 48 takes from the automatic director, so every shot is framed by the rig on named
+subjects from the film lane's window scans, checked by its preflight before any frame renders, and stilled only when the
+gate passes it. Rig types now cover portraits, births, groups, look-ups, descents, wides and card shots. Beside D347's
+bars, the gate holds these:
+
+- a move must show: the eye travels at least 0.15 of the subject distance, or the subject's share changes by 0.08;
+- a descent ends looking up, at least 10 degrees steeper than it began;
+- the view faces the sun within 60 degrees, so that shafts can show;
+- no named subject under the corner card, and a wide under the card takes the card's 0.40 share in place of 0.5;
+- a wide set's share is the larger of its width and height;
+- a cut extra in the lower half fails only when it is over 0.20 of the width and nearer than the fog's start (3 m);
+- a plant wide looks level or up (elevation at or below 0), with the eye kept 0.5 m from the reef along its whole path;
+- tone and edges are judged per take, not as the shot's mean;
+- a window that leaves out any living body fails the launch.
+
+Two bare-coral shots (9.9a, 9.10c) look down onto the coral and are exempt from the plant look-up, each with its reason in
+its spec. Distance culling of skins (`SKIN_CULL` 20 m) runs in preflights only, since at 20 m it removes far bodies from
+the picture.
+
+**Why.** Each bar answers a fault found in a stills round or a gate's numbers on 2026-11-10: invisible moves, reversed
+descents, missing shafts, subjects under the card, tall plant stands measured by width, far fogged bodies failing as cut,
+and the safari's 1.5 m reef margin failing plant shots whose frames showed no coral from inside. The theatre's missing
+cell table, which had left every gripping plant undrawn, was found the same evening.
+
+**Rejected.** Retrying the automatic director's shots (D347). Framing the bare-coral shots on their plant's neighbours,
+which would show the stand the narration says is gone. A 0.25 cut-extra limit, which nothing reviewed supported. A 40 m
+skin cull for this film.
