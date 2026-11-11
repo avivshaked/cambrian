@@ -260,7 +260,7 @@ belongs to a run that has ended, so it can be stopped by its process id (2026-10
   stands, but a lineage birth row's `jnt` is the body as born. A bite can take a jointed part off
   for good (D106), so count working joints at a second from the positions bit 2, not from birth
   rows: at 24,000 s in r67r1-6202, 844 of 1,055 living animals were born jointed and only 615 still
-  had a joint (`scratch/joint-dof-probe/census-check-24000.txt`).
+  had a joint (`logbook/specs/r67-read/joint-census/census-check-24000.txt`).
 - **`stillb` and `mat orphan` read 0 in a healthy run, and the second is an invariant.** From
   the 2026-09-07 build the table carries the stillbirth total and the matter the ledger says
   is in bodies less what the living hold. A nonzero `mat orphan` means matter was charged to a

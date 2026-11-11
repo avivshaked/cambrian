@@ -1,0 +1,10 @@
+T 24000, positions sample at 24000; living animals by the census rule: 1055
+  not in the sample: 0
+  birth jnt 0, jointed at sample 0: 211
+  birth jnt 1, jointed at sample 0: 229
+  birth jnt 1, jointed at sample 1: 615
+  birth-jointed now unjointed: 229; of those with a non-root kill row by T: 229
+  body 32869: birth jnt 1, flags at sample 0, limb kills by T 1
+  body 32291: birth jnt 1, flags at sample 0, limb kills by T 1
+  body 33942: birth jnt 1, flags at sample 0, limb kills by T 1
+  body 34788: birth jnt 1, flags at sample 0, limb kills by T 1
