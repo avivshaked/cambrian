@@ -116,7 +116,7 @@ The channel's opener and closer are remade after the grazer film's round, from i
 
 The owner also wants A's view of the surface from below as the theatre's and the films' water edge. c8's second cut (`scratch/owner/water-edge-from-below-preview/`) works at 5 m, and the owner found it better than before but still short of take A. The water edge's third cut held at 5 m. At 1.5 m it failed: the sun showed as eight flat cut-outs with no glow, and tan blotches sat near the rim. So that cut did not go to the owner. The fourth cut renders as phase142 (`scratch/theatre-realism/phase142.ps1`).
 
-**Growth is drawn in steps of 0.5 s, and fast**, by c8's measurement (`scratch/theatre-realism/growth-pulses/notes.md`): a body's size changes only on the metabolic step. A newborn grows about 6% in length per step, and the median from birth to 0.9 of adult size is 82.5 s. The film eases the steps (`EVOSIM_THEATRE_GROWTH_EASE`). Whether growth should be slower is a world rule. The coordinator recommended measuring first, then putting a growth-rate proposal to the owner after the retrain and r67. The owner has not ruled.
+**Growth is drawn in steps of 0.5 s, and fast**, by c8's measurement (`logbook/specs/growth-pulses-notes.md`): a body's size changes only on the metabolic step. A newborn grows about 6% in length per step, and the median from birth to 0.9 of adult size is 82.5 s. The film eases the steps (`EVOSIM_THEATRE_GROWTH_EASE`). Whether growth should be slower is a world rule. The coordinator recommended measuring first, then putting a growth-rate proposal to the owner after the retrain and r67. The owner has not ruled.
 
 ## The agents and their lanes
 
