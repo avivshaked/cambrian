@@ -879,6 +879,12 @@ def focus_log_fault(slug, log, mode, level):
     return None
 
 
+def rig_planned(shot_id, log):
+    """True when the theatre's log carries the camera rig's plan for this shot, '[Theatre] rig <id> u=...'. Since D347
+    the rig frames every shot and prints no canopy line, so a canopy shot it framed is not asked for the director's."""
+    return re.search(r"\[Theatre\] rig " + re.escape(str(shot_id)) + r" u=", log) is not None
+
+
 def canopy_log_fault(slug, log):
     """Why a theatre log does not show the canopy plan for a scene, or None. The director writes
     'take N of <slug> at T s: canopy: ...' for each take planned as the canopy shot (FilmPlans Plan_). Under
@@ -2033,7 +2039,7 @@ def cmd_collect(folder, k):
         if colour_fault:
             errors.append(f"{where}: {colour_fault}")
             continue
-        if e.get("canopy"):
+        if e.get("canopy") and not rig_planned(e["shot"], log):
             canopy_fault = canopy_log_fault(row["slug"], log)
             if canopy_fault:
                 errors.append(f"{where}: {canopy_fault}; its log film/pass-{k}/theatre-{e['arm']}.log")
