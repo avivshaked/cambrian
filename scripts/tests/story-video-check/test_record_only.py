@@ -248,3 +248,21 @@ def test_a_window_a_record_only_pass_recorded_is_reused_by_the_next_pass(tmp_pat
     assert any(x.startswith("windows: 3 of 3 reused") for x in lines), lines
     for w in json.loads((folder / "film" / "pass-2" / "windows" / "windows.json").read_text(encoding="utf-8"))["windows"]:
         assert (folder / "film" / "pass-2" / "windows" / w["out"] / "film.poses.bin").read_bytes() == b"poses"
+
+
+def test_record_only_machine_ignores_another_lanes_unity(monkeypatch, tmp_path):
+    """A record-only pass starts no theatre: another lane's batchmode Unity and the render worker's lock do not bar it
+    (the coordinator's three windows of 2026-11-11), but a farm run still does. A filming pass waits for all three."""
+    fake = types.SimpleNamespace(cmd_machine=lambda: ("MACHINE: BUSY", ["a batchmode Unity, process 1"]))
+    monkeypatch.setattr(film, "narration_tool", lambda: fake)
+    monkeypatch.setattr(film, "film_settings", lambda folder, lines: {"worker": 7, "theatre_root": "x"})
+    monkeypatch.setattr(film, "theatre_root", lambda s: tmp_path)
+    monkeypatch.setattr(film, "stale_worker", lambda s: None)
+    lock = tmp_path / "unity-w7" / "Temp" / "UnityLockfile"
+    lock.parent.mkdir(parents=True)
+    lock.write_text("")
+    verdict, lines = film.cmd_machine(tmp_path, record_only=True)
+    assert verdict == "MACHINE: FREE" and "does not wait for" in lines[0]
+    assert film.cmd_machine(tmp_path)[0] == "MACHINE: BUSY"
+    fake.cmd_machine = lambda: ("MACHINE: BUSY", ["a farm run, process 2", "a batchmode Unity, process 1"])
+    assert film.cmd_machine(tmp_path, record_only=True)[0] == "MACHINE: BUSY"

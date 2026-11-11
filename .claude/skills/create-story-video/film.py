@@ -1282,12 +1282,23 @@ def narration_tool():
     return mod
 
 
-def cmd_machine(folder):
+def cmd_machine(folder, record_only=False):
+    """A record-only pass starts no theatre, so neither the render worker nor another lane's batchmode Unity bars it:
+    on 2026-11-11 the coordinator asked for three windows recorded on cores 16-19 while the theatre lane's rig rounds
+    held w7 and w9. A farm run, ffmpeg or a compute job on the card still does."""
     lines = []
     s = film_settings(folder, lines)
     verdict, found = narration_tool().cmd_machine()
+    if record_only:
+        unity = [x for x in found if x.startswith("a batchmode Unity")]
+        found = [x for x in found if x not in unity]
+        if verdict.endswith("BUSY") and not found:
+            verdict = "MACHINE: FREE"
+        found += [f"{x}, which a record-only pass does not wait for" for x in unity]
     busy = verdict.endswith("BUSY")
     lines += found
+    if record_only:
+        return ("MACHINE: BUSY" if busy else "MACHINE: FREE"), lines
     lock = theatre_root(s) / f"unity-w{s['worker']}" / "Temp" / "UnityLockfile"
     if lock.exists():
         busy = True
@@ -1404,7 +1415,7 @@ def cmd_start(folder, k):
         # A job writes run.log from its first second, so a pass that has one has a job, even when start never
         # recorded it: a second job would film into the same folder.
         raise Refused(f"pass {k} has a job already: film/pass-{k}/run.log exists")
-    verdict, lines = cmd_machine(folder)
+    verdict, lines = cmd_machine(folder, record_only=record_only_pass(read_json(out / "plan.json")))
     if verdict != "MACHINE: FREE":
         raise Refused("the machine or the render worker is not free:", *lines)
     paths = [sys.executable, str(HERE / "film.py"), str(folder), str(REPO), str(out)]
