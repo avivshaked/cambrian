@@ -372,6 +372,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D348](#d348) | A shot's camera is keyed on its subject and second, never on its place in a story | 2026-11-10 | decided by the coordinator on 2026-11-10, under D347 and the owner's delegation of the films' look (D327) |
 | [D349](#d349) | A bite's crumbs are drawn as small torn flakes, not soft discs | 2026-11-10 | ruled by the owner on 2026-11-10, on the coordinator's recommendation, after the full-size pairs in `scratch/owner/r67-crumb-flakes-full-size/` |
 | [D350](#d350) | Every shot of round 67's film goes through the rig, under one set of bars | 2026-11-11 | decided by the coordinator on 2026-11-10 and 2026-11-11, under D347 and the owner's delegation of the films' look (D327) |
+| [D351](#d351) | The rig's bars after round 67's second gate round: a calibrated move, glow on every shot, heroes sized by their silhouette | 2026-11-11 | decided by the coordinator on 2026-11-11, under D347 and the owner's delegation of the films' look (D327) |
 
 ---
 
@@ -12189,3 +12190,36 @@ cell table, which had left every gripping plant undrawn, was found the same even
 **Rejected.** Retrying the automatic director's shots (D347). Framing the bare-coral shots on their plant's neighbours,
 which would show the stand the narration says is gone. A 0.25 cut-extra limit, which nothing reviewed supported. A 40 m
 skin cull for this film.
+
+### D351
+**The rig's bars after round 67's second gate round: a calibrated move, glow on every shot, heroes sized by their silhouette** · 2026-11-11
+
+**Status:** decided by the coordinator on 2026-11-11, under D347 and the owner's delegation of the films' look (D327).
+Amends D350's move bar and its bare-coral exemption; the rest of D350 stands. The values are this film's, as in D350.
+
+**Decision.**
+
+- A move must show: the eye travels at least 0.65 of its distance to the aim. The share-change path is off. This replaces
+  D350's 0.15, and is provisional: it was set on eleven reviewed takes, whose failures moved 0.16 to 0.55 of that
+  distance and whose readable moves 0.69 and 0.90.
+- The glow bar (the surface's light in the upper frame) holds on every shot type, the look-ups and all others. A shot that cannot
+  show it carries a `glowExempt` reason in its spec; 6.2a is the one so far.
+- 9.9a and 9.10c no longer look down onto the coral. 9.9a is a look-up descent and 9.10c a wide at 5 degrees below level,
+  each keeping a share floor of 0.1. D350's exemption for them is withdrawn.
+- The film lane audited every see line against the move its shot makes, and changed 27 of 68 so that the line and the
+  move agree.
+- A hero, in a portrait, orbit or pull-back, is sized by its silhouette at its real pose at each of 25 stations along the
+  take, with the silhouette's height capped at 0.8 of the frame. The ring stand-back and the 0.45 box limit no longer
+  apply to heroes (theatre build `4070db46`).
+- A body hidden from the eye by rock, at its centre and its top both, counts as in the way.
+- A plant shot keeps the eye 0.5 m from the reef, sampled at 25 stations.
+- 9.10a is a drift with an anchor share floor of 0.15, as its see line asks, and not a portrait.
+
+**Why.** The first move bar passed takes the reviewer read as still, and its share path passed takes whose subject only
+turned. The look-down bare-coral stills read dark on review. Sizing heroes by a box made thin founders a tenth of the
+frame. At build `4070db46` the canary heroes' shares rose from 0.10–0.25 to 0.22–0.63. Its launch passed 8 of 20 still
+times, against none before.
+
+**Rejected.** Keeping the look-down framing for the bare coral with more light, since it was the angle that read dark.
+Framing 9.10a as a portrait, which contradicted its see line. A fixed hero share without the height cap, which crops the
+tall founders.
