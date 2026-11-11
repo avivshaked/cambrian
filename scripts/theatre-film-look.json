@@ -397,6 +397,10 @@
       "value": "0.24",
       "ruling": "D343: the aim raised from 0.22 to 0.24 (the coordinator, 2026-11-10, under the owner's delegation of the films' look (D327) and the owner's ruling of 2026-11-10 to fix the reviewer's bar and work the near shots first): on stills 7 every take at 0.24 cleared the reference's luma of 64.52 and the reviewer failed none of them for luma, where 4.1a at 0.22 read 61.9 and failed B1 (logbook/specs/r67-film-look/measures-7.txt). Before it, D329: D327 meter, its aim raised from 0.21 to 0.22 beside MIRROR_LIT 1 (the coordinator, 2026-11-08, under the owner's delegation, from the one sitting on chain201b-205's sheets (scratch/film-light/c8/sheets201 to sheets205)): at 0.21 alone, 1.6a and 3.4a read under the 66.65 floor (63.91 and 65.42); MIRROR_LIT 1 with 0.22 read 67.71 on 1.6a, and each alone cleared 3.4a and 5.6a (sheets203/exposure.tsv)"
     },
+    "EVOSIM_THEATRE_STORY_METER_HERO": {
+      "value": "1",
+      "ruling": "The coordinator, 2026-11-11, under the owner's delegation of the films' look (D327): the story meter meters the scene, not the subject, leaving the take's hero (its drawn skin's box, grown 0.05 a side) out of the mean, and the whole frame when that leaves under 0.2 of it (build 24d, pass18/fullrange 2a262116; the safari's default too, since the films follow the safari). Over the 85 stills the reviewer read, the background fell 38.8 luma per unit of the hero's share of the width (R^2 0.70) and the day factor explained none of it (R^2 0.00); on the exposure sheet 8.2a's background rose from 50.3 to 74.8 at +1.09 EV with 0.56 % of the hero's box clipped, and the 8.3a control moved under a point (scratch/owner/r67-exposure-meter). A build before 24 ignores it."
+    },
     "EVOSIM_THEATRE_STORY_DEEP": {
       "value": "1",
       "ruling": "D327: the census's deep water, x1"
