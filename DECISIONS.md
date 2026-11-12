@@ -378,6 +378,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D354](#d354) | Four look changes for round 67's film and the safari: exposure from the water, holdfasts, leafless plants, fixed family hue | 2026-11-11 | decided by the coordinator on 2026-11-11 under D327 |
 | [D355](#d355) | Round 67's film is filmed whole as an assembly cut, and the stills review stops being a gate before filming | 2026-11-11 | ruled by the owner on 2026-11-11 in the evening, choosing the coordinator's recommendation |
 | [D356](#d356) | Round 67's film is remade on a fast method, a spine first and footage from a library, as the method's first test | 2026-11-12 | ruled by the owner on 2026-11-12, choosing the coordinator's recommendation after watching D355's assembly cut |
+| [D357](#d357) | Round 67's spine is approved, and its script is written twice, by Fable and by Opus, and judged blind by test viewers | 2026-11-12 | ruled by the owner on 2026-11-12, choosing the coordinator's recommendation on both |
 
 ---
 
@@ -12357,3 +12358,26 @@ decision, until any version looked acceptable.
 
 **Rejected.** Rewriting the skill first and then remaking the film, slower to a finished film. Shipping the rough cut
 with light fixes, whose story the owner found a shambles.
+
+### D357
+**Round 67's spine is approved, and its script is written twice, by Fable and by Opus, and judged blind by test viewers** · 2026-11-12
+
+**Status:** ruled by the owner on 2026-11-12, choosing the coordinator's recommendation on both. It amends D356's
+one writer's pass; the rest of D356 stands.
+
+**Decision.**
+- The spine (`scratch/owner/r67-salvage-spine/spine.md`) is approved, with one line corrected before approval: in
+  the first summer the plants nearly doubled (1,572 to 2,998 bodies on seed 6202 from 12,000 to 15,000 s), where
+  the draft said more than doubled.
+- Two writers, one Fable and one Opus, write the narration from the spine alone, from one brief
+  (`scratch/r67-salvage/script/writer-brief.md`), word for word the same, each reading nothing else of the project.
+- Test viewers who know nothing of the project read both drafts under neutral labels, in balanced order, retell each,
+  say where they were lost, bored or delighted, and say which they would rather watch
+  (`scratch/r67-salvage/script/viewer-brief.md`). The draft they prefer goes on, through a fact check, to the
+  animatic; which model wrote it is revealed only after.
+
+**Why.** D356's failure was a script judged only on whether its lines were true. Viewers' retellings test whether a
+viewer can follow it, and two drafts judged blind also answer whether Fable writes better than Opus, which every
+later film can use, for about an hour of agent time and no machine time.
+
+**Rejected.** Opus alone, cheaper, leaving the question of the writer open.
