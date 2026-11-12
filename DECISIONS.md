@@ -381,6 +381,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D357](#d357) | Round 67's spine is approved, and its script is written twice, by Fable and by Opus, and judged blind by test viewers | 2026-11-12 | ruled by the owner on 2026-11-12, choosing the coordinator's recommendation on both |
 | [D358](#d358) | Round 67's narration is written from fact notes by no-context writers in named styles, judged beat by beat, and merged | 2026-11-12 | the method is the owner's, proposed and confirmed on 2026-11-12; the choice of Opus as the writer and the merger's base are the coordinator's |
 | [D359](#d359) | A sphere is drawn far enough toward the physics' ball to hold its own joints | 2026-11-12 | decided by the coordinator on 2026-11-12, under the owner's delegation of the films' look (D327), after the owner found animal 51 drawn in pieces in round 67's take 6.3a and asked for a fix |
+| [D360](#d360) | The films draw D135's stroke, at four times the run's beat | 2026-11-12 | ruled by the owner on 2026-11-12, choosing the right-most of three layout takes of round 67's shot 6.3a |
 
 ---
 
@@ -12440,3 +12441,27 @@ the drawn surface, so a take with a changed body reframes.
 **Rejected.** A stalk drawn from the ellipsoid's surface to the joint, which keeps the genome's lemon shape but draws a
 part the physics does not have; and the dial only where a gap shows, which changes fewer bodies but turns those to balls
 all the same.
+
+### D360
+**The films draw D135's stroke, at four times the run's beat** · 2026-11-12
+
+**Status:** ruled by the owner on 2026-11-12, choosing the right-most of three layout takes of round 67's shot 6.3a.
+It carries out D135's ruling that the theatre draws the stroke from the power.
+
+**Decision.** `EVOSIM_THEATRE_SWIM_STROKE` 1 and `EVOSIM_THEATRE_SWIM_STROKE_RATE` 4 join the film look
+(`scripts/theatre-film-look.json`), which the safari reads too. Under D135 the solver never swings a powered limb:
+the brain sets a bend and a power, and the power pushes the link as a stroke at Ω would. The recorded joints are
+the slow bend, a median 0.08 Hz in 6.3a's window, so every film until now showed limbs held nearly still. The
+stroke dial swings each powered limb from the window's logged power in the owner's curve
+(`scripts/render-swim-film.py`), and the rate dial turns its phase four times as fast, keeping the curve's shape and
+the amplitude from the power. At Ω 2 rad/s one beat at rate 1 takes about 3 s; at rate 4 it reads as a swim. The
+body's path and the camera are as recorded. A window shows the stroke only if it carries `film.stroke.jsonl`; round
+67's runs were stepped by farm builds older than the recorder, so each window is re-recorded on its run's commit with
+the recorder back-ported (`stroke-r67`, `stroke-r67r1`), and is used only when its poses and genomes equal the
+window it replaces.
+
+**Why.** The owner saw every tail moving far too slowly, and asked for the oscillation to be rendered faster. The
+drawn rate is a picture choice: the push the physics applies is unchanged.
+
+**Rejected.** Rate 1, which barely moves within a shot; and speeding the recorded bend, which wags a held angle and
+not the stroke the physics pushes with.
