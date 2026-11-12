@@ -383,6 +383,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D359](#d359) | A sphere is drawn far enough toward the physics' ball to hold its own joints | 2026-11-12 | decided by the coordinator on 2026-11-12, under the owner's delegation of the films' look (D327), after the owner found animal 51 drawn in pieces in round 67's take 6.3a and asked for a fix |
 | [D360](#d360) | The films draw D135's stroke, at four times the run's beat | 2026-11-12 | ruled by the owner on 2026-11-12, choosing the right-most of three layout takes of round 67's shot 6.3a |
 | [D361](#d361) | The films draw the stroke in a smoother-step, soft at both turns | 2026-11-12 | ruled by the owner on 2026-11-12, choosing C of four layout takes of round 67's shot 6.3a at rate 4 |
+| [D362](#d362) | Round 67's narration takes each beat whole from the voice an audience enjoys most | 2026-11-12 | the owner's flow of 2026-11-12 |
 
 ---
 
@@ -12391,7 +12392,7 @@ later film can use, for about an hour of agent time and no machine time.
 
 **Status:** the method is the owner's, proposed and confirmed on 2026-11-12; the choice of Opus as the writer and the
 merger's base are the coordinator's. It amends D357's writing step; D357's approval of the spine stands as revised
-below.
+below. Its merger step is superseded by D362.
 
 **Decision.**
 - The spine was revised after D357 at the owner's word. The owner found the first hook dull and in need of too much
@@ -12486,3 +12487,29 @@ in speed, so at rate 4 it read as snap, hold, snap.
 **Rejected.** The owner's curve as it was (A). The same curve softened, with Stroke 0.4, Glide 2 and no initial
 speed (B), which in the takes was one in-between frame away from A. A sine (D), the gentlest, which the owner did
 not choose. The takes are in `scratch/theatre-lane/stroke/ease/`.
+
+### D362
+**Round 67's narration takes each beat whole from the voice an audience enjoys most** · 2026-11-12
+
+**Status:** the owner's flow of 2026-11-12. It supersedes D358's merger step; D358's notes, writers and styles
+stand. The owner judged the result good enough to go by, and approved sending it to Google's Gemini TTS the same day.
+
+**Decision.** The four voices' versions of each of the ten beats are scored, and none is merged with another.
+- Five readers who know nothing of the project score every version 1 to 10 for how much they would enjoy hearing it.
+- A voice whose mean leads every other by 1.0 or more is picked.
+- Otherwise a blind judge reads the beat already chosen before it and picks the tied version that best follows it.
+- A mix of voices in a beat is allowed only if four of five fresh readers prefer it to the pick. None was proposed.
+- A fact checker makes the smallest fix to the picked text against the story notes, and lists each fix with its
+  original line.
+The picks: Bryson for beats 1, 6 and 8, Weir for 2 and 5, Pratchett for 3, 7, 9 and 10, Goldman for 4. The flow,
+every reader's answer as returned, and the fixes are in `scratch/r67-salvage/enjoy/`. The narration is
+`scratch/owner/r67-voice-samples/narration-picked.md`, voiced in M3 (`scratch/r67-salvage/voice/`).
+
+**Why.** The owner rejected the merged pass 3. Merging averaged the voices and joined fragments into the clipped
+prose the owner had ruled out, and one patch made a line false. Taking whole beats keeps each writer's voice intact,
+and the owner's tie rule keeps the joins between beats smooth.
+
+**Caveat.** The readers agree closely. Most beats' five scores differ by a point at most, so the panel
+measures one model's taste five times over rather than an audience's spread.
+
+**Rejected.** Merging (D358's last step) and patching the merged text by hand.
