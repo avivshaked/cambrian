@@ -382,6 +382,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D358](#d358) | Round 67's narration is written from fact notes by no-context writers in named styles, judged beat by beat, and merged | 2026-11-12 | the method is the owner's, proposed and confirmed on 2026-11-12; the choice of Opus as the writer and the merger's base are the coordinator's |
 | [D359](#d359) | A sphere is drawn far enough toward the physics' ball to hold its own joints | 2026-11-12 | decided by the coordinator on 2026-11-12, under the owner's delegation of the films' look (D327), after the owner found animal 51 drawn in pieces in round 67's take 6.3a and asked for a fix |
 | [D360](#d360) | The films draw D135's stroke, at four times the run's beat | 2026-11-12 | ruled by the owner on 2026-11-12, choosing the right-most of three layout takes of round 67's shot 6.3a |
+| [D361](#d361) | The films draw the stroke in a smoother-step, soft at both turns | 2026-11-12 | ruled by the owner on 2026-11-12, choosing C of four layout takes of round 67's shot 6.3a at rate 4 |
 
 ---
 
@@ -12465,3 +12466,23 @@ drawn rate is a picture choice: the push the physics applies is unchanged.
 
 **Rejected.** Rate 1, which barely moves within a shot; and speeding the recorded bend, which wags a held angle and
 not the stroke the physics pushes with.
+
+### D361
+**The films draw the stroke in a smoother-step, soft at both turns** · 2026-11-12
+
+**Status:** ruled by the owner on 2026-11-12, choosing C of four layout takes of round 67's shot 6.3a at rate 4.
+It amends D360 in the shape of each half-stroke. D360's rate and amplitude stand.
+
+**Decision.** `EVOSIM_THEATRE_SWIM_STROKE_CURVE` 2 joins the film look (`scripts/theatre-film-look.json`), which the
+safari reads too. Each half-stroke runs edge to edge in the smoother-step 6u^5 - 15u^4 + 10u^3. It leaves each
+edge at rest, builds speed smoothly and peaks in the middle at 1.87 times the average speed. The limb spends 38% of
+each half-stroke within 5% of an edge. The dial is in the theatre only (`SwimStrokeCurve.cs`) and is applied when the
+stroke is drawn, so a window recorded with `film.stroke.jsonl` serves every curve.
+
+**Why.** The owner said the drawn stroke's ease in and out needed improving. The curve kept from
+`scripts/render-swim-film.py` spent half of each half-stroke parked near an edge. It then left the edge with a jump
+in speed, so at rate 4 it read as snap, hold, snap.
+
+**Rejected.** The owner's curve as it was (A). The same curve softened, with Stroke 0.4, Glide 2 and no initial
+speed (B), which in the takes was one in-between frame away from A. A sine (D), the gentlest, which the owner did
+not choose. The takes are in `scratch/theatre-lane/stroke/ease/`.

@@ -66,6 +66,10 @@
       "value": "4",
       "ruling": "D360: the drawn stroke at four times the run's beat, the owner's choice from 6.3a's layout test (2026-11-12)"
     },
+    "EVOSIM_THEATRE_SWIM_STROKE_CURVE": {
+      "value": "2",
+      "ruling": "D361: each half-stroke drawn in a smoother-step, soft at both turns, the owner's choice C of four layout takes of 6.3a (2026-11-12)"
+    },
     "EVOSIM_THEATRE_SPHERE_REACH": {
       "value": "1",
       "ruling": "D359: a sphere is drawn far enough toward the physics' ball to hold its own joints, so a jointed body never draws in pieces (the coordinator, 2026-11-12, under D327)"
