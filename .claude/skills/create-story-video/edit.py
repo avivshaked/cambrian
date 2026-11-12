@@ -113,6 +113,9 @@ def settings_of(folder, lines):
                               and i["file"] and isinstance(i["after_act"], int) and i["after_act"] >= 1):
         problems.append("intro is null (none) or {file: the card's path, absolute or from the checkout's root, "
                         "after_act: the act it follows, 1 for the hook}")
+    o = s.get("outro", "missing")
+    if o is not None and not (isinstance(o, dict) and set(o) == {"file"} and isinstance(o["file"], str) and o["file"]):
+        problems.append("outro is null (none) or {file: the card's path, absolute or from the checkout's root}")
     g = s.get("grade", "missing")
     if g is not None and not (isinstance(g, dict) and set(g) == {"most", "power"} and number(g["most"])
                               and 1 <= g["most"] <= 3 and number(g["power"]) and 0.5 <= g["power"] <= 1.5):
@@ -427,6 +430,23 @@ def intro_of(setting, shots, fps, errors):
     return {"kind": "intro", "shot": None, "file": str(path), "record": at, "frames": info["frames"]}
 
 
+def outro_of(setting, end, fps, errors):
+    """The channel outro: its file and length, laid on V1 from the film's last frame, so the film grows by its
+    length (the owner asked on 2026-10-11 for round 57's intro and outro, which its script does not place)."""
+    path = repo_path(setting["file"])
+    if not path.is_file():
+        errors.append(f"the outro card {path} is not there")
+        return None
+    info = probe(path)
+    rate = info.get("fps")
+    if rate is not None and abs(rate - fps) > 0.01:
+        errors.append(f"the outro card runs at {rate} frames a second and the timeline at {fps}")
+    if not info["frames"]:
+        errors.append(f"the outro card {path} holds no frames")
+        return None
+    return {"kind": "outro", "shot": None, "file": str(path), "record": end, "frames": info["frames"]}
+
+
 def lut_of(grade):
     """The grade as ffmpeg's lutrgb, for the proof."""
     k, p = grade["slope"], grade["power"]
@@ -535,6 +555,10 @@ def cmd_plan(folder, n):
         end += span
         v1.append(intro)
         v1.sort(key=lambda x: x["record"])
+    outro = outro_of(s["outro"], end, fps, errors) if s["outro"] is not None else None
+    if outro is not None:
+        v1.append(outro)
+        end += outro["frames"]
     if not errors:
         for item in v1:
             if item["kind"] == "plate":
@@ -549,7 +573,7 @@ def cmd_plan(folder, n):
             "sources": {k: sha256_of(folder / k) for k in ("shots.json", "clips.json", "graphics.json",
                                                             "narration.json")},
             "decisions": f"edit-{n}.json" if (folder / f"edit-{n}.json").is_file() else None,
-            "plate": s["plate"], "intro": intro, "grade": dict(g, tone=target) if g is not None else None, "picture": v1, "graphics": graphics, "words": words, "narration": pieces,
+            "plate": s["plate"], "intro": intro, "outro": outro, "grade": dict(g, tone=target) if g is not None else None, "picture": v1, "graphics": graphics, "words": words, "narration": pieces,
             "subtitles": {"file": srt.relative_to(folder).as_posix(), "count": len(cues),
                           "first_frame": cues[0][0] if cues else None},
             "markers": markers, "rough": rough}
@@ -569,8 +593,8 @@ def cmd_plan(folder, n):
             lines.append(f"picture {where}: shot {x['shot']}, its clip from {x['src_in'] / fps:.2f} s "
                          f"({x['run']} at {x['run_s']:,.1f} s)"
                          + (f", graded x{x['grade']['slope']:.2f}" if x.get("grade") else ""))
-        elif x["kind"] == "intro":
-            lines.append(f"picture {where}: the channel intro, {os.path.basename(x['file'])}")
+        elif x["kind"] in ("intro", "outro"):
+            lines.append(f"picture {where}: the channel {x['kind']}, {os.path.basename(x['file'])}")
         else:
             lines.append(f"picture {where}: plate")
     if s["rough"]:
@@ -784,6 +808,24 @@ def cmd_resolve(folder):
     return "RESOLVE: READY", lines
 
 
+def clip_frames(item, fps):
+    """A media pool item's length in the timeline's frames. Resolve leaves an audio file's Frames empty and
+    gives its Duration as a timecode at its own rate, so round 57's first build (2026-10-11) and every round
+    49 build before it laid no music, without an error."""
+    f = str(item.GetClipProperty("Frames") or "")
+    if f.isdigit() and int(f) > 0:
+        return int(f)
+    m = re.fullmatch(r"(\d+):(\d+):(\d+)[:;](\d+)", str(item.GetClipProperty("Duration") or "").strip())
+    try:
+        rate = float(item.GetClipProperty("FPS") or 0)
+    except (TypeError, ValueError):
+        rate = 0.0
+    if not m or rate <= 0:
+        return 0
+    h, mi, sec, fr = (int(g) for g in m.groups())
+    return int((h * 3600 + mi * 60 + sec + fr / rate) * fps)
+
+
 def place(mp, item, start_frame, end_frame, record, track, media_type, report, what):
     """One media pool item on a track at its frame, read back: where it landed, how long, and from where."""
     got = mp.AppendToTimeline([{"mediaPoolItem": item, "startFrame": start_frame, "endFrame": end_frame,
@@ -874,7 +916,7 @@ def cmd_build(folder, n):
         report["errors"].append(f"the first subtitle is at frame {subs[0].GetStart()}, the plan puts it at "
                                 f"{start + plan['subtitles']['first_frame']}")
     for x in plan["picture"]:
-        what = (f"shot {x['shot']}'s footage" if x["kind"] == "clip" else "the channel intro" if x["kind"] == "intro"
+        what = (f"shot {x['shot']}'s footage" if x["kind"] == "clip" else f"the channel {x['kind']}" if x["kind"] in ("intro", "outro")
                 else f"the plate at {x['record']}")
         got = place(mp, media[key_of(path(x["file"]))], x.get("src_in", 0), x.get("src_in", 0) + x["frames"],
                     start + x["record"], 1, 1, report, what)
@@ -901,7 +943,13 @@ def cmd_build(folder, n):
               f"narration {x['piece']}")
     at, last, film_end, fps = start, None, start + plan["frames"], plan["fps"]
     for p in music:
-        frames = min(int(media[key_of(p)].GetClipProperty("Frames") or 0), film_end - at)
+        if at >= film_end:
+            break
+        length = clip_frames(media[key_of(p)], fps)
+        if length <= 0:
+            report["errors"].append(f"music {os.path.basename(p)}: Resolve gives it no length, so it was not laid")
+            continue
+        frames = min(length, film_end - at)
         if frames > 0:
             last = place(mp, media[key_of(p)], 0, frames, at, 1, 2, report, f"music {os.path.basename(p)}") or last
             at += frames
