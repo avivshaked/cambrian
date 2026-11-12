@@ -177,3 +177,17 @@ def test_a_slug_that_is_not_a_story_scene_is_refused(tmp_path, monkeypatch):
     verdict, lines = film.cmd_encode(folder, 1)
     assert verdict == "ENCODE: FAILED"
     assert left(safari / "floor-01") == 6
+
+
+def test_a_take_folder_holding_failed_is_refused(tmp_path, monkeypatch):
+    folder, out, safari = build(tmp_path, monkeypatch, {"story-01-floor": ("Floor", [6]), "story-02-threw": ("Floor", [6, 4])})
+    take = safari / "story-02-threw" / "take-2"
+    (take / "FAILED").write_text("TAKE FAILED at frame 4: NullReferenceException\n  at Somewhere()\n", encoding="utf-8")
+    verdict, lines = film.cmd_encode(folder, 1)
+    assert verdict == "ENCODE: FAILED"
+    want = f"take folder {take} holds FAILED: TAKE FAILED at frame 4: NullReferenceException; refusing to collect"
+    assert any(want in x for x in lines), lines
+    assert left(safari / "story-02-threw") == 10               # the frames stay
+    assert not (safari / "story-02-threw.mp4").exists()
+    assert not (safari / "story-02-threw" / "take-1.mp4").exists()
+    assert (safari / "story-01-floor.mp4").is_file()          # the other scene still encoded

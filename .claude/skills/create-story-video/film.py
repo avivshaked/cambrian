@@ -2520,6 +2520,11 @@ def encode_scene(row, safari, log, s, fps, cores):
         return [], f"{slug}: not a story scene (a film's slugs start story-)", False
     if clip.is_file():
         return [], None, False
+    # A batch take whose frame threw leaves FAILED in its folder beside the frames it drew; none of the scene is collected.
+    for _, d in take_dirs(scene):
+        if (d / "FAILED").is_file():
+            first = ((d / "FAILED").read_text(encoding="utf-8", errors="replace").splitlines() or [""])[0]
+            return [], f"take folder {d} holds FAILED: {first}; refusing to collect", False
     takes = [(n, d, sorted(d.glob("frame-*.png"))) for n, d in take_dirs(scene)]
     takes = [t for t in takes if t[2]]
     # The frames on disk must be what the theatre says it drew, take for take.
