@@ -379,6 +379,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D355](#d355) | Round 67's film is filmed whole as an assembly cut, and the stills review stops being a gate before filming | 2026-11-11 | ruled by the owner on 2026-11-11 in the evening, choosing the coordinator's recommendation |
 | [D356](#d356) | Round 67's film is remade on a fast method, a spine first and footage from a library, as the method's first test | 2026-11-12 | ruled by the owner on 2026-11-12, choosing the coordinator's recommendation after watching D355's assembly cut |
 | [D357](#d357) | Round 67's spine is approved, and its script is written twice, by Fable and by Opus, and judged blind by test viewers | 2026-11-12 | ruled by the owner on 2026-11-12, choosing the coordinator's recommendation on both |
+| [D358](#d358) | Round 67's narration is written from fact notes by no-context writers in named styles, judged beat by beat, and merged | 2026-11-12 | the method is the owner's, proposed and confirmed on 2026-11-12; the choice of Opus as the writer and the merger's base are the coordinator's |
 
 ---
 
@@ -12381,3 +12382,37 @@ viewer can follow it, and two drafts judged blind also answer whether Fable writ
 later film can use, for about an hour of agent time and no machine time.
 
 **Rejected.** Opus alone, cheaper, leaving the question of the writer open.
+
+### D358
+**Round 67's narration is written from fact notes by no-context writers in named styles, judged beat by beat, and merged** · 2026-11-12
+
+**Status:** the method is the owner's, proposed and confirmed on 2026-11-12; the choice of Opus as the writer and the
+merger's base are the coordinator's. It amends D357's writing step; D357's approval of the spine stands as revised
+below.
+
+**Decision.**
+- The spine was revised after D357 at the owner's word. The owner found the first hook dull and in need of too much
+  context, and chose the hook's ending from three offered: "Most of the animals in this sea descend from just one
+  creature. And it wasn't the hungriest. It was something else." The turn and the open question were reworded to
+  match (`scratch/owner/r67-salvage-spine/spine.md`).
+- D357's blind test of Fable against Opus was a tie, read as an order effect: every viewer preferred the draft read
+  second. Opus writes from here, being cheaper.
+- The narration is written by the owner's method. Fact-only story notes (`scratch/r67-salvage/script/story-notes.md`)
+  go to writers that read nothing else of the project, each asked for an engaging narration in one named writer's
+  style. A writer can only go on what the notes say, so its draft also shows where the notes mislead. Four styles
+  were written: Bill Bryson, Terry Pratchett, Andy Weir and William Goldman. Five blind readers ranked them beat by
+  beat under a fresh shuffle each. One merger joined them on the draft that won most beats, Goldman's, borrowing the
+  lines the readers wanted kept. Fresh viewers then retell the merged narration, and what they miss goes back into the
+  notes before the next pass.
+- The owner set two writing rules the same day. Clarity comes above all, with names where "it" or "they" could point
+  at two things. And the voice is human, with varied sentences, never the clipped, same-shaped sentences that briefs
+  asking for "one idea a sentence" produced. A narration's voice means its writing; the speaker's delivery is another
+  matter.
+- Nothing goes to the narration service until the owner says so (the owner stopped it on 2026-11-12, after first
+  agreeing to it).
+
+**Why.** Every draft from the spine alone, Fable's and Opus's, was true and still read as an outline. Named styles gave
+the writing a voice, the panel chose between voices beat by beat rather than whole drafts, and the viewers' retellings
+found facts the notes lacked: why the savers died, how the Guzzlers lived at all, and what a family is.
+
+**Rejected.** Revising draft 4 by hand: it would keep the outline's cadence the owner rejected.
