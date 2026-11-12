@@ -7,3 +7,5 @@ r67	0.0629,0.1052,0.0779	0.0253,0.0422,0.0315	103.7	0.435	0.234	r67r1-6202 24004
 r67ev-24b	0.0629,0.1052,0.0779	0.0253,0.0422,0.0315	103.7	0.435	0.234	r67r1-6202 24004-24010 s, 7 frames	film look; r67r1's row (a card resume of r67r1-6202, the same config and light)
 r67ev-64a	0.0629,0.1052,0.0779	0.0253,0.0422,0.0315	103.7	0.435	0.234	r67r1-6202 24004-24010 s, 7 frames	film look; r67r1's row (a card resume of r67-6202, the same config and light)
 r67ev-68a	0.0629,0.1052,0.0779	0.0253,0.0422,0.0315	103.7	0.435	0.234	r67r1-6202 24004-24010 s, 7 frames	film look; r67r1's row (a card resume of r67r1-6202, the same config and light)
+plf-6202	0.0086,0.0171,0.0027	0.0035,0.0069,0.0011	87.0	0.304	0.369	plf-6202 pass-32 film clips, 6 frames each of 6 clips, blade-pixel-weighted mean (round 67 assembly cut)	film look; one step from the look's stand-in stops; shots near the surface read hue 78, the deep ones 101, so one row cannot fit both
+plfev-6202	0.0670,0.1381,0.0159	0.0269,0.0554,0.0064	91.4	0.247	0.233	plfev-6202 pass-32 film clips, 6 frames each of 2 clips, blade-pixel-weighted mean (round 67 assembly cut)	film look; one step from the look's stand-in stops
