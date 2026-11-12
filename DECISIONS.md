@@ -385,6 +385,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D361](#d361) | The films draw the stroke in a smoother-step, soft at both turns | 2026-11-12 | ruled by the owner on 2026-11-12, choosing C of four layout takes of round 67's shot 6.3a at rate 4 |
 | [D362](#d362) | Round 67's narration takes each beat whole from the voice an audience enjoys most | 2026-11-12 | the owner's flow of 2026-11-12 |
 | [D363](#d363) | Round 67's opener is one camera from the sky to the coral, authored backwards from its end | 2026-11-12 | ruled by the owner on 2026-11-12 on the coordinator's proposal, with the backward authoring the owner's own |
+| [D364](#d364) | Round 67's graphics and titles are designed first, then built in Blender; the film is *Not the Hungriest | 2026-11-12 | ruled by the owner on 2026-11-12, on the coordinator's recommendation |
 
 ---
 
@@ -12544,3 +12545,27 @@ draw the crossing bubbles is being checked by the theatre lane before anything i
 
 **Rejected.** The dissolve, and two ways of filming the whole shot in one program: all in Blender, which would draw the round's world in a look unlike the rest of the film and
 lengthen the 4K render, and all in the theatre, which would mean building a sky and a sea seen from above.
+
+### D364
+**Round 67's graphics and titles are designed first, then built in Blender; the film is *Not the Hungriest*** · 2026-11-12
+
+**Status:** ruled by the owner on 2026-11-12, on the coordinator's recommendation. It ends the hold on graphics the
+owner set on 2026-11-08 while they found a better approach, and it closes D363's open item on the film's name. For this
+film it sets aside the create-story-video skill's flat overlay route for graphics. D288's look for the channel's opener
+and closer is untouched.
+
+**Decision.**
+- The film is named *Not the Hungriest*.
+- The owner runs a Claude Design session from a brief the coordinator writes. Its still frames of the title card and of
+  the film's two or three graphics (the nursery tank, the two teams' bars, perhaps the winter crash) become the target.
+- The graphics are then built in Blender, inside the film's own water and light, from the round's real creatures, and
+  checked against the design frames before the owner sees them.
+- A standing title template renders CAMBRIAN and any episode's name over a given plate with one command. It draws the
+  type at sub-pixel positions, so that slow moves do not judder. This film's plate is the dive's sky.
+
+**Why.** The owner did not want the graphics to be flat shapes laid over a three-dimensional world. Blender already
+makes the dive and the channel's intro and outro, so graphics made there share the film's light. A designer's frames
+settle the type, palette and layout before any render time is spent on them.
+
+**Rejected.** Blender with no design session, which leaves the type and layout to the coordinator's judgement. The flat
+overlay tool with a better look, which keeps the graphics flat over the world.
