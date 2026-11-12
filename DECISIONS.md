@@ -380,6 +380,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D356](#d356) | Round 67's film is remade on a fast method, a spine first and footage from a library, as the method's first test | 2026-11-12 | ruled by the owner on 2026-11-12, choosing the coordinator's recommendation after watching D355's assembly cut |
 | [D357](#d357) | Round 67's spine is approved, and its script is written twice, by Fable and by Opus, and judged blind by test viewers | 2026-11-12 | ruled by the owner on 2026-11-12, choosing the coordinator's recommendation on both |
 | [D358](#d358) | Round 67's narration is written from fact notes by no-context writers in named styles, judged beat by beat, and merged | 2026-11-12 | the method is the owner's, proposed and confirmed on 2026-11-12; the choice of Opus as the writer and the merger's base are the coordinator's |
+| [D359](#d359) | A sphere is drawn far enough toward the physics' ball to hold its own joints | 2026-11-12 | decided by the coordinator on 2026-11-12, under the owner's delegation of the films' look (D327), after the owner found animal 51 drawn in pieces in round 67's take 6.3a and asked for a fix |
 
 ---
 
@@ -12416,3 +12417,26 @@ the writing a voice, the panel chose between voices beat by beat rather than who
 found facts the notes lacked: why the savers died, how the Guzzlers lived at all, and what a family is.
 
 **Rejected.** Revising draft 4 by hand: it would keep the outline's cadence the owner rejected.
+
+### D359
+**A sphere is drawn far enough toward the physics' ball to hold its own joints** · 2026-11-12
+
+**Status:** decided by the coordinator on 2026-11-12, under the owner's delegation of the films' look (D327), after the
+owner found animal 51 drawn in pieces in round 67's take 6.3a and asked for a fix.
+
+**Decision.** `EVOSIM_THEATRE_SPHERE_REACH` 1 joins the film look (`scripts/theatre-film-look.json`), which the safari
+reads too. Core treats a sphere part as a ball of radius the mean of its three half-extents, with every joint anchor on
+that ball. The theatre drew it as the genome's ellipsoid with its longest semi-axis at that radius, so along a short axis
+the drawing ended inside the ball, and a joint there floated in open water: 51's second sphere hangs on its short axis,
+so its two halves were drawn apart. Under the dial a sphere is blended toward the ball just far enough to contain all of
+its own joint anchors, and never past the ball. In practice any sphere jointed off its longest axis is drawn as the full
+ball, since an anchor at the ball's radius fits only when the axis it points along reaches it. That is about 8 % of the
+genomes in round 67's takes (`scratch/theatre-lane/sphere-reach/scan-assembly.txt`). The dial is built on `sphere-reach`
+(`95b55b9d`); with it off, 6.3a's full-look take is byte-equal to build 24f's, 648 frames of 648.
+
+**Why.** The ball is what the physics simulates, and a body drawn in pieces misstates the creature. The camera plans on
+the drawn surface, so a take with a changed body reframes.
+
+**Rejected.** A stalk drawn from the ellipsoid's surface to the joint, which keeps the genome's lemon shape but draws a
+part the physics does not have; and the dial only where a gap shows, which changes fewer bodies but turns those to balls
+all the same.
