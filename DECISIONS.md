@@ -377,6 +377,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D353](#d353) | The rig plans the camera that is drawn, spends each move on screen, and checks what the reviewer fails | 2026-11-11 | decided by the coordinator on 2026-11-11, under D347 and the owner's delegation of the films' look (D327) |
 | [D354](#d354) | Four look changes for round 67's film and the safari: exposure from the water, holdfasts, leafless plants, fixed family hue | 2026-11-11 | decided by the coordinator on 2026-11-11 under D327 |
 | [D355](#d355) | Round 67's film is filmed whole as an assembly cut, and the stills review stops being a gate before filming | 2026-11-11 | ruled by the owner on 2026-11-11 in the evening, choosing the coordinator's recommendation |
+| [D356](#d356) | Round 67's film is remade on a fast method, a spine first and footage from a library, as the method's first test | 2026-11-12 | ruled by the owner on 2026-11-12, choosing the coordinator's recommendation after watching D355's assembly cut |
 
 ---
 
@@ -12327,3 +12328,32 @@ each became a check before anything was filmed. That improved the shots one by o
 
 **Rejected.** Keeping the stills review as the gate before filming. Filming only shots that pass the automatic gate and
 leaving the rest in the review loop, which fills the film in but still leaves gaps.
+
+### D356
+**Round 67's film is remade on a fast method, a spine first and footage from a library, as the method's first test** · 2026-11-12
+
+**Status:** ruled by the owner on 2026-11-12, choosing the coordinator's recommendation after watching D355's assembly
+cut. It supersedes D355's replacement of weak shots worst first: the cut's story is replaced, not patched. It sets aside
+the create-story-video skill's script, shot-list and graphics loops for this film only; what works is written into the
+skill afterwards.
+
+**Decision.**
+- The owner approves one spine of about ten sentences, once. The script is written from it in one pass, with few
+  numbers, no body ids (a family goes by its guide name), and is read once by the owner.
+- The film runs: the hook, the channel's dive opener (D302, D305, cut on the bubble burst), what is new since the last
+  video and bears on this film, the story, and its open question. The story names its teams with a catchy name that
+  says what they are, explains what a crash is and why it happens, and stops several times, as a documentary does, to
+  show a creature, the coral or a vista with a few words.
+- Footage comes first from the takes already filmed, then from a library of standard camera moves shot in batches at
+  the world's checkpoints. Bespoke shots only where nothing else will do: the dive's landing and the coral.
+- Graphics come last, two or three, timed to the finished voice. The nursery tank's graphic is one of them.
+- The aim is a cut within about a day of the spine's approval.
+
+**Why.** The owner found the assembly cut hard to follow, with too many numbers, and missing the dive opener, the
+graphics and the nursery. The week behind it went into 11 script rounds, 40 shot lists and 38 filming passes of 68
+bespoke shots. Every check in the flow asked whether a line was true or traceable, and none whether a viewer would
+care or could follow it once; the cold reader lost the thread in all 11 rounds. Each loop also handed the owner a
+decision, until any version looked acceptable.
+
+**Rejected.** Rewriting the skill first and then remaking the film, slower to a finished film. Shipping the rough cut
+with light fixes, whose story the owner found a shambles.
