@@ -2,7 +2,7 @@
 is the approved still's (sea_still.py's build(): its sky, its water, its view transform and dither), with the sea
 set moving and the camera on one of four paths.
 
-    blender -b --factory-startup --python sea_dive.py -- <out-prefix> <samples> --path A|B|C|D [options]
+    blender -b --factory-startup --python sea_dive.py -- <out-prefix> <samples> --path A|B|C|D|E [options]
 
 Frames are written as <out-prefix>NNNN.png (8-bit, dithered as the still is), and, with --keep-16bit, beside each
 its 16-bit master.
@@ -48,6 +48,15 @@ motion are kept but eased in and out in proportion (D_RAMP); its burst of bubble
 over the housing's entry (D_WW_ONSET); its spray becomes a fine mist streaked by its own motion (Spray).
 Under water the drag builds as the housing goes in and draws the speed down towards the swim speed smoothly, and
 the course turns level later than C's so that the camera levels at C's depth (path_D's constants, D_*).
+
+Path E is D with two faults fixed; its camera, bubbles, spray and white water are D's. First, in the last half
+metre above the water one ripple tilted towards the camera turned its mirror direction under the surface, and the
+patch rendered grey inside a bright ring where the mirror direction crossed the low sky towards the sun: take 3's
+pale disc (frames 199-211). The ripples' octaves stop at 4 cm, a pixel 20 m away, so within half a metre the sea
+was smooth below that and the ripple a clean mirror tens of centimetres across. Near the camera E carries the
+spectrum on to half a centimetre (capillaries, E_CAPILLARY, E_NEAR), with the slope it carries kept the still's.
+Second, the glide's middle was darker than its ends, because the frame turned from the sky to the deep sea faster
+than the exposure track rose; that is the track's (--ae-track), which E takes from its own file.
 
 --layer matte renders the bubbles as a layer to lay over other footage, by triangulation matting: each frame
 twice over two known backgrounds that stand in for the water behind the bubbles, solved for colour and opacity
@@ -102,7 +111,7 @@ AE_TARGET = 0.0526
 
 def parse():
     ap = SS.still_parser("sea_dive.py")
-    ap.add_argument("--path", choices=("A", "B", "C", "D"), required=True)
+    ap.add_argument("--path", choices=("A", "B", "C", "D", "E"), required=True)
     ap.add_argument("--frames", default="all")
     ap.add_argument("--step", type=int, default=1)
     ap.add_argument("--port", type=float, default=0.12)
@@ -644,6 +653,52 @@ def path_D(probe, az):
              x_e, v_e, math.degrees(beta_e), n, F[-1], t_all[-1], float(np.interp(0.1, tm, v)), float(np.interp(1.0, tm, v)),
              -float(zu[-1])), flush=True)
     return states, entry
+
+# ---------------------------------------------------------------- path E's ripples near the camera
+E_CAPILLARY = (0.02, 0.01, 0.005)   # m: lattice spacings of the octaves path E adds below the still's finest (4 cm)
+E_NEAR = (1.0, 2.5)                 # m from the camera: the added octaves wholly within the first, not at all beyond
+                                    # the second
+
+def capillaries(mat, rip):
+    """Path E: carry the ripples' spectrum on below the still's finest octave near the camera. The still draws five
+    octaves, 64 cm to 4 cm, each fading out as it shrinks under a pixel, because its finest is about a pixel 20 m
+    away; nothing fades in as the camera comes close enough to resolve finer ones. Within half a metre a pixel is a
+    fraction of a millimetre, so the sea there was smooth below 4 cm, and one ripple tilted towards the camera made a
+    clean curved mirror tens of centimetres across: take 3's disc. Here, within E_NEAR of the camera, the octaves of
+    E_CAPILLARY are added (each drifting at the phase speed of a capillary-gravity wave twice its spacing long, and
+    each, as the still's, carrying an equal share of slope), and all the octaves are scaled together so that the
+    slope they carry is the still's: the coarse octaves' tilt drops by the square root of 5/8, and the finer ones
+    break each facet up. Beyond E_NEAR the surface is D's."""
+    nt = mat.node_tree
+    t = SS.Tree(nt)
+    bump = next(nd for nd in nt.nodes if nd.bl_idname == "ShaderNodeBump")
+    old = bump.inputs["Height"].links[0].from_socket
+    clock = nt.nodes["ripple-clock"].outputs[0]
+    wind_dir, q, amp = rip["wind_dir"], rip["q"], rip["amp"]
+    geo = t.new("ShaderNodeNewGeometry")
+    px, py, _ = t.sep(geo.outputs["Position"])
+    ca, sa = math.cos(wind_dir), math.sin(wind_dir)
+    along = t.m("ADD", t.m("MULTIPLY", px, ca), t.m("MULTIPLY", py, sa))
+    across = t.m("SUBTRACT", t.m("MULTIPLY", py, ca), t.m("MULTIPLY", px, sa))
+    sign = 1.0 if rip["drift"][0] >= 0 else -1.0       # the still's octaves drift with the swells (ripple_motion)
+    fine = None
+    for i, lat in enumerate(E_CAPILLARY):
+        k = 2 * math.pi / (2.0 * lat)
+        c = sign * math.sqrt(G / k + 0.0728 * k / 1025.0)
+        ev = 0.35 * abs(c) / (2.0 * lat)
+        x = t.m("SUBTRACT", t.m("MULTIPLY", along, q / lat), t.m("MULTIPLY", clock, c * q / lat))
+        w = t.m("ADD", t.m("MULTIPLY", clock, ev), 17.31 * (len(SS.RIPPLE_LATTICE) + i + 1))
+        v = t.xyz(x, t.m("MULTIPLY", across, 1.0 / lat), w).outputs[0]
+        h = t.m("MULTIPLY", t.m("SUBTRACT", t.noise(v, 1.0, 0.0, 0.5), 0.5), amp * lat)
+        fine = h if fine is None else t.m("ADD", fine, h)
+    n0 = len(SS.RIPPLE_LATTICE)
+    scale = math.sqrt(n0 / (n0 + len(E_CAPILLARY)))
+    near = t.maprange(t.new("ShaderNodeCameraData").outputs["View Distance"], E_NEAR[0], E_NEAR[1], 1.0, 0.0)
+    # within E_NEAR every one of the still's octaves is at full weight (the footprint is under a millimetre)
+    k_old = t.m("SUBTRACT", 1.0, t.m("MULTIPLY", near, 1.0 - scale))
+    t.feed(bump.inputs["Height"], t.m("ADD", t.m("MULTIPLY", old, k_old), t.m("MULTIPLY", t.m("MULTIPLY", near, scale), fine)))
+    print("PATH E capillaries: octaves %s cm added within %.1f..%.1f m of the camera, every octave there scaled by %.3f"
+          % (", ".join("%g" % (100 * l) for l in E_CAPILLARY), *E_NEAR, scale), flush=True)
 
 def make_instancer(name, mat, subdiv=3, rotate=False):
     """An object whose mesh holds points, each drawn as a sphere scaled by its "bscale" attribute (as the bubbles),
@@ -1725,10 +1780,12 @@ def main():
         probe = Probe((math.cos(az) * 2.0, math.sin(az) * 2.0), wind_dir, k, n=81, step=0.25)
         states, entry = path_C(probe, az)
         n = len(states)
-    elif args.path == "D":
+    elif args.path in ("D", "E"):
         probe = Probe((math.cos(az) * 9.0, math.sin(az) * 9.0), wind_dir, k, n=113, step=0.25)
         states, entry = path_D(probe, az)
         n = len(states)
+        if args.path == "E":
+            capillaries(mat, ctx["rip"])
     else:
         centre = (0.0, 0.0) if args.path == "A" else (math.cos(az) * 1.0, math.sin(az) * 1.0)
         probe = Probe(centre, wind_dir, k)
@@ -1763,21 +1820,21 @@ def main():
             track = {int(k): v for k, v in json.load(fh).items() if k.isdigit()}
         print("AE from the track %s" % args.ae_track, flush=True)
     bubbles = None
-    if args.path in ("B", "C", "D") and args.bubbles > 0:
+    if args.path in ("B", "C", "D", "E") and args.bubbles > 0:
         bubbles = Bubbles(states, entry, probe, 6000 * args.bubbles)
         if wsun is not None:
             wsun.light_bubbles(bubbles.ob)
     ng = sc.compositing_node_group
     glare = [nd for nd in ng.nodes if nd.bl_idname == "CompositorNodeGlare"]
     spray = ww = shafts = fizz = None
-    if args.path in ("C", "D"):
+    if args.path in ("C", "D", "E"):
         if args.spray > 0 and args.layer == "full":
             if args.path == "C":
                 spray = Spray(entry, probe, 2500 * args.spray)
             else:
                 spray = Spray(entry, probe, D_SPRAY * args.spray, mist=True)
         if args.white_water > 0:
-            ww = WhiteWater(entry, probe, args.white_water, wsun, ctx["sun"], D_WW_ONSET if args.path == "D" else 0.0)
+            ww = WhiteWater(entry, probe, args.white_water, wsun, ctx["sun"], D_WW_ONSET if args.path in ("D", "E") else 0.0)
             fizz = Fizz(entry, states, probe, 40000 * args.white_water)
             if wsun is not None and getattr(wsun, "glint_coll", None) is not None:
                 wsun.glint_coll.objects.link(fizz.ob)
@@ -1872,7 +1929,7 @@ def main():
             ws = 1.0 if args.water_sun == "always" else st["under"]
             wsun.set(ws)
         extra = ""
-        if args.path in ("C", "D"):
+        if args.path in ("C", "D", "E"):
             if spray and spray.mist:
                 ns = spray.at(st["t"], st["under"] < 1.0, args.shutter / FPS / d_ramp(st["t"] - entry["t"]))
             else:
@@ -1950,7 +2007,7 @@ def main():
         out.update({"next": ae, "last": f_prev})
         with open(prefix + "-exposure-%04d-%04d.json" % (min(used), max(used)), "w") as fh:
             json.dump(out, fh, indent=0)
-    if metered and args.path in ("C", "D"):
+    if metered and args.path in ("C", "D", "E"):
         # each frame's exposure change, its metering and its share under water, for grading the exposure track
         with open(prefix + "-metered-%04d-%04d.json" % (min(metered), max(metered)), "w") as fh:
             json.dump({str(k): v for k, v in sorted(metered.items())}, fh, indent=0)
