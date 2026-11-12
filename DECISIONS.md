@@ -384,6 +384,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D360](#d360) | The films draw D135's stroke, at four times the run's beat | 2026-11-12 | ruled by the owner on 2026-11-12, choosing the right-most of three layout takes of round 67's shot 6.3a |
 | [D361](#d361) | The films draw the stroke in a smoother-step, soft at both turns | 2026-11-12 | ruled by the owner on 2026-11-12, choosing C of four layout takes of round 67's shot 6.3a at rate 4 |
 | [D362](#d362) | Round 67's narration takes each beat whole from the voice an audience enjoys most | 2026-11-12 | the owner's flow of 2026-11-12 |
+| [D363](#d363) | Round 67's opener is one camera from the sky to the coral, authored backwards from its end | 2026-11-12 | ruled by the owner on 2026-11-12 on the coordinator's proposal, with the backward authoring the owner's own |
 
 ---
 
@@ -12513,3 +12514,33 @@ and the owner's tie rule keeps the joins between beats smooth.
 measures one model's taste five times over rather than an audience's spread.
 
 **Rejected.** Merging (D358's last step) and patching the merged text by hand.
+
+### D363
+**Round 67's opener is one camera from the sky to the coral, authored backwards from its end** · 2026-11-12
+
+**Status:** ruled by the owner on 2026-11-12 on the coordinator's proposal, with the backward authoring the owner's own.
+It supersedes D302's and D305's handover, the dissolve and the landing on a taleplum hero, and D357's separate coral
+stop. D302's dive with the titles over the hold stands.
+
+**Decision.**
+- The landing is one camera path, written as one file of per-frame poses. It is authored backwards from its end: the
+  final framing on coral 22 in r67r1-6202 at about 43,560 s, where a school of 10 to 12 animals circles the crown. From
+  there it rises to the surface crossing above the reef, then up into the air for the sky-and-horizon start.
+- Blender (`scripts/channel/sea_dive.py`) flies the path above the water and through the crossing. The theatre flies
+  the same file underwater and draws its own bubble burst, and the cut sits on the densest bubble frame, with no fade.
+- The camera moves continuously to the last frame.
+- The opening runs as follows. The hook is spoken over the crowded sea at the same moment and in the same water. Then
+  the dive: about 4 s of sky with CAMBRIAN and this film's name, the plunge under music and water sound, and the
+  narration returning underwater as the reef approaches, with beat 2's first lines. The landing is the coral stop.
+  No graphic comes before the tank.
+- The above-water part stays shared between videos. The plunge into the world is made for each film from its own world.
+
+**Why.** The owner did not like dissolving into the underwater scene, and wanted the camera to arrive there for real,
+and in beautiful coral. Authoring from the end, the owner's method, fixes the framing that matters and does away with
+guessing a start that lands in the right place.
+
+**Open.** This film's name; the coordinator proposed *Not the Hungriest*. Whether the theatre can play a pose file and
+draw the crossing bubbles is being checked by the theatre lane before anything is built.
+
+**Rejected.** The dissolve, and two ways of filming the whole shot in one program: all in Blender, which would draw the round's world in a look unlike the rest of the film and
+lengthen the 4K render, and all in the theatre, which would mean building a sky and a sea seen from above.
