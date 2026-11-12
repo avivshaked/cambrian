@@ -167,9 +167,15 @@ def inputs(folder, fps, rough=False):
         raise Refused("the film's folder lacks " + ", ".join(missing) + "; the steps before the edit write them")
     got = {n: read_json(folder / n) for n in need}
     shots_sha = sha256_of(folder / "shots.json")
-    errors, left = [], {"clip": set(), "graphic": set(), "words": set()}
+    errors, left = [], {"clip": set(), "graphic": set(), "words": set(), "stale": False}
     for n in ("clips.json", "graphics.json", "graphics/plan.json"):
         if got[n].get("shots_sha256") != shots_sha:
+            if rough and n == "graphics.json":
+                # A rough draft lays out without drawings made for another shot list: each one it would have taken
+                # is left off with its own rough line (round 67's assembly cut, 2026-11-11).
+                got[n] = {"graphics": {}, "stills": {}, "words": {}}
+                left["stale"] = True
+                continue
             errors.append(f"{n} was made for another shot list; its step runs again first")
     clips = {c["shot"]: c for c in got["clips.json"]["clips"]}
     drawn = got["graphics.json"]
@@ -447,9 +453,10 @@ def cmd_plan(folder, n):
     shots = sorted(got["shots.json"]["shots"], key=lambda x: x["from_s"])
     # A rough draft lays a shot whose clip is not in yet as one that stands alone, so the plate holds its time.
     shots = [{k: v for k, v in x.items() if k != "run"} if x["id"] in left["clip"] else x for x in shots]
+    why = "drawn for another shot list" if left.get("stale") else "not drawn yet"
     rough = sorted([f"shot {i}'s clip is not in yet: the plate holds its time" for i in left["clip"]]
-                   + [f"graphic {i} is not drawn yet: left off" for i in left["graphic"]]
-                   + [f"words {i} are not drawn yet: left off" for i in left["words"]])
+                   + [f"graphic {i} is {why}: left off" for i in left["graphic"]]
+                   + [f"words {i} are {why}: left off" for i in left["words"]])
     decisions, derrors = decisions_of(folder, n, shots)
     errors += derrors
     v1 = lay_picture(shots, clips, decisions, fps, errors)
