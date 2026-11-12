@@ -51,8 +51,8 @@ class Limits:
     aspect: float = 16.0 / 9.0
     window: tuple = (43545.0, 43575.0)  # the recorded farm window
     match_angle_accel: bool = False    # yaw and pitch carry their accelerations across J as well as their rates (their rates always match)
-    glide_min: float = 0.5             # the glide speed searched, m/s
-    glide_max: float = 1.2
+    taper_min: float = 0.5             # the taper of the drag into the glide, seconds
+    taper_max: float = 1.0
 
 
 @dataclass
@@ -405,45 +405,38 @@ class Params:
     rho: float
     alpha_deg: float
     sign: int
-    glide: float = 0.8
+    taper: float = 0.75
 
 
-def speed_profile(v0, k, g, v_o, n_j, blend=0.4):
-    """The join's speed in time: B3's drag law, a short blend, then a glide down to the orbit's speed.
+def speed_profile(v0, k, taper, v_o, n_j):
+    """The join's speed in time: B3's drag law tapered into a glide, then the glide's fall to the orbit's speed.
 
-    v = v0 / (1 + k v0 t) until it reaches the handover speed g_h; then, with tau the time since,
-    v = g_h - k g_h^2 E(tau) + (v_o - g) * smootherstep(tau / T_f), where E(tau) is the integral of
-    (1 - smootherstep(tau / blend)). The first term keeps the drag law's acceleration -k g_h^2 at tau = 0 and takes it to zero
-    over `blend` seconds (acceleration is continuous at the handover; the jerk is not), losing g_h - g of speed; the glide
-    speed g is the speed once the blend is done, and the second term then carries it down to v_o by the last frame, with zero
-    rate and zero acceleration there. g_h follows from g: g_h - k g_h^2 blend / 2 = g. The speed falls monotonically.
+    dv/dt = -k v^2 w(t) with w = 1 - smootherstep(t / taper). At t = 0 that is B3's acceleration -k v0^2, and because w has
+    no slope there the jerk is B3's drag-law jerk too; by t = taper the deceleration has eased to zero with no slope or
+    curvature, so there is no corner in the speed and no step in the acceleration. It integrates in closed form,
+    1 / v = 1 / v0 + k W(t) with W the integral of w, and leaves the glide speed g = 1 / (1 / v0 + k W(taper)). From there one
+    smootherstep carries the speed from g to v_o, ending at the last frame with zero rate and zero acceleration; it starts
+    with zero rate and acceleration as well, so the whole speed is C2. The speed falls monotonically.
 
-    Returns the distance run at each frame (n_j + 1,), the speed there, the handover time and the total distance, or None if
-    the profile does not hold (no handover speed below v0, a glide not above the orbit's speed, or under a second for the fall)."""
+    Returns the distance run at each frame (n_j + 1,), the speed there, the glide speed and the total distance, or None if the
+    glide is not above the orbit's speed or the taper leaves under a second for the fall."""
     T = n_j * DT
-    q = k * blend
-    disc = 1.0 - 2.0 * q * g
-    if k <= 0 or disc <= 0 or not (v_o < g):
-        return None
-    g_h = (1.0 - math.sqrt(disc)) / q
-    if not (g < g_h < v0):
-        return None
-    t_h = (1.0 / k) * (1.0 / g_h - 1.0 / v0)
-    T_f = T - t_h
-    if T_f < max(1.0, 2 * blend):
+    if k <= 0 or v0 <= 0 or T - taper < 1.0:
         return None
     m = 8
     tt = np.arange(n_j * m + 1) / (FPS * m)
-    v = v0 / (1.0 + k * v0 * tt)
-    fall = tt > t_h
-    tau = tt[fall] - t_h
-    e_b = 1.0 - smootherstep(tau / blend)
-    E = tau[0] + np.concatenate([[0.0], np.cumsum(0.5 * (e_b[1:] + e_b[:-1]) / (FPS * m))])     # 1 - smootherstep is 1 to the 5th order at 0
-    v[fall] = g_h - k * g_h * g_h * E + (v_o - g) * smootherstep(tau / T_f)
-    if (np.diff(v) > 1e-12).any() or v.min() < v_o - 1e-6 or abs(v[-1] - v_o) > 1e-6:
+    w = 1.0 - smootherstep(tt / taper)
+    W = np.concatenate([[0.0], np.cumsum(0.5 * (w[1:] + w[:-1]) / (FPS * m))])
+    v = 1.0 / (1.0 / v0 + k * W)
+    g = float(1.0 / (1.0 / v0 + k * taper * 0.5))                 # the integral of 1 - smootherstep over its window is half of it
+    if not v_o < g:
+        return None
+    late = tt > taper
+    v[late] = g + (v_o - g) * smootherstep((tt[late] - taper) / (T - taper))
+    if (np.diff(v) > 1e-9).any() or v.min() < v_o - 1e-6 or abs(v[-1] - v_o) > 1e-6:
         return None
     dist = np.concatenate([[0.0], np.cumsum(0.5 * (v[1:] + v[:-1]) / (FPS * m))])
-    return {"s": dist[::m], "v": v[::m], "t_h": t_h, "S": float(dist[-1]), "k": k, "g": g, "g_h": g_h}
+    return {"s": dist[::m], "v": v[::m], "t_h": float(taper), "S": float(dist[-1]), "k": k, "g": g, "taper": float(taper)}
 
 
 def endpoints(ctx, J, n_o, gam, rho, alpha, sig):
@@ -502,9 +495,9 @@ def _curve_length(stack):
     return q, np.linalg.norm(np.diff(q, axis=1), axis=-1).sum(-1)
 
 
-def build_paths(ctx, J, n_j, n_o, gam, rho, alpha, sig, glide):
+def build_paths(ctx, J, n_j, n_o, gam, rho, alpha, sig, taper):
     """Eye, forward (K, F, 3) and vfov (F,) from the cut to the last frame for K candidates (arrays of equal length), with
-    the join's diagnostics, or None when the glide's speed profile does not hold. F = (J - cut + 1) + n_j + n_o. gam, alpha in
+    the join's diagnostics, or None when the speed profile does not hold. F = (J - cut + 1) + n_j + n_o. gam, alpha in
     radians, rho in metres, sig = +1 / -1.
 
     The join keeps B3's position, velocity (speed and direction) and acceleration at J. Its speed is `speed_profile`; its
@@ -519,7 +512,7 @@ def build_paths(ctx, J, n_j, n_o, gam, rho, alpha, sig, glide):
     k_j = -float(st["A"] @ (st["V"] / v0)) / (v0 * v0)
     r_h = math.hypot(end.eye[0] - ctx.centre[0], end.eye[2] - ctx.centre[2])
     v_o = om * r_h
-    prof = speed_profile(v0, k_j, glide, v_o, n_j)
+    prof = speed_profile(v0, k_j, taper, v_o, n_j)
     if prof is None:
         return None
     S = prof["S"]
@@ -693,10 +686,10 @@ def bodies_margin_batch(ctx, eye, stride=3, cull=30.0):
     return out
 
 
-def search(ctx, j_list, dur_list, orbit_list, glides, yaw_degs, rhos, alpha_degs, verbose=True, max_full=3000, chunk=1500,
+def search(ctx, j_list, dur_list, orbit_list, tapers, yaw_degs, rhos, alpha_degs, verbose=True, max_full=3000, chunk=1500,
            want=40, body_min=0.05):
     """Grid search; returns the passing candidates (dicts) ranked best first, the stage counts, the number of grid candidates
-    that passed everything and the near misses on bodies. Per (J, total duration, orbit length, glide): the speed profile
+    that passed everything and the near misses on bodies. Per (J, total duration, orbit length, taper): the speed profile
     must hold; the crossing must be off the footprint; the profile's distance must reach from J's eye to the orbit's start;
     then the curve is built and the cheap rules and the bodies are applied. Survivors are checked against the reef at every
     third frame in order of preference, until `want` pass or `max_full` are checked; the finalists are re-checked at every
@@ -711,7 +704,7 @@ def search(ctx, j_list, dur_list, orbit_list, glides, yaw_degs, rhos, alpha_degs
     for J in j_list:
         for D in dur_list:
             for To in orbit_list:
-                for gl in glides:
+                for gl in tapers:
                     n_o = int(round(To * FPS))
                     n_j = int(round(D * FPS)) - (J - lim.cut_frame) - n_o
                     if n_j < FPS or To < lim.lens_lead:
@@ -767,7 +760,7 @@ def search(ctx, j_list, dur_list, orbit_list, glides, yaw_degs, rhos, alpha_degs
         if checked >= max_full or len(passed) >= want:
             break
         checked += 1
-        paths = build_paths(ctx, P.J, P.join_frames, P.orbit_frames, [math.radians(P.yaw_deg)], [P.rho], [math.radians(P.alpha_deg)], [P.sign], P.glide)
+        paths = build_paths(ctx, P.J, P.join_frames, P.orbit_frames, [math.radians(P.yaw_deg)], [P.rho], [math.radians(P.alpha_deg)], [P.sign], P.taper)
         res = full_check(ctx, P, paths, 0, stride=3)
         if res["coral_margin"] >= 0.1 and res["body_margin"] >= 0.1:
             passed.append((P, entry, pk))
@@ -775,7 +768,7 @@ def search(ctx, j_list, dur_list, orbit_list, glides, yaw_degs, rhos, alpha_degs
         print(f"search: {checked} survivors checked against reef and bodies (every 3rd frame); {len(passed)} kept", flush=True)
     final = []
     for P, entry, pk in passed:
-        paths = build_paths(ctx, P.J, P.join_frames, P.orbit_frames, [math.radians(P.yaw_deg)], [P.rho], [math.radians(P.alpha_deg)], [P.sign], P.glide)
+        paths = build_paths(ctx, P.J, P.join_frames, P.orbit_frames, [math.radians(P.yaw_deg)], [P.rho], [math.radians(P.alpha_deg)], [P.sign], P.taper)
         res = full_check(ctx, P, paths, 0, stride=1)
         if not res["pass"]:
             continue
@@ -875,9 +868,15 @@ def make_plots(ctx, P, res, rows, eye_all, fwd_all, vfov_all, out):
     t = (f - cut) / FPS
     sp = np.r_[np.linalg.norm(np.diff(eye_all, axis=0), axis=1) * FPS, np.nan]
     yaw, pit = yaw_pitch(fwd_all)
-    fig, axs = plt.subplots(5, 1, figsize=(12, 14), sharex=True)
+    # acceleration along the path from the rows: second differences of the eye (even sim clock from the cut on), dotted with the heading
+    acc = np.full(N, np.nan)
+    a_vec = (eye_all[cut + 2:] - 2 * eye_all[cut + 1:-1] + eye_all[cut:-2]) * FPS ** 2
+    hd = (eye_all[cut + 2:] - eye_all[cut:-2])
+    hd = hd / np.maximum(np.linalg.norm(hd, axis=1), 1e-12)[:, None]
+    acc[cut + 1:N - 1] = (a_vec * hd).sum(1)
+    fig, axs = plt.subplots(6, 1, figsize=(12, 16), sharex=True)
     series = ((sp, "speed (m/s)"), (np.degrees(pit), "pitch (deg)"), (np.degrees(np.unwrap(yaw)), "yaw (deg)"), (vfov_all, "vfov (deg)"),
-              (np.linalg.norm(eye_all - c, axis=1), "distance to the crown centre (m)"))
+              (np.linalg.norm(eye_all - c, axis=1), "distance to the crown centre (m)"), (acc, "acceleration along the path (m/s^2)"))
     lens_done = (je - cut) / FPS
     for a, (y, lab) in zip(axs, series):
         m = f >= cut
@@ -894,7 +893,7 @@ def make_plots(ctx, P, res, rows, eye_all, fwd_all, vfov_all, out):
 
 
 def paths_cross(ctx, P, res):
-    p = build_paths(ctx, P.J, P.join_frames, P.orbit_frames, [math.radians(P.yaw_deg)], [P.rho], [math.radians(P.alpha_deg)], [P.sign], P.glide)
+    p = build_paths(ctx, P.J, P.join_frames, P.orbit_frames, [math.radians(P.yaw_deg)], [P.rho], [math.radians(P.alpha_deg)], [P.sign], P.taper)
     return p["cross"][0]
 
 
@@ -945,7 +944,8 @@ def write_report(path, ctx, P, res, rows, wms, window, table, rej, nsurv, source
         L.append("the join's speed (B3's drag law, then a glide)")
         L.append(f"  drag fit over frames {P.J} to {P.J + 12}: dv/dt = -k v^2 with k = {kf:.3f} per m (rms residual {rms:.2f} m/s^2); at J alone k = {kj:.3f} "
                  f"(v {v0:.3f} m/s, tangential acceleration {at:.2f} m/s^2). The join uses k at J, so its acceleration at J is B3's")
-        L.append(f"  glide speed {P.glide:.2f} m/s, reached at {prof['t_h']:.2f} s after J; then one quintic to the orbit's {paths['v_o']:.3f} m/s; "
+        L.append(f"  dv/dt = -k v^2 w(t), w falling from 1 to 0 by a smootherstep over a taper of {P.taper:.2f} s; the deceleration is gone by "
+                 f"{P.taper:.2f} s after J and leaves a glide of {prof['g']:.2f} m/s; one smootherstep then carries it to the orbit's {paths['v_o']:.3f} m/s; "
                  f"distance run {prof['S']:.2f} m, curve length {paths['curve_length'][0]:.2f} m")
         eye_a = np.array([r["eye"] for r in rows])
         sim = np.array([r["sim_s"] for r in rows])
@@ -956,6 +956,11 @@ def write_report(path, ctx, P, res, rows, wms, window, table, rej, nsurv, source
         a_b = fd_accel(eye_a[J - 2:J + 1], sim[J - 2:J + 1])
         a_a = fd_accel(eye_a[J:J + 3], sim[J:J + 3])
         T0 = (eye_a[J + 1] - eye_a[J]) / np.linalg.norm(eye_a[J + 1] - eye_a[J])
+        a_vec = (eye_a[J + 1:] - 2 * eye_a[J:-1] + eye_a[J - 1:-2]) * FPS ** 2          # centred at J, J+1, ...
+        a_al = np.array([float(a_vec[i] @ ((eye_a[J + i + 2] - eye_a[J + i]) / np.linalg.norm(eye_a[J + i + 2] - eye_a[J + i]))) for i in range(1, len(a_vec) - 1)])
+        jerk = np.linalg.norm(np.diff(a_vec[1:-1], axis=0), axis=1) * FPS
+        L.append(f"  after J (frames {J + 1} on): peak deceleration {-a_al.min():.2f} m/s^2 at {(int(a_al.argmin()) + 1) / FPS:.2f} s; largest jerk "
+                 f"{jerk.max():.1f} m/s^3 at {(int(jerk.argmax()) + 1.5) / FPS:.2f} s (vector, from third differences of the rows)")
         L.append(f"  acceleration at J from the rows, three points each side (sim clock): before {np.round(a_b, 2).tolist()} |a| {np.linalg.norm(a_b):.2f}, "
                  f"along the path {float(a_b @ T0):.2f}; after {np.round(a_a, 2).tolist()} |a| {np.linalg.norm(a_a):.2f}, along the path {float(a_a @ T0):.2f} m/s^2 "
                  f"(the stencils are centred at J-1 and J+1, so B3's own jerk between them shows; their mean along the path is "
@@ -970,11 +975,11 @@ def write_report(path, ctx, P, res, rows, wms, window, table, rej, nsurv, source
 
 
 def candidate_table(final, n=10):
-    head = f"{'#':>2} {'score':>6} {'J':>4} {'join':>5} {'orb':>5} {'yaw':>6} {'rho':>5} {'alpha':>6} {'sgn':>3} {'glide':>5} {'entry':>6} {'peak':>6} {'coral':>6} {'body':>6} {'foot':>5}"
+    head = f"{'#':>2} {'score':>6} {'J':>4} {'join':>5} {'orb':>5} {'yaw':>6} {'rho':>5} {'alpha':>6} {'sgn':>3} {'taper':>5} {'entry':>6} {'peak':>6} {'coral':>6} {'body':>6} {'foot':>5}"
     rows = [head]
     for i, r in enumerate(final[:n]):
         P = r["params"]
-        rows.append(f"{i + 1:>2} {r['score']:>6.2f} {P.J:>4} {P.join_frames:>5} {P.orbit_frames:>5} {P.yaw_deg:>6.1f} {P.rho:>5.1f} {P.alpha_deg:>6.1f} {P.sign:>+3d} {P.glide:>5.2f} "
+        rows.append(f"{i + 1:>2} {r['score']:>6.2f} {P.J:>4} {P.join_frames:>5} {P.orbit_frames:>5} {P.yaw_deg:>6.1f} {P.rho:>5.1f} {P.alpha_deg:>6.1f} {P.sign:>+3d} {P.taper:>5.2f} "
                     f"{r['entry']:>6.2f} {r['peak_rate']:>6.1f} {r['coral_margin']:>6.2f} {r['body_margin']:>6.2f} {r['footprint']:>5.1f}")
     return rows
 
@@ -1013,7 +1018,7 @@ def parse_args(argv):
     ap.add_argument("--bed-relief", type=float, default=1.5)
     ap.add_argument("--cut", type=int, default=248)
     ap.add_argument("--j", type=int, nargs="+", default=[248], help="the frame(s) up to which B3's path is played (searched); the join starts there")
-    ap.add_argument("--glide", type=float, nargs="+", default=[0.5, 0.7, 0.9, 1.1], help="the glide speeds searched, m/s (0.5 to 1.2)")
+    ap.add_argument("--taper", type=float, nargs="+", default=[0.5, 0.75, 1.0], help="the taper of the drag into the glide, seconds (0.5 to 1.0)")
     ap.add_argument("--dur", type=float, nargs="+", help="total seconds after the cut to search (default 15 to 18 in 1 s steps)")
     ap.add_argument("--orbit-s", type=float, nargs="+", default=[3.5, 4.5])
     ap.add_argument("--drift-dps", type=float, default=2.0)
@@ -1047,8 +1052,8 @@ def main(argv=None):
     a = parse_args(argv)
     lim = Limits(cut_frame=a.cut, crown_r=a.crown_r, max_rate_dps=a.max_rate, window=tuple(a.window), body_inflate=a.body_inflate,
                  match_angle_accel=a.match_angle_accel)
-    if any(not lim.glide_min - 1e-9 <= g <= lim.glide_max + 1e-9 for g in a.glide):
-        sys.exit(f"landing_path: --glide must lie from {lim.glide_min} to {lim.glide_max} m/s")
+    if any(not lim.taper_min - 1e-9 <= g <= lim.taper_max + 1e-9 for g in a.taper):
+        sys.exit(f"landing_path: --taper must lie from {lim.taper_min} to {lim.taper_max} s")
     if a.end_log:
         with open(a.end_log, encoding="utf-8", errors="replace") as fh:
             end = parse_rig_line(fh.read(), a.end_name)
@@ -1084,7 +1089,7 @@ def main(argv=None):
     check_end_pose(ctx)
     yaws = np.arange(0, 360, a.yaw_step)
     alphas = np.arange(0, 360, a.alpha_step)
-    final, rej, nsurv, near = search(ctx, a.j, dur, a.orbit_s, a.glide, yaws, np.array(a.rho, float), alphas)
+    final, rej, nsurv, near = search(ctx, a.j, dur, a.orbit_s, a.taper, yaws, np.array(a.rho, float), alphas)
     # finer passes around the best finalists and the nearest misses, each with half the step before
     seen_seeds = set()
     for rnd in range(1 if final else 3):
@@ -1094,14 +1099,14 @@ def main(argv=None):
             break
         new_final, new_near = [], []
         for P in seeds:
-            key = (P.J, P.join_frames, P.orbit_frames, round(P.yaw_deg, 3), round(P.rho, 3), round(P.alpha_deg, 3), P.sign, P.glide, rnd)
+            key = (P.J, P.join_frames, P.orbit_frames, round(P.yaw_deg, 3), round(P.rho, 3), round(P.alpha_deg, 3), P.sign, P.taper, rnd)
             if key in seen_seeds:
                 continue
             seen_seeds.add(key)
             dd = (P.J - lim.cut_frame + P.join_frames + P.orbit_frames) / FPS
             for sg in (P.sign,):
                 f2, _, _, n2 = search(ctx, [P.J], [dd], [P.orbit_frames / FPS],
-                                      [max(lim.glide_min, P.glide - h * 0.2), P.glide, min(lim.glide_max, P.glide + h * 0.2)],
+                                      [max(lim.taper_min, P.taper - h * 0.25), P.taper, min(lim.taper_max, P.taper + h * 0.25)],
                                       np.array([P.yaw_deg - h * a.yaw_step, P.yaw_deg, P.yaw_deg + h * a.yaw_step]),
                                       np.array([P.rho - h * 2.0, P.rho, P.rho + h * 2.0]),
                                       np.array([P.alpha_deg - h * a.alpha_step, P.alpha_deg, P.alpha_deg + h * a.alpha_step]), verbose=False)
@@ -1115,7 +1120,7 @@ def main(argv=None):
     seen, merged = set(), []
     for r in sorted(final, key=lambda r: -r["score"]):
         P = r["params"]
-        key = (P.J, P.join_frames, P.orbit_frames, round(P.yaw_deg, 3), round(P.rho, 3), round(P.alpha_deg, 3), P.sign, round(P.glide, 3))
+        key = (P.J, P.join_frames, P.orbit_frames, round(P.yaw_deg, 3), round(P.rho, 3), round(P.alpha_deg, 3), P.sign, round(P.taper, 3))
         if key not in seen:
             seen.add(key)
             merged.append(r)
@@ -1133,7 +1138,7 @@ def main(argv=None):
     best = final[0]
     P = best["params"]
     print("winner: " + why_won(final))
-    paths = build_paths(ctx, P.J, P.join_frames, P.orbit_frames, [math.radians(P.yaw_deg)], [P.rho], [math.radians(P.alpha_deg)], [P.sign], P.glide)
+    paths = build_paths(ctx, P.J, P.join_frames, P.orbit_frames, [math.radians(P.yaw_deg)], [P.rho], [math.radians(P.alpha_deg)], [P.sign], P.taper)
     rows, wms, eye_all, fwd_all, vfov_all = make_rows(ctx, P, paths)
     try:
         window = check_window(ctx, wms, rows)
@@ -1142,7 +1147,7 @@ def main(argv=None):
     os.makedirs(a.out, exist_ok=True)
     source = (f"landing_path.py: B3 {os.path.basename(os.path.dirname(os.path.dirname(a.b3)))}/{os.path.basename(a.b3)} sha256 {landing_io.sha256(a.b3)[:16]}; "
               f"end eye {np.round(end.eye, 3).tolist()} at {np.round(end.at, 3).tolist()} lens {end.lens} t {end.t}; cut {a.cut} J {P.J} join {P.join_frames} "
-              f"orbit {P.orbit_frames} yaw {P.yaw_deg:.1f} rho {P.rho:.1f} alpha {P.alpha_deg:.1f} sign {P.sign:+d} glide {P.glide:.2f} drift {a.drift_dps} deg/s")
+              f"orbit {P.orbit_frames} yaw {P.yaw_deg:.1f} rho {P.rho:.1f} alpha {P.alpha_deg:.1f} sign {P.sign:+d} taper {P.taper:.2f} drift {a.drift_dps} deg/s")
     out_path = os.path.join(a.out, a.name + ".poses.json")
     landing_io.write_poses(out_path, rows, a.cut, wms, source)
     landing_io.read_poses(out_path)

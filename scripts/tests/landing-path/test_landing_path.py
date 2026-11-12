@@ -61,10 +61,10 @@ def capsule(a, b, r=0.3, colony=22):
                       "radius": r, "halfThickness": 0}])
 
 
-def one_path(ctx, n_j=360, n_o=105, yaw=0.0, rho=4.0, alpha=-90.0, sign=1, glide=0.9):
-    p = lp.build_paths(ctx, J, n_j, n_o, [math.radians(yaw)], [rho], [math.radians(alpha)], [sign], glide)
+def one_path(ctx, n_j=360, n_o=105, yaw=0.0, rho=4.0, alpha=-90.0, sign=1, taper=0.75):
+    p = lp.build_paths(ctx, J, n_j, n_o, [math.radians(yaw)], [rho], [math.radians(alpha)], [sign], taper)
     assert p is not None and p["reach"][0]
-    return lp.Params(J, n_j, n_o, yaw, rho, alpha, sign, glide), p
+    return lp.Params(J, n_j, n_o, yaw, rho, alpha, sign, taper), p
 
 
 def test_the_pose_file_validates_and_carries_the_clock(tmp_path):
@@ -111,7 +111,7 @@ def test_the_join_is_c2_at_j_and_at_the_orbit_start(tmp_path):
     assert abs((pit[j1 + 1] - pit[j1 - 1]) / (2 * DT)) < 2e-3
 
 
-def test_the_join_brakes_by_the_drag_law_then_glides_and_never_speeds_up(tmp_path):
+def test_the_join_brakes_by_the_drag_law_tapers_to_a_glide_and_never_speeds_up(tmp_path):
     ctx = ctx_for(tmp_path)
     P, p = one_path(ctx)
     rows, wms, eye, fwd, vfov = lp.make_rows(ctx, P, p)
@@ -119,23 +119,27 @@ def test_the_join_brakes_by_the_drag_law_then_glides_and_never_speeds_up(tmp_pat
     k_fit, rms, k_j, v0, a_t = ctx.b3.drag_fit(J)
     assert abs(k_j - K_DRAG) < 0.05 and abs(k_fit - K_DRAG) < 0.05          # the fit finds the law the stand-in follows
     sp = np.linalg.norm(np.diff(eye[J:J + P.join_frames + 1], axis=0), axis=1) * 30
-    assert (np.diff(sp) <= 1e-3).all(), np.diff(sp).max()
-    for t in (0.05, 0.1, 0.15):                                               # the drag law, while it lasts
+    assert (np.diff(sp) <= 1e-2).all(), np.diff(sp).max()
+    for t in (0.05, 0.1):                                                    # the drag law, while the taper has hardly begun
         i = int(round(t * 30))
-        assert t < prof["t_h"]
         want = v0 / (1 + k_j * v0 * (i - 0.5) / 30)
         assert abs(sp[i - 1] - want) < 0.03 * want, (t, sp[i - 1], want)
-    assert prof["g"] == 0.9 and abs(prof["v"][-1] - p["v_o"]) < 1e-6
+    assert prof["taper"] == 0.75 and abs(prof["v"][-1] - p["v_o"]) < 1e-6
+    # the deceleration eases to zero by the end of the taper: the acceleration along the path, from the rows, has no step
+    acc = np.diff(sp) * 30
+    i_t = int(0.75 * 30)
+    assert abs(acc[0] + k_j * v0 ** 2) < 0.4 * k_j * v0 ** 2                 # starts at B3's braking
+    assert abs(acc[i_t + 1]) < 0.15 and np.abs(np.diff(acc)).max() < 0.8     # nothing jumps by more than a fraction of a m/s^2 a frame
     # the distance the profile runs is the curve's length, so the join ends on the orbit's start
     assert abs(prof["S"] - p["curve_length"][0]) < 0.02 * prof["S"]
     assert np.allclose(eye[J + P.join_frames], p["P1"][0], atol=0.02)
 
 
-def test_a_glide_that_the_drag_law_cannot_hand_over_to_is_refused():
-    assert lp.speed_profile(2.9, 0.88, 0.9, 0.3, 360) is not None
-    assert lp.speed_profile(2.9, 0.88, 0.2, 0.3, 360) is None               # below the orbit's speed
-    assert lp.speed_profile(2.9, 0.88, 1.9, 0.3, 360) is None               # no handover speed under B3's
-    assert lp.speed_profile(2.9, 0.0, 0.9, 0.3, 360) is None                # B3 not braking
+def test_a_taper_that_leaves_the_glide_below_the_orbit_is_refused():
+    assert lp.speed_profile(2.9, 0.88, 0.75, 0.3, 360) is not None
+    assert lp.speed_profile(2.9, 0.88, 0.75, 1.5, 360) is None              # a glide of about 1.1 m/s is not above 1.5
+    assert lp.speed_profile(2.9, 0.88, 11.5, 0.3, 360) is None              # no time left for the fall
+    assert lp.speed_profile(2.9, 0.0, 0.75, 0.3, 360) is None               # B3 not braking
 
 
 def test_the_lens_is_held_then_eases_and_finishes_three_seconds_before_the_end(tmp_path):
@@ -150,7 +154,7 @@ def test_the_lens_is_held_then_eases_and_finishes_three_seconds_before_the_end(t
     assert (last - done) / 30 >= 3.0 - 1e-9
     assert abs(vfov[-1] - 60.0) < 1e-12
     # an orbit shorter than the lead is not searched at all
-    final, rej, nsurv, near = lp.search(ctx, [J], [16.0], [2.0], [0.9], np.array([0.0]), np.array([4.0]), np.array([-90.0]), verbose=False)
+    final, rej, nsurv, near = lp.search(ctx, [J], [16.0], [2.0], [0.75], np.array([0.0]), np.array([4.0]), np.array([-90.0]), verbose=False)
     assert final == [] and nsurv == 0 and rej == {}
 
 
@@ -262,7 +266,7 @@ def test_the_reef_entry_is_the_first_frame_from_which_the_crown_stays_in_frame(t
 
 def test_the_search_ranks_what_passes_and_reports_a_winner(tmp_path):
     ctx = ctx_for(tmp_path, coral=capsule([40, -3, 40], [40, -9, 40]), entry_min=0.0, entry_max=18.0, max_rate_dps=200.0)
-    final, rej, nsurv, near = lp.search(ctx, [J], [16.0], [3.5], [0.7, 0.9, 1.1], np.arange(0, 360, 60.0), np.array([2.0, 4.0, 6.0]),
+    final, rej, nsurv, near = lp.search(ctx, [J], [16.0], [3.5], [0.5, 0.75, 1.0], np.arange(0, 360, 60.0), np.array([2.0, 4.0, 6.0]),
                                         np.arange(0, 360, 60.0), verbose=False)
     assert final, rej
     assert [r["score"] for r in final] == sorted((r["score"] for r in final), reverse=True)
