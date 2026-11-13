@@ -85,6 +85,18 @@ or matte (the triangulation-matted layer) [full], --shafts on or off [on], --whi
 --spray multipliers on their density and count, 0 for none [1], --shaft-debug depth (a test pattern by depth
 instead of the traced net), --dry (build the scene and the path, print them, render nothing). Paths C and D write their
 camera, frame by frame, to <out-prefix>-camera.json.
+
+The landing (paths D and E only): --pose-file <file> replaces path D's course with the per-frame course of a pose file
+(landing_io.py, formats.md), a row to a frame: the camera's eye, forward and vertical field of view are keyed from the rows, the
+simulated clock is the rows' sim_s, the surface crossing is found along them, and the sea, ripples and white water are centred
+under it. The pose file's world is moved so that the crossing sits at the origin and turned about the vertical so that the
+theatre's sun (az 44, el 67, as a direction through landing_io.to_blender) falls where the scene's sky has its sun; the sky's
+elevation is set to the theatre's unless --sun is given. The camera file gains a `pose_f` a row and gives positions in the
+pose file's frame. --bubble-export <file> writes the burst's arrays (crossing-bubbles 1) in Unity axes and pose-file
+positions; --export-only builds just what it needs (the scene's setup, the sea's probe, the bubbles), writes it and exits.
+--bubble-export without --pose-file (path D or E) writes B3's own burst in B3's own frame, not placed: the sea frame's arrays
+through landing_io.to_unity (axes only), with --world-minus-sim (required there) as the file's; map_bubbles.py places it in the
+theatre's world. --export-only works there too.
 """
 import json, math, os, sys, time
 import bpy
@@ -95,6 +107,8 @@ from mathutils import Vector, Quaternion
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import sea_still as SS
+import landing_io as LIO
+import sea_dive_poses as PZ
 
 FPS = 30
 G = 9.81
@@ -126,12 +140,53 @@ def parse():
     ap.add_argument("--layer", choices=("full", "bubbles", "matte"), default="full")
     ap.add_argument("--shafts", choices=("on", "off"), default="on")
     ap.add_argument("--white-water", type=float, default=1.0)
+    ap.add_argument("--foam-gain", type=float, default=1.0)
+    ap.add_argument("--foam-light", type=float, default=1.0)
+    ap.add_argument("--foam-window", default=None)
     ap.add_argument("--spray", type=float, default=1.0)
     ap.add_argument("--shaft-debug", choices=("depth",), default=None)
     ap.add_argument("--shaft-ab", action="store_true")
     ap.add_argument("--shaft-medium", type=float, default=None)
     ap.add_argument("--dry", action="store_true")
-    return ap.parse_args(SS.script_argv())
+    ap.add_argument("--pose-file", default=None)
+    ap.add_argument("--bubble-export", default=None)
+    ap.add_argument("--export-only", action="store_true")
+    ap.add_argument("--fizz-export", default=None)
+    ap.add_argument("--world-minus-sim", type=float, default=None)
+    args = ap.parse_args(SS.script_argv())
+    args.foam = None
+    if args.foam_window is not None:
+        try:
+            win = [float(x) for x in args.foam_window.split(",")]
+        except ValueError:
+            ap.error("--foam-window takes four numbers, a,b,c,d, in sim seconds")
+        if len(win) != 4:
+            ap.error("--foam-window takes four numbers, a,b,c,d, in sim seconds")
+        if not (win[0] < win[1] <= win[2] < win[3]):
+            ap.error("--foam-window a,b,c,d must be in increasing order (a < b <= c < d)")
+        if args.foam_gain == 1.0 and args.foam_light == 1.0:
+            ap.error("--foam-window with --foam-gain and --foam-light both 1 does nothing")
+        args.foam = (win[0], win[1], win[2], win[3], args.foam_gain, args.foam_light)
+        print("FOAM window %.4f %.4f %.4f %.4f s, density x%g, light x%g" % (*win, args.foam_gain, args.foam_light), flush=True)
+    elif args.foam_gain != 1.0 or args.foam_light != 1.0:
+        ap.error("--foam-gain and --foam-light need --foam-window")
+    if args.pose_file:
+        if args.path not in ("D", "E"):
+            ap.error("--pose-file takes the place of path D's course: use it with --path D or E")
+        if not any(a == "--sun" or a.startswith("--sun=") for a in SS.script_argv()):
+            args.sun = PZ.THEATRE_SUN_EL            # the theatre's sun, as a direction (see pose_setup for the bearing)
+    if args.bubble_export and not (args.bubbles > 0 and (args.pose_file or args.path in ("D", "E"))):
+        ap.error("--bubble-export needs --bubbles above 0, and --pose-file or --path D or E")
+    if args.bubble_export and not args.pose_file and args.world_minus_sim is None:
+        ap.error("--bubble-export without --pose-file (B3's own burst) needs --world-minus-sim")
+    if args.world_minus_sim is not None and (args.pose_file or not args.bubble_export):
+        ap.error("--world-minus-sim is for --bubble-export without --pose-file only (a pose file carries its own)")
+    if args.export_only and not args.bubble_export:
+        ap.error("--export-only needs --bubble-export")
+    if args.fizz_export and not (args.export_only and args.path == "D" and not args.pose_file
+                                 and args.world_minus_sim is not None):
+        ap.error("--fizz-export needs --export-only, --path D, no --pose-file and --world-minus-sim (B3's own frame)")
+    return args
 
 def frame_list(spec, n, step):
     if spec == "all":
@@ -332,6 +387,121 @@ class Probe:
             d = self.disp(t, bx, by)
             bx, by = x - d[0], y - d[1]
         return float(self.disp(t, bx, by)[2])
+
+# ---------------------------------------------------------------- the landing: a pose file in place of path D's course
+def pose_setup(args, ctx):
+    """The states, the entry and the probe for --pose-file. The pose file's rows become frames (sea_dive_poses.rows_to_states);
+    the world is moved so that the crossing sits at the origin and turned by psi about the vertical, where psi is the bearing the
+    sky's sun really has less the theatre's sun bearing (the sun as a Blender vector, through landing_io.to_blender), so that the
+    camera sees the sun where the theatre's camera does; the probe is then centred under the crossing and the crossing found
+    along the frames with the moving sea. Returns the parts main needs."""
+    doc = LIO.read_poses(args.pose_file)
+    raw = PZ.rows_to_states(doc["rows"])
+    sun_b = PZ.theatre_sun_blender()
+    psi = ctx["az"] - PZ.sun_bearing(sun_b)
+    _, c0 = PZ.flat_crossing(raw, PORT)
+    centre = (float(c0[0]), float(c0[1]))
+    st = PZ.place(raw, centre, psi)
+    probe = Probe((0.0, 0.0), ctx["wind_dir"], ctx["ocean"]["k"], n=161, step=0.25)
+    e = PZ.find_crossing(st, PORT, lambda t, x, y: probe.height(round(t * FPS) / FPS, x, y))
+    n = len(st["t"])
+    states = [{"t": float(st["t"][i]), "tf": float(st["tf"][i]), "loc": Vector(st["loc"][i].tolist()),
+               "pitch": float(st["pitch"][i]), "roll": 0.0, "vel": Vector(st["vel"][i].tolist()),
+               "dir": Vector(st["dir"][i].tolist()), "vfov": float(st["vfov"][i]), "pose_f": int(st["f"][i])}
+              for i in range(n)]
+    entry = {"t": e["t"], "frame": e["frame"], "loc": Vector(e["loc"].tolist()), "v": e["v"], "beta": e["beta"], "hold": 0.0,
+             "dir": Vector(e["dir"].tolist())}
+    d = e["dir"]
+    az_disc = math.atan2(d[1], d[0]) if math.hypot(d[0], d[1]) > 1e-3 else math.atan2(states[e["frame"]]["dir"].y,
+                                                                                   states[e["frame"]]["dir"].x)
+    print("POSE %s: %d rows, sim_s %.3f..%.3f; sun az %.2f el %.2f deg in Blender axes (%.4f %.4f %.4f), the scene's sun at %.2f"
+          " deg: turned by %.2f deg; crossing at pose-frame (%.3f, %.3f), frame %d (pose f %d), sim %.4f s, %.2f m/s, %.1f deg below"
+          " level; sea centred there" % (os.path.basename(args.pose_file), n, st["t"][0], st["t"][-1],
+                                          math.degrees(PZ.sun_bearing(sun_b)), math.degrees(math.asin(sun_b[2])), *sun_b,
+                                          math.degrees(ctx["az"]), math.degrees(psi), centre[0], centre[1], e["frame"],
+                                          states[e["frame"]]["pose_f"], e["t"], e["v"], math.degrees(e["beta"])), flush=True)
+    return {"doc": doc, "states": states, "entry": entry, "probe": probe, "az_disc": az_disc, "centre": centre, "psi": psi}
+
+def git_source():
+    """This script's commit, and whether sea_dive.py or sea_dive_poses.py differ from it."""
+    import subprocess
+    try:
+        head = subprocess.run(["git", "-C", HERE, "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+        dirty = subprocess.run(["git", "-C", HERE, "status", "--porcelain", "--", "sea_dive.py", "sea_dive_poses.py"],
+                               capture_output=True, text=True, check=True).stdout.strip()
+        return head + (" (sea_dive.py modified since)" if dirty else "")
+    except Exception as ex:
+        return "unknown (%s)" % ex
+
+def write_bubble_export(args, pose, bubbles):
+    """The Bubbles instance's arrays, in Unity axes and the pose file's frame, through landing_io.write_bubbles."""
+    x0, v0 = PZ.bubble_export_arrays(bubbles.x0, bubbles.v0, pose["centre"], pose["psi"])
+    src = "sea_dive.py commit %s; --path %s --bubbles %g --port %g, bubble seed 11; pose file %s sha256 %s" % (
+        git_source(), args.path, args.bubbles, args.port, os.path.basename(args.pose_file), LIO.sha256(args.pose_file))
+    os.makedirs(os.path.dirname(os.path.abspath(args.bubble_export)), exist_ok=True)
+    LIO.write_bubbles(args.bubble_export, x0, v0, bubbles.ts, bubbles.r, bubbles.rise, bubbles.tau, bubbles.flat,
+                      pose["doc"]["world_minus_sim"], src)
+    print("BUBBLE EXPORT %d bubbles to %s" % (bubbles.n, args.bubble_export), flush=True)
+
+def write_own_bubble_export(args, bubbles):
+    """B3's own frame, not placed: the Bubbles instance's arrays in the sea frame this script renders in, converted with
+    landing_io.to_unity (the axis swap only, no turn and no translation). map_bubbles.py places them in the theatre's world.
+    world_minus_sim comes from --world-minus-sim."""
+    src = ("sea_dive.py commit %s; B3's own frame, not placed (axes swapped by landing_io.to_unity only); --path %s --bubbles %g"
+           " --port %g --world-minus-sim %.9g, bubble seed 11" % (git_source(), args.path, args.bubbles, args.port,
+                                                                 args.world_minus_sim))
+    os.makedirs(os.path.dirname(os.path.abspath(args.bubble_export)), exist_ok=True)
+    LIO.write_bubbles(args.bubble_export, LIO.to_unity(bubbles.x0), LIO.to_unity(bubbles.v0), bubbles.ts, bubbles.r,
+                      bubbles.rise, bubbles.tau, bubbles.flat, args.world_minus_sim, src)
+    print("BUBBLE EXPORT (B3's own frame) %d bubbles to %s" % (bubbles.n, args.bubble_export), flush=True)
+
+def write_own_fizz_export(args, fizz):
+    """The fizz's arrays in B3's own frame, as write_own_bubble_export writes the burst's: the same closed form, with tau
+    FZ_TAU and flat 1 for every bubble."""
+    src = ("sea_dive.py commit %s; B3's own frame, not placed (axes swapped by landing_io.to_unity only); the fizz (class Fizz)"
+           "; --path %s --white-water %g --port %g --world-minus-sim %.9g, fizz seed 31" % (
+               git_source(), args.path, args.white_water, args.port, args.world_minus_sim))
+    os.makedirs(os.path.dirname(os.path.abspath(args.fizz_export)), exist_ok=True)
+    LIO.write_bubbles(args.fizz_export, LIO.to_unity(fizz.x0), LIO.to_unity(fizz.v0), fizz.ts, fizz.r, fizz.rise,
+                      np.full(fizz.n, Fizz.FZ_TAU), np.ones(fizz.n), args.world_minus_sim, src)
+    print("FIZZ EXPORT (B3's own frame) %d bubbles to %s" % (fizz.n, args.fizz_export), flush=True)
+
+def run_export_only(args, ctx):
+    """--export-only: the pose (or B3's own path), the probe the surface test needs and the bubbles; written, and no render."""
+    if args.pose_file:
+        pose = pose_setup(args, ctx)
+        bubbles = Bubbles(pose["states"], pose["entry"], pose["probe"], 6000 * args.bubbles)
+        write_bubble_export(args, pose, bubbles)
+    else:
+        az = ctx["az"]
+        probe = Probe((math.cos(az) * 9.0, math.sin(az) * 9.0), ctx["wind_dir"], ctx["ocean"]["k"], n=113, step=0.25)
+        states, entry = path_D(probe, az)
+        bubbles = Bubbles(states, entry, probe, 6000 * args.bubbles)
+        write_own_bubble_export(args, bubbles)
+        if args.fizz_export:
+            write_own_fizz_export(args, Fizz(entry, states, probe, 40000 * args.white_water))
+    print("EXPORT-ONLY done", flush=True)
+
+def key_camera_pose(cam, states):
+    """key_camera for a pose file: the view direction is each frame's own, and the lens follows each frame's vertical field of
+    view (the sensor fit is vertical)."""
+    prefs = bpy.context.preferences.edit
+    try:
+        prefs.keyframe_new_interpolation_type = "LINEAR"
+    except Exception as e:
+        print("WARN keyframe interpolation:", e, flush=True)
+    cam.data.sensor_fit = "VERTICAL"
+    prev = None
+    for f, s in enumerate(states):
+        q = s["dir"].normalized().to_track_quat("-Z", "Y")
+        e = q.to_euler("XYZ", prev) if prev is not None else q.to_euler("XYZ")
+        prev = e
+        cam.location = s["loc"]
+        cam.rotation_euler = e
+        cam.data.lens = 0.5 * cam.data.sensor_height / math.tan(0.5 * s["vfov"])
+        cam.keyframe_insert("location", frame=f)
+        cam.keyframe_insert("rotation_euler", frame=f)
+        cam.data.keyframe_insert("lens", frame=f)
 
 # ---------------------------------------------------------------- the two camera paths
 def path_A(probe, n):
@@ -844,7 +1014,8 @@ class WhiteWater:
     WW_SIGMA, WW_DEPTH, WW_G, WW_DECAY, WW_DIFFUSE, WW_DIM = 12.0, 0.5, 0.3, 0.8, 0.8, 1.5
     WW_GRAIN = 26.0            # 1/m: the noise's scale, pockets a few centimetres across
     SKY_T = 0.85
-    def __init__(self, entry, probe, strength, wsun=None, sky=None, onset=0.0):
+    def __init__(self, entry, probe, strength, wsun=None, sky=None, onset=0.0, foam=None):
+        self.foam = foam        # (a, b, c, d, gain, light): the peak at contact, see at()
         self.onset = onset      # s: path D's white water builds over this as the housing goes in (C's starts whole)
         E = [wsun.strength * c * wsun.d.z for c in wsun.ob.data.color] if wsun is not None else [0.0, 0.0, 0.0]
         if sky is not None and sky.get("zenith") is not None and SS.HORIZON is not None:
@@ -915,6 +1086,17 @@ class WhiteWater:
         decay = t.m("MULTIPLY", decay, self.build.outputs[0])
         dens = t.m("MULTIPLY", t.m("MULTIPLY", t.m("MULTIPLY", fr, fs), t.m("ADD", 0.2, t.m("MULTIPLY", pockets, 0.8))),
                    t.m("MULTIPLY", decay, self.WW_SIGMA * strength))
+        # the foam peak: weight w of the trapezoid at the frame; the multipliers exist only when a window is set
+        self.foam_w = t.new("ShaderNodeValue")
+        self.foam_w.name = self.foam_w.label = "ww-foam"
+        self.foam_w.outputs[0].default_value = 0.0
+        lboost = None
+        if self.foam is not None:
+            w = self.foam_w.outputs[0]
+            if self.foam[4] != 1.0:
+                dens = t.m("MULTIPLY", dens, t.m("ADD", 1.0, t.m("MULTIPLY", w, self.foam[4] - 1.0)))
+            if self.foam[5] != 1.0:
+                lboost = t.m("ADD", 1.0, t.m("MULTIPLY", w, self.foam[5] - 1.0))
         vc = t.new("ShaderNodeVolumeCoefficients")
         vc.inputs["Absorption Coefficients"].default_value = (0.0, 0.0, 0.0)
         t.feed(vc.inputs["Scatter Coefficients"], t.xyz(dens, dens, dens).outputs[0])
@@ -928,7 +1110,10 @@ class WhiteWater:
         for c in range(3):
             L = t.m("EXPONENT", t.m("MULTIPLY", depth, -(SS.WATER_ABSORB[c] + self.WW_DIM)))
             L = t.m("MULTIPLY", L, self.WW_DIFFUSE * self.E[c] / math.pi)
-            em.append(t.m("MULTIPLY", t.m("MULTIPLY", L, dens), self.light.outputs[0]))
+            e_c = t.m("MULTIPLY", t.m("MULTIPLY", L, dens), self.light.outputs[0])
+            if lboost is not None:
+                e_c = t.m("MULTIPLY", e_c, lboost)
+            em.append(e_c)
         t.feed(vc.inputs["Emission Coefficients"], t.xyz(*em).outputs[0])
         out = t.new("ShaderNodeOutputMaterial")
         t.feed(out.inputs["Volume"], vc.outputs[0])
@@ -940,6 +1125,12 @@ class WhiteWater:
             return 0.0
         self.ob.hide_render = False
         self.light.outputs[0].default_value = light
+        if self.foam is not None:
+            a, b, c, d, G, L = self.foam
+            w = sstep(a, b, t) * (1.0 - sstep(c, d, t))
+            self.foam_w.outputs[0].default_value = w
+            if a <= t <= d:
+                print("FOAM t %.4f weight %.4f density x%.3f light x%.3f" % (t, w, 1.0 + (G - 1.0) * w, 1.0 + (L - 1.0) * w), flush=True)
         if self.onset > 0.0:
             self.build.outputs[0].default_value = quintic(tau / self.onset)
         s_cam = (cam - self.o).dot(self.e)
@@ -1755,8 +1946,12 @@ def main():
     ctx = SS.build(args, prefix + ".png", ripple_motion=ripple_motion, fan_res=(1920, 1080))
     sc, cam, az, exposure = ctx["sc"], ctx["cam"], ctx["az"], ctx["exposure"]
     k, wind_dir = ctx["ocean"]["k"], ctx["wind_dir"]
+    if args.export_only:
+        run_export_only(args, ctx)
+        return
     s = max(1.0, 1920.0 / ctx["rx"])
-    sea = Sea(ctx["sea"], az, s, k, wind_dir)
+    pose = pose_setup(args, ctx) if args.pose_file else None
+    sea = Sea(ctx["sea"], az if pose is None else pose["az_disc"], s, k, wind_dir)
     SS.stage("disc")
     mat = sea.ob.data.materials[0]
     clock = mat.node_tree.nodes["ripple-clock"].outputs[0]
@@ -1776,7 +1971,12 @@ def main():
     if args.water_sun != "off" and args.light == "trick":
         wsun = WaterSun(sc, ctx["sun"]["sun"], mat)
         SS.stage("water sun")
-    if args.path == "C":
+    if pose is not None:
+        probe, states, entry = pose["probe"], pose["states"], pose["entry"]
+        n = len(states)
+        if args.path == "E":
+            capillaries(mat, ctx["rip"])
+    elif args.path == "C":
         probe = Probe((math.cos(az) * 2.0, math.sin(az) * 2.0), wind_dir, k, n=81, step=0.25)
         states, entry = path_C(probe, az)
         n = len(states)
@@ -1794,7 +1994,10 @@ def main():
         else:
             states, entry = path_B(probe, n, az)
     cam.animation_data_clear()
-    key_camera(cam, states, az)
+    if pose is None:
+        key_camera(cam, states, az)
+    else:
+        key_camera_pose(cam, states)
     cam.data.clip_start = PORT
     sc.frame_start, sc.frame_end = 0, n - 1
     sc.render.use_motion_blur = args.shutter > 0
@@ -1822,6 +2025,10 @@ def main():
     bubbles = None
     if args.path in ("B", "C", "D", "E") and args.bubbles > 0:
         bubbles = Bubbles(states, entry, probe, 6000 * args.bubbles)
+        if pose is not None and args.bubble_export:
+            write_bubble_export(args, pose, bubbles)
+        elif args.bubble_export:
+            write_own_bubble_export(args, bubbles)
         if wsun is not None:
             wsun.light_bubbles(bubbles.ob)
     ng = sc.compositing_node_group
@@ -1834,7 +2041,8 @@ def main():
             else:
                 spray = Spray(entry, probe, D_SPRAY * args.spray, mist=True)
         if args.white_water > 0:
-            ww = WhiteWater(entry, probe, args.white_water, wsun, ctx["sun"], D_WW_ONSET if args.path in ("D", "E") else 0.0)
+            ww = WhiteWater(entry, probe, args.white_water, wsun, ctx["sun"], D_WW_ONSET if args.path in ("D", "E") else 0.0,
+                           args.foam)
             fizz = Fizz(entry, states, probe, 40000 * args.white_water)
             if wsun is not None and getattr(wsun, "glint_coll", None) is not None:
                 wsun.glint_coll.objects.link(fizz.ob)
@@ -1868,16 +2076,26 @@ def main():
         rows = []
         for f, st in enumerate(states):
             nv = nfz = 0
+            if pose is not None:
+                vfov_f = st["vfov"]
+                hfov_f = 2 * math.atan(math.tan(vfov_f / 2) * math.tan(hfov / 2) / math.tan(vfov / 2))
+            else:
+                vfov_f, hfov_f = vfov, hfov
             if bubbles:
                 X, live = bubbles.positions(st["t"])
-                nv = in_view(X[live], st, hfov, vfov)
+                nv = in_view(X[live], st, hfov_f, vfov_f)
             if fizz:
                 X, live = fizz.positions(st["t"])
-                nfz = in_view(X[live], st, hfov, vfov)
+                nfz = in_view(X[live], st, hfov_f, vfov_f)
             st["in_view"], st["fizz_in_view"] = nv, nfz
             rows.append({"f": f, "tf": st["tf"], "t": st["t"], "loc": list(st["loc"]), "surf": st["surf"],
                          "depth": st["surf"] - st["loc"].z, "pitch": st["pitch"], "dir": list(st["dir"]),
                          "speed": st["vel"].length, "under": st["under"], "bubbles_in_view": nv, "fizz_in_view": nfz})
+            if pose is not None:
+                # positions and directions in the pose file's frame, and the pose file's own frame number
+                rows[-1]["loc"] = PZ.unplace_points(st["loc"][:], pose["centre"], pose["psi"]).tolist()
+                rows[-1]["dir"] = PZ.unplace_vectors(st["dir"][:], pose["psi"]).tolist()
+                rows[-1]["pose_f"] = st["pose_f"]
         with open(prefix + "-camera.json", "w") as fh:
             json.dump({"entry": {"t": entry["t"], "frame": entry["frame"], "hold": entry["hold"], "v": entry["v"],
                                  "beta_deg": math.degrees(entry["beta"])},
