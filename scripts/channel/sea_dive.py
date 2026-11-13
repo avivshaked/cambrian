@@ -148,6 +148,7 @@ def parse():
     ap.add_argument("--pose-file", default=None)
     ap.add_argument("--bubble-export", default=None)
     ap.add_argument("--export-only", action="store_true")
+    ap.add_argument("--fizz-export", default=None)
     ap.add_argument("--world-minus-sim", type=float, default=None)
     args = ap.parse_args(SS.script_argv())
     if args.pose_file:
@@ -163,6 +164,9 @@ def parse():
         ap.error("--world-minus-sim is for --bubble-export without --pose-file only (a pose file carries its own)")
     if args.export_only and not args.bubble_export:
         ap.error("--export-only needs --bubble-export")
+    if args.fizz_export and not (args.export_only and args.path == "D" and not args.pose_file
+                                 and args.world_minus_sim is not None):
+        ap.error("--fizz-export needs --export-only, --path D, no --pose-file and --world-minus-sim (B3's own frame)")
     return args
 
 def frame_list(spec, n, step):
@@ -432,6 +436,17 @@ def write_own_bubble_export(args, bubbles):
                       bubbles.rise, bubbles.tau, bubbles.flat, args.world_minus_sim, src)
     print("BUBBLE EXPORT (B3's own frame) %d bubbles to %s" % (bubbles.n, args.bubble_export), flush=True)
 
+def write_own_fizz_export(args, fizz):
+    """The fizz's arrays in B3's own frame, as write_own_bubble_export writes the burst's: the same closed form, with tau
+    FZ_TAU and flat 1 for every bubble."""
+    src = ("sea_dive.py commit %s; B3's own frame, not placed (axes swapped by landing_io.to_unity only); the fizz (class Fizz)"
+           "; --path %s --white-water %g --port %g --world-minus-sim %.9g, fizz seed 31" % (
+               git_source(), args.path, args.white_water, args.port, args.world_minus_sim))
+    os.makedirs(os.path.dirname(os.path.abspath(args.fizz_export)), exist_ok=True)
+    LIO.write_bubbles(args.fizz_export, LIO.to_unity(fizz.x0), LIO.to_unity(fizz.v0), fizz.ts, fizz.r, fizz.rise,
+                      np.full(fizz.n, Fizz.FZ_TAU), np.ones(fizz.n), args.world_minus_sim, src)
+    print("FIZZ EXPORT (B3's own frame) %d bubbles to %s" % (fizz.n, args.fizz_export), flush=True)
+
 def run_export_only(args, ctx):
     """--export-only: the pose (or B3's own path), the probe the surface test needs and the bubbles; written, and no render."""
     if args.pose_file:
@@ -444,6 +459,8 @@ def run_export_only(args, ctx):
         states, entry = path_D(probe, az)
         bubbles = Bubbles(states, entry, probe, 6000 * args.bubbles)
         write_own_bubble_export(args, bubbles)
+        if args.fizz_export:
+            write_own_fizz_export(args, Fizz(entry, states, probe, 40000 * args.white_water))
     print("EXPORT-ONLY done", flush=True)
 
 def key_camera_pose(cam, states):
