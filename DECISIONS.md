@@ -386,6 +386,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D362](#d362) | Round 67's narration takes each beat whole from the voice an audience enjoys most | 2026-11-12 | the owner's flow of 2026-11-12 |
 | [D363](#d363) | Round 67's opener is one camera from the sky to the coral, authored backwards from its end | 2026-11-12 | ruled by the owner on 2026-11-12 on the coordinator's proposal, with the backward authoring the owner's own |
 | [D364](#d364) | Round 67's graphics and titles are designed first, then built in Blender; the film is *Not the Hungriest | 2026-11-12 | ruled by the owner on 2026-11-12, on the coordinator's recommendation |
+| [D365](#d365) | The films' marine snow is made visible: larger, brighter motes and more of them | 2026-11-13 | ruled by the owner on 2026-11-13, on the coordinator's recommendation from the theatre lane's snow sheet |
 
 ---
 
@@ -12569,3 +12570,21 @@ settle the type, palette and layout before any render time is spent on them.
 
 **Rejected.** Blender with no design session, which leaves the type and layout to the coordinator's judgement. The flat
 overlay tool with a better look, which keeps the graphics flat over the world.
+
+### D365
+**The films' marine snow is made visible: larger, brighter motes and more of them** · 2026-11-13
+
+**Status:** ruled by the owner on 2026-11-13, on the coordinator's recommendation from the theatre lane's snow sheet.
+It changes the owner's film snow of 2026-10-27, which `scripts/theatre-film-look.json` recorded with no entry here.
+
+**Decision.** The film look's snow takes the sheet's take (d): the motes' radius doubled (`EVOSIM_THEATRE_SNOW_RADIUS`
+2, the dial on the theatre lane's branch `snow-size`), the shell gain doubled (`SHELL_GAIN` 0.4 to 0.8), and the
+quantity raised from 0.3 to 1.0. `SNOW_AMBIENT` 1.6 and `SNOW_LEAST` 0 stay. The finals' 4K pass films every take with
+it, so no take is refilmed for the snow alone; the animatic's takes keep the old snow.
+
+**Why.** At 1080 the 2026-10-27 snow could not be seen at all in open water. Take (d) reads as a light marine snow
+through the whole water column and gives open water depth. Take (b), the size and gain alone, left a few motes that
+showed only when looked for. Take (c), radius 4, drew near motes as blobs that read as dirt on the lens.
+
+**Rejected.** Keeping the 2026-10-27 values, which leave the snow invisible; take (b), too sparse; take (c), lens dirt.
+The owner noted that the snow can be refilmed if it does not hold up in the finals.
