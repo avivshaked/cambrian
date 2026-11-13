@@ -387,6 +387,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D363](#d363) | Round 67's opener is one camera from the sky to the coral, authored backwards from its end | 2026-11-12 | ruled by the owner on 2026-11-12 on the coordinator's proposal, with the backward authoring the owner's own |
 | [D364](#d364) | Round 67's graphics and titles are designed first, then built in Blender; the film is *Not the Hungriest | 2026-11-12 | ruled by the owner on 2026-11-12, on the coordinator's recommendation |
 | [D365](#d365) | The films' marine snow is made visible: larger, brighter motes and more of them | 2026-11-13 | ruled by the owner on 2026-11-13, on the coordinator's recommendation from the theatre lane's snow sheet |
+| [D366](#d366) | Round 67's landing cuts out of a burst of foam into the theatre's bubbles, already moving | 2026-11-13 | ruled by the owner on 2026-11-13, step by step over a day of tests, the foam and the bubbles' run-up the owner's own ideas |
 
 ---
 
@@ -12588,3 +12589,52 @@ showed only when looked for. Take (c), radius 4, drew near motes as blobs that r
 
 **Rejected.** Keeping the 2026-10-27 values, which leave the snow invisible; take (b), too sparse; take (c), lens dirt.
 The owner noted that the snow can be refilmed if it does not hold up in the finals.
+
+### D366
+**Round 67's landing cuts out of a burst of foam into the theatre's bubbles, already moving** · 2026-11-13
+
+**Status:** ruled by the owner on 2026-11-13, step by step over a day of tests, the foam and the bubbles' run-up the
+owner's own ideas. It settles how D363's join is made and replaces its cut "on the densest bubble frame". D363's one
+camera path, authored backwards from its end, stands.
+
+**Decision.**
+- Blender films the plunge to contact. As the camera breaks the surface, B3's white water rises into a short peak of
+  foam that fills the lens for about four frames (`sea_dive.py --foam-gain`, `--foam-light`, `--foam-window`, take A:
+  density four times and light three times today's).
+- The film cuts plainly at the foam's peak (Blender through row 221 of the landing's pose file, the theatre from 222),
+  with no dissolve.
+- The theatre carries the same camera on, already moving, on the unchanged path to the coral vista. Its first frame is
+  full of bubbles in motion:
+  - B3's burst and its fizz, exported from Blender, run on their own film clock. That clock starts half a second
+    before the cut, so the bubbles are already released and rushing at the first visible frame. The half second is
+    computed, not filmed.
+  - A cloud of 3,000 bubbles round the lens stands in for the white water.
+  - Bubbles stand in the water rather than travelling with the camera (`ENTRAIN_TAU` 0.01).
+  - The underwater layers draw as though the theatre's flat sea stood 1.5 m higher, at Blender's waves
+    (`EVOSIM_THEATRE_WATERLINE_LIFT`).
+  - The bubbles are drawn with a 1/250 s shutter.
+- The fine fizz streams toward the frame's centre as a tunnel down the camera's path, as in Blender's own frames. The
+  owner kept it.
+
+**Why.**
+- The canopy of leaf-bearers just under the surface defeats any cut in open water. Blender's water has no leaves, so a
+  plain cut, a white flash and a veil of bubbles each showed the leaves switching on.
+- A dissolve in the bubbles worked as a picture but sat about a second under the surface, where the theatre's bubbles
+  first read. Brought up to the surface, it showed the leaves fading in.
+- A cut out of real foam hides the change of program and of content, and it is what a camera plunging into the sea
+  shows.
+- The bubbles first looked frozen at the cut for three reasons:
+  - The theatre drew nothing above its flat sea.
+  - It dragged the near bubbles along with the camera.
+  - The world runs on the landing's slow clock at contact.
+  The lift, standing bubbles and the bubbles' own clock answer each in turn.
+
+**Rejected.**
+- The dissolve, at a second under the surface and at contact.
+- The leaves drawn in Blender, since the plants' look keeps changing.
+- A post-only white flash.
+- Speeding the burst alone without the foam, which would have shown the bubbles in different places on either side of a
+  plain cut.
+- A visible hold of the camera after the cut, since the owner wanted to cut into a camera already moving.
+- Filming the whole opener in the theatre, about 20 to 30 hours of build with the open sea from above as its main risk,
+  which is kept as the way forward should the cut fail in the finals.
