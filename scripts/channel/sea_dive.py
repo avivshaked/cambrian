@@ -62,6 +62,20 @@ than the exposure track rose; that is the track's (--ae-track), which E takes fr
 twice over two known backgrounds that stand in for the water behind the bubbles, solved for colour and opacity
 per pixel (setup_matte, solve_matte), written as RGBA PNGs at the frame's exposure.
 
+--layer title and --layer sky (path D only) render the title over the opener's sky hold as layers to lay over the sea frames
+already rendered, which are not rendered again (title_comp.py does the laying). Both use path D's own camera, so they
+are rendered with the sea frames' arguments (--path D, --ae-track, --percent, --frames), and write 16-bit RGBA PNGs,
+<out-prefix>NNNN.png, with straight alpha. title: CAMBRIAN (IBM Plex Sans, tracked, with a lambda for each A) and the
+film's name (Instrument Serif Italic), as 3D text standing on z = 0 far out over the horizon (about 33 km), placed and
+sized so that at the hold they are the design frame's; they are seen by the camera and by nothing else, the sea is a
+holdout so the horizon cuts them, and the keyframes (title_comp's curves, in the film's seconds against the hold) are
+CAMBRIAN's arrival (2.5% larger, settling), the name's rise from below the horizon and the words' fade as the camera
+tips down and carries them up. sky: alpha 1 where the camera sees sky and 0 where it sees the displaced sea (the sea a
+holdout, a camera-only emitter behind it). Neither builds bubbles, spray, white water or shafts. --title-name [Not the
+Hungriest], --title-rim the warm rim's share at the letters' edge, from a Layer Weight facing term in their shader [0.6],
+--title-dist the words' distance in metres [the nearest 500 m at which their base sits within a pixel of the horizon at
+2160 rows], --title-fonts the folder holding IBMPlexSans-Regular.ttf and InstrumentSerif-Italic.ttf.
+
 Above water the exposure is the still's. Under water it is metered as a camera's automatic exposure would meter
 it: each rendered frame's centre-weighted geometric mean luminance is driven towards that of the theatre's shallow
 water as the theatre shows it (AE_TARGET), in proportion to the share of the frame under water, lagging 0.15 s
@@ -81,7 +95,7 @@ Options (defaults in brackets), besides sea_still.py's: --path, --frames (all, o
 metering [none], --bubbles a multiplier on the burst's count, 0 for none [1], --water-sun off, under or always
 [under], --light trick or caustics [trick], --keep-16bit (with --layer matte, keep each frame's two EXRs); for paths
 C and D, --layer full, bubbles (the bubbles alone on a transparent background, RGBA, the water between them clear)
-or matte (the triangulation-matted layer) [full], --shafts on or off [on], --white-water and
+or matte (the triangulation-matted layer), or, for D, title or sky (above) [full], --shafts on or off [on], --white-water and
 --spray multipliers on their density and count, 0 for none [1], --shaft-debug depth (a test pattern by depth
 instead of the traced net), --dry (build the scene and the path, print them, render nothing). Paths C and D write their
 camera, frame by frame, to <out-prefix>-camera.json.
@@ -102,13 +116,14 @@ import json, math, os, sys, time
 import bpy
 import bmesh
 import numpy as np
-from mathutils import Vector, Quaternion
+from mathutils import Matrix, Vector, Quaternion
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import sea_still as SS
 import landing_io as LIO
 import sea_dive_poses as PZ
+import title_comp as TC
 
 FPS = 30
 G = 9.81
@@ -122,6 +137,8 @@ AE_LAG = 0.15                             # s: the automatic exposure's lag
 # that a frame of the theatre's shallow water would have as the theatre shows it (SHALLOW at the water world's
 # gain 0.9, exposure 0.55 and PBR Neutral, about sRGB 2, 71, 90).
 AE_TARGET = 0.0526
+# The title layer (--layer title, --layer sky): the folder holding IBMPlexSans-Regular.ttf and InstrumentSerif-Italic.ttf.
+TITLE_FONTS = os.path.join(HERE, "..", "..", "scratch", "owner", "r67-graphics-design-brief", "design", "fonts")
 
 def parse():
     ap = SS.still_parser("sea_dive.py")
@@ -137,7 +154,11 @@ def parse():
     ap.add_argument("--light", choices=("trick", "caustics"), default="trick")
     ap.add_argument("--keep-16bit", action="store_true")
     ap.add_argument("--water-sun", choices=("off", "under", "always"), default="under")
-    ap.add_argument("--layer", choices=("full", "bubbles", "matte"), default="full")
+    ap.add_argument("--layer", choices=("full", "bubbles", "matte", "title", "sky"), default="full")
+    ap.add_argument("--title-name", default="Not the Hungriest")
+    ap.add_argument("--title-rim", type=float, default=0.6)
+    ap.add_argument("--title-dist", type=float, default=None)
+    ap.add_argument("--title-fonts", default=TITLE_FONTS)
     ap.add_argument("--shafts", choices=("on", "off"), default="on")
     ap.add_argument("--white-water", type=float, default=1.0)
     ap.add_argument("--foam-gain", type=float, default=1.0)
@@ -183,6 +204,13 @@ def parse():
         ap.error("--world-minus-sim is for --bubble-export without --pose-file only (a pose file carries its own)")
     if args.export_only and not args.bubble_export:
         ap.error("--export-only needs --bubble-export")
+    if args.layer in ("title", "sky"):
+        if args.path != "D" or args.pose_file:
+            ap.error("--layer title and --layer sky take path D's own camera: use --path D, without --pose-file")
+        if args.bubble_export or args.export_only or args.fizz_export:
+            ap.error("--layer title and --layer sky render no bubbles: they take no export option")
+        # the layers hold the words and the sky matte only: none of the crossing's effects is built
+        args.bubbles, args.white_water, args.spray, args.shafts, args.water_sun = 0.0, 0.0, 0.0, "off", "off"
     if args.fizz_export and not (args.export_only and args.path == "D" and not args.pose_file
                                  and args.world_minus_sim is not None):
         ap.error("--fizz-export needs --export-only, --path D, no --pose-file and --world-minus-sim (B3's own frame)")
@@ -1488,6 +1516,203 @@ def gate_camera_rays(mat):
     for name, val in (("Absorption Coefficients", SS.WATER_ABSORB), ("Scatter Coefficients", SS.WATER_SCATTER)):
         t.feed(vc.inputs[name], t.vm("SCALE", t.xyz(*val).outputs[0], scale=keep))
 
+# ---------------------------------------------------------------- the title layers (--layer title, --layer sky)
+# The title is the opener's own camera's: CAMBRIAN and the film's name stand in the sea's world, far out over the
+# horizon, and the camera that rides path D sees them as it sees the sky. Their size and place match the design
+# frame (title-2.png) at the hold, through title_comp.plane_point; from there the camera's tip-down carries them up
+# out of the frame, with the motion blur the camera has. The sea is a holdout, so water hides what is below it: the
+# name rises from behind the horizon because it is lowered into the sea and lifted out. The base of a word that
+# stands on z = 0 sits within a pixel of the horizon at 2160 rows once the words are title_comp.min_distance out,
+# which is why they are that far (about 33 km) and a kilometre or two tall.
+TITLE_DIST_ROWS = 2160            # rows of the finest frame the base must sit within a pixel of the horizon in
+TITLE_EXTRUDE, TITLE_BEVEL = 0.002, 0.003     # of the em: the letters' depth and the bevel round their edge, both slight: at ten degrees
+# off axis a deeper letter shows its sides, which add to the stroke (a first render with 0.020 drew the name 6% heavy by area)
+TITLE_RIM_EDGE = (0.3, 1.0)       # the layer weight's facing term below which a face shows its ink, above which its rim
+
+def title_material(name, ink_hex, rim):
+    """Flat ink, the warm rim mixed in at grazing angles by a Layer Weight facing term (`rim` is its share at the edge),
+    the whole an emission that carries the frame's exposure back out ("gain", set a frame at a time to 2**-exposure) so
+    that the ink lands on screen as the hex says; "fade" is the words' opacity (a mix with a transparent shader)."""
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    nt.nodes.clear()
+    t = SS.Tree(nt)
+    lw = t.new("ShaderNodeLayerWeight")
+    lw.inputs["Blend"].default_value = 0.5
+    edge = t.maprange(lw.outputs["Facing"], TITLE_RIM_EDGE[0], TITLE_RIM_EDGE[1])
+    col = t.mix(t.m("MULTIPLY", edge, rim), TC.srgb_to_linear(ink_hex) + (1.0,), TC.srgb_to_linear(TC.RIM) + (1.0,))
+    gain, fade = t.new("ShaderNodeValue"), t.new("ShaderNodeValue")
+    gain.label, fade.label = "title-gain", "title-fade"
+    gain.outputs[0].default_value, fade.outputs[0].default_value = 1.0, 1.0
+    em = t.new("ShaderNodeEmission")
+    t.feed(em.inputs["Color"], col)
+    t.feed(em.inputs["Strength"], gain.outputs[0])
+    clear = t.new("ShaderNodeBsdfTransparent")
+    mx = t.new("ShaderNodeMixShader")
+    t.feed(mx.inputs[0], fade.outputs[0])
+    t.feed(mx.inputs[1], clear.outputs[0])
+    t.feed(mx.inputs[2], em.outputs[0])
+    out = t.new("ShaderNodeOutputMaterial")
+    t.feed(out.inputs["Surface"], mx.outputs[0])
+    return mat, gain, fade
+
+def camera_only(ob):
+    """Seen by the camera and by nothing else: no shadow, reflection, refraction or diffuse light, no volume scatter."""
+    for v in ("visible_shadow", "visible_glossy", "visible_diffuse", "visible_transmission", "visible_volume_scatter"):
+        if hasattr(ob, v):
+            setattr(ob, v, False)
+
+def setup_title_alpha(sc, sea, ng, cam, reach):
+    """Both layers: a transparent film, the sea a holdout (it cuts what is behind it, and is alpha 0 itself), the alpha the
+    render's own (as the bubbles layer takes it), and the camera's far plane past `reach`."""
+    sc.render.film_transparent = True
+    sea.ob.is_holdout = True
+    comb = next(nd for nd in ng.nodes if nd.bl_idname == "CompositorNodeCombineColor")
+    rl = next(nd for nd in ng.nodes if nd.bl_idname == "CompositorNodeRLayers")
+    ng.links.new(rl.outputs["Alpha"], comb.inputs[3])
+    if cam.data.clip_end < 1.2 * reach:
+        print("WARN the camera's far plane %.0f m is moved out to %.0f m for the title" % (cam.data.clip_end, 1.2 * reach), flush=True)
+        cam.data.clip_end = 1.2 * reach
+
+def setup_sky_matte(sc, sea, ng, cam):
+    """The sky matte: a camera-only emitter, a sphere past the sea's edge (SS.FAR) and inside the far plane, behind
+    everything. The sea, a holdout, is alpha 0 where it covers the sphere, so alpha is 1 where the camera sees sky."""
+    radius = 1.25 * SS.FAR
+    setup_title_alpha(sc, sea, ng, cam, 1.05 * radius)
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=96, v_segments=48, radius=radius)
+    me = bpy.data.meshes.new("sky-matte")
+    bm.to_mesh(me)
+    bm.free()
+    mat = bpy.data.materials.new("sky-matte")
+    mat.use_nodes = True
+    nt = mat.node_tree
+    nt.nodes.clear()
+    t = SS.Tree(nt)
+    em = t.new("ShaderNodeEmission")
+    em.inputs["Color"].default_value = (1.0, 1.0, 1.0, 1.0)
+    out = t.new("ShaderNodeOutputMaterial")
+    t.feed(out.inputs["Surface"], em.outputs[0])
+    me.materials.append(mat)
+    ob = bpy.data.objects.new("sky-matte", me)
+    bpy.context.scene.collection.objects.link(ob)
+    camera_only(ob)
+    print("LAYER sky: film transparent, the sea a holdout, a camera-only emitter of radius %.0f m behind it (far plane %.0f m)"
+          % (radius, cam.data.clip_end), flush=True)
+
+def setup_title(args, ctx, sc, sea, states, entry, ng):
+    """The words, keyed to the film's seconds. Returns the nodes the frame loop sets a frame at a time: the opacity and
+    the exposure gain."""
+    cam, az, lens = ctx["cam"], ctx["az"], args.lens
+    st0 = states[0]
+    height, pitch0 = st0["loc"].z, st0["pitch"]
+    dmin = TC.min_distance(height, lens, TITLE_DIST_ROWS)
+    dist = args.title_dist if args.title_dist else math.ceil(dmin / 500.0) * 500.0
+    if dist < dmin:
+        print("WARN the words stand %.0f m out, nearer than the %.0f m at which their base sits within a pixel of the horizon at"
+              " %d rows" % (dist, dmin, TITLE_DIST_ROWS), flush=True)
+    if dist >= SS.FAR - 500.0:
+        raise SystemExit("the words must stand inside the sea's %.0f m: --title-dist %.0f" % (SS.FAR, dist))
+    setup_title_alpha(sc, sea, ng, cam, dist)
+    heading = Vector((math.cos(az), math.sin(az), 0.0))
+    right = Vector((math.sin(az), -math.cos(az), 0.0))
+    # the card's x runs right, its y up and its z (the way the letters face) back towards the camera
+    basis = Matrix((right, Vector((0.0, 0.0, 1.0)), -heading)).transposed().to_4x4()
+    origin = Vector((st0["loc"].x, st0["loc"].y, 0.0)) + heading * dist
+    fonts = os.path.abspath(args.title_fonts)
+    plex, serif = (bpy.data.fonts.load(os.path.join(fonts, f)) for f in ("IBMPlexSans-Regular.ttf", "InstrumentSerif-Italic.ttf"))
+    cw = TC.CANVAS[0]
+    horizon = TC.horizon_row(height, pitch0, lens)
+
+    def rig(name, cx, cy):
+        u, z = TC.plane_point(cx, cy, dist, height, pitch0, lens)
+        ob = bpy.data.objects.new(name, None)
+        bpy.context.scene.collection.objects.link(ob)
+        ob.matrix_world = Matrix.Translation(origin + right * u + Vector((0.0, 0.0, z))) @ basis
+        return ob, TC.metres_per_px(cx, cy, dist, height, pitch0, lens)
+
+    def font_scale(font, ttf, body):
+        """How much of the size asked Blender draws, measured: a probe of `body` at size 1 (no depth, no bevel), its evaluated
+        geometry's x extent against the ink width the font file gives. The first renders drew both fonts at 0.78 of their em
+        (about 1000 over the hhea ascent plus descent, 1300): the sizes below are divided by this."""
+        cu = bpy.data.curves.new("probe", "FONT")
+        cu.body, cu.font, cu.size = body, font, 1.0
+        ob = bpy.data.objects.new("probe", cu)
+        bpy.context.scene.collection.objects.link(ob)
+        bpy.context.view_layer.update()
+        ev = ob.evaluated_get(bpy.context.evaluated_depsgraph_get())
+        me = ev.to_mesh()
+        xs = [v.co.x for v in me.vertices]
+        ev.to_mesh_clear()
+        bpy.data.objects.remove(ob)
+        bpy.data.curves.remove(cu)
+        drawn, want = (max(xs) - min(xs)) if xs else 0.0, TC.ttf_ink_width(ttf, body, 1.0)
+        if not drawn > 0 or not 0.2 < want / drawn < 5.0:
+            raise SystemExit("the probe text %r is drawn %.4f em wide, nowhere near the font's %.4f" % (body, drawn, want))
+        print("TITLE font scale %s: the font gives %.4f em of ink, Blender drew %.4f: sizes multiplied by %.4f"
+              % (os.path.basename(ttf), want, drawn, want / drawn), flush=True)
+        return want / drawn
+
+    def text(name, body, font, size_px, mu, mz, mat, k=1.0, align="LEFT"):
+        cu = bpy.data.curves.new(name, "FONT")
+        cu.body, cu.font, cu.align_x = body, font, align
+        em = size_px * mu
+        cu.size = em * k
+        cu.extrude, cu.bevel_depth, cu.bevel_resolution = TITLE_EXTRUDE * em, TITLE_BEVEL * em, 2
+        # a round bevel grows the outline outward by its depth on every edge, which thickens the strokes (twice the depth
+        # across a stroke): the outline is pulled in by the same amount, so the bevel rounds the edge and the weight stays the font's
+        cu.offset = -cu.bevel_depth
+        cu.materials.append(mat)
+        ob = bpy.data.objects.new(name, cu)
+        bpy.context.scene.collection.objects.link(ob)
+        ob.scale = (1.0, mz / mu, 1.0)      # the plane is seen a little foreshortened: stretched back, the letters are as designed
+        camera_only(ob)
+        return ob
+
+    plex_k = font_scale(plex, os.path.join(fonts, "IBMPlexSans-Regular.ttf"), TC.WORDMARK)
+    serif_k = font_scale(serif, os.path.join(fonts, "InstrumentSerif-Italic.ttf"), args.title_name)
+    mark_m, mark_gain, mark_fade = title_material("title-mark", TC.INK_MARK, args.title_rim)
+    name_m, name_gain, name_fade = title_material("title-name", TC.INK_NAME, args.title_rim)
+    # CAMBRIAN: one object a letter, each at its pen position, for the tracking a text object has no setting for
+    cx, cy = cw / 2.0, TC.MARK["top"] + TC.MARK["size"] / 2.0
+    mark_rig, (mu, mz) = rig("title-mark-rig", cx, cy)
+    base = TC.css_baseline(TC.MARK["top"], TC.MARK["size"], TC.MARK["ascent"], TC.MARK["descent"])
+    for i, (c, pen) in enumerate(zip(TC.WORDMARK, TC.wordmark_pens())):
+        ob = text("title-mark-%d" % i, c, plex, TC.MARK["size"], mu, mz, mark_m, k=plex_k)
+        ob.parent = mark_rig
+        ob.location = ((pen - cx) * mu, (cy - base) * mz, 0.0)
+    # the name: one object, centred, fitted into the design's width if it is longer
+    ncx, ncy = cw / 2.0, TC.NAME["top"] + TC.NAME["size"] / 2.0
+    name_rig, (nmu, nmz) = rig("title-name-rig", ncx, ncy)
+    nbase = TC.css_baseline(TC.NAME["top"], TC.NAME["size"], TC.NAME["ascent"], TC.NAME["descent"])
+    nob = text("title-name", args.title_name, serif, TC.NAME["size"], nmu, nmz, name_m, k=serif_k, align="CENTER")
+    nob.parent = name_rig
+    nob.location = (0.0, (ncy - nbase) * nmz, 0.0)
+    want_px = TC.ttf_ink_width(os.path.join(fonts, "InstrumentSerif-Italic.ttf"), args.title_name, TC.NAME["size"])
+    if want_px > TC.NAME["max_width"]:
+        f = TC.NAME["max_width"] / want_px
+        nob.scale = (f, f * nmz / nmu, 1.0)
+        print("TITLE the name is %.0f px wide, over the %.0f px allowed: scaled by %.3f" % (want_px, TC.NAME["max_width"], f), flush=True)
+    # the motion: a key a frame, linear between (as the camera's), so the camera's motion blur sees it
+    try:
+        bpy.context.preferences.edit.keyframe_new_interpolation_type = "LINEAR"
+    except Exception as e:
+        print("WARN keyframe interpolation:", e, flush=True)
+    name_home = name_rig.location.copy()
+    for f in range(len(states)):
+        t = f / FPS
+        s = TC.mark_scale(t)
+        mark_rig.scale = (s, s, s)
+        mark_rig.keyframe_insert("scale", frame=f)
+        name_rig.location = name_home - Vector((0.0, 0.0, TC.name_rise_px(t) * nmz))
+        name_rig.keyframe_insert("location", frame=f)
+    print("TITLE the words stand %.0f m out (the base within a pixel of the horizon from %.0f m at %d rows); the horizon is at row"
+          " %.1f of 1080; CAMBRIAN: %.0f m an em, %.2f m a pixel across, %.2f m a pixel up; the name: %.0f m an em; it starts"
+          " %.0f px low; the hold ends at %.4f s" % (dist, dmin, TITLE_DIST_ROWS, horizon, TC.MARK["size"] * mu, mu, mz,
+                                                 TC.NAME["size"] * nmu, TC.RISE_PX, entry["hold"]), flush=True)
+    return {"gain": [mark_gain, name_gain], "fade": [mark_fade, name_fade], "hold": entry["hold"]}
+
 # ---------------------------------------------------------------- the matted bubbles layer (--layer matte)
 # Triangulation matting (Smith and Blinn, 1996): each frame is rendered twice, over two known backgrounds, and each
 # pixel's colour and opacity are solved from the pair. The background here is not a card behind the bubbles but
@@ -2033,7 +2258,7 @@ def main():
             wsun.light_bubbles(bubbles.ob)
     ng = sc.compositing_node_group
     glare = [nd for nd in ng.nodes if nd.bl_idname == "CompositorNodeGlare"]
-    spray = ww = shafts = fizz = None
+    spray = ww = shafts = fizz = tl = None
     if args.path in ("C", "D", "E"):
         if args.spray > 0 and args.layer == "full":
             if args.path == "C":
@@ -2071,6 +2296,10 @@ def main():
                 print("WARN volume_biased:", e, flush=True)
             print("LAYER bubbles: film transparent, the sea hidden from the camera, its water clear to camera rays; volumes"
                   " ray-marched", flush=True)
+        if args.layer == "title":
+            tl = setup_title(args, ctx, sc, sea, states, entry, ng)
+        if args.layer == "sky":
+            setup_sky_matte(sc, sea, ng, cam)
         # the camera, frame by frame, for the hand-over to the theatre
         vfov, hfov = ctx["vfov"], ctx["hfov"]
         rows = []
@@ -2119,7 +2348,7 @@ def main():
              args.shutter, args.under_stops, args.light), flush=True)
     SS.set_format(sc.render.image_settings, "PNG")
     sc.render.image_settings.color_depth = "16"
-    if args.layer == "bubbles":
+    if args.layer in ("bubbles", "title", "sky"):
         sc.render.image_settings.color_mode = "RGBA"
     if args.layer == "matte":
         SS.set_format(sc.render.image_settings, "OPEN_EXR")
@@ -2170,6 +2399,20 @@ def main():
                     i.default_value = SS.GLARE_T * 2.0 ** (-e)
         sc.cycles.seed = f
         t1 = time.time()
+        if args.layer in ("title", "sky"):
+            # the 16-bit RGBA master is the layer: straight alpha, no dither (title_comp.py makes the 8-bit frame)
+            if tl is not None:
+                for nd in tl["gain"]:
+                    nd.outputs[0].default_value = 2.0 ** (-e)
+                for nd in tl["fade"]:
+                    nd.outputs[0].default_value = TC.word_fade(st["tf"], tl["hold"])
+            sc.render.filepath = "%s%04d.png" % (prefix, f)
+            bpy.ops.render.render(write_still=True)
+            t2 = time.time()
+            times.append((t1 - t0, t2 - t1, t2 - t0))
+            print("FRAME %3d t %.3f tf %.3f exposure %+.2f: set-up %.2f s, render %.2f s" % (f, st["t"], st["tf"], used[f], t1 - t0, t2 - t1),
+                  flush=True)
+            continue
         if args.layer == "matte":
             # the pair: over B1 = 0 and over B2, the second background, held at the same display level every frame
             g = 2.0 ** e
