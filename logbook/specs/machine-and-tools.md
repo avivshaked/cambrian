@@ -6,6 +6,12 @@ The root file's rules still apply. The entries below were moved word for word, s
 
 ## Gotchas
 
+- **`Start-Process pwsh -WindowStyle Hidden` can still open a window on the owner's desktop.** On 2026-11-13 a
+  theatre chain launched that way showed a PowerShell window, and the owner asked who had started it. Under the
+  Windows 11 terminal the flag did not hide it, and closing such a window kills the job inside it. Launch a
+  detached job through a headless console instead:
+  `Start-Process conhost.exe -ArgumentList '--headless','pwsh','-NoProfile','-File',<script> -WindowStyle Hidden`,
+  with its output written to a log. Neither process gets a window.
 - **Windows Update restarts the machine by itself at night.** At 01:29 on 2026-10-09 it installed
   the 26H2 feature update (build 26300) and restarted. The System log shows it as User32 event 1074 from
   `MoUsoCoreWorker.exe` on behalf of SYSTEM, followed by a clean shutdown, with no Kernel-Power 41. Every
