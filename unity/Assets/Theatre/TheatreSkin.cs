@@ -2336,6 +2336,14 @@ namespace Evosim.Theatre
             material.SetFloat("_ShellGain", 0.35f * Mathf.Clamp(Look.ShellGain, 0f, 4f));
             material.SetFloat("_ShareScale", Mathf.Clamp(Look.SnowQuantity, 0.25f, 3f));
             material.SetFloat("_MoteAmbient", Mathf.Clamp(Look.SnowAmbient, 0f, 6f));
+            if (Look.SnowRadius != 1f)
+            {
+                // From the shader's declared default, not the material's current value, so a second build does not multiply twice.
+                Shader shader = material.shader;
+                int radii = shader.FindPropertyIndex("_Radii");
+                if (radii >= 0)
+                    material.SetVector("_Radii", (Vector4)shader.GetPropertyDefaultVectorValue(radii) * Mathf.Clamp(Look.SnowRadius, 0.25f, 8f));
+            }
 
             _shells = VolumeObject("Theatre Snow Shells", low, high, material);
         }

@@ -470,6 +470,12 @@ namespace Evosim.Theatre
         public float SnowFluff = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_FLUFF", ByLook(0f, 1f), 0f, 2f);
 
         /// <summary>
+        /// The multiple of the snow shells' mote radii and of the near motes' cap on screen
+        /// (<c>EVOSIM_THEATRE_SNOW_RADIUS</c>, 0.25 to 8, default 1). At 1 the shader's own <c>_Radii</c> is untouched.
+        /// </summary>
+        public float SnowRadius = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_RADIUS", 1f, 0.25f, 8f);
+
+        /// <summary>
         /// The theatre's own lens on the bodies and the scenery (<c>EVOSIM_THEATRE_LENS</c>, 1 on, default 0;
         /// D208, item 1): depth of field from the shot's focus through a thin lens, in place of URP's own,
         /// whose blur is capped at 14 pixels of the render target (<see cref="TheatreLens"/>). With it on, the
@@ -672,9 +678,9 @@ namespace Evosim.Theatre
         /// <summary>The snow's lens and flakes, for the log.</summary>
         public string DescribeSnowLens() => string.Format(
             CultureInfo.InvariantCulture,
-            "snow lens {0} (f/{1:0.#}, focus {2}, cap {3:0} px, keep {4:0.##}), flakes (spread {5:0.##}, large {6:0.###} x{7:0.#}, shape {8:0.##}, fluff {9:0.##})",
+            "snow lens {0} (f/{1:0.#}, focus {2}, cap {3:0} px, keep {4:0.##}), flakes (spread {5:0.##}, large {6:0.###} x{7:0.#}, shape {8:0.##}, fluff {9:0.##}, radius x{10:0.##})",
             On(SnowBlur), SnowFStop, SnowFocusMetres > 0f ? SnowFocusMetres.ToString("0.##", CultureInfo.InvariantCulture) + " m" : "the shot's",
-            SnowBlurCap, SnowBlurKeep, SnowSizeSpread, SnowBigShare, SnowBigFactor, SnowShape, SnowFluff) +
+            SnowBlurCap, SnowBlurKeep, SnowSizeSpread, SnowBigShare, SnowBigFactor, SnowShape, SnowFluff, SnowRadius) +
             string.Format(CultureInfo.InvariantCulture, ", lens {0} (cap {1:0} px), rock glint {2:0.###} (roughness {3:0.##}), " +
                 "snow conserve {4}, aggregate {5:0.##}, bodies obey the water {6:0.##} (rim cut {7:0.##}, glow cut {8:0.##}, through cut {9:0.##})",
                 On(Lens), LensBlurCap, RockGlint, RockGlintRoughness, On(SnowConserve), SnowAggregate,
