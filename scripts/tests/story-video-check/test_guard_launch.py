@@ -99,7 +99,7 @@ def test_workers_regex_for_a_root_outside_the_repository(tmp_path):
 
 def run_start(tmp_path, monkeypatch, guard_fails=False, **kw):
     folder, out, plan = plan_of(tmp_path, **kw)
-    monkeypatch.setattr(film, "cmd_machine", lambda f: ("MACHINE: FREE", []))
+    monkeypatch.setattr(film, "cmd_machine", lambda f, record_only=False: ("MACHINE: FREE", []))
     calls = []
 
     def fake(cmd, **k):
@@ -195,7 +195,7 @@ def test_theatre_commit_mismatch_names_both_and_refuses_plan_and_start(tmp_path,
     (root / "scripts" / "theatre-safari.ps1").write_text("", encoding="utf-8")
     folder, out, plan = plan_of(tmp_path / "p", root=root, theatre_commit="seat")
     (folder / "shots.json").write_text('{"shots": []}', encoding="utf-8")
-    monkeypatch.setattr(film, "cmd_machine", lambda f: ("MACHINE: FREE", []))
+    monkeypatch.setattr(film, "cmd_machine", lambda f, record_only=False: ("MACHINE: FREE", []))
     (folder / film.SETTINGS).write_text(json.dumps(dict(BASE, theatre_root=str(root), theatre_commit="seat")),
                                         encoding="utf-8")
     for call in (lambda: film.cmd_start(folder, 1), lambda: film.cmd_plan(folder, 2)):
