@@ -140,6 +140,9 @@ def parse():
     ap.add_argument("--layer", choices=("full", "bubbles", "matte"), default="full")
     ap.add_argument("--shafts", choices=("on", "off"), default="on")
     ap.add_argument("--white-water", type=float, default=1.0)
+    ap.add_argument("--foam-gain", type=float, default=1.0)
+    ap.add_argument("--foam-light", type=float, default=1.0)
+    ap.add_argument("--foam-window", default=None)
     ap.add_argument("--spray", type=float, default=1.0)
     ap.add_argument("--shaft-debug", choices=("depth",), default=None)
     ap.add_argument("--shaft-ab", action="store_true")
@@ -151,6 +154,22 @@ def parse():
     ap.add_argument("--fizz-export", default=None)
     ap.add_argument("--world-minus-sim", type=float, default=None)
     args = ap.parse_args(SS.script_argv())
+    args.foam = None
+    if args.foam_window is not None:
+        try:
+            win = [float(x) for x in args.foam_window.split(",")]
+        except ValueError:
+            ap.error("--foam-window takes four numbers, a,b,c,d, in sim seconds")
+        if len(win) != 4:
+            ap.error("--foam-window takes four numbers, a,b,c,d, in sim seconds")
+        if not (win[0] < win[1] <= win[2] < win[3]):
+            ap.error("--foam-window a,b,c,d must be in increasing order (a < b <= c < d)")
+        if args.foam_gain == 1.0 and args.foam_light == 1.0:
+            ap.error("--foam-window with --foam-gain and --foam-light both 1 does nothing")
+        args.foam = (win[0], win[1], win[2], win[3], args.foam_gain, args.foam_light)
+        print("FOAM window %.4f %.4f %.4f %.4f s, density x%g, light x%g" % (*win, args.foam_gain, args.foam_light), flush=True)
+    elif args.foam_gain != 1.0 or args.foam_light != 1.0:
+        ap.error("--foam-gain and --foam-light need --foam-window")
     if args.pose_file:
         if args.path not in ("D", "E"):
             ap.error("--pose-file takes the place of path D's course: use it with --path D or E")
@@ -995,7 +1014,8 @@ class WhiteWater:
     WW_SIGMA, WW_DEPTH, WW_G, WW_DECAY, WW_DIFFUSE, WW_DIM = 12.0, 0.5, 0.3, 0.8, 0.8, 1.5
     WW_GRAIN = 26.0            # 1/m: the noise's scale, pockets a few centimetres across
     SKY_T = 0.85
-    def __init__(self, entry, probe, strength, wsun=None, sky=None, onset=0.0):
+    def __init__(self, entry, probe, strength, wsun=None, sky=None, onset=0.0, foam=None):
+        self.foam = foam        # (a, b, c, d, gain, light): the peak at contact, see at()
         self.onset = onset      # s: path D's white water builds over this as the housing goes in (C's starts whole)
         E = [wsun.strength * c * wsun.d.z for c in wsun.ob.data.color] if wsun is not None else [0.0, 0.0, 0.0]
         if sky is not None and sky.get("zenith") is not None and SS.HORIZON is not None:
@@ -1066,6 +1086,17 @@ class WhiteWater:
         decay = t.m("MULTIPLY", decay, self.build.outputs[0])
         dens = t.m("MULTIPLY", t.m("MULTIPLY", t.m("MULTIPLY", fr, fs), t.m("ADD", 0.2, t.m("MULTIPLY", pockets, 0.8))),
                    t.m("MULTIPLY", decay, self.WW_SIGMA * strength))
+        # the foam peak: weight w of the trapezoid at the frame; the multipliers exist only when a window is set
+        self.foam_w = t.new("ShaderNodeValue")
+        self.foam_w.name = self.foam_w.label = "ww-foam"
+        self.foam_w.outputs[0].default_value = 0.0
+        lboost = None
+        if self.foam is not None:
+            w = self.foam_w.outputs[0]
+            if self.foam[4] != 1.0:
+                dens = t.m("MULTIPLY", dens, t.m("ADD", 1.0, t.m("MULTIPLY", w, self.foam[4] - 1.0)))
+            if self.foam[5] != 1.0:
+                lboost = t.m("ADD", 1.0, t.m("MULTIPLY", w, self.foam[5] - 1.0))
         vc = t.new("ShaderNodeVolumeCoefficients")
         vc.inputs["Absorption Coefficients"].default_value = (0.0, 0.0, 0.0)
         t.feed(vc.inputs["Scatter Coefficients"], t.xyz(dens, dens, dens).outputs[0])
@@ -1079,7 +1110,10 @@ class WhiteWater:
         for c in range(3):
             L = t.m("EXPONENT", t.m("MULTIPLY", depth, -(SS.WATER_ABSORB[c] + self.WW_DIM)))
             L = t.m("MULTIPLY", L, self.WW_DIFFUSE * self.E[c] / math.pi)
-            em.append(t.m("MULTIPLY", t.m("MULTIPLY", L, dens), self.light.outputs[0]))
+            e_c = t.m("MULTIPLY", t.m("MULTIPLY", L, dens), self.light.outputs[0])
+            if lboost is not None:
+                e_c = t.m("MULTIPLY", e_c, lboost)
+            em.append(e_c)
         t.feed(vc.inputs["Emission Coefficients"], t.xyz(*em).outputs[0])
         out = t.new("ShaderNodeOutputMaterial")
         t.feed(out.inputs["Volume"], vc.outputs[0])
@@ -1091,6 +1125,12 @@ class WhiteWater:
             return 0.0
         self.ob.hide_render = False
         self.light.outputs[0].default_value = light
+        if self.foam is not None:
+            a, b, c, d, G, L = self.foam
+            w = sstep(a, b, t) * (1.0 - sstep(c, d, t))
+            self.foam_w.outputs[0].default_value = w
+            if a <= t <= d:
+                print("FOAM t %.4f weight %.4f density x%.3f light x%.3f" % (t, w, 1.0 + (G - 1.0) * w, 1.0 + (L - 1.0) * w), flush=True)
         if self.onset > 0.0:
             self.build.outputs[0].default_value = quintic(tau / self.onset)
         s_cam = (cam - self.o).dot(self.e)
@@ -2001,7 +2041,8 @@ def main():
             else:
                 spray = Spray(entry, probe, D_SPRAY * args.spray, mist=True)
         if args.white_water > 0:
-            ww = WhiteWater(entry, probe, args.white_water, wsun, ctx["sun"], D_WW_ONSET if args.path in ("D", "E") else 0.0)
+            ww = WhiteWater(entry, probe, args.white_water, wsun, ctx["sun"], D_WW_ONSET if args.path in ("D", "E") else 0.0,
+                           args.foam)
             fizz = Fizz(entry, states, probe, 40000 * args.white_water)
             if wsun is not None and getattr(wsun, "glint_coll", None) is not None:
                 wsun.glint_coll.objects.link(fizz.ob)
