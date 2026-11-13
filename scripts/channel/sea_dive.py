@@ -94,6 +94,9 @@ theatre's sun (az 44, el 67, as a direction through landing_io.to_blender) falls
 elevation is set to the theatre's unless --sun is given. The camera file gains a `pose_f` a row and gives positions in the
 pose file's frame. --bubble-export <file> writes the burst's arrays (crossing-bubbles 1) in Unity axes and pose-file
 positions; --export-only builds just what it needs (the scene's setup, the sea's probe, the bubbles), writes it and exits.
+--bubble-export without --pose-file (path D or E) writes B3's own burst in B3's own frame, not placed: the sea frame's arrays
+through landing_io.to_unity (axes only), with --world-minus-sim (required there) as the file's; map_bubbles.py places it in the
+theatre's world. --export-only works there too.
 """
 import json, math, os, sys, time
 import bpy
@@ -145,14 +148,19 @@ def parse():
     ap.add_argument("--pose-file", default=None)
     ap.add_argument("--bubble-export", default=None)
     ap.add_argument("--export-only", action="store_true")
+    ap.add_argument("--world-minus-sim", type=float, default=None)
     args = ap.parse_args(SS.script_argv())
     if args.pose_file:
         if args.path not in ("D", "E"):
             ap.error("--pose-file takes the place of path D's course: use it with --path D or E")
         if not any(a == "--sun" or a.startswith("--sun=") for a in SS.script_argv()):
             args.sun = PZ.THEATRE_SUN_EL            # the theatre's sun, as a direction (see pose_setup for the bearing)
-    if args.bubble_export and not (args.pose_file and args.bubbles > 0):
-        ap.error("--bubble-export needs --pose-file and --bubbles above 0")
+    if args.bubble_export and not (args.bubbles > 0 and (args.pose_file or args.path in ("D", "E"))):
+        ap.error("--bubble-export needs --bubbles above 0, and --pose-file or --path D or E")
+    if args.bubble_export and not args.pose_file and args.world_minus_sim is None:
+        ap.error("--bubble-export without --pose-file (B3's own burst) needs --world-minus-sim")
+    if args.world_minus_sim is not None and (args.pose_file or not args.bubble_export):
+        ap.error("--world-minus-sim is for --bubble-export without --pose-file only (a pose file carries its own)")
     if args.export_only and not args.bubble_export:
         ap.error("--export-only needs --bubble-export")
     return args
@@ -412,11 +420,30 @@ def write_bubble_export(args, pose, bubbles):
                       pose["doc"]["world_minus_sim"], src)
     print("BUBBLE EXPORT %d bubbles to %s" % (bubbles.n, args.bubble_export), flush=True)
 
+def write_own_bubble_export(args, bubbles):
+    """B3's own frame, not placed: the Bubbles instance's arrays in the sea frame this script renders in, converted with
+    landing_io.to_unity (the axis swap only, no turn and no translation). map_bubbles.py places them in the theatre's world.
+    world_minus_sim comes from --world-minus-sim."""
+    src = ("sea_dive.py commit %s; B3's own frame, not placed (axes swapped by landing_io.to_unity only); --path %s --bubbles %g"
+           " --port %g --world-minus-sim %.9g, bubble seed 11" % (git_source(), args.path, args.bubbles, args.port,
+                                                                 args.world_minus_sim))
+    os.makedirs(os.path.dirname(os.path.abspath(args.bubble_export)), exist_ok=True)
+    LIO.write_bubbles(args.bubble_export, LIO.to_unity(bubbles.x0), LIO.to_unity(bubbles.v0), bubbles.ts, bubbles.r,
+                      bubbles.rise, bubbles.tau, bubbles.flat, args.world_minus_sim, src)
+    print("BUBBLE EXPORT (B3's own frame) %d bubbles to %s" % (bubbles.n, args.bubble_export), flush=True)
+
 def run_export_only(args, ctx):
-    """--export-only: the pose, the probe the surface test needs and the bubbles; written, and no render."""
-    pose = pose_setup(args, ctx)
-    bubbles = Bubbles(pose["states"], pose["entry"], pose["probe"], 6000 * args.bubbles)
-    write_bubble_export(args, pose, bubbles)
+    """--export-only: the pose (or B3's own path), the probe the surface test needs and the bubbles; written, and no render."""
+    if args.pose_file:
+        pose = pose_setup(args, ctx)
+        bubbles = Bubbles(pose["states"], pose["entry"], pose["probe"], 6000 * args.bubbles)
+        write_bubble_export(args, pose, bubbles)
+    else:
+        az = ctx["az"]
+        probe = Probe((math.cos(az) * 9.0, math.sin(az) * 9.0), ctx["wind_dir"], ctx["ocean"]["k"], n=113, step=0.25)
+        states, entry = path_D(probe, az)
+        bubbles = Bubbles(states, entry, probe, 6000 * args.bubbles)
+        write_own_bubble_export(args, bubbles)
     print("EXPORT-ONLY done", flush=True)
 
 def key_camera_pose(cam, states):
@@ -1943,6 +1970,8 @@ def main():
         bubbles = Bubbles(states, entry, probe, 6000 * args.bubbles)
         if pose is not None and args.bubble_export:
             write_bubble_export(args, pose, bubbles)
+        elif args.bubble_export:
+            write_own_bubble_export(args, bubbles)
         if wsun is not None:
             wsun.light_bubbles(bubbles.ob)
     ng = sc.compositing_node_group
