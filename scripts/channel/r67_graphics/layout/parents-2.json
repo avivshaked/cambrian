@@ -1,0 +1,48 @@
+{
+ "frame": "parents-2",
+ "slot": "parents-2",
+ "source": "design/src/parents.html (frames-v3/parents-2.png), 1920x1080",
+ "check_s": [
+  2.7,
+  3.7
+ ],
+ "tolerance_px": 19,
+ "anchors": {
+  "parent_0": [
+   420,
+   300
+  ],
+  "child_00": [
+   1180,
+   238
+  ],
+  "child_01": [
+   1300,
+   362
+  ],
+  "parent_1": [
+   420,
+   590
+  ],
+  "child_10": [
+   1180,
+   528
+  ],
+  "child_11": [
+   1300,
+   652
+  ],
+  "parent_2": [
+   420,
+   880
+  ],
+  "child_20": [
+   1180,
+   818
+  ],
+  "child_21": [
+   1300,
+   942
+  ]
+ }
+}

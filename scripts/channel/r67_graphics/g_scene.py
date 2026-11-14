@@ -252,6 +252,23 @@ def out_node(nt):
     return nt.nodes.new("ShaderNodeOutputMaterial")
 
 
+def wrap_dim(mat):
+    """Mix the material's surface toward transparency by the object property `dimk` (0 shown, 1 gone)."""
+    nt = mat.node_tree
+    out = next(n for n in nt.nodes if n.bl_idname == "ShaderNodeOutputMaterial")
+    surf = out.inputs["Surface"]
+    if not surf.is_linked:
+        return mat
+    src = surf.links[0].from_socket
+    a = nt.nodes.new("ShaderNodeAttribute"); a.attribute_type, a.attribute_name = "OBJECT", "dimk"
+    tr = nt.nodes.new("ShaderNodeBsdfTransparent")
+    mix = nt.nodes.new("ShaderNodeMixShader")
+    nt.links.new(a.outputs["Fac"], mix.inputs["Fac"])
+    nt.links.new(src, mix.inputs[1]); nt.links.new(tr.outputs[0], mix.inputs[2])
+    nt.links.new(mix.outputs[0], surf)
+    return mat
+
+
 def emissive(name, color_hex, strength, alpha=1.0):
     """An emission mixed over transparency: a glow that adds nothing where alpha is 0."""
     m = mat_new(name)
@@ -265,7 +282,7 @@ def emissive(name, color_hex, strength, alpha=1.0):
     nt.links.new(tr.outputs[0], mix.inputs[1])
     nt.links.new(em.outputs[0], mix.inputs[2])
     nt.links.new(mix.outputs[0], out_node(nt).inputs["Surface"])
-    return m
+    return wrap_dim(m)
 
 
 def soft_mat(name, color_hex, strength, alpha):
@@ -288,7 +305,7 @@ def soft_mat(name, color_hex, strength, alpha):
     nt.links.new(k.outputs[0], mix.inputs["Fac"])
     nt.links.new(tr.outputs[0], mix.inputs[1]); nt.links.new(em.outputs[0], mix.inputs[2])
     nt.links.new(mix.outputs[0], out_node(nt).inputs["Surface"])
-    return m
+    return wrap_dim(m)
 
 
 def veil(name, top_hex, bot_hex, a_top, a_bot, strength=1.0):
@@ -361,7 +378,12 @@ def volume_emission(name, color_hex, strength, gradient_down=True):
     em.inputs["Color"].default_value = (*hexlin(color_hex), 1)
     sk = nt.nodes.new("ShaderNodeMath"); sk.operation = "MULTIPLY"; sk.inputs[1].default_value = strength
     nt.links.new(mulb.outputs[0], sk.inputs[0])
-    nt.links.new(sk.outputs[0], em.inputs["Strength"])
+    dk = nt.nodes.new("ShaderNodeAttribute"); dk.attribute_type, dk.attribute_name = "OBJECT", "dimk"
+    keep = nt.nodes.new("ShaderNodeMath"); keep.operation = "SUBTRACT"; keep.inputs[0].default_value = 1.0
+    nt.links.new(dk.outputs["Fac"], keep.inputs[1])
+    kd = nt.nodes.new("ShaderNodeMath"); kd.operation = "MULTIPLY"
+    nt.links.new(sk.outputs[0], kd.inputs[0]); nt.links.new(keep.outputs[0], kd.inputs[1])
+    nt.links.new(kd.outputs[0], em.inputs["Strength"])
     nt.links.new(em.outputs[0], out_node(nt).inputs["Volume"])
     return m
 
@@ -516,6 +538,7 @@ TEAM = {   # light, mid, shadow: rim, through, base on the theatre's props
     "guzzler": ("#ffeccb", "#e0a24a", "#86561a"),
     "pale": ("#e2fff9", "#8ae9da", "#2a9d95"),           # the parents graphic's Guzzlers, claiming no team
     "taleplum": ("#ecfff9", "#a6e4e2", "#5aa8ae"),
+    "taleplum-tip": ("#ffe0ec", "#d78fae", "#7f4a68"),    # the founder's spotted tip (design creatures.js "shell")
     "bone": ("#fffbe8", "#e8e2c4", "#9c9a80"),            # the queue's variety, after creatures.js's fills
     "yellow": ("#fbffc0", "#e2e85a", "#8f9a2a"),
     "brown": ("#c9a27a", "#8a6540", "#4a3320"),
@@ -575,7 +598,7 @@ def skin(name, team):
         o["base"] = tuple(c * b for c in base)
 
 
-TILE = {"nibbler": "net-cyan.png", "pale": "net-cyan.png", "guzzler": "stripes-amber.png", "taleplum": "maze-pale.png",
+TILE = {"nibbler": "net-cyan.png", "pale": "net-cyan.png", "guzzler": "stripes-amber.png", "taleplum": "maze-pale.png", "taleplum-tip": "spots-pink.png",
         "bone": "spots-bone.png", "yellow": "stripes-yellow.png", "brown": "stripes-amber.png"}
 PATTERN_OPACITY = 0.9      # the theatre's PatternOpacity
 
@@ -663,12 +686,22 @@ class Body:
 
 
 def add_body(run, key, name, team, material, scale, rng, wave=(14.0, 0.45, 0.0)):
+    tip_material = None
     if isinstance(material, dict):
+        tip_material = material.get("taleplum-tip")
         material = material[team]
     root, joints = S.build(key, name, (0, 0, 0), (0, 0, 0), 1.0, material, 2.2)
     for j in joints:
         j["jitter"] = rng.uniform(-0.25, 0.25)
     skin(name, team)
+    if team == "taleplum" and isinstance(material, type(None)) is False and tip_material is not None:
+        # the founder's second part is the design's pink-spotted tip
+        light, mid, shadow = TEAM["taleplum-tip"]
+        for o in part_objects(name):
+            if o.name.startswith(name + "-p1-"):
+                o["rim"] = hexlin(mid); o["trans_tint"] = hexlin(mid); o["base"] = hexlin_scaled(shadow, BASE_DARKEN)
+                for sl in o.material_slots:
+                    sl.material = tip_material
     drive_state(root, name)
     b = Body(key, name, team, material, root, joints, body_length(key), scale)
     b.wave = wave
@@ -676,7 +709,7 @@ def add_body(run, key, name, team, material, scale, rng, wave=(14.0, 0.45, 0.0))
     return b
 
 
-def body_material(run, teams=("guzzler", "nibbler", "pale", "taleplum", "bone", "yellow", "brown")):
+def body_material(run, teams=("guzzler", "nibbler", "pale", "taleplum", "taleplum-tip", "bone", "yellow", "brown")):
     """One material per team (each has its own pattern tile): {team: material}."""
     out = {}
     for team in teams:
@@ -726,7 +759,7 @@ def edge_mat(strength, color="#dcfffa"):
     return EDGE_MATS[k]
 
 
-def tank(run, front, depth_m, t_front, edge_px=1.6):
+def tank(run, front, depth_m, t_front, edge_px=1.6, edge_scale=1.0):
     """The glass box with an open top. `front` is the front face's design pixels (x0, y0, x1, y1) at depth t_front;
     the box runs depth_m away from the camera. Returns a dict of its corners and objects.
     Panes are thin glass with a teal veil on the inside; edges are emissive bars, brightest at the top."""
@@ -751,7 +784,7 @@ def tank(run, front, depth_m, t_front, edge_px=1.6):
             ("back-right", BTR, BBR, 0.45), ("right-bottom", FBR, BBR, 0.45),
             ("back-left", BTL, BBL, 0.28), ("back-bottom", BBL, BBR, 0.28), ("left-bottom", FBL, BBL, 0.28)]
     for n, a, b, s in bars:
-        objs["edge-" + n] = box_mesh("edge-" + n, a, b, edge_mat(s), th * (0.7 if s < 0.5 else 1.0))
+        objs["edge-" + n] = box_mesh("edge-" + n, a, b, edge_mat(s * edge_scale), th * (0.7 if s < 0.5 else 1.0))
     corners = {"FTL": FTL, "FTR": FTR, "FBL": FBL, "FBR": FBR, "BTL": BTL, "BTR": BTR, "BBL": BBL, "BBR": BBR}
     return {"corners": corners, "objs": objs}
 
@@ -813,7 +846,7 @@ def capsule_verts(radius, height, sides=40, rings=10):
     return verts, faces
 
 
-def tube(run, name, px, top_px, bot_px, w_px, t, fill=0.0):
+def tube(run, name, px, top_px, bot_px, w_px, t, fill=0.0, leaf_rx=21.6, spacing=15):
     """The measure: a glass capsule on the tank's front, standing at design pixel x px between top_px and bot_px of
     the plane at depth t, with a glowing green fill whose level is `fill` (0-1) and is keyed through the object
     property `level`, scaling an inner cylinder. Returns {glass, fill, meniscus, top (world), bottom (world)}."""
@@ -835,16 +868,16 @@ def tube(run, name, px, top_px, bot_px, w_px, t, fill=0.0):
     men.location = (fl.location[0], fl.location[1], fl.location[2])
     # the settled leaves, stacked 15 design px apart alternating a little either side, as the design's tube draws them
     stack = []
-    n = int((bot_px - top_px - 12) / 15)
+    n = int((bot_px - top_px - 12) / spacing)
     for k in range(n):
-        y = bot_px - 12 - 15 * k
+        y = bot_px - 12 - spacing * k
         x = px + (3 if k % 2 else -3)
         tilt = 6 if k % 2 else -6
-        lf = leaf(run, name + "-s%d" % k, x, y, t, 21.6, tilt, strength=2.6)
+        lf = leaf(run, name + "-s%d" % k, x, y, t, leaf_rx, tilt, strength=2.6)
         lf.scale = (1e-4, 1e-4, 1e-4)
         stack.append((lf, y, x, tilt))
     return {"glass": gl, "fill": fl, "meniscus": men, "bottom": bottom, "top": top, "inner_height": height - 2 * radius * 0.86,
-            "base_z": bottom[2] + radius * 0.86, "stack": stack, "run": run, "t": t, "top_px": top_px, "bot_px": bot_px}
+            "base_z": bottom[2] + radius * 0.86, "stack": stack, "run": run, "t": t, "top_px": top_px, "bot_px": bot_px, "leaf_rx": leaf_rx}
 
 
 def set_tube_level(tb, level, frame=None):
@@ -856,7 +889,7 @@ def set_tube_level(tb, level, frame=None):
     run, t = tb["run"], tb["t"]
     level_px = tb["bot_px"] - (tb["bot_px"] - tb["top_px"]) * level
     for lf, y, x, tilt in tb["stack"]:
-        place_leaf(run, lf, x, y, t, 21.6 if y > level_px + 5 else 0.01, tilt, frame=frame)
+        place_leaf(run, lf, x, y, t, tb["leaf_rx"] if y > level_px + 5 else 0.01, tilt, frame=frame)
     if frame is not None:
         fl.keyframe_insert("scale", frame=frame)
         men.keyframe_insert("location", frame=frame)
@@ -886,7 +919,7 @@ def veil_glass(name):
     nt.links.new(edgek.outputs[0], rim.inputs["Fac"])
     nt.links.new(body.outputs[0], rim.inputs[1]); nt.links.new(em.outputs[0], rim.inputs[2])
     nt.links.new(rim.outputs[0], out_node(nt).inputs["Surface"])
-    return m
+    return wrap_dim(m)
 
 
 def cyl_verts(radius, height, sides=32):
@@ -931,6 +964,7 @@ def leaf_material(strength=1.1):
     nt.links.new(ramp.outputs["Color"], em.inputs["Color"])
     em.inputs["Strength"].default_value = strength
     nt.links.new(em.outputs[0], out_node(nt).inputs["Surface"])
+    wrap_dim(m)
     LEAF_MAT[strength] = m
     return m
 
@@ -976,3 +1010,264 @@ def pixel_pos(run, px, py, t):
 def finish_look(run, rng, snow_count=1100):
     S.grade()
     return snow(run, rng, count=snow_count)
+
+
+
+# ================================================================== stage 2: parents, bars, founder
+class Keyer:
+    """Keys a property only where its value changes, with a hold key one frame before the change, so a long constant
+    stretch costs two keys and a step stays a step. attr is a bpy attribute ("location", "scale", ...) or the name
+    of a custom property."""
+
+    def __init__(self):
+        self.last = {}
+
+    @staticmethod
+    def _norm(v):
+        if isinstance(v, bool):
+            return v
+        try:
+            return tuple(float(x) for x in v)
+        except TypeError:
+            return float(v) if isinstance(v, (int, float)) else v
+
+    def _apply(self, obj, attr, v, frame):
+        if hasattr(obj, attr) and attr not in obj.keys():
+            setattr(obj, attr, v)
+            obj.keyframe_insert(attr, frame=frame)
+        else:
+            obj[attr] = v
+            obj.keyframe_insert('["%s"]' % attr, frame=frame)
+
+    def set(self, obj, attr, value, frame):
+        v = self._norm(value)
+        key = (obj.name, attr)
+        prev = self.last.get(key)
+        if prev is None:
+            self._apply(obj, attr, v if not isinstance(v, tuple) else value, frame)
+            self.last[key] = (frame, v, v)
+            return
+        pf, pv, cur = prev
+        if v == cur:
+            return
+        if pf < frame - 1:
+            self._apply(obj, attr, pv, frame - 1)
+        self._apply(obj, attr, v if not isinstance(v, tuple) else value, frame)
+        self.last[key] = (frame, v, v)
+
+
+def tank_back(run, front, t_back=18.0, offset_px=None, edge_scale=0.6):
+    """The tank, further back and soft with distance: the same glass box at depth t_back, its back face offset up and
+    right by the drawn 0.2 w, -0.14 w. Returns (root empty, corners). The root empty carries the transform
+    a later slot uses to move and shrink it (scaled in x and z about the world origin, so its depth stays)."""
+    cam = run.cam_model
+    x0, y0, x1, y1 = front
+    fc = ((x0 + x1) / 2, (y0 + y1) / 2)
+    off = offset_px if offset_px is not None else 0.2 * (x1 - x0)
+    k = off / (cam.pp[0] - fc[0])                       # 1 - s for the drawn offset
+    depth_m = t_back * k / (1 - k)
+    tk = tank(run, front, depth_m, t_back, edge_px=2.0, edge_scale=edge_scale)
+    root = bpy.data.objects.new("tank-back-root", None)
+    run.sc.collection.objects.link(root)
+    for o in tk["objs"].values():
+        o.parent = root
+    root.rotation_mode = "XYZ"
+    return root, tk
+
+
+def tank_back_pose(run, root, front0, front1, t_back, frame, K):
+    """Moves and shrinks the tank root from the drawing at front0 to the one at front1 (design pixels)."""
+    cam = run.cam_model
+    s = (front1[2] - front1[0]) / (front0[2] - front0[0])
+    p0 = cam.to_world(front0[0], front0[1], t_back)
+    p1 = cam.to_world(front1[0], front1[1], t_back)
+    K.set(root, "scale", (s, 1.0, s), frame)
+    K.set(root, "location", (p1[0] - s * p0[0], 0.0, p1[2] - s * p0[2]), frame)
+
+
+def beam(run, x, y_end, w, depth=10.0, thickness=3.0, gain=0.9, name="beam"):
+    """Light falling from the surface onto one place (pass5.js beam): a slab from the top of the frame, its width
+    .7 w at the top to 1.4 w at y_end, fading down its length, and the pool it makes, a soft ellipse at y_end - 70.
+    Returns the objects; each takes `dimk` (1 = off)."""
+    top = [(x - w * 0.35, -20), (x + w * 0.35, -20)]
+    bot = [(x + w * 0.7, y_end), (x - w * 0.7, y_end)]
+    sl = slab(run, name, top, bot, depth, thickness, "#e4fffb", 0.34 * gain / thickness)
+    pool = blob(run, name + "-pool", x, y_end - 70, depth, w * 1.1, w * 0.7, "#d8fffb", 1.0, 0.28)
+    return [sl, pool]
+
+
+def set_dim(objs, k, frame, K):
+    for o in objs:
+        K.set(o, "dimk", k, frame)
+
+
+def tube_group(tb):
+    return [tb["glass"], tb["fill"], tb["meniscus"]] + [lf for lf, *_ in tb["stack"]]
+
+
+def tube_level_k(tb, level, frame, K):
+    """set_tube_level, keyed only where it changes."""
+    fl, men, run, t = tb["fill"], tb["meniscus"], tb["run"], tb["t"]
+    K.set(fl, "scale", (1, 1, max(level, 1e-4)), frame)
+    K.set(men, "location", (men.location[0], men.location[1], tb["base_z"] + tb["inner_height"] * level), frame)
+    K.set(men, "hide_render", level < 0.01, frame)
+    level_px = tb["bot_px"] - (tb["bot_px"] - tb["top_px"]) * level
+    m = run.cam_model.metres_per_px(t)
+    for lf, y, x, tilt in tb["stack"]:
+        r = tb["leaf_rx"] if y > level_px + 5 else 0.01
+        K.set(lf, "scale", (r * m, r * m * 0.18, r * m * 0.3), frame)
+
+
+def ledge(run, x0=260, x1=1660, wide0=200, wide1=1720, y=640, y_front=700, t=7.65, strength=1.0):
+    """The ledge of the bars: a thin sheet of light seen a little from above, receding, with a bright front edge.
+    Horizontal: its back edge is design row `y` at depth t, its front edge row `y_front` and wider, nearer."""
+    cam = run.cam_model
+    t_near = t * (cam.pp[1] - y) / (cam.pp[1] - y_front)
+    BL, BR = cam.to_world(x0, y, t), cam.to_world(x1, y, t)
+    FL, FR = cam.to_world(wide0, y_front, t_near), cam.to_world(wide1, y_front, t_near)
+    sheet = plane("ledge-sheet", [FL, FR, BR, BL], emissive("ledge-sheet", "#bffcf4", 0.9 * strength, 0.12))
+    edge = box_mesh("ledge-edge", BL, BR, emissive("ledge-edge", "#bffcf4", 3.0 * strength, 0.9), cam.metres_per_px(t) * 3.0)
+    return [sheet, edge]
+
+
+def ring(run, name, px, py, rx_px, ry_px, t, color_hex="#bffcf4", alpha=0.3, width_frac=0.06):
+    """A faint dashed-looking ring (an annulus of emission) lying on the ledge: where a stack will stand."""
+    m = run.cam_model.metres_per_px(t)
+    sides = 48
+    verts, faces = [], []
+    for s_ in range(sides):
+        th = 2 * math.pi * s_ / sides
+        for rr in (1.0, 1.0 - width_frac * 2):
+            verts.append((rr * math.cos(th), rr * math.sin(th), 0.0))
+    for s_ in range(sides):
+        a, b = 2 * s_, 2 * ((s_ + 1) % sides)
+        if s_ % 2 == 0:
+            faces.append((a, a + 1, b + 1, b))
+    ob = mesh_obj(name, verts, faces, emissive("ring-" + name, color_hex, 2.0, alpha), smooth=False)
+    ob.location = run.cam_model.to_world(px, py, t)
+    ob.scale = (rx_px * m, ry_px * m, 1.0)
+    return ob
+
+
+def vial(run, name, px, top_px, bot_px, w_px, ledge_px, t, store=("#ffe2a8", "#b07a22"), notch=True):
+    """A glass vial standing through the ledge: its liquid fills between the ledge and `level` when the level is
+    above the ledge's start (a bead of savings above it), and an empty warm-edged hollow below the ledge when the
+    level is under. Keyed by set_vial. Returns a dict of its objects."""
+    cam = run.cam_model
+    m = cam.metres_per_px(t)
+    bottom, top = cam.to_world(px, bot_px, t), cam.to_world(px, top_px, t)
+    height, radius = top[2] - bottom[2], w_px / 2 * m
+    v, f = capsule_verts(radius, height)
+    gl = mesh_obj(name + "-glass", v, f, veil_glass(name), smooth=True)
+    gl.location = bottom
+    ledge_z = cam.to_world(px, ledge_px, t)[2]
+    inner = radius * 0.84
+    cv, cf = cyl_verts(inner, 1.0)
+    # the savings: from the ledge up, gradient store colours (one flat colour: the lighter), scaled by the keyed level
+    liq = mesh_obj(name + "-liquid", cv, cf, emissive(name + "-liq", store[0], 1.6, 0.92), smooth=True)
+    liq.location = (bottom[0], bottom[1], ledge_z)
+    liq.scale = (1, 1, 1e-4)
+    cap = mesh_obj(name + "-cap", *disc_verts(inner * 0.95), emissive(name + "-capm", "#ffffff", 4.0, 0.85), smooth=True)
+    cap.location = (bottom[0], bottom[1], ledge_z)
+    # the hollow: a sleeve below the ledge, tinted warm, its edge glowing in bands (the design's dashed outline)
+    hm = mat_new(name + "-hollow")
+    nt = hm.node_tree
+    lw = nt.nodes.new("ShaderNodeLayerWeight"); lw.inputs["Blend"].default_value = 0.4
+    edge = nt.nodes.new("ShaderNodeMath"); edge.operation = "POWER"; edge.inputs[1].default_value = 3.0
+    nt.links.new(lw.outputs["Facing"], edge.inputs[0])
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    sep = nt.nodes.new("ShaderNodeSeparateXYZ"); nt.links.new(tc.outputs["Generated"], sep.inputs[0])
+    band = nt.nodes.new("ShaderNodeMath"); band.operation = "MULTIPLY"; band.inputs[1].default_value = 7.0
+    nt.links.new(sep.outputs[2], band.inputs[0])
+    fr = nt.nodes.new("ShaderNodeMath"); fr.operation = "FRACT"
+    nt.links.new(band.outputs[0], fr.inputs[0])
+    on = nt.nodes.new("ShaderNodeMath"); on.operation = "LESS_THAN"; on.inputs[1].default_value = 0.64
+    nt.links.new(fr.outputs[0], on.inputs[0])
+    glowk = nt.nodes.new("ShaderNodeMath"); glowk.operation = "MULTIPLY"
+    nt.links.new(edge.outputs[0], glowk.inputs[0]); nt.links.new(on.outputs[0], glowk.inputs[1])
+    tint = nt.nodes.new("ShaderNodeMath"); tint.operation = "ADD"; tint.inputs[1].default_value = 0.0
+    nt.links.new(glowk.outputs[0], tint.inputs[0])
+    tint.inputs[1].default_value = 0.10                  # the faint #e0a24a tint of the hollow's body
+    em = nt.nodes.new("ShaderNodeEmission"); em.inputs["Color"].default_value = (*hexlin("#ffc56e"), 1); em.inputs["Strength"].default_value = 2.2
+    tr = nt.nodes.new("ShaderNodeBsdfTransparent")
+    mx = nt.nodes.new("ShaderNodeMixShader")
+    cl = nt.nodes.new("ShaderNodeMath"); cl.operation = "MINIMUM"; cl.inputs[1].default_value = 1.0
+    nt.links.new(tint.outputs[0], cl.inputs[0])
+    nt.links.new(cl.outputs[0], mx.inputs["Fac"]); nt.links.new(tr.outputs[0], mx.inputs[1]); nt.links.new(em.outputs[0], mx.inputs[2])
+    nt.links.new(mx.outputs[0], out_node(nt).inputs["Surface"])
+    wrap_dim(hm)
+    hv, hf = cyl_verts(inner * 0.92, 1.0)
+    hol = mesh_obj(name + "-hollow", hv, hf, hm, smooth=True)
+    hol.location = (bottom[0], bottom[1], ledge_z)
+    hol.scale = (1, 1, -1e-4)                            # grows downward: a negative z scale
+    parts = {"glass": gl, "liquid": liq, "cap": cap, "hollow": hol}
+    if notch:
+        n_ = ring(run, name + "-notch", px, ledge_px, w_px / 2 + 8, 5, t, "#e4fffb", 0.9, 0.5)
+        parts["notch"] = n_
+    parts.update({"m": m, "ledge_z": ledge_z, "px": px, "ledge_px": ledge_px, "t": t, "run": run})
+    return parts
+
+
+def vial_level_k(v, level_px, frame, K):
+    """Sets a vial's content: level_px is the design row of the liquid's surface; above the ledge row (smaller y)
+    is savings, below is a hollow."""
+    m, ledge_px = v["m"], v["ledge_px"]
+    up = max(0.0, ledge_px - level_px) * m
+    down = max(0.0, level_px - ledge_px) * m
+    K.set(v["liquid"], "scale", (1, 1, max(up, 1e-4)), frame)
+    K.set(v["cap"], "location", (v["cap"].location[0], v["cap"].location[1], v["ledge_z"] + up - down), frame)
+    K.set(v["cap"], "hide_render", abs(level_px - ledge_px) < 0.5, frame)
+    K.set(v["hollow"], "scale", (1, 1, -max(down, 1e-4)), frame)
+
+
+def vial_group(v):
+    return [v["glass"], v["liquid"], v["cap"], v["hollow"]] + ([v["notch"]] if "notch" in v else [])
+
+
+def thread(run, name, p0, p1, t, op=1.0):
+    """A faint thread of light from a parent to its child: a thin tube along the design's quadratic (mid control at
+    the higher end minus 40 px), emission fading from .55 to .12 along it, with five motes. `grow` (0-1, keyed) reveals it
+    from the parent's end. Returns [thread, motes...]."""
+    cam = run.cam_model
+    mx_, my_ = (p0[0] + p1[0]) / 2, min(p0[1], p1[1]) - 40
+    def at(u):
+        return ((1 - u) ** 2 * p0[0] + 2 * (1 - u) * u * mx_ + u * u * p1[0], (1 - u) ** 2 * p0[1] + 2 * (1 - u) * u * my_ + u * u * p1[1])
+    n, sides, r = 40, 6, 1.6 * cam.metres_per_px(t)
+    verts, faces = [], []
+    for i in range(n + 1):
+        x, y = at(i / n)
+        c = cam.to_world(x, y, t)
+        for sd in range(sides):
+            th = 2 * math.pi * sd / sides
+            verts.append((c[0], c[1] + r * math.cos(th), c[2] + r * math.sin(th)))
+    for i in range(n):
+        for sd in range(sides):
+            a, b = i * sides + sd, i * sides + (sd + 1) % sides
+            faces.append((a, b, b + sides, a + sides))
+    m = mat_new(name + "-mat")
+    nt = m.node_tree
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    sep = nt.nodes.new("ShaderNodeSeparateXYZ"); nt.links.new(tc.outputs["Generated"], sep.inputs[0])
+    gr = nt.nodes.new("ShaderNodeAttribute"); gr.attribute_type, gr.attribute_name = "OBJECT", "grow"
+    vis = nt.nodes.new("ShaderNodeMath"); vis.operation = "LESS_THAN"
+    nt.links.new(sep.outputs[0], vis.inputs[0]); nt.links.new(gr.outputs["Fac"], vis.inputs[1])
+    fall = nt.nodes.new("ShaderNodeMapRange"); fall.inputs["To Min"].default_value, fall.inputs["To Max"].default_value = 0.55, 0.12
+    nt.links.new(sep.outputs[0], fall.inputs["Value"])
+    a = nt.nodes.new("ShaderNodeMath"); a.operation = "MULTIPLY"; a.inputs[1].default_value = op
+    nt.links.new(fall.outputs["Result"], a.inputs[0])
+    a2 = nt.nodes.new("ShaderNodeMath"); a2.operation = "MULTIPLY"
+    nt.links.new(a.outputs[0], a2.inputs[0]); nt.links.new(vis.outputs[0], a2.inputs[1])
+    em = nt.nodes.new("ShaderNodeEmission"); em.inputs["Color"].default_value = (*hexlin("#bffcf4"), 1); em.inputs["Strength"].default_value = 3.0
+    tr = nt.nodes.new("ShaderNodeBsdfTransparent")
+    mix = nt.nodes.new("ShaderNodeMixShader")
+    nt.links.new(a2.outputs[0], mix.inputs["Fac"]); nt.links.new(tr.outputs[0], mix.inputs[1]); nt.links.new(em.outputs[0], mix.inputs[2])
+    nt.links.new(mix.outputs[0], out_node(nt).inputs["Surface"])
+    th_ = mesh_obj(name, verts, faces, wrap_dim(m), smooth=True)
+    th_["grow"] = 1.0
+    out = [th_]
+    for i in range(1, 6):
+        u = i / 6
+        x, y = at(u)
+        mote = blob(run, "%s-mote%d" % (name, i), x, y, t, 3.5 - 2 * u + 3, 3.5 - 2 * u + 3, "#e4fffb", 1.0, 0.8 * op * (0.8 - 0.4 * u))
+        out.append(mote)
+    return out

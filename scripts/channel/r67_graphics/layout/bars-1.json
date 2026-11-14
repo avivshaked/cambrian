@@ -1,0 +1,71 @@
+{
+ "frame": "bars-1",
+ "slot": "bars-1",
+ "source": "design/src/bars2.html (frames-v2/bars-1.png), 1920x1080",
+ "check_s": [
+  7.2
+ ],
+ "tolerance_px": 19,
+ "anchors": {
+  "nib_vial_top": [
+   672,
+   440
+  ],
+  "nib_vial_bot": [
+   672,
+   820
+  ],
+  "guz_vial_top": [
+   1472,
+   440
+  ],
+  "guz_vial_bot": [
+   1472,
+   820
+  ],
+  "nib_icon": [
+   360,
+   972
+  ],
+  "guz_icon": [
+   1155,
+   972
+  ],
+  "ate_nib": [
+   460,
+   892
+  ],
+  "left_nib": [
+   672,
+   892
+  ],
+  "name_nib": [
+   460,
+   995
+  ],
+  "ate_guz": [
+   1260,
+   892
+  ],
+  "left_guz": [
+   1472,
+   892
+  ],
+  "name_guz": [
+   1260,
+   995
+  ],
+  "start": [
+   1700,
+   622
+  ],
+  "nib_top_leaf": [
+   460,
+   550
+  ],
+  "nib_cap": [
+   672,
+   490.0
+  ]
+ }
+}

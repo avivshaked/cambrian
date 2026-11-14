@@ -97,7 +97,7 @@ def main():
     # ---- bodies at one Guzzler scale: the founder's drawn length is the unit
     founder_len = G.body_length("founder")
     SG = FOUNDER_SIZE_PX * (t_in / model.f_px) / founder_len
-    founder = G.add_body(run, "founder", "founder", "guzzler", mat, SG, rng)
+    founder = G.add_body(run, "founder", "founder", "taleplum", mat, SG, rng)
     prev = G.add_body(run, "guz-10", "prev", "guzzler", mat, SG, rng)
     queue = []
     for key, name, team, x, y, size, fade in QUEUE:

@@ -41,12 +41,13 @@ def opacity_at(keys, t):
     return keys[-1][1]
 
 
-def word_mask(text, font, tracking, cx, cy, W, H):
+def word_mask(text, font, tracking, cx, cy, W, H, align="middle"):
     """A float mask (H, W) of the word, middle-baseline at (cx, cy) frame pixels, drawn at SS times and reduced."""
     big = Image.new("L", (W * SS, H * SS), 0)
     d = ImageDraw.Draw(big)
     adv = [font.getlength(c) + tracking * SS for c in text]
-    x = cx * SS - (sum(adv) - tracking * SS) / 2
+    total = sum(adv) - tracking * SS
+    x = cx * SS - (total / 2 if align == "middle" else total if align == "end" else 0.0)
     for c, a in zip(text, adv):
         d.text((x, cy * SS), c, font=font, fill=255, anchor="ls")
         x += a
@@ -72,7 +73,7 @@ def draw_words(frame_rgb, words, anchors, t, fonts_dir=FONTS):
             continue
         px, py, coc = anchors[w["anchor"]]
         font = ImageFont.truetype(os.path.join(fonts_dir, FACES[w["face"]]), int(round(w["size_px"] * s * SS)))
-        m = word_mask(w["text"], font, w.get("tracking_px", 0) * s, px * s, py * s, W, H)
+        m = word_mask(w["text"], font, w.get("tracking_px", 0) * s, px * s, py * s, W, H, w.get("align", "middle"))
         sigma = max(0.0, coc * s / 2.0)          # a circle of confusion of diameter coc: a Gaussian of about half
         m = blur(m, sigma)
         glow = blur(m, 8.0 * s) * w.get("glow_alpha", 0.45)

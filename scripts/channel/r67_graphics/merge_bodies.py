@@ -10,6 +10,8 @@ Made with Evosim.BodyExport built at e79fa0fd (the sea run's own build; today's 
 genomes), carrying the two options of src/Evosim.BodyExport/Program.cs:
   --label r67pool --pool <run dir> --pool-ids 0,1,2:13929,3,...72 --min-parts 1
   --label r67r1-6202 --run <run dir> --ids 166382,118251,131141,74039,42605,179291 --min-parts 1
+  --edit PARTS.jsonl:guz-23x:guzzler:23 (the parents-2 child: pool 23's root recursiveLimit + 1, made by
+  scratch/r67-graphics/blender/tools/make_edit_pool.py and exported with --pool on the one-genome pool it writes)
 """
 import argparse, json, os, sys
 
@@ -37,7 +39,7 @@ def key_for(team, pool):
     return ("guz-%d" if team == "guzzler" else "nib-%d") % pool
 
 
-def merge(pool_rows, index, taleplum_rows=()):
+def merge(pool_rows, index, taleplum_rows=(), edits=()):
     out = {}
     for row in pool_rows:
         pool = row["pool"]
@@ -50,6 +52,13 @@ def merge(pool_rows, index, taleplum_rows=()):
         body = dict(row)
         body.update({"team": "taleplum"})
         out["tp-%d" % row["id"]] = body
+    for rows, key, team, parent in edits:
+        # a genome edit of a pool genome, grown by Core: the parent's pool index names its tank score
+        for row in rows:
+            body = dict(row)
+            body.update({"team": team, "ownEaten": float(index[parent]["ownEaten"]), "poolId": index[parent]["id"] + "+1 segment",
+                         "origin": index[parent]["origin"], "editOf": parent})
+            out[key] = body
     return out
 
 
@@ -63,9 +72,12 @@ def main(argv=None):
     ap.add_argument("--pool", required=True)
     ap.add_argument("--index", required=True)
     ap.add_argument("--taleplums")
+    ap.add_argument("--edit", action="append", default=[],
+                    help="PARTS.jsonl:KEY:TEAM:PARENT_POOL, a grown genome edit of a pool genome (repeatable)")
     ap.add_argument("--out", default=os.path.join(HERE, "bodies-r67.json"))
     a = ap.parse_args(argv)
-    bodies = merge(read_rows(a.pool), read_index(a.index), read_rows(a.taleplums) if a.taleplums else ())
+    bodies = merge(read_rows(a.pool), read_index(a.index), read_rows(a.taleplums) if a.taleplums else (),
+                    [(read_rows(e.rsplit(":", 3)[0]), *e.rsplit(":", 3)[1:3], int(e.rsplit(":", 3)[3])) for e in a.edit])
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(bodies, f, separators=(",", ":"), sort_keys=True)
     print("wrote %d bodies to %s" % (len(bodies), a.out))

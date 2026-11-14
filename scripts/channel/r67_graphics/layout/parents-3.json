@@ -1,0 +1,75 @@
+{
+ "frame": "parents-3",
+ "slot": "parents-3",
+ "source": "design/src/parents.html (frames-v3/parents-3.png), 1920x1080",
+ "check_s": [
+  5.2
+ ],
+ "tolerance_px": 19,
+ "anchors": {
+  "word_eaten": [
+   960,
+   1010
+  ],
+  "gen_front_0": [
+   290,
+   500
+  ],
+  "gen_tube_top_0": [
+   250,
+   640
+  ],
+  "gen_tube_bot_0": [
+   250,
+   930
+  ],
+  "gen_front_1": [
+   645,
+   500
+  ],
+  "gen_tube_top_1": [
+   605,
+   640
+  ],
+  "gen_tube_bot_1": [
+   605,
+   930
+  ],
+  "gen_front_2": [
+   1000,
+   500
+  ],
+  "gen_tube_top_2": [
+   960,
+   640
+  ],
+  "gen_tube_bot_2": [
+   960,
+   930
+  ],
+  "gen_front_3": [
+   1355,
+   500
+  ],
+  "gen_tube_top_3": [
+   1315,
+   640
+  ],
+  "gen_tube_bot_3": [
+   1315,
+   930
+  ],
+  "gen_front_4": [
+   1710,
+   500
+  ],
+  "gen_tube_top_4": [
+   1670,
+   640
+  ],
+  "gen_tube_bot_4": [
+   1670,
+   930
+  ]
+ }
+}
