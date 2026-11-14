@@ -1,0 +1,725 @@
+{
+ "fps": 30,
+ "proposed": true,
+ "slots": {
+  "tank-1": {
+   "beat": 2,
+   "audio_in": 13.35,
+   "audio_out": 24.8,
+   "source": "edl",
+   "length": 11.45,
+   "frames": 344,
+   "film_in": 39.21,
+   "film_out": 50.66,
+   "scene": "tank",
+   "scene_frame_offset": 0
+  },
+  "tank-2": {
+   "beat": 3,
+   "audio_in": 0.0,
+   "audio_out": 12.385,
+   "source": "edl",
+   "length": 12.385,
+   "frames": 372,
+   "film_in": 50.66,
+   "film_out": 63.045,
+   "scene": "tank",
+   "scene_frame_offset": 344
+  },
+  "parents-1": {
+   "beat": 3,
+   "audio_in": 12.385,
+   "audio_out": 14.9,
+   "source": "edl",
+   "length": 2.515,
+   "frames": 75,
+   "film_in": 63.045,
+   "film_out": 65.56,
+   "scene": "parents",
+   "scene_frame_offset": 0
+  },
+  "parents-2": {
+   "beat": 3,
+   "audio_in": 14.9,
+   "audio_out": 18.8,
+   "source": "edl",
+   "length": 3.9,
+   "frames": 117,
+   "film_in": 65.56,
+   "film_out": 69.46,
+   "scene": "parents",
+   "scene_frame_offset": 75
+  },
+  "parents-3": {
+   "beat": 3,
+   "audio_in": 18.8,
+   "audio_out": 24.385,
+   "source": "edl",
+   "length": 5.585,
+   "frames": 168,
+   "film_in": 69.46,
+   "film_out": 75.045,
+   "scene": "parents",
+   "scene_frame_offset": 192
+  },
+  "bars-1": {
+   "beat": 4,
+   "audio_in": 6.124,
+   "audio_out": 13.968,
+   "source": "edl",
+   "length": 7.844,
+   "frames": 235,
+   "film_in": 104.369,
+   "film_out": 112.213,
+   "scene": "bars",
+   "scene_frame_offset": 0
+  },
+  "bars-2": {
+   "beat": 4,
+   "audio_in": 13.968,
+   "audio_out": 19.952,
+   "source": "edl",
+   "length": 5.984,
+   "frames": 180,
+   "film_in": 112.213,
+   "film_out": 118.197,
+   "scene": "bars",
+   "scene_frame_offset": 235
+  },
+  "bars-3": {
+   "beat": 4,
+   "audio_in": 19.952,
+   "audio_out": 24.054,
+   "source": "edl",
+   "length": 4.102,
+   "frames": 123,
+   "film_in": 118.197,
+   "film_out": 122.299,
+   "scene": "bars",
+   "scene_frame_offset": 415
+  },
+  "seas-a": {
+   "beat": 5,
+   "audio_in": 4.4,
+   "audio_out": 11.6,
+   "source": "proposed",
+   "length": 7.2,
+   "frames": 216,
+   "film_in": 137.129,
+   "film_out": 144.329,
+   "scene": "seas-a",
+   "scene_frame_offset": 0
+  },
+  "winter-1": {
+   "beat": 9,
+   "audio_in": 4.7,
+   "audio_out": 14.7,
+   "source": "proposed",
+   "length": 10.0,
+   "frames": 300,
+   "film_in": 262.029,
+   "film_out": 272.029,
+   "scene": "winter",
+   "scene_frame_offset": 0
+  },
+  "founder": {
+   "beat": 9,
+   "audio_in": 50.5,
+   "audio_out": 64.2,
+   "source": "proposed",
+   "length": 13.7,
+   "frames": 411,
+   "film_in": 307.829,
+   "film_out": 321.529,
+   "scene": "founder",
+   "scene_frame_offset": 0
+  },
+  "seas-d": {
+   "beat": 10,
+   "audio_in": 0.0,
+   "audio_out": 10.0,
+   "source": "proposed",
+   "length": 10.0,
+   "frames": 300,
+   "film_in": 347.789,
+   "film_out": 357.789,
+   "scene": "seas-d",
+   "scene_frame_offset": 0
+  },
+  "winter-2": {
+   "beat": 9,
+   "audio_in": 20.9,
+   "audio_out": 28.0,
+   "source": "proposed",
+   "length": 7.1,
+   "frames": 213,
+   "film_in": 278.229,
+   "film_out": 285.329,
+   "scene": "winter",
+   "scene_frame_offset": 300
+  }
+ },
+ "scenes": {
+  "tank": {
+   "slots": [
+    {
+     "slot": "tank-1",
+     "frame_offset": 0
+    },
+    {
+     "slot": "tank-2",
+     "frame_offset": 344
+    }
+   ],
+   "frames": 716
+  },
+  "parents": {
+   "slots": [
+    {
+     "slot": "parents-1",
+     "frame_offset": 0
+    },
+    {
+     "slot": "parents-2",
+     "frame_offset": 75
+    },
+    {
+     "slot": "parents-3",
+     "frame_offset": 192
+    }
+   ],
+   "frames": 360
+  },
+  "bars": {
+   "slots": [
+    {
+     "slot": "bars-1",
+     "frame_offset": 0
+    },
+    {
+     "slot": "bars-2",
+     "frame_offset": 235
+    },
+    {
+     "slot": "bars-3",
+     "frame_offset": 415
+    }
+   ],
+   "frames": 538
+  },
+  "founder": {
+   "slots": [
+    {
+     "slot": "founder",
+     "frame_offset": 0
+    }
+   ],
+   "frames": 411
+  },
+  "seas-a": {
+   "slots": [
+    {
+     "slot": "seas-a",
+     "frame_offset": 0
+    }
+   ],
+   "frames": 216
+  },
+  "seas-d": {
+   "slots": [
+    {
+     "slot": "seas-d",
+     "frame_offset": 0
+    }
+   ],
+   "frames": 300
+  },
+  "winter": {
+   "slots": [
+    {
+     "slot": "winter-1",
+     "frame_offset": 0
+    },
+    {
+     "slot": "winter-2",
+     "frame_offset": 300
+    }
+   ],
+   "frames": 513
+  }
+ },
+ "cues": {
+  "but_before": {
+   "slot": "tank-1",
+   "t": 0.001,
+   "frame": 0,
+   "t_end": 1.062,
+   "scene_t": 0.001,
+   "in_slot": true
+  },
+  "tank": {
+   "slot": "tank-1",
+   "t": 1.882,
+   "frame": 56,
+   "t_end": 2.163,
+   "scene_t": 1.882,
+   "in_slot": true
+  },
+  "small_one": {
+   "slot": "tank-1",
+   "t": 3.003,
+   "frame": 90,
+   "t_end": 3.544,
+   "scene_t": 3.003,
+   "in_slot": true
+  },
+  "small_one_end": {
+   "slot": "tank-1",
+   "t": 3.544,
+   "frame": 106,
+   "t_end": 3.544,
+   "scene_t": 3.544,
+   "in_slot": true
+  },
+  "bred": {
+   "slot": "tank-1",
+   "t": 4.244,
+   "frame": 127,
+   "t_end": 5.365,
+   "scene_t": 4.244,
+   "in_slot": true
+  },
+  "roses": {
+   "slot": "tank-1",
+   "t": 5.986,
+   "frame": 180,
+   "t_end": 7.707,
+   "scene_t": 5.986,
+   "in_slot": true
+  },
+  "roses_end": {
+   "slot": "tank-1",
+   "t": 7.707,
+   "frame": 231,
+   "t_end": 7.707,
+   "scene_t": 7.707,
+   "in_slot": true
+  },
+  "faster": {
+   "slot": "tank-1",
+   "t": 8.468,
+   "frame": 254,
+   "t_end": 10.189,
+   "scene_t": 8.468,
+   "in_slot": true
+  },
+  "faster_end": {
+   "slot": "tank-1",
+   "t": 10.189,
+   "frame": 306,
+   "t_end": 10.189,
+   "scene_t": 10.189,
+   "in_slot": true
+  },
+  "each_creature": {
+   "slot": "tank-2",
+   "t": 0.3,
+   "frame": 9,
+   "t_end": 2.101,
+   "scene_t": 11.767,
+   "in_slot": true
+  },
+  "question": {
+   "slot": "tank-2",
+   "t": 2.861,
+   "frame": 86,
+   "t_end": 5.462,
+   "scene_t": 14.328,
+   "in_slot": true
+  },
+  "eat": {
+   "slot": "tank-2",
+   "t": 6.323,
+   "frame": 190,
+   "t_end": 7.523,
+   "scene_t": 17.79,
+   "in_slot": true
+  },
+  "eat_end": {
+   "slot": "tank-2",
+   "t": 7.523,
+   "frame": 226,
+   "t_end": 7.523,
+   "scene_t": 18.99,
+   "in_slot": true
+  },
+  "nothing_measured": {
+   "slot": "tank-2",
+   "t": 8.704,
+   "frame": 261,
+   "t_end": 9.544,
+   "scene_t": 20.171,
+   "in_slot": true
+  },
+  "nothing_counted": {
+   "slot": "tank-2",
+   "t": 10.144,
+   "frame": 304,
+   "t_end": 11.045,
+   "scene_t": 21.611,
+   "in_slot": true
+  },
+  "best": {
+   "slot": "parents-1",
+   "t": 0.0,
+   "frame": 0,
+   "t_end": 1.741,
+   "scene_t": 0.0,
+   "in_slot": true
+  },
+  "best_word": {
+   "slot": "parents-1",
+   "t": 0.12,
+   "frame": 4,
+   "t_end": 0.32,
+   "scene_t": 0.12,
+   "in_slot": true
+  },
+  "parents_word": {
+   "slot": "parents-1",
+   "t": 1.321,
+   "frame": 40,
+   "t_end": 1.741,
+   "scene_t": 1.321,
+   "in_slot": true
+  },
+  "children": {
+   "slot": "parents-2",
+   "t": 0.046,
+   "frame": 1,
+   "t_end": 1.387,
+   "scene_t": 2.546,
+   "in_slot": true
+  },
+  "small": {
+   "slot": "parents-2",
+   "t": 2.427,
+   "frame": 73,
+   "t_end": 2.667,
+   "scene_t": 4.927,
+   "in_slot": true
+  },
+  "mistake": {
+   "slot": "parents-2",
+   "t": 2.707,
+   "frame": 81,
+   "t_end": 3.068,
+   "scene_t": 5.207,
+   "in_slot": true
+  },
+  "round_after_round": {
+   "slot": "parents-3",
+   "t": 0.008,
+   "frame": 0,
+   "t_end": 1.368,
+   "scene_t": 6.408,
+   "in_slot": true
+  },
+  "eating": {
+   "slot": "parents-3",
+   "t": 1.929,
+   "frame": 58,
+   "t_end": 3.429,
+   "scene_t": 8.329,
+   "in_slot": true
+  },
+  "eating_word": {
+   "slot": "parents-3",
+   "t": 3.189,
+   "frame": 96,
+   "t_end": 3.429,
+   "scene_t": 9.589,
+   "in_slot": true
+  },
+  "nibblers": {
+   "slot": "bars-1",
+   "t": 0.0,
+   "frame": 0,
+   "t_end": 0.52,
+   "scene_t": 0.0,
+   "in_slot": true
+  },
+  "ate_little": {
+   "slot": "bars-1",
+   "t": 0.64,
+   "frame": 19,
+   "t_end": 1.1,
+   "scene_t": 0.64,
+   "in_slot": true
+  },
+  "spent_less": {
+   "slot": "bars-1",
+   "t": 1.46,
+   "frame": 44,
+   "t_end": 3.281,
+   "scene_t": 1.46,
+   "in_slot": true
+  },
+  "saved_sentence": {
+   "slot": "bars-1",
+   "t": 3.942,
+   "frame": 118,
+   "t_end": 6.824,
+   "scene_t": 3.942,
+   "in_slot": true
+  },
+  "saved": {
+   "slot": "bars-1",
+   "t": 6.423,
+   "frame": 193,
+   "t_end": 6.824,
+   "scene_t": 6.423,
+   "in_slot": true
+  },
+  "guzzlers": {
+   "slot": "bars-2",
+   "t": 0.0,
+   "frame": 0,
+   "t_end": 0.68,
+   "scene_t": 7.833,
+   "in_slot": true
+  },
+  "four_times": {
+   "slot": "bars-2",
+   "t": 1.061,
+   "frame": 32,
+   "t_end": 3.142,
+   "scene_t": 8.894,
+   "in_slot": true
+  },
+  "spent_more": {
+   "slot": "bars-2",
+   "t": 3.942,
+   "frame": 118,
+   "t_end": 5.503,
+   "scene_t": 11.775,
+   "in_slot": true
+  },
+  "hungrier_sentence": {
+   "slot": "bars-3",
+   "t": 0.0,
+   "frame": 0,
+   "t_end": 2.421,
+   "scene_t": 13.833,
+   "in_slot": true
+  },
+  "hungrier": {
+   "slot": "bars-3",
+   "t": 1.961,
+   "frame": 59,
+   "t_end": 2.421,
+   "scene_t": 15.794,
+   "in_slot": true
+  },
+  "four_seas": {
+   "slot": "seas-a",
+   "t": 0.184,
+   "frame": 6,
+   "t_end": 2.246,
+   "scene_t": 0.184,
+   "in_slot": true
+  },
+  "four": {
+   "slot": "seas-a",
+   "t": 0.504,
+   "frame": 15,
+   "t_end": 0.764,
+   "scene_t": 0.504,
+   "in_slot": true
+  },
+  "both_teams": {
+   "slot": "seas-a",
+   "t": 2.986,
+   "frame": 90,
+   "t_end": 4.388,
+   "scene_t": 2.986,
+   "in_slot": true
+  },
+  "this_film": {
+   "slot": "seas-a",
+   "t": 5.108,
+   "frame": 153,
+   "t_end": 6.549,
+   "scene_t": 5.108,
+   "in_slot": true
+  },
+  "killed_sentence": {
+   "slot": "winter-1",
+   "t": 0.181,
+   "frame": 5,
+   "t_end": 1.782,
+   "scene_t": 0.181,
+   "in_slot": true
+  },
+  "killed": {
+   "slot": "winter-1",
+   "t": 0.421,
+   "frame": 13,
+   "t_end": 0.861,
+   "scene_t": 0.421,
+   "in_slot": true
+  },
+  "third_as_much": {
+   "slot": "winter-1",
+   "t": 2.482,
+   "frame": 74,
+   "t_end": 3.722,
+   "scene_t": 2.482,
+   "in_slot": true
+  },
+  "winters": {
+   "slot": "winter-1",
+   "t": 8.263,
+   "frame": 248,
+   "t_end": 10.124,
+   "scene_t": 8.263,
+   "in_slot": true
+  },
+  "other_guzzlers": {
+   "slot": "winter-2",
+   "t": 0.225,
+   "frame": 7,
+   "t_end": 3.126,
+   "scene_t": 10.225,
+   "in_slot": true
+  },
+  "taleplums_lost": {
+   "slot": "winter-2",
+   "t": 3.806,
+   "frame": 114,
+   "t_end": 5.947,
+   "scene_t": 13.806,
+   "in_slot": true
+  },
+  "lost_only_one": {
+   "slot": "winter-2",
+   "t": 4.567,
+   "frame": 137,
+   "t_end": 5.387,
+   "scene_t": 14.567,
+   "in_slot": true
+  },
+  "back_in_tank": {
+   "slot": "founder",
+   "t": 0.153,
+   "frame": 5,
+   "t_end": 1.473,
+   "scene_t": 0.153,
+   "in_slot": true
+  },
+  "founder_word": {
+   "slot": "founder",
+   "t": 1.213,
+   "frame": 36,
+   "t_end": 1.473,
+   "scene_t": 1.213,
+   "in_slot": true
+  },
+  "smallest": {
+   "slot": "founder",
+   "t": 1.794,
+   "frame": 54,
+   "t_end": 4.134,
+   "scene_t": 1.794,
+   "in_slot": true
+  },
+  "measured_only": {
+   "slot": "founder",
+   "t": 4.974,
+   "frame": 149,
+   "t_end": 6.735,
+   "scene_t": 4.974,
+   "in_slot": true
+  },
+  "rated_low": {
+   "slot": "founder",
+   "t": 7.095,
+   "frame": 213,
+   "t_end": 7.715,
+   "scene_t": 7.095,
+   "in_slot": true
+  },
+  "but_in_tank": {
+   "slot": "founder",
+   "t": 8.675,
+   "frame": 260,
+   "t_end": 9.516,
+   "scene_t": 8.675,
+   "in_slot": true
+  },
+  "founder_usually": {
+   "slot": "founder",
+   "t": 10.296,
+   "frame": 309,
+   "t_end": 12.056,
+   "scene_t": 10.296,
+   "in_slot": true
+  },
+  "with_savings": {
+   "slot": "founder",
+   "t": 12.136,
+   "frame": 364,
+   "t_end": 12.876,
+   "scene_t": 12.136,
+   "in_slot": true
+  },
+  "savings": {
+   "slot": "founder",
+   "t": 12.396,
+   "frame": 372,
+   "t_end": 12.876,
+   "scene_t": 12.396,
+   "in_slot": true
+  },
+  "other_three": {
+   "slot": "seas-d",
+   "t": 0.34,
+   "frame": 10,
+   "t_end": 3.242,
+   "scene_t": 0.34,
+   "in_slot": true
+  },
+  "this_sea": {
+   "slot": "seas-d",
+   "t": 4.023,
+   "frame": 121,
+   "t_end": 5.324,
+   "scene_t": 4.023,
+   "in_slot": true
+  },
+  "not_a_win": {
+   "slot": "seas-d",
+   "t": 5.744,
+   "frame": 172,
+   "t_end": 7.245,
+   "scene_t": 5.744,
+   "in_slot": true
+  },
+  "win_one_family": {
+   "slot": "seas-d",
+   "t": 7.826,
+   "frame": 235,
+   "t_end": 9.767,
+   "scene_t": 7.826,
+   "in_slot": true
+  },
+  "family": {
+   "slot": "seas-d",
+   "t": 9.367,
+   "frame": 281,
+   "t_end": 9.767,
+   "scene_t": 9.367,
+   "in_slot": true
+  }
+ }
+}

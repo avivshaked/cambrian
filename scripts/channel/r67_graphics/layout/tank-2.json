@@ -1,0 +1,85 @@
+{
+ "frame": "tank-2",
+ "slot": "tank-2",
+ "source": "design/src/tank2.html (frames-v2/tank-2.png), 1920x1080",
+ "check_s": [
+  3.0,
+  9.0
+ ],
+ "tolerance_px": 19,
+ "anchors": {
+  "front_tl": [
+   660,
+   330
+  ],
+  "front_tr": [
+   1260,
+   330
+  ],
+  "front_bl": [
+   660,
+   830
+  ],
+  "front_br": [
+   1260,
+   830
+  ],
+  "back_tl": [
+   780,
+   246
+  ],
+  "back_tr": [
+   1380,
+   246
+  ],
+  "back_br": [
+   1380,
+   746
+  ],
+  "tube_top": [
+   1327,
+   360
+  ],
+  "tube_bottom": [
+   1327,
+   830
+  ],
+  "queue_1": [
+   520,
+   640
+  ],
+  "queue_2": [
+   320,
+   596
+  ],
+  "queue_3": [
+   150,
+   560
+  ],
+  "queue_4": [
+   20,
+   530
+  ],
+  "word_eaten": [
+   1327,
+   900
+  ],
+  "founder": [
+   1010,
+   610
+  ],
+  "tube_level": [
+   1327,
+   590
+  ],
+  "leaf_mouth": [
+   860,
+   545
+  ]
+ },
+ "only_at": {
+  "tube_level": [
+   9.0
+  ]
+ }
+}
