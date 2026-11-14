@@ -602,9 +602,9 @@ TEAM = {   # light, mid, shadow: rim, through, base on the theatre's props
 FIELDS = ("lit", "fade", "grey")
 
 
-def patch_state(mat, fade_hex="#0a3746", lit_floor=0.35):
-    """Adds the three keyable controls in front of the body material's fog: lit scales the light, grey
-    desaturates, fade mixes toward the water."""
+def patch_state(mat, fade_hex="#0a3746", lit_floor=0.35, lit_ceil=1.0):
+    """Adds the three keyable controls in front of the body material's fog: lit scales the light (0..1 -> lit_floor..lit_ceil),
+    grey desaturates, fade mixes toward the water."""
     nt = mat.node_tree
     mix = next(n for n in nt.nodes if n.bl_idname == "ShaderNodeMix")
     src = mix.inputs["B"].links[0].from_socket
@@ -614,7 +614,7 @@ def patch_state(mat, fade_hex="#0a3746", lit_floor=0.35):
         a.attribute_type, a.attribute_name = "OBJECT", k
         attr[k] = a.outputs["Fac"]
     mr = nt.nodes.new("ShaderNodeMapRange")                 # lit 0..1 -> lit_floor..1
-    mr.inputs["To Min"].default_value, mr.inputs["To Max"].default_value = lit_floor, 1.0
+    mr.inputs["To Min"].default_value, mr.inputs["To Max"].default_value = lit_floor, lit_ceil
     nt.links.new(attr["lit"], mr.inputs["Value"])
     scale = nt.nodes.new("ShaderNodeVectorMath"); scale.operation = "SCALE"
     nt.links.new(src, scale.inputs[0]); nt.links.new(mr.outputs["Result"], scale.inputs[3])
@@ -658,9 +658,19 @@ TILE = {"nibbler": "net-cyan.png", "pale": "net-cyan.png", "guzzler": "stripes-a
         "bone": "spots-bone.png", "yellow": "stripes-yellow.png", "brown": "stripes-amber.png"}
 PATTERN_OPACITY = 0.9      # the theatre's PatternOpacity
 TILE_TINT = {"taleplum": (0.62, 0.70, 0.46)}
+# The skin path's markings. The tile repeats every 1/scale metres: 2.2 gave the Guzzlers' stripes and the Nibblers' net a period about
+# three times finer than the design's (measured on the founder-1 and parents-1 frames), which a 960-wide render averages to flat colour,
+# so they take 0.75; the taleplum's maze reads at 2.2 and keeps it. PATTERN_DARK: the share of the whole light the cover removes, for
+# the teams whose pigment is darker than the body (the stripes, the net's dots); the additive terms (light through the tissue, rim,
+# glow) otherwise fill the markings in, because the tile only ever tinted the albedo.
+PATTERN_SCALE = {"guzzler": 0.75, "brown": 0.75, "yellow": 0.75, "nibbler": 0.8, "pale": 0.8, "bone": 0.8}
+PATTERN_DARK = {"guzzler": 0.55, "brown": 0.55, "yellow": 0.5, "nibbler": 0.6, "pale": 0.6, "bone": 0.4}
+# The lit ceiling (lit 1 -> this, of the full light) for the cyan teams: lit 1 put a cyan skin's rim and light through the tissue past
+# 1.0 on both green and blue, which reads white, where an amber one only reddens. The dim end (lit 0 -> 0.35) is unchanged.
+LIT_CEIL = {"pale": 0.55, "nibbler": 0.55}
 
 
-def add_pattern(mat, team, scale=2.2):
+def add_pattern(mat, team, scale=2.2, dark=0.0):
     """The design's own solved tile (alpha = cover, colour = pigment) as a Box-projected image in object coordinates,
     mixing the base toward the pigment by cover x 0.9, as the theatre does."""
     nt = mat.node_tree
@@ -689,6 +699,18 @@ def add_pattern(mat, team, scale=2.2):
         nt.links.new(tex.outputs["Color"], mx.inputs["B"])
     for t in targets:
         nt.links.new(mx.outputs["Result"], t)
+    if dark > 0:       # the cover darkens the whole light, not just the albedo
+        fog = next(n for n in nt.nodes if n.bl_idname == "ShaderNodeMix" and n.outputs["Result"].links
+                   and n.outputs["Result"].links[0].to_node.bl_idname == "ShaderNodeEmission")
+        b_in = _mix_in(fog, "B")
+        src = b_in.links[0].from_socket
+        m1 = nt.nodes.new("ShaderNodeMath"); m1.operation = "MULTIPLY"; m1.inputs[1].default_value = -dark
+        nt.links.new(k.outputs[0], m1.inputs[0])
+        m2 = nt.nodes.new("ShaderNodeMath"); m2.operation = "ADD"; m2.inputs[1].default_value = 1.0
+        nt.links.new(m1.outputs[0], m2.inputs[0])
+        dk = nt.nodes.new("ShaderNodeVectorMath"); dk.operation = "SCALE"
+        nt.links.new(src, dk.inputs[0]); nt.links.new(m2.outputs[0], dk.inputs[3])
+        nt.links.new(dk.outputs[0], b_in)
     return {"tex": tex, "cover": k, "mix": mx, "coords": sc}
 
 
@@ -1086,8 +1108,8 @@ def add_skin(key, name, root, material, tip_index=None, cell=SKIN_CELL):
     basis["emit"] = 0.0
     basis["shade"] = S.frac(individual * 17.37 + 0.41) * 2 - 1
     basis["warmth"] = S.frac(individual * 31.91 + 0.07) * 2 - 1
-    # the light through the tissue: the theatre's 0.06 over the half thickness, here over the body's median part
-    basis["skin_thick"] = float(min(max(0.06 / float(np.median([SK.smallest(p) for p in parts])), 0.0), 1.0))
+    # the light through the tissue: the theatre's 0.06 over each part's half thickness, here the average over the parts weighted by their area
+    basis["skin_thick"] = SK.skin_thickness(parts)
     set_skin_cell(basis, cell)
     tip = None
     if tip_index is not None:
@@ -1149,8 +1171,11 @@ def body_material(run, teams=("guzzler", "nibbler", "pale", "taleplum", "taleplu
     for team in names:
         mat = S.body_material_for(run.cam)
         mat.name = "theatre-body-" + team
-        patch_state(mat)
-        info = add_pattern(mat, "taleplum" if team == "taleplum-two" else team)
+        patch_state(mat, lit_ceil=LIT_CEIL.get(team, 1.0) if ONE_SKIN else 1.0)
+        if ONE_SKIN:
+            info = add_pattern(mat, "taleplum" if team == "taleplum-two" else team, scale=PATTERN_SCALE.get(team, 2.2), dark=PATTERN_DARK.get(team, 0.0))
+        else:
+            info = add_pattern(mat, team)
         if ONE_SKIN:
             skin_surface(mat)
             if team == "taleplum-two":
@@ -1590,6 +1615,34 @@ def ring(run, name, px, py, rx_px, ry_px, t, color_hex="#bffcf4", alpha=0.3, wid
     return ob
 
 
+def liquid_mat(name, store, a_bottom=0.5, a_top=0.3, strength=0.75, top_share=0.4):
+    """The vial's liquid, as liquid in glass: a vertical gradient from the deep store colour at the bottom to a paler tint of it at
+    the top (store[0] mixed top_share into store[1]), more transparent as it rises, and a dimmer glow than a flat emissive's. It runs
+    along the object's Generated z, which is 0 at the foot and 1 at the surface however the keyed scale stretches it."""
+    m = mat_new(name)
+    nt = m.node_tree
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    sep = nt.nodes.new("ShaderNodeSeparateXYZ"); nt.links.new(tc.outputs["Generated"], sep.inputs[0])
+    z = nt.nodes.new("ShaderNodeMath"); z.operation = "ADD"; z.use_clamp = True; z.inputs[1].default_value = 0.0
+    nt.links.new(sep.outputs[2], z.inputs[0])
+    deep, light = hexlin(store[1]), hexlin(store[0])
+    top = tuple(d + (l - d) * top_share for d, l in zip(deep, light))
+    col = nt.nodes.new("ShaderNodeMix"); col.data_type = "RGBA"
+    nt.links.new(z.outputs[0], _mix_in(col, "Factor"))
+    _mix_in(col, "A").default_value = (*deep, 1.0); _mix_in(col, "B").default_value = (*top, 1.0)
+    al = nt.nodes.new("ShaderNodeMix"); al.data_type = "FLOAT"
+    nt.links.new(z.outputs[0], _mix_in(al, "Factor"))
+    _mix_in(al, "A").default_value = a_bottom; _mix_in(al, "B").default_value = a_top
+    em = nt.nodes.new("ShaderNodeEmission"); em.inputs["Strength"].default_value = strength
+    nt.links.new(col.outputs["Result"], em.inputs["Color"])
+    tr = nt.nodes.new("ShaderNodeBsdfTransparent")
+    mix = nt.nodes.new("ShaderNodeMixShader")
+    nt.links.new(al.outputs["Result"], mix.inputs["Fac"])
+    nt.links.new(tr.outputs[0], mix.inputs[1]); nt.links.new(em.outputs[0], mix.inputs[2])
+    nt.links.new(mix.outputs[0], out_node(nt).inputs["Surface"])
+    return wrap_dim(m)
+
+
 def vial(run, name, px, top_px, bot_px, w_px, ledge_px, t, store=("#ffe2a8", "#b07a22"), notch=True):
     """A glass vial standing through the ledge: its liquid fills between the ledge and `level` when the level is
     above the ledge's start (a bead of savings above it), and an empty warm-edged hollow below the ledge when the
@@ -1605,10 +1658,10 @@ def vial(run, name, px, top_px, bot_px, w_px, ledge_px, t, store=("#ffe2a8", "#b
     inner = radius * 0.84
     cv, cf = cyl_verts(inner, 1.0)
     # the savings: from the ledge up, gradient store colours (one flat colour: the lighter), scaled by the keyed level
-    liq = mesh_obj(name + "-liquid", cv, cf, emissive(name + "-liq", store[0], 1.0, 0.42), smooth=True)
+    liq = mesh_obj(name + "-liquid", cv, cf, liquid_mat(name + "-liq", store), smooth=True)
     liq.location = (bottom[0], bottom[1], ledge_z)
     liq.scale = (1, 1, 1e-4)
-    cap = mesh_obj(name + "-cap", *disc_verts(inner * 0.95), emissive(name + "-capm", store[0], 1.6, 0.3), smooth=True)
+    cap = mesh_obj(name + "-cap", *disc_verts(inner * 0.95), emissive(name + "-capm", store[0], 1.2, 0.26), smooth=True)
     cap.location = (bottom[0], bottom[1], ledge_z)
     # the hollow: a sleeve below the ledge, tinted warm, its edge glowing in bands (the design's dashed outline)
     hm = mat_new(name + "-hollow")

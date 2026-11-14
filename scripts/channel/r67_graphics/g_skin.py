@@ -76,6 +76,18 @@ def skin_k(parts):
     return min(0.5 * float(np.median([smallest(p) for p in parts])), K_CAP)
 
 
+def skin_thickness(parts):
+    """The light through the tissue: the theatre's per-part clip(0.06 / smallest half extent), averaged over the parts by their area,
+    so the big lobes that fill the picture set it (the median of the parts' sizes read the thin capsules too much)."""
+    w, t = [], []
+    for p in parts:
+        a, b, c = sorted(abs(float(x)) for x in p["half"])
+        q = 1.6075
+        w.append(4 * math.pi * (((a * b) ** q + (a * c) ** q + (b * c) ** q) / 3) ** (1 / q))
+        t.append(min(max(0.06 / max(a, 1e-6), 0.0), 1.0))
+    return float(np.average(t, weights=w))
+
+
 def body_centre(parts):
     return np.mean([p["pos"] for p in parts], axis=0)
 
