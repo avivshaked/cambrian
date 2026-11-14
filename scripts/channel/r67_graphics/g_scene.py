@@ -1271,3 +1271,40 @@ def thread(run, name, p0, p1, t, op=1.0):
         mote = blob(run, "%s-mote%d" % (name, i), x, y, t, 3.5 - 2 * u + 3, 3.5 - 2 * u + 3, "#e4fffb", 1.0, 0.8 * op * (0.8 - 0.4 * u))
         out.append(mote)
     return out
+
+
+# ------------------------------------------------------------------ stage 2b: the seas and the winter
+def sea_column(run, cx, w, seed, depth=14.0, thickness=3.0, gain=1.0):
+    """One open sea (pass5.js sea): a column of lit water under its own bright surface, darkness either side. A tall
+    volume slab (the design's seaBody gradient, #3aa6b4 at the top fading out), the surface's soft ellipse at row 110,
+    its ripples as small bright blobs, and three shafts down through it. Every object takes `dimk`. Untuned looks."""
+    r = L.lcg(seed)
+    out = []
+    top = [(cx - w / 2, 40), (cx + w / 2, 40)]
+    bot = [(cx + w / 2, 1140), (cx - w / 2, 1140)]
+    out.append(slab(run, "sea%d-body" % seed, top, bot, depth, thickness, "#3aa6b4", 0.55 * gain / thickness))
+    out.append(blob(run, "sea%d-surface" % seed, cx, 110, depth - 1.0, w * 0.5, 34, "#d8fffb", 1.0 * gain, 0.32))
+    for i in range(9):
+        x, y, s = cx - w * 0.38 + r() * w * 0.76, 92 + r() * 36, 20 + r() * 30
+        out.append(blob(run, "sea%d-rip%d" % (seed, i), x + s / 2, y - 3, depth - 1.0, s / 2, 2.5, "#e4fffb", 1.4 * gain, 0.3 + 0.3 * r()))
+    for i in range(3):
+        x, rw = cx - w * 0.3 + r() * w * 0.5, 20 + r() * 40
+        out.append(slab(run, "sea%d-ray%d" % (seed, i), [(x, 110), (x + rw, 110)], [(x + rw * 1.6 + 30, 1000), (x + 30, 1000)],
+                        depth - 0.5, thickness, "#d8fffb", 0.22 * gain / thickness))
+    return out
+
+
+def die_keys(K, body, trail, t0, dur, frame, t, x0, y0, x1, y1, size, size_dead, flip, rot0, place):
+    """The winter's die() for one body at scene time t: from t0 over dur seconds the body turns over (to +-150 degrees),
+    loses its colour (grey 0 -> 1, fade to .68), shrinks to size_dead and sinks from (x0, y0) to (x1, y1), and its faint
+    trail of four soft dots appears. `place(b, px, py, size, roll)` puts the body (keys only changes). Before t0 the body
+    is alive at (x0, y0) with its own roll rot0."""
+    k = L.span(t, t0, t0 + dur)
+    e = 1 - (1 - k) ** 2                                       # a sink that slows as it settles
+    px, py = L.lerp(x0, x1, e), L.lerp(y0, y1, e)
+    roll = L.lerp(rot0, -150.0 if flip else 150.0, e)
+    place(body, px, py, L.lerp(size, size_dead, e), roll)
+    K.set(body.root, "grey", k, frame)
+    K.set(body.root, "fade", 0.68 * k, frame)
+    for o in trail:
+        K.set(o, "dimk", 1.0 - 0.68 * L.span(t, t0 + 0.2, t0 + 0.7), frame)
