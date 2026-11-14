@@ -50,6 +50,7 @@ def kplace(K, b, pos, yaw, roll, scale, frame):
     K.set(b.root, "rotation_quaternion",
           Quaternion((0, 1, 0), math.radians(roll)) @ Quaternion((0, 0, 1), math.radians(yaw)), frame)
     K.set(b.root, "scale", (scale, scale, scale), frame)
+    b.fit_cell(pos, scale)             # the skin's cell follows the pixel; the finest placement stands
 
 
 HIDDEN = 1e-4

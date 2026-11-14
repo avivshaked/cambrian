@@ -16,6 +16,10 @@ Every body, light and prop is placed by g_layout.Camera.to_world(px, py, depth) 
 Three custom properties on a body's root, driven into every part, are what an animation keys besides the root's own
 transform: `lit` (1 = lit, 0 = dim: the key and rim and the whole shade fall to 35%), `fade` (0-1: toward the water's
 colour, for "fades to 40%") and `grey` (0-1: desaturates, for the winter's dead).
+
+A body is one smooth skin, as the film draws it (TheatreOneSkin.cs): add_skin builds a metaball family, one ellipsoid element
+per part and one ball per joint, each parented to its part's joint pivot, and g_skin.py holds the arithmetic (k, the balls, the
+field's radius and stiffness). EVOSIM_ONE_SKIN=0 draws the old parts and, with bridge=True, the bridges instead.
 """
 import bpy, bmesh, json, math, os, sys
 import numpy as np
@@ -29,6 +33,10 @@ for p in (CHANNEL, HERE):
 import theatre_scene as S          # noqa: E402
 import g_layout as L               # noqa: E402
 import bodies_sheet as BS          # noqa: E402  (numpy only until draw())
+import g_skin as SK                # noqa: E402  (numpy only: the one smooth skin's arithmetic)
+
+ONE_SKIN = os.environ.get("EVOSIM_ONE_SKIN", "1") != "0"    # every body one smooth skin, as the film draws it; 0 = the old parts and bridges
+SKIN_CELL = 0.004                   # a skin's cell in the body's own metres until place() fits it to the pixel (g_skin.cell_for)
 
 BODIES_FILE = os.path.join(HERE, "bodies-r67.json")
 CUES_FILE = os.path.join(HERE, "cues.json")
@@ -235,7 +243,10 @@ class Run:
             sc.render.filepath = os.path.join(a.out, "frame-%04d.png" % f)
             if os.path.exists(sc.render.filepath):
                 continue
-            sc.frame_set(f)
+            if ONE_SKIN and any(b.skin is not None for b in self.bodies):
+                bake_frame(self, f)
+            else:
+                sc.frame_set(f)
             bpy.ops.render.render(write_still=True)
             print("RENDERED", f, flush=True)
         print("DONE", flush=True)
@@ -678,6 +689,122 @@ def add_pattern(mat, team, scale=2.2):
         nt.links.new(tex.outputs["Color"], mx.inputs["B"])
     for t in targets:
         nt.links.new(mx.outputs["Result"], t)
+    return {"tex": tex, "cover": k, "mix": mx, "coords": sc}
+
+
+def _mix_in(node, name):
+    """The enabled input of a Mix node by name (a Mix node holds a float, a vector and a colour socket of each name)."""
+    return next(s for s in node.inputs if s.name == name and s.enabled)
+
+
+def _relink(nt, out_socket, new_socket):
+    """Everything that read `out_socket` reads `new_socket` instead; returns the targets."""
+    targets = [l.to_socket for l in out_socket.links]
+    for l in list(out_socket.links):
+        nt.links.remove(l)
+    for t in targets:
+        nt.links.new(new_socket, t)
+    return targets
+
+
+def skin_surface(mat):
+    """Makes a body material fit a metaball skin, which has no vertex attributes and whose object coordinates are the family's
+    own (U times the body's metres, U = FIELD_CELL / cell): the geometry colour attributes `evo_a` and `evo_tone` become the
+    object's `skin_thick` and a constant, and every Object texture coordinate is scaled by the object's `skin_s` (1/U) so the
+    markings and the mottle are in the body's metres whatever the cell."""
+    nt = mat.node_tree
+    for n in list(nt.nodes):
+        if n.bl_idname == "ShaderNodeAttribute" and n.attribute_type == "GEOMETRY":
+            if n.attribute_name == "evo_a":
+                th = nt.nodes.new("ShaderNodeAttribute"); th.attribute_type, th.attribute_name = "OBJECT", "skin_thick"
+                c = nt.nodes.new("ShaderNodeCombineXYZ")
+                nt.links.new(th.outputs["Fac"], c.inputs[0])
+                c.inputs[1].default_value = 1.0; c.inputs[2].default_value = 1.0
+                _relink(nt, n.outputs["Vector"], c.outputs[0])
+                nt.nodes.remove(n)
+            elif n.attribute_name == "evo_tone":
+                rgb = nt.nodes.new("ShaderNodeRGB")
+                rgb.outputs[0].default_value = (1.0, 1.0, 1.0, 1.0)
+                _relink(nt, n.outputs["Vector"], rgb.outputs[0])
+                nt.nodes.remove(n)
+    for tc in [n for n in nt.nodes if n.bl_idname == "ShaderNodeTexCoord"]:
+        if not tc.outputs["Object"].links:
+            continue
+        s = nt.nodes.new("ShaderNodeAttribute"); s.attribute_type, s.attribute_name = "OBJECT", "skin_s"
+        sc = nt.nodes.new("ShaderNodeVectorMath"); sc.operation = "SCALE"
+        targets = [l.to_socket for l in tc.outputs["Object"].links]
+        for l in list(tc.outputs["Object"].links):
+            nt.links.remove(l)
+        nt.links.new(tc.outputs["Object"], sc.inputs[0]); nt.links.new(s.outputs["Fac"], sc.inputs[3])
+        for t in targets:
+            nt.links.new(sc.outputs[0], t)
+    return mat
+
+
+def add_tip(mat, info, tip_team="taleplum-tip"):
+    """Makes a body material two-toned: the tip part's own pigment tile (spots) and colours (`base2`, `rim2`, `trans_tint2`)
+    take over on the tip part's ellipsoid, a smoothstep of its normalised distance q (1 below TIP_BLEND[0], 0 beyond
+    TIP_BLEND[1]). q comes from the object's `tipr0..2` and `tipd`, an affine map from the body's metres to the tip's ellipsoid
+    coordinates that the body re-keys every swim, so the pink goes where the tip goes. Call after skin_surface."""
+    nt = mat.node_tree
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    s = nt.nodes.new("ShaderNodeAttribute"); s.attribute_type, s.attribute_name = "OBJECT", "skin_s"
+    m = nt.nodes.new("ShaderNodeVectorMath"); m.operation = "SCALE"
+    nt.links.new(tc.outputs["Object"], m.inputs[0]); nt.links.new(s.outputs["Fac"], m.inputs[3])
+    d = nt.nodes.new("ShaderNodeAttribute"); d.attribute_type, d.attribute_name = "OBJECT", "tipd"
+    dsep = nt.nodes.new("ShaderNodeSeparateXYZ"); nt.links.new(d.outputs["Vector"], dsep.inputs[0])
+    sq = None
+    for i in range(3):
+        r = nt.nodes.new("ShaderNodeAttribute"); r.attribute_type, r.attribute_name = "OBJECT", "tipr%d" % i
+        dot = nt.nodes.new("ShaderNodeVectorMath"); dot.operation = "DOT_PRODUCT"
+        nt.links.new(m.outputs[0], dot.inputs[0]); nt.links.new(r.outputs["Vector"], dot.inputs[1])
+        u = nt.nodes.new("ShaderNodeMath"); u.operation = "ADD"
+        nt.links.new(dot.outputs["Value"], u.inputs[0]); nt.links.new(dsep.outputs[i], u.inputs[1])
+        u2 = nt.nodes.new("ShaderNodeMath"); u2.operation = "MULTIPLY"
+        nt.links.new(u.outputs[0], u2.inputs[0]); nt.links.new(u.outputs[0], u2.inputs[1])
+        if sq is None:
+            sq = u2.outputs[0]
+        else:
+            a = nt.nodes.new("ShaderNodeMath"); a.operation = "ADD"
+            nt.links.new(sq, a.inputs[0]); nt.links.new(u2.outputs[0], a.inputs[1])
+            sq = a.outputs[0]
+    q = nt.nodes.new("ShaderNodeMath"); q.operation = "SQRT"; nt.links.new(sq, q.inputs[0])
+    mr = nt.nodes.new("ShaderNodeMapRange"); mr.data_type, mr.interpolation_type, mr.clamp = "FLOAT", "SMOOTHSTEP", True
+    nt.links.new(q.outputs[0], mr.inputs["Value"])
+    mr.inputs["From Min"].default_value, mr.inputs["From Max"].default_value = SK.TIP_BLEND[1], SK.TIP_BLEND[0]
+    mr.inputs["To Min"].default_value, mr.inputs["To Max"].default_value = 0.0, 1.0
+    mask = mr.outputs["Result"]
+    # the tile: the tip's own pigment and cover over the body's
+    img = bpy.data.images.load(os.path.join(HERE, "skins", TILE[tip_team]), check_existing=True)
+    tex = info["tex"]
+    tex2 = nt.nodes.new("ShaderNodeTexImage")
+    tex2.image, tex2.projection, tex2.projection_blend, tex2.extension = img, "BOX", 0.2, "REPEAT"
+    nt.links.new(info["coords"].outputs[0], tex2.inputs["Vector"])
+    cov = nt.nodes.new("ShaderNodeMix"); cov.data_type = "FLOAT"
+    nt.links.new(mask, _mix_in(cov, "Factor"))
+    nt.links.new(tex.outputs["Alpha"], _mix_in(cov, "A")); nt.links.new(tex2.outputs["Alpha"], _mix_in(cov, "B"))
+    nt.links.new(cov.outputs["Result"], info["cover"].inputs[0])
+    mx = info["mix"]
+    pig = nt.nodes.new("ShaderNodeMix"); pig.data_type = "RGBA"
+    nt.links.new(mask, _mix_in(pig, "Factor"))
+    old = _mix_in(mx, "B").links[0].from_socket
+    nt.links.new(old, _mix_in(pig, "A")); nt.links.new(tex2.outputs["Color"], _mix_in(pig, "B"))
+    nt.links.new(pig.outputs["Result"], _mix_in(mx, "B"))
+    # the colours: base, rim and the light through the tissue, by the same mask
+    for name in ("base", "rim", "trans_tint"):
+        for n in [n for n in nt.nodes if n.bl_idname == "ShaderNodeAttribute" and n.attribute_type == "OBJECT" and n.attribute_name == name]:
+            if not n.outputs["Vector"].links:
+                continue
+            n2 = nt.nodes.new("ShaderNodeAttribute"); n2.attribute_type, n2.attribute_name = "OBJECT", name + "2"
+            c = nt.nodes.new("ShaderNodeMix"); c.data_type = "RGBA"
+            nt.links.new(mask, _mix_in(c, "Factor"))
+            targets = [l.to_socket for l in n.outputs["Vector"].links]
+            for l in list(n.outputs["Vector"].links):
+                nt.links.remove(l)
+            nt.links.new(n.outputs["Vector"], _mix_in(c, "A")); nt.links.new(n2.outputs["Vector"], _mix_in(c, "B"))
+            for t in targets:
+                nt.links.new(c.outputs["Result"], t)
+    return mat
 
 
 def drive_state(root, name):
@@ -705,10 +832,13 @@ def body_length(key):
 
 
 class Body:
-    def __init__(self, key, name, team, material, root, joints, length, scale):
+    def __init__(self, key, name, team, material, root, joints, length, scale, skin=None, run=None, tip=None):
         self.key, self.name, self.team, self.root, self.joints = key, name, team, root, joints
         self.length, self.scale = length, scale
         self.wave = (14.0, 0.45, 0.0)
+        self.skin, self.run, self.tip = skin, run, tip        # the metaball skin's basis object, the scene, the pink tip's chain
+        self._cell = None
+        self.area = SK.surface_area(S.BODIES[key]["parts"])
         root.rotation_mode = "QUATERNION"
 
     def place(self, pos, yaw_deg, roll_deg=0.0, scale=None, frame=None):
@@ -722,6 +852,19 @@ class Body:
             r.keyframe_insert("location", frame=frame)
             r.keyframe_insert("rotation_quaternion", frame=frame)
             r.keyframe_insert("scale", frame=frame)
+        self.fit_cell(pos, s)
+
+    def fit_cell(self, pos, scale):
+        """The skin's cell: 0.5 of a render pixel at the body's depth, and no finer than the vertex budget allows (g_skin.cell_for);
+        the finest it has been placed at stands."""
+        if self.skin is None or self.run is None:
+            return
+        m = self.run.cam_model
+        r = self.run.sc.render
+        ratio = L.W / max(r.resolution_x * r.resolution_percentage / 100.0, 1.0)
+        c = SK.cell_for(float(pos[1]) - float(m.pos[1]), m.f_px, float(scale), area=self.area, px_ratio=ratio)
+        self._cell = c if self._cell is None else min(self._cell, c)
+        set_skin_cell(self.skin, self._cell)
 
     def swim(self, t, frame, amp_scale=1.0):
         A, hz, ph = self.wave
@@ -730,6 +873,20 @@ class Body:
             ang = math.radians(A * amp_scale) * math.sin(w * t + ph - 0.9 * j["depth"] + j["jitter"])
             j["pivot"].rotation_quaternion = Quaternion(Vector(j["axis"]), ang)
             j["pivot"].keyframe_insert("rotation_quaternion", frame=frame)
+        if self.tip is not None:
+            self.key_tip(frame)
+
+    def key_tip(self, frame=None):
+        """Re-aims the skin's pink mask at the tip part's pivots as they stand now (and keys it)."""
+        tp = self.tip
+        chain = [(tuple(p.location), tuple(p.rotation_quaternion)) for p in tp["pivots"]]
+        rows, off = SK.tip_rows(tp["parts"], tp["index"], chain, tp["element"])
+        for i in range(3):
+            self.skin["tipr%d" % i] = [float(x) for x in rows[i]]
+        self.skin["tipd"] = [float(x) for x in off]
+        if frame is not None:
+            for k in ("tipr0", "tipr1", "tipr2", "tipd"):
+                self.skin.keyframe_insert('["%s"]' % k, frame=frame)
 
     def state(self, frame, lit=None, fade=None, grey=None):
         for k, v in (("lit", lit), ("fade", fade), ("grey", grey)):
@@ -804,14 +961,168 @@ def add_bridges(key, name, radius_k=0.7):
     return made
 
 
-def add_body(run, key, name, team, material, scale, rng, wave=(14.0, 0.45, 0.0), bridge=True):
+BAKE_MARGIN = 0.6          # a body is kept for a frame while its centre is within this many body lengths of the picture
+
+
+def body_visible(run, b):
+    """Whether a body's skin is worth making for the frame now set: its root is not shrunk away (the scenes hide a body at scale
+    1e-4), its `dimk` is not 1, and it is not far off the picture. Read from the original objects after frame_set."""
+    from bpy_extras.object_utils import world_to_camera_view
+    r = b.root
+    if r.scale[0] < 1e-3 or r.get("dimk", 0.0) >= 0.999:
+        return False
+    co = world_to_camera_view(run.sc, run.cam, r.matrix_world.translation)
+    if co.z <= 0.0:
+        return False
+    px, py = co.x * L.W, (1.0 - co.y) * L.H
+    f_px = run.cam.data.lens / L.SENSOR_H * L.H
+    reach = BAKE_MARGIN * b.length * r.scale[0] * f_px / co.z + 200.0       # design pixels, with room for the defocus
+    return -reach <= px <= L.W + reach and -reach <= py <= L.H + reach
+
+
+def bake_frame(run, f):
+    """Sets frame f and makes every visible body's skin a plain mesh for it, so the renderer sees meshes and never a metaball.
+    Polygonising is the cost of a skin (about 1.5 us a vertex) and Blender does it only when a skin's mesh is asked for, so it is
+    paid here, once, for the bodies the frame shows and no others. Every metaball object is off in the render, where a family
+    would be polygonised again (and, in the 10-minute still, was). Each baked mesh rides its body's root, so the root's motion still
+    blurs; the bend inside the skin does not (a mesh whose vertex count changes between steps cannot be deformation-blurred
+    anyway). Returns (bodies baked, bodies with a skin)."""
+    sc = run.sc
+    bodies = [b for b in run.bodies if b.skin is not None]
+    if not getattr(run, "_metaballs_off", False):
+        for o in bpy.data.objects:
+            if o.type == "META":
+                o.hide_render = True
+        run._metaballs_off = True
+    for b in bodies:
+        old = bpy.data.objects.get(b.name + "-bake")
+        if old is not None:
+            me = old.data
+            bpy.data.objects.remove(old, do_unlink=True)
+            if me is not None and me.users == 0:
+                bpy.data.meshes.remove(me)
+    sc.frame_set(f)
+    shown = [b for b in bodies if body_visible(run, b)]
+    dg = bpy.context.evaluated_depsgraph_get()
+    for b in shown:
+        ev = b.skin.evaluated_get(dg)
+        me = bpy.data.meshes.new_from_object(ev)
+        me.name = b.name + "-bake"
+        me.materials.clear()
+        me.materials.append(b.skin.material_slots[0].material)
+        ob = bpy.data.objects.new(b.name + "-bake", me)
+        bpy.context.scene.collection.objects.link(ob)
+        ob.parent = b.root
+        ob.scale = b.skin.scale
+        for k in ev.keys():
+            v = ev[k]
+            ob[k] = list(v) if hasattr(v, "__len__") and not isinstance(v, str) else v
+    return len(shown), len(bodies)
+
+
+def set_skin_cell(basis, cell):
+    """The metaball cell, in the body's own metres: FIELD_CELL is Blender's floor (0.005 in the family's units), so the basis
+    object is scaled to 1/U and the elements, seen from it, are U larger. `skin_s` is the same 1/U, for the shader's coordinates."""
+    s = SK.basis_scale(cell)
+    basis.scale = (s, s, s)
+    basis["skin_s"] = s
+
+
+def add_skin(key, name, root, material, tip_index=None, cell=SKIN_CELL):
+    """The body's one smooth skin (g_skin.plan): a metaball family named <name>-skin whose basis object, parented to the body root,
+    carries the mesh, the material and the properties every scene drives (rim, base, lit, fade, grey, dimk), and whose other
+    objects (<name>-skin.001 ...) hold one ellipsoid element each: one per part and one per joint's ball, parented to their
+    part's joint pivot so the skin bends with the joints. The parts S.build drew (its boxes, capsules and knuckles) are removed;
+    its pivots stay. Returns (basis object, tip dict or None)."""
+    body = S.BODIES[key]
+    parts = body["parts"]
+    for o in [o for o in bpy.data.objects if o.name.startswith(name + "-") and "rim" in o.keys()]:
+        me = o.data
+        bpy.data.objects.remove(o, do_unlink=True)
+        if me is not None and me.users == 0:
+            bpy.data.meshes.remove(me)
+    sk = SK.plan(parts)
+    fam = name + "-skin"
+
+    def meta(label):
+        mb = bpy.data.metaballs.new(label)
+        mb.threshold = sk["threshold"]
+        mb.resolution = mb.render_resolution = SK.FIELD_CELL
+        mb.update_method = "UPDATE_ALWAYS"
+        return mb
+
+    bmb = meta(fam)
+    bmb.materials.append(material)
+    basis = bpy.data.objects.new(fam, bmb)
+    bpy.context.scene.collection.objects.link(basis)
+    basis.parent = root
+    pivots = {p["i"]: bpy.data.objects["%s-joint%d" % (name, p["i"])] for p in parts}
+    for n, e in enumerate(sk["elements"], 1):
+        mb = meta("%s-%s" % (fam, e["label"]))
+        el = mb.elements.new(type="ELLIPSOID")
+        el.co = (0.0, 0.0, 0.0)
+        el.radius = e["rho"]
+        el.size_x, el.size_y, el.size_z = e["half"]
+        el.stiffness = e["stiff"]
+        ob = bpy.data.objects.new("%s.%03d" % (fam, n), mb)
+        bpy.context.scene.collection.objects.link(ob)
+        ob.parent = pivots[e["owner"]]
+        ob.rotation_mode = "QUATERNION"
+        ob.location = e["co"]
+        ob.rotation_quaternion = e["rot"]
+    # what the body material reads off the object: the theatre's per-part properties carried by the one skin (the guild is
+    # neither photosynthetic nor absorptive, so the colours are the 'other' guild's until skin() sets the team's), the knuckles'
+    # glow gone with the knuckles, the shade and warmth of the first part's individual
+    rim, through, bodyc = S.COLOURS["other"]
+    bseed, bown = S.body_seeds(body["id"])
+    individual = S.frac(bown)
+    basis["rim"] = S.lin(rim)
+    basis["trans_tint"] = S.lin(through)
+    basis["base"] = S.lin(bodyc)
+    basis["trans_gain"] = 0.4
+    basis["sheen"] = 0.08
+    basis["reserve"] = 1.0
+    basis["rim_scale"] = 1.0
+    basis["emit"] = 0.0
+    basis["shade"] = S.frac(individual * 17.37 + 0.41) * 2 - 1
+    basis["warmth"] = S.frac(individual * 31.91 + 0.07) * 2 - 1
+    # the light through the tissue: the theatre's 0.06 over the half thickness, here over the body's median part
+    basis["skin_thick"] = float(min(max(0.06 / float(np.median([SK.smallest(p) for p in parts])), 0.0), 1.0))
+    set_skin_cell(basis, cell)
+    tip = None
+    if tip_index is not None:
+        chain, p = [], pivots[tip_index]
+        while p is not None and p.name.startswith(name + "-joint"):
+            chain.append(p)
+            p = p.parent
+        tip = {"index": tip_index, "parts": parts, "element": SK.tip_element(parts, tip_index), "pivots": chain[::-1]}
+    return basis, tip
+
+
+def add_body(run, key, name, team, material, scale, rng, wave=(14.0, 0.45, 0.0), bridge=False, skin_on=None):
+    skin_on = ONE_SKIN if skin_on is None else skin_on
     tip_material = None
+    two_tone = None
     if isinstance(material, dict):
         tip_material = material.get("taleplum-tip")
-        material = material[team]
+        two_tone = material.get("taleplum-two") if (skin_on and team == "taleplum") else None
+        material = two_tone if two_tone is not None else material[team]
     root, joints = S.build(key, name, (0, 0, 0), (0, 0, 0), 1.0, material, 2.2)
     for j in joints:
         j["jitter"] = rng.uniform(-0.25, 0.25)
+    if skin_on:
+        basis, tip = add_skin(key, name, root, material, tip_index=1 if two_tone is not None else None)
+        skin(name, team)
+        if two_tone is not None:
+            light, mid, shadow = TEAM["taleplum-tip"]      # the founder's second part is the design's pink-spotted tip
+            basis["rim2"] = hexlin(mid); basis["trans_tint2"] = hexlin(mid); basis["base2"] = hexlin_scaled(shadow, BASE_DARKEN)
+        drive_state(root, name)
+        b = Body(key, name, team, material, root, joints, body_length(key), scale, skin=basis, run=run, tip=tip)
+        if tip is not None:
+            b.key_tip()
+        b.wave = wave
+        run.bodies.append(b)
+        return b
     skin(name, team)
     if team == "taleplum" and isinstance(material, type(None)) is False and tip_material is not None:
         # the founder's second part is the design's pink-spotted tip
@@ -831,13 +1142,19 @@ def add_body(run, key, name, team, material, scale, rng, wave=(14.0, 0.45, 0.0),
 
 
 def body_material(run, teams=("guzzler", "nibbler", "pale", "taleplum", "taleplum-tip", "bone", "yellow", "brown")):
-    """One material per team (each has its own pattern tile): {team: material}."""
+    """One material per team (each has its own pattern tile): {team: material}. With ONE_SKIN each is also made to fit a metaball
+    skin (skin_surface), and the taleplum gets a second, "taleplum-two", whose second part is the pink-spotted tip (add_tip)."""
     out = {}
-    for team in teams:
+    names = list(teams) + (["taleplum-two"] if ONE_SKIN and "taleplum" in teams and "taleplum-tip" in teams else [])
+    for team in names:
         mat = S.body_material_for(run.cam)
         mat.name = "theatre-body-" + team
         patch_state(mat)
-        add_pattern(mat, team)
+        info = add_pattern(mat, "taleplum" if team == "taleplum-two" else team)
+        if ONE_SKIN:
+            skin_surface(mat)
+            if team == "taleplum-two":
+                add_tip(mat, info)
         wrap_dim(mat)
         out[team] = mat
     return out
