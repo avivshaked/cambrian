@@ -162,6 +162,10 @@
       "value": "2",
       "ruling": "the marine producers"
     },
+    "EVOSIM_THEATRE_LEAF_FAMILY": {
+      "value": "1",
+      "ruling": "the coordinator, 2026-11-14, at the owner's word: a photosynthetic superellipsoid is drawn as the box blade is, so round 67's leaves keep the approved blade look (D253, D256; D327); r67's flat leaves were a regression"
+    },
     "EVOSIM_THEATRE_ALGA_BEND": {
       "value": "0.01",
       "ruling": "the owner's blades, 2026-10-28 (logbook/specs/theatre-skin-plan.md)"
