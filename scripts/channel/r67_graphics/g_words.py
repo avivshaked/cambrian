@@ -2,7 +2,7 @@
 
     python -I g_words.py <frames dir> <anchors.json> <out dir> [--fonts DIR] [--frames 1,300,615]
 
-<frames dir> holds frame_NNNN.png (NNNN the scene frame, 1-based, 30 fps); <anchors.json> is what the scene script
+<frames dir> holds frame-NNNN.png (frame_NNNN.png also read) (NNNN the scene frame, 1-based, 30 fps); <anchors.json> is what the scene script
 wrote: per frame, each anchor's design pixel and its depth-of-field blur, and under "words" each word's text, anchor,
 face, size, tracking, colours and opacity keys (scene seconds). Sizes are the design's at 1080p and scale by H/1080.
 
@@ -103,7 +103,7 @@ def main(argv=None):
     only = {int(x) for x in a.only.split(",")} if a.only else None
     n = 0
     for name in sorted(os.listdir(a.frames)):
-        m = re.match(r"frame_(\d+)\.png$", name)
+        m = re.match(r"frame[-_](\d+)\.png$", name)
         if not m:
             continue
         f = int(m.group(1))
@@ -113,7 +113,7 @@ def main(argv=None):
             sys.exit("g_words: %s has no anchors for frame %d (the scene script writes them for the frames it renders)" % (a.anchors, f))
         img = np.asarray(Image.open(os.path.join(a.frames, name)).convert("RGB"), np.float32) / 255.0
         res = draw_words(img, doc["words"], doc["frames"][str(f)], (f - 1) / fps, a.fonts)
-        Image.fromarray((np.clip(res, 0, 1) * 255 + 0.5).astype(np.uint8)).save(os.path.join(a.out, name))
+        Image.fromarray((np.clip(res, 0, 1) * 255 + 0.5).astype(np.uint8)).save(os.path.join(a.out, "frame-%04d.png" % f))
         n += 1
     print("drew words on %d frames into %s" % (n, a.out))
     return 0

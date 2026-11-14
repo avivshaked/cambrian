@@ -231,7 +231,7 @@ class Run:
             sc.eevee.taa_render_samples = a.samples
             sc.render.use_motion_blur = False
         for f in frames:
-            sc.render.filepath = os.path.join(a.out, "frame_%04d.png" % f)
+            sc.render.filepath = os.path.join(a.out, "frame-%04d.png" % f)
             if os.path.exists(sc.render.filepath):
                 continue
             sc.frame_set(f)
@@ -533,11 +533,18 @@ def snow(run, rng, count=1100, strength=1.2, depth=(4.0, 30.0)):
 
 
 # ------------------------------------------------------------------ bodies and their skins
+# The taleplum rows are sampled off the designer's frames (frames-v5/founder-1..3.png, the founder at about (1146-1281, 486-590);
+# the same colours in all three): the disc's pale gaps #a0beb3 (lightest quarter of its pixels in x 1210-1265, y 500-580), its mid
+# #6c8a77 and its olive lines #52674c (darkest quarter). The pink tip sampled #d5bcce / #a08aa1 / #776781 (pixels (1180-1210,
+# 515-545)) but the blue dots on it wash the mean toward lilac, so the tip keeps the design's own hexes, which read pink in the frame.
+# The frame is darker than the design's hexes by about the factor measured on the amber Guzzler beside it in founder-2 (sampled
+# #cfb588 / #937345 / #63431b against the design's #ffeccb / #e0a24a / #86561a, about 0.76 / 0.67 / 0.75), so the sampled
+# values are scaled up 1.30 / 1.45 / 1.35 to be the source hexes the way the other teams' rows are.
 TEAM = {   # light, mid, shadow: rim, through, base on the theatre's props
     "nibbler": ("#e2fff9", "#8ae9da", "#2a9d95"),
     "guzzler": ("#ffeccb", "#e0a24a", "#86561a"),
     "pale": ("#e2fff9", "#8ae9da", "#2a9d95"),           # the parents graphic's Guzzlers, claiming no team
-    "taleplum": ("#ecfff9", "#a6e4e2", "#5aa8ae"),
+    "taleplum": ('#d0f7e9', '#9dc8ad', '#6f8b67'),   # sampled off frames-v5/founder-2.png, see the note under TEAM
     "taleplum-tip": ("#ffe0ec", "#d78fae", "#7f4a68"),    # the founder's spotted tip (design creatures.js "shell")
     "bone": ("#fffbe8", "#e8e2c4", "#9c9a80"),            # the queue's variety, after creatures.js's fills
     "yellow": ("#fbffc0", "#e2e85a", "#8f9a2a"),
@@ -630,10 +637,11 @@ def add_pattern(mat, team, scale=2.2):
 
 def drive_state(root, name):
     """lit, fade and grey live on the root and drive every part."""
-    for k, v in (("lit", 1.0), ("fade", 0.0), ("grey", 0.0)):
+    STATE = (("lit", 1.0), ("fade", 0.0), ("grey", 0.0), ("dimk", 0.0))      # dimk: 0 shown, 1 transparent (wrap_dim)
+    for k, v in STATE:
         root[k] = v
     for o in part_objects(name):
-        for k, v in (("lit", 1.0), ("fade", 0.0), ("grey", 0.0)):
+        for k, v in STATE:
             o[k] = v
             fc = o.driver_add('["%s"]' % k)
             d = fc.driver
@@ -717,6 +725,7 @@ def body_material(run, teams=("guzzler", "nibbler", "pale", "taleplum", "taleplu
         mat.name = "theatre-body-" + team
         patch_state(mat)
         add_pattern(mat, team)
+        wrap_dim(mat)
         out[team] = mat
     return out
 
@@ -885,15 +894,16 @@ def set_tube_level(tb, level, frame=None):
     lvl = max(level, 1e-4)
     fl.scale = (1, 1, lvl)
     men.location = (men.location[0], men.location[1], tb["base_z"] + tb["inner_height"] * level)
-    men.hide_render = level < 0.01
+    sm = max(min(1.0, max(level, 0.0) / 0.03), 1e-4)          # grows from nothing, no hide cut
+    men.scale = (sm, sm, 1.0)
     run, t = tb["run"], tb["t"]
     level_px = tb["bot_px"] - (tb["bot_px"] - tb["top_px"]) * level
     for lf, y, x, tilt in tb["stack"]:
-        place_leaf(run, lf, x, y, t, tb["leaf_rx"] if y > level_px + 5 else 0.01, tilt, frame=frame)
+        place_leaf(run, lf, x, y, t, max(0.01, tb["leaf_rx"] * min(1.0, max(0.0, (y - (level_px + 5)) / 10.0))), tilt, frame=frame)
     if frame is not None:
         fl.keyframe_insert("scale", frame=frame)
         men.keyframe_insert("location", frame=frame)
-        men.keyframe_insert("hide_render", frame=frame)
+        men.keyframe_insert("scale", frame=frame)
 
 
 def veil_glass(name):
@@ -1110,11 +1120,12 @@ def tube_level_k(tb, level, frame, K):
     fl, men, run, t = tb["fill"], tb["meniscus"], tb["run"], tb["t"]
     K.set(fl, "scale", (1, 1, max(level, 1e-4)), frame)
     K.set(men, "location", (men.location[0], men.location[1], tb["base_z"] + tb["inner_height"] * level), frame)
-    K.set(men, "hide_render", level < 0.01, frame)
+    s = min(1.0, max(level, 0.0) / 0.03)                      # a disc that grows from nothing, never a hide cut
+    K.set(men, "scale", (max(s, 1e-4), max(s, 1e-4), 1.0), frame)
     level_px = tb["bot_px"] - (tb["bot_px"] - tb["top_px"]) * level
     m = run.cam_model.metres_per_px(t)
     for lf, y, x, tilt in tb["stack"]:
-        r = tb["leaf_rx"] if y > level_px + 5 else 0.01
+        r = max(0.01, tb["leaf_rx"] * min(1.0, max(0.0, (y - (level_px + 5)) / 10.0)))      # a leaf eases in as the fill drops past
         K.set(lf, "scale", (r * m, r * m * 0.18, r * m * 0.3), frame)
 
 
@@ -1216,7 +1227,8 @@ def vial_level_k(v, level_px, frame, K):
     down = max(0.0, level_px - ledge_px) * m
     K.set(v["liquid"], "scale", (1, 1, max(up, 1e-4)), frame)
     K.set(v["cap"], "location", (v["cap"].location[0], v["cap"].location[1], v["ledge_z"] + up - down), frame)
-    K.set(v["cap"], "hide_render", abs(level_px - ledge_px) < 0.5, frame)
+    s = max(1e-4, min(1.0, abs(level_px - ledge_px) / 4.0))
+    K.set(v["cap"], "scale", (s, s, 1.0), frame)
     K.set(v["hollow"], "scale", (1, 1, -max(down, 1e-4)), frame)
 
 

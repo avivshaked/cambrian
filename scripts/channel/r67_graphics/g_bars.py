@@ -164,6 +164,8 @@ def main():
                 stack_dim = kdim
                 if not nib and slot == 3:
                     stack_dim = 0.3 * sp(u, 1.12, 2.12)            # eases from full to 70%
+                if since < 99.0 and since >= 0:
+                    stack_dim = max(stack_dim, 1 - sp(since, 0.0, 0.15))      # the leaf fades in as it is let go
                 K.set(lf, "dimk", stack_dim, f)
             # the empty place on the ledge where the stack will stand (the Guzzlers', in bars-1)
             K.set(tm["ring"], "dimk", (1 - dim_team) if (not nib and slot == 1) else 1.0, f)

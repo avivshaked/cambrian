@@ -154,10 +154,12 @@ def main():
 
         # the previous occupant rises out of the open top over 0-1.9 and is gone
         k = sp(t, 0.0, 1.9)
-        px, py = 1000, L.lerp(600, 110, k)
+        # it leaves the frame through the top (row -260, well past its own half height) before the cut to a hidden scale;
+        # fade mixes toward the DARK tank water, so above the glass it must stay slight or it reads as a black silhouette
+        px, py = 1000, L.lerp(600, -260, k)
         prev.place(model.to_world(px, py, t_in), -65, roll_deg=-4, scale=(1e-4 if k >= 0.999 else None), frame=f)
         prev.swim(t, f, 1.0)
-        prev.state(f, fade=k)
+        prev.state(f, fade=0.25 * k)
 
         # the founder: at the head of the queue, over the rim into the tank (1.0-2.6), turning to face the leaf
         k = sp(t, 1.0, 2.6)

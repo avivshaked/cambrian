@@ -159,7 +159,7 @@ def main():
         t = (f - 1) / G.FPS
         slot = 1 if f <= S2 else 2 if f <= S3 else 3
         u = t - (0 if slot == 1 else p2_t if slot == 2 else p3_t)
-        place, fades, dims = {}, {}, {}
+        place, fades, dims, gone = {}, {}, {}, {}
 
         def put(b, pos, yaw, roll, scale):
             place[b.name] = (b, pos, yaw, roll, scale)
@@ -191,7 +191,7 @@ def main():
                     if fo < 0.999:
                         put(b, model.to_world(X(i) + 10, row_y(i) + 26, depth_for(170)), 65, 8, SG)
                         b.swim(t + i * 0.6, f)
-                        fades[b.name] = 0.6 + 0.4 * fo
+                        fades[b.name] = 0.6; gone[b.name] = fo           # to transparent, not toward the dark water
                     dim(G.tube_group(tubes1[i]), 0.6 + 0.4 * fo)
                 else:
                     r = BEST.index(i)
@@ -213,7 +213,7 @@ def main():
                         if u >= 0.25:
                             put(kid, model.to_world(ex, ey, depth_for(165)), 65, 0, SG)
                             kid.swim(t + kk_ * 0.5, f)
-                            fades[kid.name] = 0.0
+                            fades[kid.name] = 0.0; gone[kid.name] = 1 - sp(u, 0.25, 0.5)
                         th[0]["grow"] = 1.0
                         K.set(th[0], "grow", a, f)
                         dim(th, 1 - sp(u, 0.25, 0.5))
@@ -247,6 +247,7 @@ def main():
                 C.kplace(K, b, pos, yaw, roll, scale, f)
                 if b.name in fades:
                     K.set(b.root, "fade", fades[b.name], f)
+                K.set(b.root, "dimk", gone.get(b.name, 0.0), f)
             else:
                 C.kplace(K, b, (0, 0, 0), 0, 0, C.HIDDEN, f)
         for name, objs in groups.items():

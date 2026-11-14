@@ -122,8 +122,8 @@ def main():
                 sc = sp["scale"] * (size / sp["size"]) * (depth / PLANE)
                 C.kplace(K, b, model.to_world(x, y, depth), -65 if sp["flip"] else 65, sp["rot"], sc, f)
                 b.swim(t + 0.37 * j + 0.9 * i, f)
-                fade = 1 - appear
-                fade = max(fade, 0.72 * back)
+                fade = 0.72 * back
+                K.set(b.root, "dimk", 1 - appear, f)
                 if LIT and i == OURS:
                     lit = L.span(t, *LIT)
                     fade = max(fade, 0.55 * lit * (0.0 if sp["kind"] == "shell" else 1.0))
