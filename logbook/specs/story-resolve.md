@@ -130,6 +130,11 @@ manual's chapter 59 on subtitles).
 here or in the API's list below, with its date, so that the next session does not learn it
 again.*
 
+**A shot whose fault is in its levels is graded in Resolve, not re-rendered** (the owner, 2026-11-14). The
+grade fixes what moves the whole frame: exposure, overall colour, a mismatch where two shots meet. It does not fix a
+fault that differs object by object, such as see-through leaves, which hundreds of tracked masks would be needed for;
+that goes back to the render. Every final cut ends with a matching pass in Resolve across its shots.
+
 The project is Cambrian, in Resolve Studio 21.1. On 2026-09-28 its Media Pool held these bins,
 with two of the owner's own items at the top level beside them.
 
