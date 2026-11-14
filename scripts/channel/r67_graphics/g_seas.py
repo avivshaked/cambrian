@@ -29,7 +29,7 @@ import g_common as C
 import g_sealay as SL
 
 PLANE = 7.65
-BACK_Z = 1.55          # a back sea sits this much deeper (the same pixels, blurred by the lens)
+BACK_Z = 2.4           # a back sea sits this much deeper (the same pixels, blurred by the lens)
 GUZ_POOLS = [23, 21, 26, 19, 20, 22, 25, 27, 24, 18, 17, 16, 14, 15]
 TP_KEYS = ["tp-42605", "tp-74039", "tp-118251", "tp-166382", "tp-179291", "tp-131141"]
 
@@ -122,7 +122,7 @@ def main():
                 sc = sp["scale"] * (size / sp["size"]) * (depth / PLANE)
                 C.kplace(K, b, model.to_world(x, y, depth), -65 if sp["flip"] else 65, sp["rot"], sc, f)
                 b.swim(t + 0.37 * j + 0.9 * i, f)
-                fade = 0.72 * back
+                fade = 0.85 * back
                 K.set(b.root, "dimk", 1 - appear, f)
                 if LIT and i == OURS:
                     lit = L.span(t, *LIT)

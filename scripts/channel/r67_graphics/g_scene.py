@@ -112,6 +112,7 @@ class Run:
         self.sc = S.setup_render(args.percent, args.samples, exposure=EXPOSURE, motion_blur=motion_blur)
         self.sc.frame_start, self.sc.frame_end = 1, self.N
         self.sc.cycles.use_auto_tile = False
+        self.sc.cycles.transparent_max_bounces = 128     # a ray through more than 8 fully transparent leaves (the default) ends black
         self.sc.render.fps = FPS
         cd = bpy.data.cameras.new("cam")
         cd.sensor_fit = "VERTICAL"
@@ -289,10 +290,18 @@ def soft_mat(name, color_hex, strength, alpha):
     """An emission whose alpha is `alpha` at the middle of a facing surface and 0 at its rim (squared), so the edge is soft."""
     m = mat_new(name)
     nt = m.node_tree
-    lw = nt.nodes.new("ShaderNodeLayerWeight")
-    lw.inputs["Blend"].default_value = 0.5
-    inv = nt.nodes.new("ShaderNodeMath"); inv.operation = "SUBTRACT"; inv.inputs[0].default_value = 1.0
-    nt.links.new(lw.outputs["Facing"], inv.inputs[1])
+    # A flattened ellipsoid faces the camera everywhere, so a facing-based edge gives a hard plate. The falloff is radial in the
+    # object's own unit-sphere coordinates instead: alpha = (1 - (x^2 + z^2))^2 x alpha, 0 at the rim, so the glow is soft.
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    sep = nt.nodes.new("ShaderNodeSeparateXYZ"); nt.links.new(tc.outputs["Object"], sep.inputs[0])
+    xx = nt.nodes.new("ShaderNodeMath"); xx.operation = "MULTIPLY"
+    nt.links.new(sep.outputs[0], xx.inputs[0]); nt.links.new(sep.outputs[0], xx.inputs[1])
+    zz = nt.nodes.new("ShaderNodeMath"); zz.operation = "MULTIPLY"
+    nt.links.new(sep.outputs[2], zz.inputs[0]); nt.links.new(sep.outputs[2], zz.inputs[1])
+    r2 = nt.nodes.new("ShaderNodeMath"); r2.operation = "ADD"
+    nt.links.new(xx.outputs[0], r2.inputs[0]); nt.links.new(zz.outputs[0], r2.inputs[1])
+    inv = nt.nodes.new("ShaderNodeMath"); inv.operation = "SUBTRACT"; inv.inputs[0].default_value = 1.0; inv.use_clamp = True
+    nt.links.new(r2.outputs[0], inv.inputs[1])
     pw = nt.nodes.new("ShaderNodeMath"); pw.operation = "POWER"; pw.inputs[1].default_value = 2.0
     nt.links.new(inv.outputs[0], pw.inputs[0])
     k = nt.nodes.new("ShaderNodeMath"); k.operation = "MULTIPLY"; k.inputs[1].default_value = alpha
@@ -351,29 +360,50 @@ def glass(name, ior=1.13, mix_fac=0.22):
     return m
 
 
-def volume_emission(name, color_hex, strength, gradient_down=True):
-    """A volume that only emits: strength fading along the object's own height (generated z), 1 at the top."""
+def _mn(nt, op, a, b, clamp=False):
+    """A Math node on sockets or numbers; returns its output socket."""
+    n = nt.nodes.new("ShaderNodeMath"); n.operation = op; n.use_clamp = clamp
+    for k, x in enumerate((a, b)):
+        if x is None:
+            continue
+        if isinstance(x, (int, float)):
+            n.inputs[k].default_value = x
+        else:
+            nt.links.new(x, n.inputs[k])
+    return n.outputs[0]
+
+
+def volume_emission(name, color_hex, strength, gradient_down=True, bell_pow=1.0, along_pow=1.8, geom=None):
+    """A volume that only emits: strength fading along the slab's height, 1 at the top, and a bell across it."""
     m = mat_new(name)
     nt = m.node_tree
-    tc = nt.nodes.new("ShaderNodeTexCoord")
-    sep = nt.nodes.new("ShaderNodeSeparateXYZ")
-    nt.links.new(tc.outputs["Generated"], sep.inputs[0])
-    ramp = nt.nodes.new("ShaderNodeMapRange")
-    nt.links.new(sep.outputs[2], ramp.inputs["Value"])
-    ramp.inputs["To Min"].default_value, ramp.inputs["To Max"].default_value = 0.0, 1.0
-    along = nt.nodes.new("ShaderNodeMath"); along.operation = "POWER"; along.inputs[1].default_value = 1.8
-    nt.links.new(ramp.outputs["Result"], along.inputs[0])
-    # across the slab: a bell, 1 in the middle, 0 at both sides, so a shaft has soft edges
-    cx = nt.nodes.new("ShaderNodeMath"); cx.operation = "SUBTRACT"; cx.inputs[1].default_value = 0.5
-    nt.links.new(sep.outputs[0], cx.inputs[0])
-    ax = nt.nodes.new("ShaderNodeMath"); ax.operation = "MULTIPLY"; ax.inputs[1].default_value = 2.0
-    nt.links.new(cx.outputs[0], ax.inputs[0])
-    sq = nt.nodes.new("ShaderNodeMath"); sq.operation = "POWER"; sq.inputs[1].default_value = 2.0
-    nt.links.new(ax.outputs[0], sq.inputs[0])
-    bell = nt.nodes.new("ShaderNodeMath"); bell.operation = "SUBTRACT"; bell.inputs[0].default_value = 1.0; bell.use_clamp = True
-    nt.links.new(sq.outputs[0], bell.inputs[1])
+    M = lambda op, a=None, b=None, clamp=False: _mn(nt, op, a, b, clamp)
+    if geom is None:
+        tc = nt.nodes.new("ShaderNodeTexCoord")
+        sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+        nt.links.new(tc.outputs["Generated"], sep.inputs[0])
+        px_, pz_ = sep.outputs[0], sep.outputs[2]
+        v = M("MULTIPLY", pz_, 1.0, True)
+        u = M("MULTIPLY", M("SUBTRACT", px_, 0.5), 2.0)
+    else:
+        # world position against the slab's own edges: v 0 at the bottom to 1 at the top, u -1..1 across at that height, so the
+        # bell reaches 0 at the slab's sides whatever its taper or lean (Generated coordinates proved flat in a volume).
+        g = nt.nodes.new("ShaderNodeNewGeometry")
+        sep = nt.nodes.new("ShaderNodeSeparateXYZ"); nt.links.new(g.outputs["Position"], sep.inputs[0])
+        cam_ = geom["cam"]                           # divide out the depth, so the slab's sides are the same at every depth in it
+        dn = M("SUBTRACT", sep.outputs[1], cam_[1])
+        xn = M("DIVIDE", M("SUBTRACT", sep.outputs[0], cam_[0]), dn)
+        zn = M("DIVIDE", M("SUBTRACT", sep.outputs[2], cam_[2]), dn)
+        v = M("DIVIDE", M("SUBTRACT", zn, geom["zb"]), geom["zt"] - geom["zb"], True)
+        xc = M("ADD", geom["xcb"], M("MULTIPLY", v, geom["xct"] - geom["xcb"]))
+        xh = M("ADD", geom["xhb"], M("MULTIPLY", v, geom["xht"] - geom["xhb"]))
+        u = M("DIVIDE", M("SUBTRACT", xn, xc), M("MAXIMUM", xh, 1e-4))
+    along = M("POWER", v, along_pow)
+    bell = M("SUBTRACT", 1.0, M("MULTIPLY", u, u), True)
+    if bell_pow != 1.0:
+        bell = M("POWER", bell, bell_pow)
     mulb = nt.nodes.new("ShaderNodeMath"); mulb.operation = "MULTIPLY"
-    nt.links.new(along.outputs[0], mulb.inputs[0]); nt.links.new(bell.outputs[0], mulb.inputs[1])
+    nt.links.new(along, mulb.inputs[0]); nt.links.new(bell, mulb.inputs[1])
     em = nt.nodes.new("ShaderNodeEmission")
     em.inputs["Color"].default_value = (*hexlin(color_hex), 1)
     sk = nt.nodes.new("ShaderNodeMath"); sk.operation = "MULTIPLY"; sk.inputs[1].default_value = strength
@@ -503,7 +533,7 @@ def blob(run, name, px, py, t, rx_px, ry_px, color_hex, strength, alpha, rot_deg
     return ob
 
 
-def slab(run, name, top_px, bot_px, depth, thickness, color_hex, strength):
+def slab(run, name, top_px, bot_px, depth, thickness, color_hex, strength, bell_pow=1.0, along_pow=1.8):
     """A hexahedron of volume emission: its top edge (two design pixels) to its bottom edge, at depths
     depth +- thickness/2, fading from `strength` at the top to 0 at the bottom."""
     cam = run.cam_model
@@ -513,7 +543,14 @@ def slab(run, name, top_px, bot_px, depth, thickness, color_hex, strength):
             pts.append(cam.to_world(px, py, t))
     # vertex order per depth: top0, top1, bot1, bot0
     faces = [(0, 1, 2, 3), (7, 6, 5, 4), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)]
-    ob = mesh_obj(name, pts, faces, volume_emission("m-" + name, color_hex, strength), smooth=False)
+    TL, TR = cam.to_world(*top_px[0], depth), cam.to_world(*top_px[1], depth)
+    BL, BR = cam.to_world(*bot_px[1], depth), cam.to_world(*bot_px[0], depth)       # bot_px runs right to left
+    cp = cam.pos
+    nx = lambda P: (P[0] - cp[0]) / depth
+    nz = lambda P: (P[2] - cp[2]) / depth
+    geom = {"cam": cp, "zt": nz(TL), "zb": nz(BL), "xct": (nx(TL) + nx(TR)) / 2, "xht": abs(nx(TR) - nx(TL)) / 2,
+            "xcb": (nx(BL) + nx(BR)) / 2, "xhb": abs(nx(BR) - nx(BL)) / 2}
+    ob = mesh_obj(name, pts, faces, volume_emission("m-" + name, color_hex, strength, bell_pow=bell_pow, along_pow=along_pow, geom=geom), smooth=False)
     bm = bmesh.new(); bm.from_mesh(ob.data)
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)      # a volume needs a closed mesh with outward normals
     bm.to_mesh(ob.data); bm.free()
@@ -539,12 +576,13 @@ def snow(run, rng, count=1100, strength=1.2, depth=(4.0, 30.0)):
 # 515-545)) but the blue dots on it wash the mean toward lilac, so the tip keeps the design's own hexes, which read pink in the frame.
 # The frame is darker than the design's hexes by about the factor measured on the amber Guzzler beside it in founder-2 (sampled
 # #cfb588 / #937345 / #63431b against the design's #ffeccb / #e0a24a / #86561a, about 0.76 / 0.67 / 0.75), so the sampled
-# values are scaled up 1.30 / 1.45 / 1.35 to be the source hexes the way the other teams' rows are.
+# values, scaled up 1.30 / 1.45 / 1.35, rendered pale blue-white under the scene's light, so the rows are now the sampled hexes
+# themselves with the mid pulled toward the olive of its lines (#7a9a76), and the maze pigment is multiplied by TILE_TINT.
 TEAM = {   # light, mid, shadow: rim, through, base on the theatre's props
     "nibbler": ("#e2fff9", "#8ae9da", "#2a9d95"),
     "guzzler": ("#ffeccb", "#e0a24a", "#86561a"),
     "pale": ("#e2fff9", "#8ae9da", "#2a9d95"),           # the parents graphic's Guzzlers, claiming no team
-    "taleplum": ('#d0f7e9', '#9dc8ad', '#6f8b67'),   # sampled off frames-v5/founder-2.png, see the note under TEAM
+    "taleplum": ('#a0beb3', '#7a9a76', '#52674c'),   # sampled off frames-v5/founder-2.png, see the note under TEAM
     "taleplum-tip": ("#ffe0ec", "#d78fae", "#7f4a68"),    # the founder's spotted tip (design creatures.js "shell")
     "bone": ("#fffbe8", "#e8e2c4", "#9c9a80"),            # the queue's variety, after creatures.js's fills
     "yellow": ("#fbffc0", "#e2e85a", "#8f9a2a"),
@@ -608,6 +646,7 @@ def skin(name, team):
 TILE = {"nibbler": "net-cyan.png", "pale": "net-cyan.png", "guzzler": "stripes-amber.png", "taleplum": "maze-pale.png", "taleplum-tip": "spots-pink.png",
         "bone": "spots-bone.png", "yellow": "stripes-yellow.png", "brown": "stripes-amber.png"}
 PATTERN_OPACITY = 0.9      # the theatre's PatternOpacity
+TILE_TINT = {"taleplum": (0.62, 0.70, 0.46)}
 
 
 def add_pattern(mat, team, scale=2.2):
@@ -630,7 +669,13 @@ def add_pattern(mat, team, scale=2.2):
     mx = nt.nodes.new("ShaderNodeMix"); mx.data_type = "RGBA"
     nt.links.new(k.outputs[0], mx.inputs["Factor"])
     nt.links.new(base_node.outputs["Vector"], mx.inputs["A"])
-    nt.links.new(tex.outputs["Color"], mx.inputs["B"])
+    if team in TILE_TINT:      # the taleplum's pale gaps are olive-cream in the design, not mint: multiply the pigment
+        tn = nt.nodes.new("ShaderNodeMix"); tn.data_type = "RGBA"; tn.blend_type = "MULTIPLY"
+        tn.inputs["Factor"].default_value = 1.0
+        nt.links.new(tex.outputs["Color"], tn.inputs["A"]); tn.inputs["B"].default_value = (*TILE_TINT[team], 1)
+        nt.links.new(tn.outputs["Result"], mx.inputs["B"])
+    else:
+        nt.links.new(tex.outputs["Color"], mx.inputs["B"])
     for t in targets:
         nt.links.new(mx.outputs["Result"], t)
 
@@ -693,7 +738,73 @@ class Body:
                 self.root.keyframe_insert('["%s"]' % k, frame=frame)
 
 
-def add_body(run, key, name, team, material, scale, rng, wave=(14.0, 0.45, 0.0)):
+def add_bridges(key, name, radius_k=0.7):
+    """A bridging skin between every part and its parent, so a body reads as one rounded body (the theatre's own build draws a
+    knuckle at each joint and nothing across the gap between two parts that do not touch, as the Guzzler's two spheres do).
+    Two capsules meet at the joint's anchor: one to the child's centre, riding the child's pivot, one to the parent's centre,
+    riding the parent's pivot, so the join bends with the joint. Radius radius_k x the smaller of the two parts' smallest
+    half-extents. It takes the child part's material and properties (and so its skin colours and the lit/fade/grey/dimk
+    drivers, which drive every object named <name>-... that carries a `rim`). Nothing here moves an anchor."""
+    import numpy as np
+    from mathutils import Matrix
+    parts = S.BODIES[key]["parts"]
+    centre = np.mean([p["pos"] for p in parts], axis=0)
+    tb = lambda v: np.asarray(v, float)[[0, 2, 1]]
+    made = []
+
+    def capsule(label, pivot_name, offset, a, b, r, src):
+        a, b = tb(a) - offset, tb(b) - offset
+        d = b - a
+        L = float(np.linalg.norm(d))
+        if L < 1e-5 or r < 1e-4:
+            return
+        bm = bmesh.new()
+        mid = (a + b) / 2
+        q = Vector(d / L).to_track_quat("Z", "Y").to_matrix().to_4x4()
+        bmesh.ops.create_cone(bm, cap_ends=True, segments=14, radius1=r, radius2=r, depth=L,
+                              matrix=Matrix.Translation(Vector(mid)) @ q)
+        for end in (a, b):
+            bmesh.ops.create_icosphere(bm, subdivisions=2, radius=r, matrix=Matrix.Translation(Vector(end)))
+        me = bpy.data.meshes.new(label)
+        bm.to_mesh(me); bm.free()
+        for poly in me.polygons:
+            poly.use_smooth = True
+        for cname in ("evo_a", "evo_tone"):
+            sa = src.data.color_attributes.get(cname)
+            ca = me.color_attributes.new(cname, "FLOAT_COLOR", "POINT")
+            c0 = tuple(sa.data[0].color) if sa is not None and len(sa.data) else (0.5, 0.5, 0.5, 1.0)
+            ca.data.foreach_set("color", list(c0) * len(me.vertices))
+        ob = bpy.data.objects.new(label, me)
+        ob.data.materials.append(src.material_slots[0].material if src.material_slots else None)
+        for k in src.keys():
+            if k in ("lit", "fade", "grey", "dimk"):
+                continue
+            ob[k] = src[k]
+        ob.parent = bpy.data.objects[pivot_name]
+        ob.visible_shadow = False
+        bpy.context.scene.collection.objects.link(ob)
+        made.append(ob)
+
+    for p in parts:
+        if p["parent"] < 0:
+            continue
+        par = parts[p["parent"]]
+        srcs = [o for o in bpy.data.objects if o.name.startswith("%s-p%d-" % (name, p["i"])) and "rim" in o.keys()]
+        if not srcs:
+            continue
+        src = srcs[0]
+        r = radius_k * min(min(p["half"]), min(par["half"]))
+        J = np.asarray(p["anchor"], float) - centre
+        cc = np.asarray(p["pos"], float) - centre
+        pc = np.asarray(par["pos"], float) - centre
+        child_off = tb(J)
+        par_off = tb(np.asarray(par["anchor"] if par["parent"] >= 0 else par["pos"], float) - centre)
+        capsule("%s-b%d-c" % (name, p["i"]), "%s-joint%d" % (name, p["i"]), child_off, J, cc, r, src)
+        capsule("%s-b%d-p" % (name, p["i"]), "%s-joint%d" % (name, par["i"]), par_off, J, pc, r, src)
+    return made
+
+
+def add_body(run, key, name, team, material, scale, rng, wave=(14.0, 0.45, 0.0), bridge=True):
     tip_material = None
     if isinstance(material, dict):
         tip_material = material.get("taleplum-tip")
@@ -710,6 +821,8 @@ def add_body(run, key, name, team, material, scale, rng, wave=(14.0, 0.45, 0.0))
                 o["rim"] = hexlin(mid); o["trans_tint"] = hexlin(mid); o["base"] = hexlin_scaled(shadow, BASE_DARKEN)
                 for sl in o.material_slots:
                     sl.material = tip_material
+    if bridge:
+        add_bridges(key, name)
     drive_state(root, name)
     b = Body(key, name, team, material, root, joints, body_length(key), scale)
     b.wave = wave
@@ -882,7 +995,7 @@ def tube(run, name, px, top_px, bot_px, w_px, t, fill=0.0, leaf_rx=21.6, spacing
         y = bot_px - 12 - spacing * k
         x = px + (3 if k % 2 else -3)
         tilt = 6 if k % 2 else -6
-        lf = leaf(run, name + "-s%d" % k, x, y, t, leaf_rx, tilt, strength=2.6)
+        lf = leaf(run, name + "-s%d" % k, x, y, t, leaf_rx, tilt, strength=0.95)
         lf.scale = (1e-4, 1e-4, 1e-4)
         stack.append((lf, y, x, tilt))
     return {"glass": gl, "fill": fl, "meniscus": men, "bottom": bottom, "top": top, "inner_height": height - 2 * radius * 0.86,
@@ -1101,8 +1214,8 @@ def beam(run, x, y_end, w, depth=10.0, thickness=3.0, gain=0.9, name="beam"):
     Returns the objects; each takes `dimk` (1 = off)."""
     top = [(x - w * 0.35, -20), (x + w * 0.35, -20)]
     bot = [(x + w * 0.7, y_end), (x - w * 0.7, y_end)]
-    sl = slab(run, name, top, bot, depth, thickness, "#e4fffb", 0.34 * gain / thickness)
-    pool = blob(run, name + "-pool", x, y_end - 70, depth, w * 1.1, w * 0.7, "#d8fffb", 1.0, 0.28)
+    sl = slab(run, name, top, bot, depth, thickness, "#e4fffb", 0.24 * gain / thickness, bell_pow=1.6)
+    pool = blob(run, name + "-pool", x, y_end - 70, depth, w * 1.1, w * 0.7, "#d8fffb", 0.8, 0.12)
     return [sl, pool]
 
 
@@ -1175,20 +1288,20 @@ def vial(run, name, px, top_px, bot_px, w_px, ledge_px, t, store=("#ffe2a8", "#b
     inner = radius * 0.84
     cv, cf = cyl_verts(inner, 1.0)
     # the savings: from the ledge up, gradient store colours (one flat colour: the lighter), scaled by the keyed level
-    liq = mesh_obj(name + "-liquid", cv, cf, emissive(name + "-liq", store[0], 1.6, 0.92), smooth=True)
+    liq = mesh_obj(name + "-liquid", cv, cf, emissive(name + "-liq", store[0], 1.0, 0.42), smooth=True)
     liq.location = (bottom[0], bottom[1], ledge_z)
     liq.scale = (1, 1, 1e-4)
-    cap = mesh_obj(name + "-cap", *disc_verts(inner * 0.95), emissive(name + "-capm", "#ffffff", 4.0, 0.85), smooth=True)
+    cap = mesh_obj(name + "-cap", *disc_verts(inner * 0.95), emissive(name + "-capm", store[0], 1.6, 0.3), smooth=True)
     cap.location = (bottom[0], bottom[1], ledge_z)
     # the hollow: a sleeve below the ledge, tinted warm, its edge glowing in bands (the design's dashed outline)
     hm = mat_new(name + "-hollow")
     nt = hm.node_tree
     lw = nt.nodes.new("ShaderNodeLayerWeight"); lw.inputs["Blend"].default_value = 0.4
-    edge = nt.nodes.new("ShaderNodeMath"); edge.operation = "POWER"; edge.inputs[1].default_value = 3.0
+    edge = nt.nodes.new("ShaderNodeMath"); edge.operation = "POWER"; edge.inputs[1].default_value = 1.5
     nt.links.new(lw.outputs["Facing"], edge.inputs[0])
     tc = nt.nodes.new("ShaderNodeTexCoord")
     sep = nt.nodes.new("ShaderNodeSeparateXYZ"); nt.links.new(tc.outputs["Generated"], sep.inputs[0])
-    band = nt.nodes.new("ShaderNodeMath"); band.operation = "MULTIPLY"; band.inputs[1].default_value = 7.0
+    band = nt.nodes.new("ShaderNodeMath"); band.operation = "MULTIPLY"; band.inputs[1].default_value = 5.0
     nt.links.new(sep.outputs[2], band.inputs[0])
     fr = nt.nodes.new("ShaderNodeMath"); fr.operation = "FRACT"
     nt.links.new(band.outputs[0], fr.inputs[0])
@@ -1198,8 +1311,8 @@ def vial(run, name, px, top_px, bot_px, w_px, ledge_px, t, store=("#ffe2a8", "#b
     nt.links.new(edge.outputs[0], glowk.inputs[0]); nt.links.new(on.outputs[0], glowk.inputs[1])
     tint = nt.nodes.new("ShaderNodeMath"); tint.operation = "ADD"; tint.inputs[1].default_value = 0.0
     nt.links.new(glowk.outputs[0], tint.inputs[0])
-    tint.inputs[1].default_value = 0.10                  # the faint #e0a24a tint of the hollow's body
-    em = nt.nodes.new("ShaderNodeEmission"); em.inputs["Color"].default_value = (*hexlin("#ffc56e"), 1); em.inputs["Strength"].default_value = 2.2
+    tint.inputs[1].default_value = 0.22                  # the faint #e0a24a tint of the hollow's body
+    em = nt.nodes.new("ShaderNodeEmission"); em.inputs["Color"].default_value = (*hexlin("#ffc56e"), 1); em.inputs["Strength"].default_value = 1.8
     tr = nt.nodes.new("ShaderNodeBsdfTransparent")
     mx = nt.nodes.new("ShaderNodeMixShader")
     cl = nt.nodes.new("ShaderNodeMath"); cl.operation = "MINIMUM"; cl.inputs[1].default_value = 1.0
@@ -1294,7 +1407,7 @@ def sea_column(run, cx, w, seed, depth=14.0, thickness=3.0, gain=1.0):
     out = []
     top = [(cx - w / 2, 40), (cx + w / 2, 40)]
     bot = [(cx + w / 2, 1140), (cx - w / 2, 1140)]
-    out.append(slab(run, "sea%d-body" % seed, top, bot, depth, thickness, "#3aa6b4", 0.55 * gain / thickness))
+    out.append(slab(run, "sea%d-body" % seed, top, bot, depth, thickness, "#3aa6b4", 0.30 * gain / thickness, bell_pow=3.0, along_pow=1.0))
     out.append(blob(run, "sea%d-surface" % seed, cx, 110, depth - 1.0, w * 0.5, 34, "#d8fffb", 1.0 * gain, 0.32))
     for i in range(9):
         x, y, s = cx - w * 0.38 + r() * w * 0.76, 92 + r() * 36, 20 + r() * 30

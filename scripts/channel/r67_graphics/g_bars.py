@@ -39,7 +39,7 @@ BEAD = 150.0                       # +248.6 J
 HOLLOW = BEAD * 42.3 / 248.6       # -42.3 J, to scale with it
 VIAL = {"w": 84, "top": 440, "bot": 820}
 NIB = {"x": 560, "leaves": 3, "left": LEDGE - BEAD, "name": "Nibblers", "key": "nib-50", "team": "nibbler", "icon": 175, "iconX": -200,
-       "store": ("#c9fff4", "#2cc7b4")}
+       "store": ("#9ff5e6", "#2cc7b4")}
 GUZ = {"x": 1360, "leaves": 12, "left": LEDGE + HOLLOW, "name": "Guzzlers", "key": "guz-23", "team": "guzzler", "icon": 190, "iconX": -205,
        "store": ("#ffe2a8", "#b07a22")}
 T1, T2, T3 = 235, 180, 123
@@ -82,7 +82,7 @@ def main():
         leaves = []
         for i in range(T["leaves"]):
             x, tilt = sx + (r() - 0.5) * 12, (r() - 0.5) * 10
-            lf = G.leaf(run, "%s-leaf%d" % (T["name"], i), x, LEDGE - 18 - i * STEP, PLANE, 70, tilt, strength=2.0)
+            lf = G.leaf(run, "%s-leaf%d" % (T["name"], i), x, LEDGE - 18 - i * STEP, PLANE, 70, tilt, strength=0.95)
             lf.scale = (1e-4,) * 3
             leaves.append((lf, x, LEDGE - 18 - i * STEP, tilt))
         v = G.vial(run, T["name"], vx + VIAL["w"] / 2, VIAL["top"], VIAL["bot"], VIAL["w"], LEDGE, PLANE, store=T["store"])
