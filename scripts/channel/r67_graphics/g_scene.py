@@ -121,6 +121,8 @@ class Run:
         self.sc.frame_start, self.sc.frame_end = 1, self.N
         self.sc.cycles.use_auto_tile = False
         self.sc.cycles.transparent_max_bounces = 128     # a ray through more than 8 fully transparent leaves (the default) ends black
+        import g_fast                                    # EVOSIM_G_FAST=1 / EVOSIM_G_FAST_VOL=1: faster render settings (g_fast.py)
+        g_fast.tune(self.sc)
         self.sc.render.fps = FPS
         cd = bpy.data.cameras.new("cam")
         cd.sensor_fit = "VERTICAL"
@@ -1081,10 +1083,13 @@ def add_skin(key, name, root, material, tip_index=None, cell=SKIN_CELL):
     pivots = {p["i"]: bpy.data.objects["%s-joint%d" % (name, p["i"])] for p in parts}
     for n, e in enumerate(sk["elements"], 1):
         mb = meta("%s-%s" % (fam, e["label"]))
-        el = mb.elements.new(type="ELLIPSOID")
+        # an ELLIPSOID per part and ball; a long capsule is a CAPSULE turned by the element's rotation and squashed across by
+        # the object's scale (g_skin.plan says how)
+        el = mb.elements.new(type=e["type"])
         el.co = (0.0, 0.0, 0.0)
-        el.radius = e["rho"]
-        el.size_x, el.size_y, el.size_z = e["half"]
+        el.radius = e["mb_radius"]
+        el.size_x, el.size_y, el.size_z = e["size"]
+        el.rotation = e["el_rot"]
         el.stiffness = e["stiff"]
         ob = bpy.data.objects.new("%s.%03d" % (fam, n), mb)
         bpy.context.scene.collection.objects.link(ob)
@@ -1092,6 +1097,7 @@ def add_skin(key, name, root, material, tip_index=None, cell=SKIN_CELL):
         ob.rotation_mode = "QUATERNION"
         ob.location = e["co"]
         ob.rotation_quaternion = e["rot"]
+        ob.scale = e["scale"]
     # what the body material reads off the object: the theatre's per-part properties carried by the one skin (the guild is
     # neither photosynthetic nor absorptive, so the colours are the 'other' guild's until skin() sets the team's), the knuckles'
     # glow gone with the knuckles, the shade and warmth of the first part's individual

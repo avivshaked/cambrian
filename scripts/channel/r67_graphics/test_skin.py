@@ -214,3 +214,152 @@ def test_the_skin_is_continuous_across_every_joint():
                 continue
             a = K.to_blender(np.asarray(p["anchor"], float) - centre)
             assert K.field_at(sk, parts, a[None, :])[0] > sk["threshold"], (key, p["i"])
+
+
+
+# ------------------------------------------------------------------ a sphere's drawn size (TheatrePalette.SphereReachAxes, D359)
+def test_joined_spheres_are_one_skin_in_every_guzzler():
+    # the field is over the threshold all along the segment between the centres of two sphere parts joined at a joint
+    seen = 0
+    for key, body in BODIES.items():
+        if body.get("team") != "guzzler":
+            continue
+        parts = body["parts"]
+        by = {p["i"]: p for p in parts}
+        sk = K.plan(parts)
+        centre = K.body_centre(parts)
+        for p in parts:
+            if p["parent"] < 0 or p["shape"] != "sphere" or by[p["parent"]]["shape"] != "sphere":
+                continue
+            seen += 1
+            a = K.to_blender(np.asarray(by[p["parent"]]["pos"], float) - centre)
+            b = K.to_blender(np.asarray(p["pos"], float) - centre)
+            pts = a + np.linspace(0, 1, 400)[:, None] * (b - a)
+            assert K.field_at(sk, parts, pts).min() > sk["threshold"], (key, p["i"])
+    assert seen >= 20
+
+
+def test_a_spheres_longest_semi_axis_is_the_ball_radius():
+    # before the inset, the longest drawn semi-axis is Core's r = (|hx| + |hy| + |hz|) / 3, reach or no reach
+    for key, body in BODIES.items():
+        for p in body["parts"]:
+            if p["shape"] != "sphere":
+                continue
+            r = sum(abs(x) for x in p["half"]) / 3
+            assert abs(K.drawn_half(body["parts"], p).max() - r) < 1e-9, (key, p["i"])
+            axes, t = K.sphere_reach(body["parts"], p["i"])
+            assert 0.0 <= t <= 1.0 and abs(axes.max() - 1.0) < 1e-12
+
+
+def test_every_joint_anchor_is_inside_its_spheres_drawn_ellipsoid():
+    for key, body in BODIES.items():
+        parts = body["parts"]
+        for p in parts:
+            if p["shape"] != "sphere":
+                continue
+            semi = K.drawn_half(parts, p)
+            anchors = ([p["canchor"]] if p["parent"] >= 0 else []) + [q["panchor"] for q in parts if q["parent"] == p["i"]]
+            for a in anchors:
+                assert ((np.asarray(a, float) / semi) ** 2).sum() <= 1 + 1e-4, (key, p["i"], a)
+
+
+def test_reach_is_zero_where_the_anchors_are_inside_already():
+    # a sphere of half extents (0.1, 0.2, 0.3), r = 0.2, drawn at basis (1/3, 2/3, 1) x r = (0.0667, 0.1333, 0.2): an anchor on
+    # its long axis (0, 0, 0.2) is on that ellipsoid, so t = 0 and it is drawn as Aspect draws it
+    ident = [0, 0, 0, 1]
+    body = [{"i": 0, "parent": -1, "shape": "sphere", "half": [0.1, 0.2, 0.3], "pos": [0, 0, 0], "rot": ident,
+             "anchor": [0, 0, 0], "panchor": [0, 0, 0], "canchor": [0, 0, 0]},
+            {"i": 1, "parent": 0, "shape": "sphere", "half": [0.1, 0.1, 0.1], "pos": [0, 0, 0.3], "rot": ident,
+             "anchor": [0, 0, 0.2], "panchor": [0, 0, 0.2], "canchor": [0, 0, -0.1]}]
+    axes, t = K.sphere_reach(body, 0)
+    assert t == 0.0 and np.allclose(axes, (1 / 3, 2 / 3, 1))
+    assert np.allclose(K.drawn_half(body, body[0]), (0.2 / 3, 0.4 / 3, 0.2))
+    # move the child to the short axis and it is not: t rises until the anchor is on the drawn surface
+    body[1]["panchor"] = [0.2, 0, 0]
+    axes, t = K.sphere_reach(body, 0)
+    assert 0 < t <= 1 and abs(axes[0] * 0.2 - 0.2) < 1e-5
+
+
+# ------------------------------------------------------------------ a capsule's drawn shape (TheatreOneSkin.PrimitiveOf)
+def _surface_along(e, parts, origin, direction, hi=2.0):
+    """Distance from `origin` along unit `direction` (body frame, Blender axes) to the lone element's isolated surface."""
+    lo = 0.0
+    for _ in range(60):
+        m = (lo + hi) / 2
+        v = K.field_at({"elements": [e]}, parts, (origin + direction * m)[None, :])[0]
+        if v > _T[0]:
+            lo = m
+        else:
+            hi = m
+    return lo
+
+
+_T = [None]
+
+
+def _capsule_frame(key, label):
+    parts = parts_of(key)
+    sk = K.plan(parts)
+    _T[0] = sk["threshold"]
+    e = next(e for e in sk["elements"] if e["label"] == label)
+    owner = next(p for p in parts if p["i"] == e["owner"])
+    c = K.pivot_at(owner, K.body_centre(parts)) + np.asarray(e["co"], float)
+    return parts, sk, e, c, K.quat_matrix_wxyz(e["rot"])
+
+
+def test_a_long_capsules_shaft_is_straight():
+    # guz-23's link p1 (half extents 0.0972, 0.3122, 0.0876: r 0.0924, span 0.2198, sx 1, sz 0.901): a CAPSULE element, and
+    # its drawn half width on each cross axis is the same, within 2 %, at every station along the shaft
+    for key, label in (("guz-23", "p1"), ("founder", "p1"), ("nib-28", None)):
+        parts = parts_of(key)
+        if label is None:
+            label = next("p%d" % p["i"] for p in parts if p["shape"] == "capsule" and K.capsule_drawn(p)[0])
+        parts, sk, e, c, R = _capsule_frame(key, label)
+        assert e["type"] == "CAPSULE"
+        for axis in (0, 1):
+            want = e["half"][axis]
+            for s in np.linspace(-e["span"], e["span"], 9):
+                got = _surface_along(e, parts, c + R[:, 2] * s, R[:, axis])
+                assert abs(got - want) <= 0.02 * want, (key, axis, s, got, want)
+
+
+def test_a_long_capsules_ends_are_round():
+    # past the shaft's end the surface is the squashed cap, the ellipsoid (r sx - k/4, r sz - k/4, r - k/4) about the end
+    # of the shaft: its pole is at span + R along the axis, and every direction between lands on that ellipsoid
+    parts, sk, e, c, R = _capsule_frame("guz-23", "p1")
+    semi = np.array([e["half"][0], e["half"][1], e["radius"]])
+    for end in (-1.0, 1.0):
+        o = c + R[:, 2] * end * e["span"]
+        for ang in np.linspace(0, math.pi / 2, 7):
+            for cross in (0, 1):
+                local = np.zeros(3)
+                local[2] = end * math.cos(ang)
+                local[cross] = math.sin(ang)
+                got = _surface_along(e, parts, o, R @ local)
+                want = 1.0 / math.sqrt(((local / semi) ** 2).sum())
+                assert abs(got - want) < 1e-6, (end, ang, cross, got, want)
+    # and the pole is the collider's pole less the inset: span + R = |hy| - k/4
+    hy = abs(parts[1]["half"][1])
+    assert abs(e["span"] + e["radius"] - (hy - 0.25 * sk["k"])) < 1e-12
+
+
+def test_a_short_capsule_is_one_ellipsoid():
+    # half extents (0.1, 0.05, 0.08): r = 0.09, span = max(0, 0.05 - 0.09) = 0 < r, so the film's NearlyASphere ellipsoid
+    # (r sx, max(hy, r), r sz) = (0.09, 0.09, 0.072), inset by k/4 like any part
+    ident = [0, 0, 0, 1]
+    body = [{"i": 0, "parent": -1, "shape": "box", "half": [0.2, 0.2, 0.2], "pos": [0, 0, 0], "rot": ident,
+             "anchor": [0, 0, 0], "panchor": [0, 0, 0], "canchor": [0, 0, 0]},
+            {"i": 1, "parent": 0, "shape": "capsule", "half": [0.1, 0.05, 0.08], "pos": [0, 0.25, 0], "rot": ident,
+             "anchor": [0, 0.2, 0], "panchor": [0, 0.2, 0], "canchor": [0, -0.05, 0]}]
+    assert not K.capsule_drawn(body[1])[0]
+    assert np.allclose(K.drawn_half(body, body[1]), (0.09, 0.09, 0.072))
+    sk = K.plan(body)
+    e = next(e for e in sk["elements"] if e["label"] == "p1")
+    i = 0.25 * sk["k"]
+    assert e["type"] == "ELLIPSOID" and np.allclose(e["half"], (0.09 - i, 0.072 - i, 0.09 - i))   # Blender (x, z, y)
+    # every short capsule in the bodies is drawn so too
+    for key, b in BODIES.items():
+        for p in b["parts"]:
+            if p["shape"] == "capsule" and not K.capsule_drawn(p)[0]:
+                el = next(x for x in K.plan(b["parts"])["elements"] if x["label"] == "p%d" % p["i"])
+                assert el["type"] == "ELLIPSOID", key
