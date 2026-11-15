@@ -3,6 +3,11 @@
     python -I scripts/channel/fusion_overlay.py words <anchors.json> <out.comp> [--width 3840 --height 2160] [--first-frame 1]
     python -I scripts/channel/fusion_overlay.py mouth <track.json>   <out.comp> [--width 3840 --height 2160] [--from S]
                                                       [--side auto|left|right|up|down] [--fps 30]
+    python -I scripts/channel/fusion_overlay.py title <outline.json> <out.comp> --text WORD [--from S] [--side ...]
+                                                      [--width 3840 --height 2160] [--fps 30]
+
+`title` is the mouth label on a whole creature: title_label.py places the word in the clear beside the body and aims the
+leader at the body's outline, and this writes the same plan as the same composition.
 
 The burned-in tools (r67_graphics/g_words.py, mouth_label.py) draw the words as pixels; these compositions place the
 same words as Text+ tools with keyed inputs, so a wording is edited on Resolve's Fusion page and nothing re-renders.
@@ -40,6 +45,7 @@ sys.path.insert(0, os.path.join(HERE, "r67_graphics"))     # -I leaves the scrip
 sys.path.insert(0, HERE)
 import g_words as GW            # noqa: E402
 import mouth_label as ML        # noqa: E402
+import title_label as TL        # noqa: E402
 
 # Fusion's face names for each of g_words' faces: (Text+ Font, Text+ Style). The files' own name tables say the same
 # (PIL's font.getname()). Fusion lists the fonts the operating system has installed.
@@ -256,10 +262,11 @@ def build_words(doc, W, H, first_frame=1):
 
 
 # ---------------------------------------------------------------- mouth
-def mouth_plan(rows, W, H, fps, side, from_frame):
+def mouth_plan(rows, W, H, fps, side, from_frame, planned=None):
     """Per row, what the composition keys: the word's line-box centre, the leader's rectangle and the opacities.
-    The smoothing, the side choice, the fades and the leader's ends are mouth_label.py's own functions."""
-    look, side, disc, cen, ops = ML.plan(rows, W, H, fps, side, from_frame)
+    The smoothing, the side choice, the fades and the leader's ends are mouth_label.py's own functions. `planned` is
+    a ready (look, side, aim, centres, opacities) from title_label.plan, whose aim points are the leader's targets."""
+    look, side, disc, cen, ops = planned if planned else ML.plan(rows, W, H, fps, side, from_frame)
     s = look.s
     em = ML.SIZE_PX * s
     out, ang_prev = [], []
@@ -307,10 +314,25 @@ def build_mouth(rows, W, H, fps=30.0, side="auto", from_s=None, text="mouth"):
         ML.TEXT = saved
 
 
-def _build_mouth(rows, W, H, fps, side, from_s):
+def build_title(rows, grids, W, H, fps=30.0, side="auto", from_s=None, text="Title"):
+    """The title label's composition: the mouth label's tools, keyed from title_label.plan. Returns (text, side, info)."""
+    saved, ML.TEXT = ML.TEXT, text
+    try:
+        out = _build_mouth(rows, W, H, fps, side, from_s, grids)
+        return out[0], out[1], out[2]
+    finally:
+        ML.TEXT = saved
+
+
+def _build_mouth(rows, W, H, fps, side, from_s, grids=None):
     n = len(rows)
     from_frame = int(round((ML.DEFAULT_FROM_FRAC * n / fps if from_s is None else from_s) * fps))
-    look, side, p = mouth_plan(rows, W, H, fps, side, from_frame)
+    planned, info = None, None
+    if grids is not None:
+        pl = TL.plan(rows, grids, W, H, fps, side, from_frame)
+        planned, info = pl[:5], pl[5]
+        side = pl[1]
+    look, side, p = mouth_plan(rows, W, H, fps, side, from_frame, planned)
     s, em = look.s, ML.SIZE_PX * look.s
     c = start_comp()
     fr = lambda key, f=lambda v: v: [(r["frame"], f(r[key])) for r in p]       # noqa: E731
@@ -345,13 +367,15 @@ def _build_mouth(rows, W, H, fps, side, from_s):
     merge(c, "Over_Glow", "Over_Halo", "Blur_Glow", Src("Op_Glow", "Value"))
     merge(c, "Over_Leader", "Over_Glow", "Lead_Word", Src("Op_Leader", "Value"))
     merge(c, "Over_Word", "Over_Leader", "Text_Word", Src("Op_Word", "Value"))
+    if grids is not None:
+        return finish_comp(c, "Over_Word"), side, info
     return finish_comp(c, "Over_Word"), side
 
 
 # ---------------------------------------------------------------- command line
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("kind", choices=("words", "mouth"))
+    ap.add_argument("kind", choices=("words", "mouth", "title"))
     ap.add_argument("src")
     ap.add_argument("out")
     ap.add_argument("--width", type=int, default=3840)
@@ -360,13 +384,17 @@ def main(argv=None):
     ap.add_argument("--from", dest="from_s", type=float, default=None)
     ap.add_argument("--side", default="auto", choices=("auto",) + ML.SIDES)
     ap.add_argument("--fps", type=float, default=30.0)
-    ap.add_argument("--text", default="mouth", help="mouth: the label's word")
+    ap.add_argument("--text", default="mouth", help="mouth, title: the label's word")
     a = ap.parse_args(argv)
     if not os.path.isfile(a.src):
         sys.exit("fusion_overlay: %s does not exist" % a.src)
     try:
         if a.kind == "words":
             text = build_words(json.load(open(a.src, encoding="utf-8-sig")), a.width, a.height, a.first_frame)
+        elif a.kind == "title":
+            header, rows, grids = TL.load_outline(a.src)
+            text, side, info = build_title(rows, grids, a.width, a.height, a.fps, a.side, a.from_s, a.text)
+            print(TL.describe(side, info))
         else:
             header, rows = ML.load_track(a.src)
             for k, v in header.items():

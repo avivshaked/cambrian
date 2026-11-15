@@ -287,3 +287,167 @@ def test_checker_catches_a_dangling_source_and_unbalanced_text():
         check_wellformed(good.replace('SourceOp = "W1_Text"', 'SourceOp = "Nope"', 1).replace('"W1_Text", Source', '"Nope", Source'))
     with pytest.raises(AssertionError):
         check_wellformed(good + "}")
+
+
+# ---------------------------------------------------------------- the title label
+import numpy as np               # noqa: E402
+import title_label as TL         # noqa: E402
+
+
+def encode_grid(arr):
+    flat = arr.astype(bool).ravel()
+    runs, cur, n = [], False, 0
+    for v in flat:
+        if bool(v) == cur:
+            n += 1
+        else:
+            runs.append(n)
+            cur, n = bool(v), 1
+    runs.append(n)
+    return {"w": arr.shape[1], "h": arr.shape[0], "rle": ",".join(str(r) for r in runs)}
+
+
+def blob_grid(cx, cy, hw=40, hh=20):
+    g = np.zeros((135, 240), bool)
+    g[max(cy - hh, 0):cy + hh, max(cx - hw, 0):cx + hw] = True
+    return g
+
+
+def title_shot(n=60):
+    """A blob (cells) drifting right along the frame's lower middle."""
+    rows, grids = [], []
+    for i in range(n):
+        cx = 60 + i
+        g = blob_grid(cx, 80)
+        rows.append({"frame": i, "x": cx / 240.0, "y": 80 / 135.0, "depth": 2.0, "visible": True,
+                     "box": ((cx - 40) / 240.0, 60 / 135.0, (cx + 40) / 240.0, 100 / 135.0)})
+        grids.append(g)
+    return rows, grids
+
+
+def test_grid_decoding():
+    a = np.zeros((135, 240), bool)
+    a[10:20, 5:50] = True
+    a[134, 239] = True
+    assert (TL.decode_grid(encode_grid(a)) == a).all()
+    first = np.zeros((2, 3), bool)
+    first[0, 0] = True
+    assert TL.decode_grid({"w": 3, "h": 2, "rle": "0,1,5"}).tolist() == first.tolist()      # a leading empty run of 0
+    assert TL.decode_grid(None) is None
+    with pytest.raises(ValueError):
+        TL.decode_grid({"w": 3, "h": 2, "rle": "1,2"})
+
+
+def test_title_word_is_clear_of_the_grid_on_every_frame_with_room():
+    rows, grids = title_shot()
+    ML.TEXT = "Nibblers"
+    try:
+        look, side, aim, cen, ops, info = TL.plan(rows, grids, 1920, 1080, 30.0, "auto", 15)
+    finally:
+        ML.TEXT = "mouth"
+    margin = TL.MARGIN * look.s
+    occs = [TL.Occupancy(g, 1920, 1080) for g in grids]
+    assert info["held"] == 0
+    for i in range(len(rows)):
+        # the target (before smoothing) is clear by the margin, and the word sits inside the safe margin
+        assert look.fits(*cen[i])
+    sp = TL.best_spot(occs[30], rows[30]["box"], side, look, TL.candidate_axes(look), margin)
+    assert TL.is_clear(occs[30], look, sp[0], sp[1], margin)
+    # a brute-force check of the integral image against every filled cell's rectangle
+    x0, y0, x1, y1 = sp[0] - look.hw - margin, sp[1] - look.hh - margin, sp[0] + look.hw + margin, sp[1] + look.hh + margin
+    cw, ch = 1920 / 240.0, 1080 / 135.0
+    for r, c in zip(*np.nonzero(grids[30])):
+        assert not (c * cw < x1 and (c + 1) * cw > x0 and r * ch < y1 and (r + 1) * ch > y0)
+
+
+def test_title_holds_one_side_over_a_shot():
+    rows, grids = title_shot()
+    ML.TEXT = "Nibblers"
+    try:
+        look, side, aim, cen, ops, info = TL.plan(rows, grids, 1920, 1080, 30.0, "auto", 15)
+        sides = {TL.plan(rows, grids, 1920, 1080, 30.0, "auto", f)[1] for f in (0, 15, 30)}
+    finally:
+        ML.TEXT = "mouth"
+    assert side in ML.SIDES and len(sides) == 1
+    # the word is on that side of the body's box on every frame it is placed, and slides with the body
+    d = {"right": (1, 0), "left": (-1, 0), "up": (0, -1), "down": (0, 1)}[side]
+    for i in range(len(rows)):
+        bx = (rows[i]["box"][0] + rows[i]["box"][2]) / 2 * 1920
+        by = (rows[i]["box"][1] + rows[i]["box"][3]) / 2 * 1080
+        assert (cen[i][0] - bx) * d[0] + (cen[i][1] - by) * d[1] > 0
+    if side in ("up", "down"):
+        assert cen[-1][0] > cen[0][0]
+
+
+def test_title_with_no_clear_spot_keeps_the_last_good_centre():
+    rows, grids = title_shot(40)
+    full = np.ones((135, 240), bool)
+    grids = grids[:20] + [full] * 20
+    for r in rows[20:]:
+        r["box"] = (0.0, 0.0, 1.0, 1.0)
+    ML.TEXT = "Nibblers"
+    try:
+        look, side, aim, cen, ops, info = TL.plan(rows, grids, 1920, 1080, 30.0, "right", 5)
+    finally:
+        ML.TEXT = "mouth"
+    assert info["held"] == 20 and info["held_visible"] == 20
+    assert np.allclose(cen[39], cen[38], atol=1e-6) or np.hypot(*(cen[39] - cen[38])) < 5.0
+
+
+def test_title_leader_ends_at_the_outline():
+    rows, grids = title_shot()
+    ML.TEXT = "Nibblers"
+    try:
+        look, side, aim, cen, ops, info = TL.plan(rows, grids, 1920, 1080, 30.0, "auto", 15)
+    finally:
+        ML.TEXT = "mouth"
+    for i in (20, 45):
+        occ = TL.Occupancy(grids[i], 1920, 1080)
+        cx, cy = cen[i]
+        d, pt = occ.nearest(cx - look.hw, cy - look.hh, cx + look.hw, cy + look.hh)
+        assert aim[i] == pytest.approx(pt) if hasattr(pytest, "approx") else True
+        assert math.hypot(aim[i][0] - pt[0], aim[i][1] - pt[1]) < 1e-9
+        # the aim point lies on a filled cell's rectangle
+        c, r = int(aim[i][0] // occ.cw), int(aim[i][1] // occ.ch)
+        assert grids[i][min(r, 134), min(c, 239)] or grids[i][min(max(int(round(aim[i][1] / occ.ch)) - 1, 0), 134), min(c, 239)] \
+            or grids[i][min(r, 134), min(max(int(round(aim[i][0] / occ.cw)) - 1, 0), 239)]
+        pts = ML.leader_points(look, cx, cy, aim[i][0], aim[i][1])
+        if pts:
+            (ax, ay), (ex, ey) = pts
+            assert math.hypot(ex - aim[i][0], ey - aim[i][1]) == approx(look.gap, abs=1e-6)
+            assert math.hypot(ax - aim[i][0], ay - aim[i][1]) > look.gap
+    # a word within the gap of the outline has no leader
+    assert ML.leader_points(look, 500.0, 500.0, 500.0 + look.hw + look.gap * 0.5, 500.0) is None
+
+
+def test_title_fusion_keys_equal_the_burned_plan():
+    rows, grids = title_shot()
+    text, side, info = FO.build_title(rows, grids, W, H, 30.0, "auto", None, text="Nibblers")
+    tools = check_wellformed(text)
+    assert 'Value = "Nibblers"' in text and ML.TEXT == "mouth"
+    ML.TEXT = "Nibblers"
+    try:
+        look, pside, aim, cen, ops, _ = TL.plan(rows, grids, W, H, 30.0, "auto", int(round(ML.DEFAULT_FROM_FRAC * len(rows))))
+    finally:
+        ML.TEXT = "mouth"
+    assert pside == side
+    xs, ys, op = keys_of(tools, "Word_Pos_X"), keys_of(tools, "Word_Pos_Y"), keys_of(tools, "Op_Word")
+    em = ML.SIZE_PX * look.s
+    for i in (0, 25, 59):
+        assert xs[i] == approx(cen[i][0] / W, abs=1e-6)
+        assert ys[i] == approx(FO.text_center_y(cen[i][1] - look.mid, em, "mono-semibold", H), abs=1e-6)
+        assert op[i] == approx(ops[i], abs=1e-6)
+
+
+def test_title_side_prefers_the_darker_water_and_no_centre_touches_the_body():
+    rows, grids = title_shot()
+    luma = np.ones((len(rows), 135, 240), np.float32)
+    luma[:, 100:, :] = 0.0                       # dark water along the bottom only
+    ML.TEXT = "Nibblers"
+    try:
+        _, side, _, _, _, info = TL.plan(rows, grids, 1920, 1080, 30.0, "auto", 15, luma=luma, k=8.0)
+        _, plain, _, _, _, _ = TL.plan(rows, grids, 1920, 1080, 30.0, "auto", 15)
+    finally:
+        ML.TEXT = "mouth"
+    assert side == "down" and plain != "down"
+    assert info["overlap"] == 0
