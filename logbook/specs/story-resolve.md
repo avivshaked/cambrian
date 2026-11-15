@@ -219,6 +219,15 @@ back what Resolve held, and rendering one second at a time. Resolve Studio 21.1.
    in the render, even after the Fusion page had opened the clip. Text set on a
    Fusion title's own text tool does render. So the label is a clip of its own, drawn by
    ffmpeg, and not a Fusion text.
+   On 2026-11-15, in Resolve Studio 21.1, a composition loaded from a text file did reach the render.
+   It was loaded onto a 4K clip by `TimelineItem.ImportFusionComp` and rendered by `AddRenderJob`: a keyed
+   Text+ word and a masked leader line. The 2026-09-25 test added its nodes one by one rather than loading
+   a file, which may be the cause; that is untested. Two faults pass every read-back. A Text+ whose font
+   Fusion cannot find reads back as set. The render then fails with "The Fusion composition at <timecode>
+   could not be processed successfully". Fusion's list
+   (`resolve.Fusion().FontManager.GetFontList()`) holds only fonts Windows has installed. The second: a keyed point
+   is an XYPath whose output is `Value`, and a point input wired to its `Position` loads unconnected and does
+   not move. The tool that writes such compositions is `scripts/channel/fusion_overlay.py`.
 4. A clip's Fusion composition works at the clip's own resolution, as the manual says (Chapter
    11, p. 289, and Chapter 64, p. 1332). A text drawn over a 64 by 36 carrier was 64 by 36
    pixels, a speck once scaled to the frame.
