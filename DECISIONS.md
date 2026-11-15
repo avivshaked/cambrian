@@ -388,6 +388,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D364](#d364) | Round 67's graphics and titles are designed first, then built in Blender; the film is *Not the Hungriest | 2026-11-12 | ruled by the owner on 2026-11-12, on the coordinator's recommendation |
 | [D365](#d365) | The films' marine snow is made visible: larger, brighter motes and more of them | 2026-11-13 | ruled by the owner on 2026-11-13, on the coordinator's recommendation from the theatre lane's snow sheet |
 | [D366](#d366) | Round 67's landing cuts out of a burst of foam into the theatre's bubbles, already moving | 2026-11-13 | ruled by the owner on 2026-11-13, step by step over a day of tests, the foam and the bubbles' run-up the owner's own ideas |
+| [D367](#d367) | Round 67's film draws its rounded leaves as blades, with their extra light capped, and the landing at a fixed exposure | 2026-11-15 | decided by the coordinator at about 01:55 on 2026-11-15, under the owner's delegation of the night of 2026-11-14, which gave the coordinator the leaf stills, and under D327 |
 
 ---
 
@@ -12638,3 +12639,43 @@ camera path, authored backwards from its end, stands.
 - A visible hold of the camera after the cut, since the owner wanted to cut into a camera already moving.
 - Filming the whole opener in the theatre, about 20 to 30 hours of build with the open sea from above as its main risk,
   which is kept as the way forward should the cut fail in the finals.
+
+### D367
+**Round 67's film draws its rounded leaves as blades, with their extra light capped, and the landing at a fixed exposure** · 2026-11-15
+
+**Status:** decided by the coordinator at about 01:55 on 2026-11-15, under the owner's delegation of the night of
+2026-11-14, which gave the coordinator the leaf stills, and under D327. It carries D253's and D256's blade look to the leaves
+it never reached, and amends no earlier entry. The owner had ruled the same evening that the leaves as filmed could not be
+in the film. The owner checks the stills and the refilms the next morning
+(`scratch/owner/r67-leaf-fix-final-stills/`).
+
+**Decision.**
+- `EVOSIM_THEATRE_LEAF_FAMILY` 1 draws a photosynthetic superellipsoid part as the box blade's lamina, inside its box,
+  out of the family mesh and the one skin. It is on in the film look's wide section, so the safari takes it too.
+- `EVOSIM_THEATRE_LEAF_FAMILY_CAP` 0.7 scales what the fragment adds to a converted blade after its diffuse light
+  (light-through, see-through, back light, glow, rim and sheens) to 70%. It is gated on the converted parts alone, so no
+  box blade takes it at any value. It is on in the same section.
+- A blade's corners may stand outside its superellipsoid collider, by at most 4% of its half width. D253's allowance, a
+  fifth of a leaf's length past its collider, covers it.
+- Round 67's landing is filmed at a fixed exposure of +0.5 EV (`EVOSIM_THEATRE_STORY_EV_MIN` and `_MAX` on its row).
+- The 20 finals takes with converted leaves in view are refilmed at 4K, with 4.1a for its reframe. The 7 takes that show
+  only a far speck of such a leaf keep their finals.
+
+**Why.**
+- 79% of round 67's leaf parts are superellipsoids, D252's shape family. In the round of the approved sample (`r62cf`)
+  there were none. The theatre drew only box leaves as blades, so most of round 67's leaves came out as smooth flat ovals,
+  neon lime when lit from behind.
+- Drawn as blades, the converted parts took the same diffuse light as the box blades in the same frame (lightness 0.45
+  and 0.45). What was added after it made them lighter: 0.80 against 0.69. They are about 1.5 times larger and
+  relatively thinner. The ratio of lit to diffuse light gave k = 0.71.
+- The landing's meter settled on the crossing's graded frame, which exposure barely moves. It pushed to +3.2 EV and could
+  move back only 0.6 EV. The take ran at a mean luma of 0.59, against the film's 0.27 to 0.32. Pinned at +0.5 EV, it runs
+  at 0.31.
+- Each fix was checked to change nothing else. Frames filmed with the dial off fell within the same build's run-to-run
+  envelope. With the cap on, the other leaves in the landing read the same to a tenth of a level.
+
+**Rejected.**
+- Refitting round 67's per-world blade colour stops to the converted leaves. The box blades were already right, and a refit
+  would have pushed them bluer.
+- Giving blades a surface texture, which would need a new term in the shader and belongs to the next film.
+- Grading the landing down in Resolve. It is refilmed for the leaves anyway, and a fixed exposure keeps the most detail.
