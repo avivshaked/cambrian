@@ -297,7 +297,17 @@ def mouth_plan(rows, W, H, fps, side, from_frame):
     return look, side, out
 
 
-def build_mouth(rows, W, H, fps=30.0, side="auto", from_s=None):
+def build_mouth(rows, W, H, fps=30.0, side="auto", from_s=None, text="mouth"):
+    """The mouth label's composition. `text` is the label's word ("mouth", or a name such as "Nibblers" on a body
+    track): mouth_label.py sizes the word's box from its module TEXT, so it is set for the plan and put back after."""
+    saved, ML.TEXT = ML.TEXT, text
+    try:
+        return _build_mouth(rows, W, H, fps, side, from_s)
+    finally:
+        ML.TEXT = saved
+
+
+def _build_mouth(rows, W, H, fps, side, from_s):
     n = len(rows)
     from_frame = int(round((ML.DEFAULT_FROM_FRAC * n / fps if from_s is None else from_s) * fps))
     look, side, p = mouth_plan(rows, W, H, fps, side, from_frame)
@@ -350,6 +360,7 @@ def main(argv=None):
     ap.add_argument("--from", dest="from_s", type=float, default=None)
     ap.add_argument("--side", default="auto", choices=("auto",) + ML.SIDES)
     ap.add_argument("--fps", type=float, default=30.0)
+    ap.add_argument("--text", default="mouth", help="mouth: the label's word")
     a = ap.parse_args(argv)
     if not os.path.isfile(a.src):
         sys.exit("fusion_overlay: %s does not exist" % a.src)
@@ -360,7 +371,7 @@ def main(argv=None):
             header, rows = ML.load_track(a.src)
             for k, v in header.items():
                 print("track %s: %s" % (k, json.dumps(v)))
-            text, side = build_mouth(rows, a.width, a.height, a.fps, a.side, a.from_s)
+            text, side = build_mouth(rows, a.width, a.height, a.fps, a.side, a.from_s, a.text)
             print("side %s" % side)
     except ValueError as e:
         sys.exit("fusion_overlay: %s" % e)

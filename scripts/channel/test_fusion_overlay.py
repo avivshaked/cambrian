@@ -267,6 +267,18 @@ def test_mouth_comp_is_wellformed_and_leader_hidden_when_invisible():
     assert op[29] < op[19] and op[59] > 0.99
 
 
+def test_mouth_text_names_the_word_and_sizes_its_box():
+    rows = track()
+    text, _ = FO.build_mouth(rows, W, H, 30.0, "right", None, text="Nibblers")
+    tools = check_wellformed(text)
+    assert 'Value = "Nibblers"' in text and 'Value = "mouth"' not in text
+    assert ML.TEXT == "mouth"
+    xs = keys_of(tools, "Word_Pos_X")
+    ref = keys_of(check_wellformed(FO.build_mouth(rows, W, H, 30.0, "right", None)[0]), "Word_Pos_X")
+    # a longer word's box centre sits further right of the disc on the right side
+    assert xs[59] > ref[59]
+
+
 # ---------------------------------------------------------------- the checker itself
 def test_checker_catches_a_dangling_source_and_unbalanced_text():
     good = FO.build_words(anchors(5), W, H, 1)
