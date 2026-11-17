@@ -1,0 +1,10 @@
+#n	src	in_f	n_f	slope	audio	a_in	note
+1	assets/films/round-67-202611061206/final/clips/1.6a.mov	0	300	1.0	assets/films/round-67-202611061206/animatic/narration/M3-beat-1.wav	0.0	hook
+2	assets/films/round-67-202611061206/final/clips/9.1a.mov	0	48	1.0	assets/films/round-67-202611061206/animatic/narration/M3-beat-1.wav	10.0	hook end
+3	assets/films/round-67-202611061206/final/clips/EAT1.mov	3	174	1.0	assets/films/round-67-202611061206/animatic/narration/M3-beat-6.wav	31.85	tripled
+4	assets/films/round-67-202611061206/final/clips/WINTER2.mov	2	44	1.19	assets/films/round-67-202611061206/fine-v2/narration/M3-beat-7-part1.wav	0.067	winter
+5	assets/films/round-67-202611061206/final/clips/7.2a.mov	161	105	1.0	assets/films/round-67-202611061206/fine-v2/narration/M3-beat-7-part2.wav	10.93	dead
+6	scratch/r67-salvage/final-words/EATS3-mouth-full.mp4	1	98	1.10	assets/films/round-67-202611061206/fine-v2/narration/M3-beat-9-part1.wav	17.2	taleplums
+7	assets/films/round-67-202611061206/final/clips/6.6b.mov	87	75	1.0	assets/films/round-67-202611061206/fine-v2/narration/M3-beat-9-part2.wav	3.883	one in six
+8	assets/films/round-67-202611061206/final/clips/unmapped.mov	27	66	1.0	assets/films/round-67-202611061206/fine-v2/narration/M3-beat-9-part2.wav	17.483	question
+9	assets/films/round-67-202611061206/final/clips/OUTRO.mov	480	120	1.0	-	0	end card

@@ -1,0 +1,15 @@
+{
+ "film": "round 67; the 9:16 locked 2026-11-16, the 4:5 locked 2026-11-17",
+ "segments": "scripts/channel/short/round-67-segments.tsv",
+ "out": "scratch/r67-salvage/short/",
+ "centre": {"1": [0.42, 0.42], "2": [0.40, 0.40], "3": [0.17, 0.17], "4": [0.42, 0.42], "5": [0.48, 0.48],
+            "6": [0.20, 0.20], "7": [0.36, 0.36], "8": [0.40, 0.47]},
+ "align": {
+  "M3-beat-1.wav": ["scratch/r67-salvage/voice/M3-beat-1.align.json", 0.0],
+  "M3-beat-6.wav": ["scratch/r67-salvage/voice/M3-beat-6.align.json", 0.0],
+  "M3-beat-7-part1.wav": ["scratch/r67-salvage/voice/M3-beat-7.align.json", 0.0],
+  "M3-beat-7-part2.wav": ["scratch/r67-salvage/voice/M3-beat-7.align.json", 15.1605],
+  "M3-beat-9-part1.wav": ["scratch/r67-salvage/voice/M3-beat-9.align.json", 0.0],
+  "M3-beat-9-part2.wav": ["scratch/r67-salvage/voice/M3-beat-9.align.json", 20.665]
+ }
+}
